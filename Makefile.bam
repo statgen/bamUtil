@@ -1,0 +1,5 @@
+include $(PATH_TO_SRC_BASE)/Makefile.src
+
+BAM_EXE=$(BIN_DIR)/bam
+
+BAM_TEST_DIR=test

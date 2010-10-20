@@ -1,0 +1,34 @@
+testInvalid.sam tests the following:
+
+Record 1: QNAME length > 255
+Record 2: QNAME length = 0
+Record 3: QNAME contains ' '
+Record 4: QNAME contains '\t' - shows up as misinterpreting other fields.
+Record 5: QNAME contains '\n' - interpreted as end of record.
+Record 6: ok - it is the rest of record 5.
+Record 7: FLAG is not [0-9]+
+Record 8: FLAG is blank
+Record 9: ok - FLAG is 0
+Record 10: FLAG is 65536
+Record 11: FLAG is -1
+Record 12: RNAME contains ' '
+Record 13: RNAME contains '@'
+Record 14: RNAME contains '='
+Record 15: RNAME contains '\t'
+Record 16: RNAME contains '\n' - interpreted as end of record.
+Record 17: rest of previous record - invalid not enough columns.Record 7: FLAG is not [0-9]+
+Record 18: RNAME is blank
+Record 19: POS is blank
+Record 20: POS is 536870912
+Record 21: POS is -1
+Record 22: POS is 2147483648 - too big to fit in int32_t
+Record 23: POS is -2147483649 - too small to fit in int32_t
+Record 24: POS is not [0-9]+
+Record 25: MAPQ is not [0-9]+
+Record 26: MAPQ is blank
+Record 27: MAPQ is 256 - too big for uint8_t
+Record 28: MAPQ is -1
+Record 29: QUAL is longer than SEQ
+Record 30: QUAL is shorter than SEQ
+Record 31: CIGAR evaluates to longer than SEQ
+Record 32: CIGAR evaluates to shorter than SEQ

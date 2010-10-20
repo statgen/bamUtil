@@ -1,0 +1,10 @@
+
+The following parameters are available.  Ones with "[]" are in effect:
+
+Input Parameters
+ --in [testFiles/testSam.sam], --out [results/convertSam.bam], --noeof,
+ --params [ON]
+
+
+Number of records read = 10
+Number of records written = 10
