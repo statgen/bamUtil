@@ -1,0 +1,69 @@
+DIR_NAME=bam
+PATH_TO_LIB_BASE=..
+include $(PATH_TO_LIB_BASE)/Makefile.lib
+#
+# Goncalo's Generic Makefile -- Compiles and installs a Generic Goncalo Tool
+# (c) 2000-2007 Goncalo Abecasis
+#
+
+# Source File Set
+# For best results, consider editing this manually ...
+TOOLBASE = ErrorHandler SamFileHeader SamFile GenericSamInterface SamInterface BamInterface SamRecord BamIndex SamHeaderHD SamHeaderPG SamHeaderRecord SamHeaderSQ SamHeaderRG SamHeaderTag SamValidation SamStatus SamFlag SamStatistics SamQuerySeqWithRefHelper SamFilter PileupReader PileupElement PileupElementBaseQual
+
+HDRONLY = Pileup.h
+
+TOOLHDR = $(TOOLBASE:=.h) $(HDRONLY)
+TOOLSRC = $(TOOLBASE:=.cpp)
+TOOLOBJ = $(TOOLSRC:.cpp=.o)
+
+HEADERS=$(TOOLHDR)
+
+
+# Utility Library File Set
+
+NEWLIBRARY=$(STAT_GEN_LIB)
+
+OBJECTS=$(patsubst %,$(OBJDIR)/%,$(TOOLOBJ))
+
+# make everything
+all :  $(addprefix $(LIB_INCLUDE)/, $(HEADERS)) $(NEWLIBRARY)
+
+$(LIB_INCLUDE)/%.h: %.h
+	ln  -s $(PATH_INCLUDE_TO_LIB_BASE)/$(DIR_NAME)/$< $@
+
+$(OBJECTS): $(TOOLHDR) | $(OBJDIR)
+
+$(OBJDIR):
+	mkdir $(OBJDIR)
+
+$(NEWLIBRARY) : $(OBJECTS)
+	ar -cr $@ $(OBJECTS)
+	ranlib $@
+
+clean :
+	-rm -f $(OBJDIR)/*.o *~ $(addprefix $(LIB_INCLUDE)/, $(HEADERS))
+	$(AR) d $(STAT_GEN_LIB) $(OBJECTS)
+	$(RANLIB) $(STAT_GEN_LIB)
+	$(MAKE) $(PARALLEL_MAKE) -C $(BAM_TEST_DIR) OPTFLAG="$(OPTFLAG)" --no-print-directory $@
+
+test: all
+	$(MAKE) $(PARALLEL_MAKE) -C $(BAM_TEST_DIR) OPTFLAG="$(OPTFLAG)" --no-print-directory $@
+
+$(OBJDIR)/%.o: %.c
+	$(CXX) $(CFLAGS) -o $@ -c $*.c 
+
+$(OBJDIR)/%.o: %.cpp 
+	$(CXX) $(CFLAGS) -o $@ -c $*.cpp -DVERSION="\"$(VERSION)\""
+
+
+.SUFFIXES : .cpp .c .o .X.o $(SUFFIXES)
+
+DFLAGS=-Y
+
+cleandepend:
+	        makedepend -- $(DFLAGS) --
+
+depend:
+	        makedepend -- $(DFLAGS) -- $(TOOLSRC) >/dev/null 2>&1
+
+# DO NOT DELETE THIS LINE -- make depend depends on it

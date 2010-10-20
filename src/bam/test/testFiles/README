@@ -1,0 +1,26 @@
+testSam.sam has records that test some of the features of SAM files.
+
+
+TODO: test other tag types
+
+Record 1:
+  All fields are valid.  MRNM is set to "=".  Tags are used.
+Record 2:
+  All fields are valid.  CIGAR is "*" & MRNM is "=".  No Tags.
+Record 3:
+  All fields are valid.  All fields are set.  Tags are used.
+Record 4:
+  All fields are valid.  CIGAR, SEQ, & QUAL are "*".  Tags are used.
+Record 5:
+  All fields are valid. QUAL is "*".  Tags are used.
+Record 6:
+  All fields are valid.  Clipped Sequence.  All fields are set.  No Tags.
+Record 7:
+  All fields are valid.  Clipped Sequence.  All fields are set.  No Tags.
+Record 8:
+  All fields are valid.  RNAME, CIGAR, MRNMAN are "=".  POS, MAPQ, MPOS, and ISIZE are "0".  No Tags.
+Record 9:
+  All fields are valid.  Clipped Sequence.  All fields are set.  No Tags.
+Record 10:
+  All fields are valid.  RNAME, CIGAR, MRNMAN are "=".  POS, MAPQ, MPOS, and ISIZE are "0".  SEQ & QUAL are "*".  No Tags.
+

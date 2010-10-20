@@ -1,0 +1,23 @@
+include $(PATH_TO_BASE)/Makefile.toolchain
+
+# version information
+# 0.0.1 - Initial version
+VERSION = 0.0.1
+
+OBJDIR=obj
+
+EXE=$(PATH_TO_BASE)/bam/bam
+
+DATE=$(shell date)
+NODE=$(shell uname -n)
+
+OPTFLAG?=-ggdb -O0 -fno-rtti
+CFLAGS= -Wall  $(OPTFLAG) -I$(PATH_TO_BASE)/bam -I$(PATH_TO_BASE)/libcsg -I$(PATH_TO_BASE)/thirdParty/samtools -D__ZLIB_AVAILABLE__  -D_FILE_OFFSET_BITS=64 -D__STDC_LIMIT_MACROS
+
+EXE_SOURCE_DIR = tools
+
+REQ_LIBS = $(PATH_TO_BASE)/libcsg/libcsg.a $(PATH_TO_BASE)/thirdParty/samtools/libbam.a
+
+BAM_TEST_DIR = $(PATH_TO_BASE)/bam/test
+
+BAM_LIB = $(PATH_TO_BASE)/bam/libbam.a

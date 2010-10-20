@@ -1,0 +1,4 @@
+PATH_TO_BASE=../$(PATH_TO_SRC_BASE)
+include $(PATH_TO_BASE)/Makefile.lib
+
+BIN_DIR=$(PATH_TO_SRC_BASE)/bin

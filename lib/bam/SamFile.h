@@ -1,0 +1,273 @@
+/*
+ *  Copyright (C) 2010  Regents of the University of Michigan
+ *
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#ifndef __SAM_FILE_H__
+#define __SAM_FILE_H__
+
+#include "SamStatus.h"
+#include "InputFile.h"
+#include "SamFileHeader.h"
+#include "SamRecord.h"
+#include "GenericSamInterface.h"
+#include "BamIndex.h"
+#include "SamStatistics.h"
+
+class SamFile
+{
+public:
+    enum OpenType {READ, WRITE};
+
+    /// Enum for indicating the type of sort for the file.
+    enum SortedType {
+        UNSORTED = 0, ///< file is not sorted.
+        FLAG,         ///< SO flag from the header indicates the sort type.
+        COORDINATE,   ///< file is sorted by coordinate.
+        QUERY_NAME    ///< file is sorted by queryname.
+    };
+    
+    /// Default Constructor.
+    SamFile();
+
+    /// Constructor that sets the error handling type.
+    /// \param errorHandlingType how to handle errors.
+    SamFile(ErrorHandler::HandlingType errorHandlingType);
+
+    /// Constructor that opens the specified file based on the specified mode
+    /// (READ/WRITE).
+    /// \param filename name of the file to open.
+    /// \param mode mode to use for opening the file.
+    SamFile(const char* filename, OpenType mode);
+
+    /// Constructor that opens the specified file based on the specified mode
+    /// (READ/WRITE) and handles errors per the specified handleType.
+    /// \param filename name of the file to open.
+    /// \param mode mode to use for opening the file.
+    /// \param errorHandlingType how to handle errors.
+    SamFile(const char* filename, OpenType mode,
+            ErrorHandler::HandlingType errorHandlingType);
+
+    virtual ~SamFile();
+   
+    /// Open a sam/bam file for reading with the specified filename.
+    /// \param  filename: the sam/bam file to open for reading.
+    /// \return true = success; false = failure.   
+    bool OpenForRead(const char * filename);
+
+    /// Open a sam/bam file for writing with the specified filename.
+    /// \return true = success; false = failure.
+    bool OpenForWrite(const char * filename);
+
+    /// Reads the specified bam index file.  It must be read prior to setting a
+    /// read section, for seeking and reading portions of a bam file.
+    /// \return true = success; false = failure.   
+    bool ReadBamIndex(const char * filename);
+
+    /// Close the file if there is one open.
+    void Close();
+
+    /// Returns whether or not the end of the file has been reached.
+    /// \return true = EOF; false = not eof.
+    /// If the file is not open, false is returned.
+    bool IsEOF();
+   
+    /// Reads the header section from the file and stores it in
+    /// the passed in header.
+    /// \return true = success; false = failure.
+    bool ReadHeader(SamFileHeader& header);
+   
+    /// Writes the specified header into the file.
+    /// \return true = success; false = failure.
+    bool WriteHeader(SamFileHeader& header);
+
+    /// Reads the next record from the file & stores it in the passed in record.
+    /// \return true  = record was successfully set.
+    ///                false = record was not successfully set.
+    bool ReadRecord(SamFileHeader& header, SamRecord& record);
+   
+    /// Writes the specified record into the file.
+    /// \return true = success; false = failure.
+    bool WriteRecord(SamFileHeader& header, SamRecord& record);
+   
+    /// Set the flag to validate that the file is sorted as it is read/written.
+    /// Must be called after the file has been opened.
+    void setSortedValidation(SortedType sortType);
+
+    /// Return the number of records that have been read/written so far.
+    uint32_t GetCurrentRecordCount();
+
+    /// Get the Status of the last call that sets status.
+    /// To remain backwards compatable - will be removed later.
+    inline SamStatus::Status GetFailure()
+    {
+        return(GetStatus());
+    }
+
+    /// Get the Status of the last call that sets status.
+    inline SamStatus::Status GetStatus()
+    {
+        return(myStatus.getStatus());
+    }
+
+    /// Get the Status of the last call that sets status.
+    inline const char* GetStatusMessage()
+    {
+        return(myStatus.getStatusMessage());
+    }
+
+    /// Sets what part of the BAM file should be read.  This version will
+    /// set it to only read a specific reference id.  The records for that
+    /// reference id will be retrieved on each ReadRecord call.  When all
+    /// records have been retrieved for the specified reference id, ReadRecord
+    /// will return failure until a new read section is set.
+    /// Must be called only after the file has been opened for reading.
+    /// \param  refID the reference ID of the records to read from the file.
+    /// \return true = success; false = failure.
+    bool SetReadSection(int32_t refID);
+
+    /// Sets what part of the BAM file should be read.  This version will
+    /// set it to only read a specific reference name.  The records for that
+    /// reference id will be retrieved on each ReadRecord call.  When all
+    /// records have been retrieved for the specified reference name,
+    /// ReadRecord will return failure until a new read section is set.
+    /// Must be called only after the file has been opened for reading.
+    /// \param  refName the reference name of the records to read from the file.
+    /// \return true = success; false = failure.
+    bool SetReadSection(const char* refName);
+
+    /// Sets what part of the BAM file should be read.  This version will
+    /// set it to only read a specific reference id and start/end position.
+    /// The records for this section will be retrieved on each ReadRecord
+    /// call.  When all records have been retrieved for the specified section,
+    /// ReadRecord will return failure until a new read section is set.
+    /// Must be called only after the file has been opened for reading.
+    /// \param  refID the reference ID of the records to read from the file.
+    /// \param  start inclusive 0-based start position of records that should be read for this refID.
+    /// \param  end exclusive 0-based end position of records that should be read for this refID.
+    /// \return true = success; false = failure.   
+    bool SetReadSection(int32_t refID, int32_t start, int32_t end);
+
+    /// Sets what part of the BAM file should be read.  This version will
+    /// set it to only read a specific reference name and start/end position.
+    /// The records for this section will be retrieved on each ReadRecord
+    /// call.  When all records have been retrieved for the specified section,
+    /// ReadRecord will return failure until a new read section is set.
+    /// Must be called only after the file has been opened for reading.
+    /// \param  refName the reference name of the records to read from the file.
+    /// \param  start inclusive 0-based start position of records that should be read for this refID.
+    /// \param  end exclusive 0-based end position of records that should be read for this refID.
+    /// \return true = success; false = failure.   
+    bool SetReadSection(const char* refName, int32_t start, int32_t end);
+
+    /// Returns the number of bases in the passed in read that overlap the
+    /// region that is currently set.
+    /// \param samRecord to check for overlapping bases.
+    /// \return number of bases that overlap region that is currently set.
+    uint32_t GetNumOverlaps(SamRecord& samRecord);
+
+    /// Whether or not statistics should be generated for this file.
+    /// The value is carried over between files and is not reset, but
+    /// the statistics themselves are reset between files.
+    /// \param genStats set to true if statistics should be generated, false if not.
+    void GenerateStatistics(bool genStats);
+
+    inline void PrintStatistics() {if(myStatistics != NULL) myStatistics->print();}
+
+protected:
+    void resetFile();
+
+    /// Validate that the record is sorted compared to the previously read record
+    /// if there is one, according to the specified sort order.
+    /// If the sort order is UNSORTED, true is returned.
+    bool validateSortOrder(SamRecord& record, SamFileHeader& header);
+   
+    // Return the sort order as defined by the header.  If it is undefined
+    // or set to an unknown value, UNSORTED is returned.
+    SortedType getSortOrderFromHeader(SamFileHeader& header);
+
+    /// Overwrites read record to read from the specific reference only.
+    bool readIndexedRecord(SamFileHeader& header, SamRecord& record);
+
+    bool processNewSection(SamFileHeader &header);
+
+    IFILE  myFilePtr;
+    GenericSamInterface* myInterfacePtr;
+
+    /// Flag to indicate if a file is open for reading.
+    bool myIsOpenForRead;
+    /// Flag to indicate if a file is open for writing.
+    bool myIsOpenForWrite;
+    /// Flag to indicate if a header has been read/written - required before
+    /// being able to read/write a record.
+    bool myHasHeader;
+
+    SortedType mySortedType;
+
+    /// Previous values used for checking if the file is sorted.
+    int32_t myPrevCoord;
+    int32_t myPrevRefID;
+    std::string myPrevReadName;
+
+    /// Keep a count of the number of records that have been read/written so far.
+    uint32_t myRecordCount;
+
+    /// Pointer to the statistics for this file.
+    SamStatistics* myStatistics;
+   
+    /// The status of the last SamFile command.
+    SamStatus myStatus;
+
+    /// Values for reading Sorted BAM files via the index.
+    bool myIsBamOpenForRead;
+    bool myNewSection;
+    int32_t myRefID;
+    int32_t myStartPos;
+    int32_t myEndPos;
+    uint64_t myCurrentChunkEnd;
+    SortedChunkList myChunksToRead;
+    BamIndex* myBamIndex;
+
+    std::string myRefName;
+};
+
+
+class SamFileReader : public SamFile
+{
+public:
+
+    /// Default Constructor.
+    SamFileReader();
+
+    /// Constructor that opens the specified file for read.
+    SamFileReader(const char* filename);
+
+    virtual ~SamFileReader();
+};
+
+
+class SamFileWriter : public SamFile
+{
+public:
+    /// Default Constructor.
+    SamFileWriter();
+
+    /// Constructor that opens the specified file for write.
+    SamFileWriter(const char* filename);
+
+    virtual ~SamFileWriter();
+};
+
+#endif

@@ -1,0 +1,27 @@
+
+include $(PATH_TO_BASE)/Makefile.toolchain
+
+# version information
+# 0.0.1 - Initial version
+VERSION = 0.0.1
+
+OBJDIR=obj
+
+DATE=$(shell date)
+NODE=$(shell uname -n)
+
+LIB_PATH = $(PATH_TO_BASE)/lib
+
+LIB_INCLUDE = $(LIB_PATH)/include
+
+STAT_GEN_LIB=$(LIB_PATH)/libStatGen.a
+
+SAMTOOLS_PATH = $(LIB_PATH)/samtools
+ZLIB_PATH = $(LIB_PATH)/zlib
+GENERAL_PATH = $(LIB_PATH)/general
+
+REQ_LIBS = $(STAT_GEN_LIB) $(SAMTOOLS_PATH)/libbam.a
+
+OPTFLAG?=-ggdb -O0 -fno-rtti
+CFLAGS= -Wall  $(OPTFLAG) -I$(LIB_INCLUDE) -I$(SAMTOOLS_PATH) -D__ZLIB_AVAILABLE__  -D_FILE_OFFSET_BITS=64 -D__STDC_LIMIT_MACROS
+

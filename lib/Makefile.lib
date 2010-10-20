@@ -1,0 +1,4 @@
+PATH_TO_BASE=../$(PATH_TO_LIB_BASE)
+include $(PATH_TO_BASE)/Makefile.lib
+
+PATH_INCLUDE_TO_LIB_BASE=..

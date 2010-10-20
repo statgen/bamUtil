@@ -1,0 +1,135 @@
+
+The following parameters are available.  Ones with "[]" are in effect:
+
+Input Parameters
+ --in [testFiles/testInvalid.sam], --noeof, --maxErrors [-1], --verbose [ON],
+               --printableErrors [100], --disableStatistics, --params [ON]
+   SortOrder : --so_flag, --so_coord, --so_query
+
+Record 1
+INVALID_QNAME (ERROR) : Invalid Query Name - the string length (256) does not match the specified query name length (0).
+INVALID_QNAME (WARNING) : Invalid Query Name (QNAME) length: 256.  Length with the terminating null must be between 2 & 255.
+
+Record 2
+INVALID: 0 length Query Name.
+
+Record 3
+INVALID_QNAME (WARNING) : Invalid character in the Query Name (QNAME): ' ' at position 2.
+
+Record 4
+FAIL_PARSE: flag, 29M5I3M:F:295, is not an integer.
+FAIL_PARSE: Invalid Tag Format: *, should be cc:c:x*.
+
+Record 5
+FAIL_PARSE: Too few columns (1) in the Record, expected at least 11.
+
+Record 7
+FAIL_PARSE: flag, 9K7, is not an integer.
+
+Record 8
+FAIL_PARSE: flag, , is not an integer.
+
+Record 10
+FAIL_PARSE: flag, 65536, is not between 0 and (2^16)-1 = 65535.
+
+Record 11
+FAIL_PARSE: flag, -1, is not between 0 and (2^16)-1 = 65535.
+
+Record 12
+INVALID_RNAME (WARNING) : RNAME, rn ame, was not found in a SAM Header SQ record
+INVALID_RNAME (WARNING) : Invalid character in the Reference Sequence Name (RNAME): ' ' at position 2.
+
+Record 13
+INVALID_RNAME (WARNING) : RNAME, rna@me, was not found in a SAM Header SQ record
+INVALID_RNAME (WARNING) : Invalid character in the Reference Sequence Name (RNAME): '@' at position 3.
+
+Record 14
+INVALID_RNAME (WARNING) : RNAME, rnam=e, was not found in a SAM Header SQ record
+INVALID_RNAME (WARNING) : Invalid character in the Reference Sequence Name (RNAME): '=' at position 4.
+
+Record 15
+FAIL_PARSE: position, ame, is not an integer.
+FAIL_PARSE: mate position, *, is not an integer.
+FAIL_PARSE: Invalid Tag Format: *, should be cc:c:x*.
+
+Record 16
+FAIL_PARSE: Too few columns (3) in the Record, expected at least 11.
+
+Record 17
+FAIL_PARSE: Too few columns (9) in the Record, expected at least 11.
+
+Record 18
+INVALID_RNAME (WARNING) : RNAME, , was not found in a SAM Header SQ record
+INVALID_RNAME (WARNING) : Reference Sequence Name (RNAME) cannot have 0 length.
+
+Record 19
+FAIL_PARSE: position, , is not an integer.
+
+Record 20
+INVALID_POS (WARNING) : POS out of range (536870912) must be between 0 and (2^29)-1.
+
+Record 21
+INVALID_POS (WARNING) : POS out of range (-1) must be between 0 and (2^29)-1.
+
+Record 22
+FAIL_PARSE: position, 2147483648, does not fit in a 32 bit signed int.
+
+Record 23
+FAIL_PARSE: position, -2147483649, does not fit in a 32 bit signed int.
+
+Record 24
+FAIL_PARSE: position, 12r2, is not an integer.
+
+Record 25
+FAIL_PARSE: map quality, 12r2, is not an integer.
+
+Record 26
+FAIL_PARSE: map quality, , is not an integer.
+
+Record 27
+FAIL_PARSE: map quality, 256, is not between 0 and (2^8)-1 = 255.
+
+Record 28
+FAIL_PARSE: map quality, -1, is not between 0 and (2^8)-1 = 255.
+
+Record 29
+INVALID_QUAL (WARNING) : QUAL is not the same length as SEQ, (5 != 4).
+
+Record 30
+INVALID_QUAL (WARNING) : QUAL is not the same length as SEQ, (3 != 4).
+
+Record 31
+INVALID_CIGAR (WARNING) : CIGAR does not evaluate to the same length as SEQ, (5 != 4).
+
+Record 32
+INVALID_CIGAR (WARNING) : CIGAR does not evaluate to the same length as SEQ, (3 != 4).
+
+
+Number of records read = 32
+Number of valid records = 2
+
+Error Counts:
+	FAIL_PARSE: 17
+	INVALID: 1
+	INVALID_QNAME: 3
+	INVALID_RNAME: 8
+	INVALID_POS: 2
+	INVALID_CIGAR: 2
+	INVALID_QUAL: 2
+
+TotalReads	14.00
+MappedReads	14.00
+PairedReads	6.00
+ProperPair	0.00
+DuplicateReads	0.00
+QCFailureReads	0.00
+
+MappingRate(%)	100.00
+PairedReads(%)	42.86
+ProperPair(%)	0.00
+DupRate(%)	0.00
+QCFailRate(%)	0.00
+
+TotalBases	47.00
+BasesInMappedReads	47.00
+Returning: 7 (INVALID)
