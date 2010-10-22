@@ -55,7 +55,10 @@ clean :
 	$(MAKE) $(PARALLEL_MAKE) -C $(TEST_DIR) OPTFLAG="$(OPTFLAG)" --no-print-directory $@
 
 test: all
-	$(MAKE) $(PARALLEL_MAKE) -C $(TEST_DIR) OPTFLAG="$(OPTFLAG)" --no-print-directory $@
+	if test -d $(TEST_DIR); \
+        then \
+	$(MAKE) $(PARALLEL_MAKE) -C $(TEST_DIR) OPTFLAG="$(OPTFLAG)" --no-print-directory $@; \
+        fi
 
 $(OBJDIR)/%.o: %.c
 	$(CXX) $(CFLAGS) -o $@ -c $*.c 

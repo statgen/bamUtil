@@ -1,8 +1,8 @@
 PATH_TO_BASE=..
 include $(PATH_TO_BASE)/Makefile.include
 
-SUBDIRS="zlib samtools general bam fastq glf"
-TEST_SUBDIRS="zlib general bam fastq glf"
+TEST_SUBDIRS="general bam fastq glf"
+SUBDIRS= "zlib samtools" $(TEST_SUBDIRS)
 
 # Build in all subdirectories.
 #
@@ -29,7 +29,7 @@ all:
 		fi \
 	done
 
-test: 
+test: all
 	@for i in "$(TEST_SUBDIRS)"; do \
 		if [ "XXX$$i" = XXX ] ;\
 		then \

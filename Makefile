@@ -1,4 +1,3 @@
-#SUBDIRS="libcsg karma utilities table2dbSNP showcontext"
 SUBDIRS="lib src"
 
 # try and optimize build on SMP machines

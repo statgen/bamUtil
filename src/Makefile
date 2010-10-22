@@ -1,5 +1,5 @@
-SUBDIRS="bam fastqValidator"
-TEST_SUBDIRS=$(SUBDIRS)
+TEST_SUBDIRS="bam fastqValidator glf karma qplot"
+SUBDIRS=$(TEST_SUBDIRS)
 
 # Build in all subdirectories.
 #

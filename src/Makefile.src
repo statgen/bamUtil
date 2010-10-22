@@ -38,10 +38,16 @@ $(OBJDIR):
 
 clean :
 	-rm -f $(OBJDIR)/*.o $(BIN_DIR)/$(EXE) *~
-	$(MAKE) $(PARALLEL_MAKE) -C $(TEST_DIR) OPTFLAG="$(OPTFLAG)" --no-print-directory $@
+	if test -d $(TEST_DIR); \
+        then \
+	$(MAKE) $(PARALLEL_MAKE) -C $(TEST_DIR) OPTFLAG="$(OPTFLAG)" --no-print-directory $@; \
+        fi
 
 test : all
-	$(MAKE) $(PARALLEL_MAKE) -C $(TEST_DIR) OPTFLAG="$(OPTFLAG)" --no-print-directory $@
+	if test -d $(TEST_DIR); \
+        then \
+        $(MAKE) $(PARALLEL_MAKE) -C $(TEST_DIR) OPTFLAG="$(OPTFLAG)" --no-print-directory $@; \
+        fi
 
 $(OBJDIR)/%.o: %.c
 	$(CXX) $(CFLAGS) -o $@ -c $*.c 
