@@ -1,0 +1,37 @@
+
+The following parameters are available.  Ones with "[]" are in effect:
+
+Input Parameters
+ --file [testFile.txt], --baseComposition [ON], --quiet, --params [ON],
+                --minReadLen [10], --maxErrors [10]
+   Space Type : --baseSpace [ON], --colorSpace, --auto
+       Errors : --ignoreErrors, --printableErrors [5]
+
+ERROR on Line 2: Invalid character ('.') in base sequence.
+ERROR on Line 2: Invalid character ('0') in base sequence.
+ERROR on Line 2: Invalid character ('1') in base sequence.
+ERROR on Line 2: Invalid character ('2') in base sequence.
+ERROR on Line 2: Invalid character ('3') in base sequence.
+
+Base Composition Statistics:
+Read Index	%A	%C	%G	%T	%N	Total Reads At Index
+         0   100.00    0.00    0.00    0.00    0.00	3
+         1     0.00  100.00    0.00    0.00    0.00	2
+         2     0.00    0.00    0.00  100.00    0.00	2
+         3     0.00    0.00  100.00    0.00    0.00	2
+         4    50.00    0.00    0.00    0.00   50.00	2
+         5    50.00   50.00    0.00    0.00    0.00	2
+         6     0.00   50.00    0.00   50.00    0.00	2
+         7     0.00    0.00    0.00   50.00   50.00	2
+         8    50.00    0.00    0.00    0.00   50.00	2
+         9     0.00   50.00   50.00    0.00    0.00	2
+        10     0.00    0.00    0.00  100.00    0.00	1
+        11     0.00    0.00    0.00    0.00  100.00	1
+        12     0.00    0.00  100.00    0.00    0.00	1
+        13   100.00    0.00    0.00    0.00    0.00	1
+        14   100.00    0.00    0.00    0.00    0.00	1
+        15     0.00  100.00    0.00    0.00    0.00	1
+
+Finished processing testFile.txt with 11 lines containing 3 sequences.
+There were a total of 10 errors.
+Returning: 1 : FASTQ_INVALID

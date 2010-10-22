@@ -1,27 +1,68 @@
+DIR_NAME=bam
+PATH_TO_LIB_BASE=..
+include $(PATH_TO_LIB_BASE)/Makefile.lib
+#
+# Goncalo's Generic Makefile -- Compiles and installs a Generic Goncalo Tool
+# (c) 2000-2007 Goncalo Abecasis
+#
 
-include $(PATH_TO_BASE)/Makefile.toolchain
+# Source File Set
+# For best results, consider editing this manually ...
+TOOLBASE = ErrorHandler SamFileHeader SamFile GenericSamInterface SamInterface BamInterface SamRecord BamIndex SamHeaderHD SamHeaderPG SamHeaderRecord SamHeaderSQ SamHeaderRG SamHeaderTag SamValidation SamStatus SamFlag SamStatistics SamQuerySeqWithRefHelper SamFilter PileupReader PileupElement PileupElementBaseQual
 
-# version information
-# 0.0.1 - Initial version
-VERSION = 0.0.1
+HDRONLY = Pileup.h
+TOOLHDR = $(TOOLBASE:=.h) $(HDRONLY)
+TOOLSRC = $(TOOLBASE:=.cpp)
+TOOLOBJ = $(TOOLSRC:.cpp=.o)
 
-OBJDIR=obj
+HEADERS=$(TOOLHDR)
 
-DATE=$(shell date)
-NODE=$(shell uname -n)
 
-LIB_PATH = $(PATH_TO_BASE)/lib
+# Utility Library File Set
 
-LIB_INCLUDE = $(LIB_PATH)/include
+NEWLIBRARY=$(STAT_GEN_LIB)
 
-STAT_GEN_LIB=$(LIB_PATH)/libStatGen.a
+OBJECTS=$(patsubst %,$(OBJDIR)/%,$(TOOLOBJ))
 
-SAMTOOLS_PATH = $(LIB_PATH)/samtools
-ZLIB_PATH = $(LIB_PATH)/zlib
-GENERAL_PATH = $(LIB_PATH)/general
+# make everything
+all :  $(addprefix $(LIB_INCLUDE)/, $(HEADERS)) $(NEWLIBRARY)
 
-REQ_LIBS = $(STAT_GEN_LIB) $(SAMTOOLS_PATH)/libbam.a
+$(LIB_INCLUDE)/%.h: %.h
+	ln  -s $(PATH_INCLUDE_TO_LIB_BASE)/$(DIR_NAME)/$< $@
 
-OPTFLAG?=-ggdb -O0 -fno-rtti
-CFLAGS= -Wall  $(OPTFLAG) -I$(LIB_INCLUDE) -I$(SAMTOOLS_PATH) -D__ZLIB_AVAILABLE__  -D_FILE_OFFSET_BITS=64 -D__STDC_LIMIT_MACROS
+$(OBJECTS): $(TOOLHDR) | $(OBJDIR)
 
+$(OBJDIR):
+	mkdir $(OBJDIR)
+
+$(NEWLIBRARY) : $(OBJECTS)
+	ar -cr $@ $(OBJECTS)
+	ranlib $@
+
+clean :
+	-rm -f $(OBJDIR)/*.o *~ $(addprefix $(LIB_INCLUDE)/, $(HEADERS))
+	$(AR) d $(STAT_GEN_LIB) $(OBJECTS)
+	$(RANLIB) $(STAT_GEN_LIB)
+	$(MAKE) $(PARALLEL_MAKE) -C $(TEST_DIR) OPTFLAG="$(OPTFLAG)" --no-print-directory $@
+
+test: all
+	$(MAKE) $(PARALLEL_MAKE) -C $(TEST_DIR) OPTFLAG="$(OPTFLAG)" --no-print-directory $@
+
+$(OBJDIR)/%.o: %.c
+	$(CXX) $(CFLAGS) -o $@ -c $*.c 
+
+$(OBJDIR)/%.o: %.cpp 
+	$(CXX) $(CFLAGS) -o $@ -c $*.cpp -DVERSION="\"$(VERSION)\""
+
+
+.SUFFIXES : .cpp .c .o .X.o $(SUFFIXES)
+
+DFLAGS=-Y
+
+cleandepend:
+	        makedepend -- $(DFLAGS) --
+
+depend:
+	        makedepend -- $(DFLAGS) -- $(TOOLSRC) >/dev/null 2>&1
+
+# DO NOT DELETE THIS LINE -- make depend depends on it

@@ -1,23 +1,22 @@
-DIR_NAME =
+TEST_COMMAND=
+EXE=
 TOOLBASE = 
 SRCONLY = 
 HDRONLY = 
 VERSION = 0.0.1
-PATH_TO_BASE=../..
+PATH_TO_BASE=../../..
 
-# Makefile.tool needs to define:
-#   DIR_NAME - the directory name where this library is located
+# Makefile.testtool needs to define:
+#   TEST_COMMAND - the commands to run under make test
+#   EXE - executable built for this test.
 #   TOOLBASE - the base filename for files with .h & .cpp versions
 #   SRCONLY - any cpp files without headers.
 #   HDRONLY - any header files without cpp
 #   VERSION - if not 0.0.1
-#   PATH_TO_BASE if it is not ../..
-
-include Makefile.tool
+#   PATH_TO_BASE if it is not ../../..
+include Makefile.testtool
 
 include $(PATH_TO_BASE)/Makefile.include
-
-PATH_INCLUDE_TO_LIB_BASE=..
 
 #
 # Goncalo's Generic Makefile -- Compiles and installs a Generic Goncalo Tool
@@ -25,44 +24,36 @@ PATH_INCLUDE_TO_LIB_BASE=..
 #
 
 # Source File Set
+# For best results, consider editing this manually ...
 TOOLHDR = $(TOOLBASE:=.h) $(HDRONLY)
 TOOLSRC = $(TOOLBASE:=.cpp) $(SRCONLY)
 TOOLOBJ = $(TOOLSRC:.cpp=.o)
-
-HEADERS=$(TOOLHDR)
-NEWLIBRARY=$(STAT_GEN_LIB)
+LIBRARY = $(REQ_LIBS)
 OBJECTS=$(patsubst %,$(OBJDIR)/%,$(TOOLOBJ))
 
 # make everything
-all : $(addprefix $(INCLUDE_PATH)/, $(HEADERS)) $(NEWLIBRARY)
+all : $(EXE)
 
-$(INCLUDE_PATH)/%.h: %.h
-	ln  -s $(PATH_INCLUDE_TO_LIB_BASE)/$(DIR_NAME)/$< $@
+# dependencies for executables
+$(EXE) : $(LIBRARY) $(OBJECTS)
+	$(CXX) $(CFLAGS) -o  $@ $(OBJECTS) $(LIBRARY) -lm -lz -lssl
 
-$(OBJECTS): $(TOOLHDR) | $(OBJDIR)
+$(OBJECTS): $(TOOLHDR) $(LIBHDR) | $(OBJDIR)
 
 $(OBJDIR):
 	mkdir $(OBJDIR)
 
-$(NEWLIBRARY) : $(OBJECTS)
-	ar -cr $@ $(OBJECTS)
-	ranlib $@
-
 clean :
-	-rm -f $(OBJDIR)/*.o *~ $(addprefix $(INCLUDE_PATH)/, $(HEADERS))
-	$(AR) d $(STAT_GEN_LIB) $(OBJECTS)
-	$(RANLIB) $(STAT_GEN_LIB)
-	$(MAKE) $(PARALLEL_MAKE) -C $(TEST_DIR) OPTFLAG="$(OPTFLAG)" --no-print-directory $@
+	-rm -f $(OBJDIR)/*.o $(EXE) *~ results/*
 
-test: all
-	$(MAKE) $(PARALLEL_MAKE) -C $(TEST_DIR) OPTFLAG="$(OPTFLAG)" --no-print-directory $@
+test : all
+	$(TEST_COMMAND)
 
 $(OBJDIR)/%.o: %.c
 	$(CXX) $(CFLAGS) -o $@ -c $*.c 
 
 $(OBJDIR)/%.o: %.cpp 
 	$(CXX) $(CFLAGS) -o $@ -c $*.cpp -DVERSION="\"$(VERSION)\""
-
 
 .SUFFIXES : .cpp .c .o .X.o $(SUFFIXES)
 

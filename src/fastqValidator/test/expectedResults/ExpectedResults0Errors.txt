@@ -1,0 +1,17 @@
+
+The following parameters are available.  Ones with "[]" are in effect:
+
+Input Parameters
+ --file [testFile.txt], --baseComposition [ON], --quiet, --params [ON],
+                --minReadLen [10], --maxErrors
+   Space Type : --baseSpace [ON], --colorSpace, --auto
+       Errors : --ignoreErrors, --printableErrors [100]
+
+
+Base Composition Statistics:
+Read Index	%A	%C	%G	%T	%N	Total Reads At Index
+
+Finished processing testFile.txt with 0 lines containing 0 sequences.
+There were a total of 0 errors.
+ERROR: No FastQSequences in the file.
+Returning: 6 : FASTQ_NO_SEQUENCE_ERROR

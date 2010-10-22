@@ -1,0 +1,277 @@
+
+The following parameters are available.  Ones with "[]" are in effect:
+
+Input Parameters
+ --file [testFile.txt], --baseComposition [ON], --quiet, --params [ON],
+                --minReadLen [10], --maxErrors [-1]
+   Space Type : --baseSpace, --colorSpace [ON], --auto
+       Errors : --ignoreErrors, --printableErrors [300]
+
+ERROR on Line 2: Invalid character ('C') in base sequence.
+ERROR on Line 2: Invalid character ('T') in base sequence.
+ERROR on Line 2: Invalid character ('G') in base sequence.
+ERROR on Line 2: Invalid character ('N') in base sequence.
+ERROR on Line 2: Invalid character ('a') in base sequence.
+ERROR on Line 2: Invalid character ('c') in base sequence.
+ERROR on Line 2: Invalid character ('t') in base sequence.
+ERROR on Line 2: Invalid character ('n') in base sequence.
+ERROR on Line 2: Invalid character ('g') in base sequence.
+ERROR on Line 6: Invalid character ('C') in base sequence.
+ERROR on Line 6: Invalid character ('T') in base sequence.
+ERROR on Line 6: Invalid character ('G') in base sequence.
+ERROR on Line 6: Invalid character ('A') in base sequence.
+ERROR on Line 6: Invalid character ('C') in base sequence.
+ERROR on Line 6: Invalid character ('T') in base sequence.
+ERROR on Line 6: Invalid character ('N') in base sequence.
+ERROR on Line 6: Invalid character ('a') in base sequence.
+ERROR on Line 6: Invalid character ('c') in base sequence.
+ERROR on Line 6: Invalid character ('t') in base sequence.
+ERROR on Line 6: Invalid character ('n') in base sequence.
+ERROR on Line 6: Invalid character ('g') in base sequence.
+ERROR on Line 6: Invalid character ('a') in base sequence.
+ERROR on Line 6: Invalid character ('a') in base sequence.
+ERROR on Line 6: Invalid character ('c') in base sequence.
+ERROR on Line 15: Invalid character ('C') in base sequence.
+ERROR on Line 15: Invalid character ('T') in base sequence.
+ERROR on Line 15: Invalid character ('G') in base sequence.
+ERROR on Line 15: Invalid character ('A') in base sequence.
+ERROR on Line 15: Invalid character ('C') in base sequence.
+ERROR on Line 15: Invalid character ('T') in base sequence.
+ERROR on Line 15: Invalid character ('N') in base sequence.
+ERROR on Line 16: Invalid character ('a') in base sequence.
+ERROR on Line 16: Invalid character ('c') in base sequence.
+ERROR on Line 16: Invalid character ('t') in base sequence.
+ERROR on Line 16: Invalid character ('n') in base sequence.
+ERROR on Line 16: Invalid character ('g') in base sequence.
+ERROR on Line 16: Invalid character ('A') in base sequence.
+ERROR on Line 16: Invalid character ('C') in base sequence.
+ERROR on Line 16: Invalid character ('T') in base sequence.
+ERROR on Line 16: Invalid character ('G') in base sequence.
+ERROR on Line 16: Invalid character ('A') in base sequence.
+ERROR on Line 16: Invalid character ('C') in base sequence.
+ERROR on Line 16: Invalid character ('T') in base sequence.
+ERROR on Line 16: Invalid character ('N') in base sequence.
+ERROR on Line 16: Invalid character ('a') in base sequence.
+ERROR on Line 16: Invalid character ('c') in base sequence.
+ERROR on Line 16: Invalid character ('t') in base sequence.
+ERROR on Line 16: Invalid character ('n') in base sequence.
+ERROR on Line 16: Invalid character ('g') in base sequence.
+ERROR on Line 21: Invalid character ('C') in base sequence.
+ERROR on Line 21: Invalid character ('T') in base sequence.
+ERROR on Line 21: Invalid character ('G') in base sequence.
+ERROR on Line 21: Invalid character ('A') in base sequence.
+ERROR on Line 21: Invalid character ('C') in base sequence.
+ERROR on Line 21: Invalid character ('T') in base sequence.
+ERROR on Line 21: Invalid character ('N') in base sequence.
+ERROR on Line 21: Invalid character ('a') in base sequence.
+ERROR on Line 21: Invalid character ('c') in base sequence.
+ERROR on Line 21: Invalid character ('t') in base sequence.
+ERROR on Line 21: Invalid character ('n') in base sequence.
+ERROR on Line 21: Invalid character ('g') in base sequence.
+ERROR on Line 22: Invalid character ('A') in base sequence.
+ERROR on Line 22: Invalid character ('C') in base sequence.
+ERROR on Line 22: Invalid character ('T') in base sequence.
+ERROR on Line 22: Invalid character ('G') in base sequence.
+ERROR on Line 22: Invalid character ('A') in base sequence.
+ERROR on Line 22: Invalid character ('C') in base sequence.
+ERROR on Line 22: Invalid character ('T') in base sequence.
+ERROR on Line 22: Invalid character ('N') in base sequence.
+ERROR on Line 22: Invalid character ('a') in base sequence.
+ERROR on Line 22: Invalid character ('c') in base sequence.
+ERROR on Line 22: Invalid character ('t') in base sequence.
+ERROR on Line 22: Invalid character ('n') in base sequence.
+ERROR on Line 22: Invalid character ('g') in base sequence.
+ERROR on Line 25: The sequence identifier line was too short.
+ERROR on Line 26: Invalid character ('C') in base sequence.
+ERROR on Line 26: Invalid character ('T') in base sequence.
+ERROR on Line 26: Invalid character ('G') in base sequence.
+ERROR on Line 26: Invalid character ('A') in base sequence.
+ERROR on Line 26: Invalid character ('C') in base sequence.
+ERROR on Line 26: Invalid character ('T') in base sequence.
+ERROR on Line 26: Invalid character ('N') in base sequence.
+ERROR on Line 26: Invalid character ('a') in base sequence.
+ERROR on Line 26: Invalid character ('c') in base sequence.
+ERROR on Line 26: Invalid character ('t') in base sequence.
+ERROR on Line 26: Invalid character ('n') in base sequence.
+ERROR on Line 26: Invalid character ('g') in base sequence.
+ERROR on Line 29: First line of a sequence does not begin with @
+ERROR on Line 30: Invalid character ('C') in base sequence.
+ERROR on Line 30: Invalid character ('T') in base sequence.
+ERROR on Line 30: Invalid character ('G') in base sequence.
+ERROR on Line 30: Invalid character ('A') in base sequence.
+ERROR on Line 30: Invalid character ('C') in base sequence.
+ERROR on Line 30: Invalid character ('T') in base sequence.
+ERROR on Line 30: Invalid character ('N') in base sequence.
+ERROR on Line 30: Invalid character ('a') in base sequence.
+ERROR on Line 30: Invalid character ('c') in base sequence.
+ERROR on Line 30: Invalid character ('t') in base sequence.
+ERROR on Line 30: Invalid character ('n') in base sequence.
+ERROR on Line 30: Invalid character ('g') in base sequence.
+ERROR on Line 33: No Sequence Identifier specified before the comment.
+ERROR on Line 34: Invalid character ('C') in base sequence.
+ERROR on Line 34: Invalid character ('T') in base sequence.
+ERROR on Line 34: Invalid character ('G') in base sequence.
+ERROR on Line 34: Invalid character ('A') in base sequence.
+ERROR on Line 34: Invalid character ('C') in base sequence.
+ERROR on Line 34: Invalid character ('T') in base sequence.
+ERROR on Line 34: Invalid character ('N') in base sequence.
+ERROR on Line 34: Invalid character ('a') in base sequence.
+ERROR on Line 34: Invalid character ('c') in base sequence.
+ERROR on Line 34: Invalid character ('t') in base sequence.
+ERROR on Line 34: Invalid character ('n') in base sequence.
+ERROR on Line 34: Invalid character ('g') in base sequence.
+ERROR on Line 37: No Sequence Identifier specified before the comment.
+ERROR on Line 38: Invalid character ('C') in base sequence.
+ERROR on Line 38: Invalid character ('T') in base sequence.
+ERROR on Line 38: Invalid character ('G') in base sequence.
+ERROR on Line 38: Invalid character ('A') in base sequence.
+ERROR on Line 38: Invalid character ('C') in base sequence.
+ERROR on Line 38: Invalid character ('T') in base sequence.
+ERROR on Line 38: Invalid character ('N') in base sequence.
+ERROR on Line 38: Invalid character ('a') in base sequence.
+ERROR on Line 38: Invalid character ('c') in base sequence.
+ERROR on Line 38: Invalid character ('t') in base sequence.
+ERROR on Line 38: Invalid character ('n') in base sequence.
+ERROR on Line 38: Invalid character ('g') in base sequence.
+ERROR on Line 41: Repeated Sequence Identifier: Valid at Lines 1 and 41
+ERROR on Line 42: Invalid character ('C') in base sequence.
+ERROR on Line 42: Invalid character ('T') in base sequence.
+ERROR on Line 42: Invalid character ('G') in base sequence.
+ERROR on Line 42: Invalid character ('N') in base sequence.
+ERROR on Line 42: Invalid character ('a') in base sequence.
+ERROR on Line 42: Invalid character ('c') in base sequence.
+ERROR on Line 42: Invalid character ('t') in base sequence.
+ERROR on Line 42: Invalid character ('n') in base sequence.
+ERROR on Line 42: Invalid character ('g') in base sequence.
+ERROR on Line 46: Invalid character ('C') in base sequence.
+ERROR on Line 46: Invalid character ('T') in base sequence.
+ERROR on Line 46: Invalid character ('N') in base sequence.
+ERROR on Line 46: Invalid character ('a') in base sequence.
+ERROR on Line 46: Invalid character ('H') in base sequence.
+ERROR on Line 46: Invalid character ('t') in base sequence.
+ERROR on Line 46: Invalid character ('n') in base sequence.
+ERROR on Line 46: Invalid character ('g') in base sequence.
+ERROR on Line 47: Invalid character ('a') in base sequence.
+ERROR on Line 47: Invalid character ('B') in base sequence.
+ERROR on Line 47: Invalid character ('Z') in base sequence.
+ERROR on Line 47: Invalid character ('a') in base sequence.
+ERROR on Line 51: Invalid character ('a') in base sequence.
+ERROR on Line 51: Invalid character ('a') in base sequence.
+ERROR on Line 52: Raw Sequence is shorter than the min read length: 3 < 10
+ERROR on Line 55: Invalid character ('C') in base sequence.
+ERROR on Line 55: Invalid character ('T') in base sequence.
+ERROR on Line 55: Invalid character ('G') in base sequence.
+ERROR on Line 55: Invalid character ('A') in base sequence.
+ERROR on Line 55: Invalid character ('C') in base sequence.
+ERROR on Line 55: Invalid character ('T') in base sequence.
+ERROR on Line 55: Invalid character ('N') in base sequence.
+ERROR on Line 55: Invalid character ('a') in base sequence.
+ERROR on Line 55: Invalid character ('c') in base sequence.
+ERROR on Line 55: Invalid character ('t') in base sequence.
+ERROR on Line 55: Invalid character ('n') in base sequence.
+ERROR on Line 55: Invalid character ('g') in base sequence.
+ERROR on Line 56: Looking for continuation of Raw Sequence or '+' instead found a blank line, assuming it was part of Raw Sequence.
+ERROR on Line 57: Looking for continuation of Raw Sequence or '+' instead found a blank line, assuming it was part of Raw Sequence.
+ERROR on Line 61: Invalid character ('C') in base sequence.
+ERROR on Line 61: Invalid character ('T') in base sequence.
+ERROR on Line 61: Invalid character ('G') in base sequence.
+ERROR on Line 61: Invalid character ('C') in base sequence.
+ERROR on Line 61: Invalid character ('a') in base sequence.
+ERROR on Line 61: Invalid character ('c') in base sequence.
+ERROR on Line 61: Invalid character ('g') in base sequence.
+ERROR on Line 61: Invalid character ('n') in base sequence.
+ERROR on Line 61: Invalid character ('c') in base sequence.
+ERROR on Line 63: Invalid character (' ') in quality string.
+ERROR on Line 64: Invalid character (' ') in quality string.
+ERROR on Line 66: Invalid character ('C') in base sequence.
+ERROR on Line 66: Invalid character ('T') in base sequence.
+ERROR on Line 66: Invalid character ('G') in base sequence.
+ERROR on Line 66: Invalid character ('C') in base sequence.
+ERROR on Line 67: Invalid character ('a') in base sequence.
+ERROR on Line 67: Invalid character ('c') in base sequence.
+ERROR on Line 67: Invalid character ('g') in base sequence.
+ERROR on Line 67: Invalid character ('n') in base sequence.
+ERROR on Line 67: Invalid character ('c') in base sequence.
+ERROR on Line 73: Invalid character ('C') in base sequence.
+ERROR on Line 73: Invalid character ('T') in base sequence.
+ERROR on Line 73: Invalid character ('G') in base sequence.
+ERROR on Line 73: Invalid character ('C') in base sequence.
+ERROR on Line 74: Invalid character ('a') in base sequence.
+ERROR on Line 74: Invalid character ('c') in base sequence.
+ERROR on Line 74: Invalid character ('g') in base sequence.
+ERROR on Line 74: Invalid character ('n') in base sequence.
+ERROR on Line 74: Invalid character ('c') in base sequence.
+ERROR on Line 77: Quality string length (12) does not equal raw sequence length (10)
+ERROR on Line 79: Invalid character ('C') in base sequence.
+ERROR on Line 79: Invalid character ('T') in base sequence.
+ERROR on Line 79: Invalid character ('G') in base sequence.
+ERROR on Line 79: Invalid character ('C') in base sequence.
+ERROR on Line 79: Invalid character ('a') in base sequence.
+ERROR on Line 79: Invalid character ('c') in base sequence.
+ERROR on Line 79: Invalid character ('g') in base sequence.
+ERROR on Line 79: Invalid character ('n') in base sequence.
+ERROR on Line 79: Invalid character ('c') in base sequence.
+ERROR on Line 83: Invalid character ('C') in base sequence.
+ERROR on Line 83: Invalid character ('T') in base sequence.
+ERROR on Line 83: Invalid character ('G') in base sequence.
+ERROR on Line 83: Invalid character ('C') in base sequence.
+ERROR on Line 83: Invalid character ('a') in base sequence.
+ERROR on Line 83: Invalid character ('c') in base sequence.
+ERROR on Line 83: Invalid character ('g') in base sequence.
+ERROR on Line 83: Invalid character ('n') in base sequence.
+ERROR on Line 83: Invalid character ('c') in base sequence.
+ERROR on Line 87: Invalid character ('C') in base sequence.
+ERROR on Line 87: Invalid character ('T') in base sequence.
+ERROR on Line 87: Invalid character ('G') in base sequence.
+ERROR on Line 87: Invalid character ('C') in base sequence.
+ERROR on Line 87: Invalid character ('a') in base sequence.
+ERROR on Line 87: Invalid character ('c') in base sequence.
+ERROR on Line 87: Invalid character ('g') in base sequence.
+ERROR on Line 87: Invalid character ('n') in base sequence.
+ERROR on Line 87: Invalid character ('c') in base sequence.
+ERROR on Line 88: Sequence Identifier on '+' line does not equal the one on the '@' line.
+ERROR on Line 91: Invalid character ('0') in base sequence.
+ERROR on Line 95: Invalid character ('C') in base sequence.
+ERROR on Line 95: Invalid character ('T') in base sequence.
+ERROR on Line 95: Invalid character ('G') in base sequence.
+ERROR on Line 95: Invalid character ('C') in base sequence.
+ERROR on Line 95: Invalid character ('a') in base sequence.
+ERROR on Line 95: Invalid character ('c') in base sequence.
+ERROR on Line 95: Invalid character ('g') in base sequence.
+ERROR on Line 95: Invalid character ('n') in base sequence.
+ERROR on Line 95: Invalid character ('c') in base sequence.
+ERROR on Line 95: Reached the end of the file without a '+' line.
+ERROR on Line 95: Incomplete Sequence, missing Quality String.
+
+Base Composition Statistics:
+Read Index	%A	%C	%G	%T	%N	Total Reads At Index
+         0   100.00    0.00    0.00    0.00    0.00	20
+         1     0.00  100.00    0.00    0.00    0.00	2
+         2     0.00    0.00  100.00    0.00    0.00	2
+         3     0.00    0.00    0.00  100.00    0.00	2
+         4     0.00    0.00    0.00    0.00  100.00	2
+         5   100.00    0.00    0.00    0.00    0.00	2
+         6     0.00    0.00    0.00  100.00    0.00	2
+         7     0.00    0.00  100.00    0.00    0.00	2
+         8     0.00  100.00    0.00    0.00    0.00	2
+         9    33.33    0.00    0.00    0.00   66.67	3
+        10    50.00    0.00    0.00    0.00   50.00	4
+        11    50.00   50.00    0.00    0.00    0.00	4
+        12     0.00  100.00    0.00    0.00    0.00	4
+        13     0.00    0.00  100.00    0.00    0.00	2
+        14     0.00    0.00    0.00  100.00    0.00	2
+        15 No Valid Bases found.
+        16 No Valid Bases found.
+        17 No Valid Bases found.
+        18 No Valid Bases found.
+        19 No Valid Bases found.
+        20 No Valid Bases found.
+        21 No Valid Bases found.
+        22 No Valid Bases found.
+        23 No Valid Bases found.
+        24 No Valid Bases found.
+        25 No Valid Bases found.
+
+Finished processing testFile.txt with 95 lines containing 21 sequences.
+There were a total of 235 errors.
+Returning: 1 : FASTQ_INVALID

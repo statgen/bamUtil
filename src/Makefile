@@ -1,8 +1,5 @@
-PATH_TO_BASE=..
-include $(PATH_TO_BASE)/Makefile.include
-
-SUBDIRS="zlib samtools general bam fastq glf"
-TEST_SUBDIRS="zlib general bam fastq glf"
+SUBDIRS="bam fastqValidator"
+TEST_SUBDIRS=$(SUBDIRS)
 
 # Build in all subdirectories.
 #

@@ -1,4 +1,62 @@
-PATH_TO_BASE=../$(PATH_TO_SRC_BASE)
-include $(PATH_TO_BASE)/Makefile.lib
+EXE=
+TOOLBASE=
+SRCONLY=
+HDRONLY = 
+VERSION = 0.0.1
+PATH_TO_BASE=../..
+BIN_DIR=$(PATH_TO_BASE)/src/bin
 
-BIN_DIR=$(PATH_TO_SRC_BASE)/bin
+# Makefile.tool needs to define:
+#   EXE - the executable name
+#   TOOLBASE - the base filename for files with .h & .cpp versions
+#   SRCONLY - any cpp files without headers.
+#   HDRONLY - any header files without cpp
+#   VERSION - if not 0.0.1
+#   PATH_TO_BASE if it is not ../..
+#   BIN_DIR if it is not ../../src/bin
+include Makefile.tool
+
+include $(PATH_TO_BASE)/Makefile.include
+
+TOOLHDR = $(TOOLBASE:=.h) $(HDRONLY)
+TOOLSRC = $(TOOLBASE:=.cpp) $(SRCONLY)
+TOOLOBJ = $(TOOLSRC:.cpp=.o)
+LIBRARY = $(REQ_LIBS)
+OBJECTS=$(patsubst %,$(OBJDIR)/%,$(TOOLOBJ))
+
+# make everything
+all : $(EXE)
+
+# dependencies for executables
+$(EXE) : $(LIBRARY) $(OBJECTS) $(BINDIR)
+	$(CXX) $(CFLAGS) -o $(BIN_DIR)/$@ $(OBJECTS) $(LIBRARY) -lm -lz -lssl
+
+$(OBJECTS): $(TOOLHDR) $(LIBHDR) | $(OBJDIR)
+
+$(OBJDIR):
+	mkdir $(OBJDIR)
+
+clean :
+	-rm -f $(OBJDIR)/*.o $(BIN_DIR)/$(EXE) *~
+	$(MAKE) $(PARALLEL_MAKE) -C $(TEST_DIR) OPTFLAG="$(OPTFLAG)" --no-print-directory $@
+
+test : all
+	$(MAKE) $(PARALLEL_MAKE) -C $(TEST_DIR) OPTFLAG="$(OPTFLAG)" --no-print-directory $@
+
+$(OBJDIR)/%.o: %.c
+	$(CXX) $(CFLAGS) -o $@ -c $*.c 
+
+$(OBJDIR)/%.o: %.cpp 
+	$(CXX) $(CFLAGS) -o $@ -c $*.cpp -DVERSION="\"$(VERSION)\""
+
+.SUFFIXES : .cpp .c .o .X.o $(SUFFIXES)
+
+DFLAGS=-Y
+
+cleandepend:
+	        makedepend -- $(DFLAGS) --
+
+depend:
+	        makedepend -- $(DFLAGS) -- $(TOOLSRC) >/dev/null 2>&1
+
+# DO NOT DELETE THIS LINE -- make depend depends on it

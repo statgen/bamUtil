@@ -1,5 +1,6 @@
 PATH_TO_LIB_BASE=../..
-include $(PATH_TO_LIB_BASE)/Makefile.lib
+PATH_TO_BASE=../$(PATH_TO_LIB_BASE)
+include $(PATH_TO_BASE)/Makefile.include
 
 SUBDIRS="inputFileTest cigar"
 
@@ -54,7 +55,7 @@ clean:
 
 GTEST_COMPILE_FLAG=-DGTEST_HAS_TR1_TUPLE=0 -D GTEST_HAS_RTTI=0
 
-CFLAGS=-pipe -Wall -Wno-trigraphs -ggdb  $(OPTFLAG) -I. -I.. -I$(LIB_INCLUDE) -D__ZLIB_AVAILABLE__  -D_FILE_OFFSET_BITS=64 -D__STDC_LIMIT_MACROS $(GTEST_COMPILE_FLAG)
+CFLAGS=-pipe -Wall -Wno-trigraphs -ggdb  $(OPTFLAG) -I. -I.. -I$(INCLUDE_PATH) -D__ZLIB_AVAILABLE__  -D_FILE_OFFSET_BITS=64 -D__STDC_LIMIT_MACROS $(GTEST_COMPILE_FLAG)
 
 LIBRARY=$(REQ_LIBS)
 

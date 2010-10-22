@@ -1,0 +1,19 @@
+# This Makefile requires that the following values be previously set.
+# PATH_TO_BASE - the path to this Makefile - the path to the base of the tree.
+
+LIB_PATH = $(PATH_TO_BASE)/lib
+STAT_GEN_LIB = $(LIB_PATH)/libStatGen.a
+REQ_LIBS = $(STAT_GEN_LIB) $(LIB_PATH)/samtools/libbam.a
+OBJDIR = obj
+TEST_DIR = test
+
+ZLIB_PATH = $(LIB_PATH)/zlib
+SAMTOOLS_PATH = $(LIB_PATH)/samtools
+INCLUDE_PATH = $(LIB_PATH)/include
+
+include $(PATH_TO_BASE)/Makefile.toolchain
+
+OPTFLAG?=-ggdb -O0 -fno-rtti
+CXX=g++ 
+
+CFLAGS= -Wall  $(OPTFLAG) -I$(INCLUDE_PATH) -I$(SAMTOOLS_PATH) -D__ZLIB_AVAILABLE__  -D_FILE_OFFSET_BITS=64 -D__STDC_LIMIT_MACROS

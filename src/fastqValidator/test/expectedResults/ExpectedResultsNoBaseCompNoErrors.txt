@@ -1,0 +1,12 @@
+
+The following parameters are available.  Ones with "[]" are in effect:
+
+Input Parameters
+ --file [testFile.txt], --baseComposition, --quiet, --params [ON],
+                --minReadLen [10], --maxErrors [-1]
+   Space Type : --baseSpace [ON], --colorSpace, --auto
+       Errors : --ignoreErrors [ON], --printableErrors
+
+Finished processing testFile.txt with 95 lines containing 21 sequences.
+There were a total of 53 errors.
+Returning: 1 : FASTQ_INVALID

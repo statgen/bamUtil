@@ -1,0 +1,94 @@
+
+The following parameters are available.  Ones with "[]" are in effect:
+
+Input Parameters
+ --file [testFile.txt], --baseComposition [ON], --quiet, --params [ON],
+                --minReadLen [2], --maxErrors [-1]
+   Space Type : --baseSpace, --colorSpace, --auto [ON]
+       Errors : --ignoreErrors, --printableErrors [100]
+
+ERROR on Line 2: Invalid character ('.') in base sequence.
+ERROR on Line 2: Invalid character ('0') in base sequence.
+ERROR on Line 2: Invalid character ('1') in base sequence.
+ERROR on Line 2: Invalid character ('2') in base sequence.
+ERROR on Line 2: Invalid character ('3') in base sequence.
+ERROR on Line 11: Invalid character ('1') in base sequence.
+ERROR on Line 11: Invalid character ('2') in base sequence.
+ERROR on Line 11: Invalid character ('3') in base sequence.
+ERROR on Line 11: Invalid character ('.') in base sequence.
+ERROR on Line 11: Invalid character ('0') in base sequence.
+ERROR on Line 11: Invalid character ('3') in base sequence.
+ERROR on Line 11: Invalid character ('2') in base sequence.
+ERROR on Line 11: Invalid character ('1') in base sequence.
+ERROR on Line 11: Invalid character ('.') in base sequence.
+ERROR on Line 11: Invalid character ('0') in base sequence.
+ERROR on Line 11: Invalid character ('1') in base sequence.
+ERROR on Line 11: Invalid character ('1') in base sequence.
+ERROR on Line 25: The sequence identifier line was too short.
+ERROR on Line 29: First line of a sequence does not begin with @
+ERROR on Line 33: No Sequence Identifier specified before the comment.
+ERROR on Line 37: No Sequence Identifier specified before the comment.
+ERROR on Line 41: Repeated Sequence Identifier: Valid at Lines 1 and 41
+ERROR on Line 42: Invalid character ('.') in base sequence.
+ERROR on Line 42: Invalid character ('0') in base sequence.
+ERROR on Line 42: Invalid character ('1') in base sequence.
+ERROR on Line 42: Invalid character ('2') in base sequence.
+ERROR on Line 42: Invalid character ('3') in base sequence.
+ERROR on Line 46: Invalid character ('H') in base sequence.
+ERROR on Line 46: Invalid character ('0') in base sequence.
+ERROR on Line 47: Invalid character ('B') in base sequence.
+ERROR on Line 47: Invalid character ('Z') in base sequence.
+ERROR on Line 56: Looking for continuation of Raw Sequence or '+' instead found a blank line, assuming it was part of Raw Sequence.
+ERROR on Line 57: Looking for continuation of Raw Sequence or '+' instead found a blank line, assuming it was part of Raw Sequence.
+ERROR on Line 63: Invalid character (' ') in quality string.
+ERROR on Line 64: Invalid character (' ') in quality string.
+ERROR on Line 77: Quality string length (12) does not equal raw sequence length (10)
+ERROR on Line 88: Sequence Identifier on '+' line does not equal the one on the '@' line.
+ERROR on Line 91: Invalid character ('0') in base sequence.
+ERROR on Line 91: Invalid character ('1') in base sequence.
+ERROR on Line 91: Invalid character ('2') in base sequence.
+ERROR on Line 91: Invalid character ('3') in base sequence.
+ERROR on Line 91: Invalid character ('.') in base sequence.
+ERROR on Line 91: Invalid character ('0') in base sequence.
+ERROR on Line 91: Invalid character ('3') in base sequence.
+ERROR on Line 91: Invalid character ('2') in base sequence.
+ERROR on Line 91: Invalid character ('1') in base sequence.
+ERROR on Line 91: Invalid character ('.') in base sequence.
+ERROR on Line 91: Invalid character ('0') in base sequence.
+ERROR on Line 91: Invalid character ('1') in base sequence.
+ERROR on Line 91: Invalid character ('1') in base sequence.
+ERROR on Line 95: Reached the end of the file without a '+' line.
+ERROR on Line 95: Incomplete Sequence, missing Quality String.
+
+Base Composition Statistics:
+Read Index	%A	%C	%G	%T	%N	Total Reads At Index
+         0   100.00    0.00    0.00    0.00    0.00	20
+         1     5.26   94.74    0.00    0.00    0.00	19
+         2     5.26    0.00    0.00   94.74    0.00	19
+         3     0.00    0.00   94.44    0.00    5.56	18
+         4    50.00   38.89    0.00    0.00   11.11	18
+         5    52.94   47.06    0.00    0.00    0.00	17
+         6     0.00   50.00    0.00   50.00    0.00	18
+         7     0.00    0.00   38.89   11.11   50.00	18
+         8    44.44    0.00    5.56    0.00   50.00	18
+         9     0.00   88.24   11.76    0.00    0.00	17
+        10    11.11    0.00    0.00   88.89    0.00	9
+        11     0.00    0.00    0.00    0.00  100.00	8
+        12     0.00    0.00  100.00    0.00    0.00	8
+        13   100.00    0.00    0.00    0.00    0.00	4
+        14    33.33   66.67    0.00    0.00    0.00	3
+        15     0.00   33.33    0.00   66.67    0.00	3
+        16     0.00    0.00  100.00    0.00    0.00	2
+        17   100.00    0.00    0.00    0.00    0.00	2
+        18     0.00  100.00    0.00    0.00    0.00	2
+        19     0.00    0.00    0.00  100.00    0.00	2
+        20     0.00    0.00    0.00    0.00  100.00	2
+        21   100.00    0.00    0.00    0.00    0.00	2
+        22     0.00  100.00    0.00    0.00    0.00	2
+        23     0.00    0.00    0.00  100.00    0.00	2
+        24     0.00    0.00    0.00    0.00  100.00	2
+        25     0.00    0.00  100.00    0.00    0.00	2
+
+Finished processing testFile.txt with 95 lines containing 21 sequences.
+There were a total of 52 errors.
+Returning: 1 : FASTQ_INVALID

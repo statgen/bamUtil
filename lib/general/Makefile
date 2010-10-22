@@ -1,10 +1,9 @@
 DIR_NAME=general
 PATH_TO_LIB_BASE=..
-include $(PATH_TO_LIB_BASE)/Makefile.lib
+PATH_TO_BASE=../$(PATH_TO_LIB_BASE)
+include $(PATH_TO_BASE)/Makefile.include
 
-#include ../Makefile.lib
-
-OPTFLAG?=-O0 -fno-rtti
+PATH_INCLUDE_TO_LIB_BASE=..
 
 #
 # trying to strike the right balance on error/warning
@@ -79,13 +78,13 @@ OBJECT_FILES=$(SOURCES:.cpp=.o)
 OBJECTS=$(patsubst %,$(OBJDIR)/%,$(OBJECT_FILES))
 
 
-all: $(addprefix $(LIB_INCLUDE)/, $(HEADERS)) $(STAT_GEN_LIB)
+all: $(addprefix $(INCLUDE_PATH)/, $(HEADERS)) $(STAT_GEN_LIB)
 
 $(STAT_GEN_LIB) : $(OBJECTS)
 	$(AR) cr $@ $(OBJECTS)
 	$(RANLIB) $@
 
-$(LIB_INCLUDE)/%.h: %.h
+$(INCLUDE_PATH)/%.h: %.h
 	ln  -s $(PATH_INCLUDE_TO_LIB_BASE)/$(DIR_NAME)/$< $@
 
 $(OBJDIR)/%.o : %.cpp
@@ -110,7 +109,7 @@ selftest:
 		fi \
 	done
 clean:
-	-rm -rf $(OBJECTS) $(addprefix $(LIB_INCLUDE)/, $(HEADERS))
+	-rm -rf $(OBJECTS) $(addprefix $(INCLUDE_PATH)/, $(HEADERS))
 	$(AR) d $(STAT_GEN_LIB) $(OBJECTS)
 	$(RANLIB) $(STAT_GEN_LIB)
 	(cd test; $(MAKE) $(PARALLEL_MAKE) OPTFLAG="$(OPTFLAG)" --no-print-directory $@);
