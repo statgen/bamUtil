@@ -1,0 +1,2 @@
+TEST_COMMAND = ./samTests.sh; \
+               ./testFilter.sh
