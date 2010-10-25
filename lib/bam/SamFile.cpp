@@ -981,7 +981,7 @@ bool SamFile::processNewSection(SamFileHeader &header)
     // but not yet converted to reference id.
     if(!myRefName.empty())
     {
-        myRefID = header.GetReferenceID(myRefName.c_str());
+        myRefID = header.getReferenceID(myRefName.c_str());
         // Clear the myRefName length so this code is only executed once.
         myRefName.clear();
     }

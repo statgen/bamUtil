@@ -1911,17 +1911,17 @@ void validateHeaderFields(SamFileHeader& samHeader)
 
     ////////////////////////////////////////////////////////
     // Test getting the reference ID.
-    assert(samHeader.GetReferenceID("2") == 1);
+    assert(samHeader.getReferenceID("2") == 1);
     std::string refIDStdString = "X";
-    assert(samHeader.GetReferenceID(refIDStdString.c_str()) == 22);
+    assert(samHeader.getReferenceID(refIDStdString.c_str()) == 22);
     String refIDString = "22";
-    assert(samHeader.GetReferenceID(refIDString) == 21);
-    assert(samHeader.GetReferenceID(refIDString.c_str()) == 21);
-    assert(samHeader.GetReferenceID("Z") == 23);
-    assert(samHeader.GetReferenceID("*") == -1);
+    assert(samHeader.getReferenceID(refIDString) == 21);
+    assert(samHeader.getReferenceID(refIDString.c_str()) == 21);
+    assert(samHeader.getReferenceID("Z") == 23);
+    assert(samHeader.getReferenceID("*") == -1);
     refIDString = "*";
-    assert(samHeader.GetReferenceID(refIDString) == -1);
-    assert(samHeader.GetReferenceID(refIDString.c_str()) == -1);
+    assert(samHeader.getReferenceID(refIDString) == -1);
+    assert(samHeader.getReferenceID(refIDString.c_str()) == -1);
 }
 
 void validateHeaderString(SamFileHeader& samHeader)

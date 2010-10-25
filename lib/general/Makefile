@@ -19,6 +19,7 @@ SOURCES_WITH_HEADER=\
 	BaseQualityHelper.cpp \
 	BaseUtilities.cpp \
 	BgzfFileType.cpp \
+	CharBuffer.cpp \
 	Cigar.cpp \
 	CigarRoller.cpp \
 	Error.cpp \
@@ -127,6 +128,7 @@ $(OBJDIR)/BaseUtilities.o: BaseUtilities.h
 $(OBJDIR)/BgzfFileType.o: BgzfFileType.h $(SAMTOOLS_PATH)/bgzf.h
 $(OBJDIR)/BgzfFileType.o: $(ZLIB_PATH)/zlib.h $(ZLIB_PATH)/zconf.h
 $(OBJDIR)/BgzfFileType.o: FileType.h
+$(OBJDIR)/CharBuffer.o: CharBuffer.h InputFile.h
 $(OBJDIR)/Cigar.o: Cigar.h Generic.h StringBasics.h InputFile.h FileType.h
 $(OBJDIR)/Cigar.o: STLUtilities.h
 $(OBJDIR)/CigarRoller.o: CigarRoller.h Cigar.h Generic.h StringBasics.h InputFile.h

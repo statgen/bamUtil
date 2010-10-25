@@ -207,7 +207,7 @@ bool SamValidator::isValid(SamFileHeader& samHeader, SamRecord& samRecord,
                            validationErrors);
 
     status &= isValidRefID(samRecord.getReferenceID(), 
-                           samHeader.referenceContigs, 
+                           *samHeader.getReferenceInfo(), 
                            validationErrors);
 
     status &= isValid1BasedPos(samRecord.get1BasedPosition(),
@@ -473,21 +473,23 @@ bool SamValidator::isValidRname(const char* rname,
     return(status);
 }
 
-bool SamValidator::isValidRefID(int32_t refID, const StringArray& refContigs,
+
+bool SamValidator::isValidRefID(int32_t refID, 
+                                const SamReferenceInfo& refInfo,
                                 SamValidationErrors& validationErrors)
 {
     // Validation for rID is:
-    //   a) must be between -1 and the number of refContigs.
+    //   a) must be between -1 and the number of refInfo.
     //      -1 is allowed, and otherwise it must properly index into the array.
 
     bool status = true;
-    if((refID < -1) || (refID >= refContigs.Length()))
+    if((refID < -1) || (refID >= refInfo.getNumEntries()))
     {
         // Reference ID is too large or too small.
         String message = "Invalid Reference ID, out of range (";
         message += refID;
         message += ") must be between -1 and ";
-        message += refContigs.Length() - 1;
+        message += refInfo.getNumEntries() - 1;
         message += ".";
 
         validationErrors.addError(SamValidationError::INVALID_REF_ID,

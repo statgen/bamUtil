@@ -69,12 +69,9 @@ SamStatus::Status SamInterface::readHeader(IFILE filePtr, SamFileHeader& header)
         int length = tags.Integer("LN");
       
         if (name < 0 || length < 0) continue;
-      
-        header.referenceHash.Add(values[name], 
-                                 header.referenceContigs.Length());
-      
-        header.referenceContigs.Push(values[name]);
-        header.referenceLengths.Push(values[length].AsInteger());
+
+        header.addReferenceInfo(values[name], 
+                                values[length].AsInteger());
       
     } while (1);
    

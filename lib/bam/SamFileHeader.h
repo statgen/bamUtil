@@ -21,9 +21,7 @@
 #include <map>
 #include <stdint.h>
 
-#include "IntArray.h"
-#include "StringArray.h"
-#include "StringHash.h"
+#include "SamReferenceInfo.h"
 #include "SamHeaderHD.h"
 #include "SamHeaderSQ.h"
 #include "SamHeaderRG.h"
@@ -52,9 +50,16 @@ public:
     // Return true if successfully set (even if set to "")
     bool getHeaderString(std::string& header) const;
 
-    int   GetReferenceID(const String & referenceName);
-    int   GetReferenceID(const char* referenceName);
-    const String & GetReferenceLabel(int id);
+    int   getReferenceID(const String & referenceName);
+    int   getReferenceID(const char* referenceName);
+    const String & getReferenceLabel(int id) const;
+
+    // Get the Reference Information
+    const SamReferenceInfo* getReferenceInfo() const;
+
+    // Add reference sequence name and reference sequence length to the header.
+    void addReferenceInfo(const char* referenceSequenceName, 
+                          int32_t referenceSequenceLength);
 
     ////////////////////////////////////////////////////////////////////////
     // Set Values in the header
@@ -258,10 +263,6 @@ public:
     // Populate the reference info from the SQ fields.
     void generateReferenceInfo();
 
-    //private:
-    StringArray    referenceContigs;
-    StringIntHash  referenceHash;
-    IntArray       referenceLengths;
 
 private:
     // Parse the header string.
@@ -290,6 +291,9 @@ private:
 
     // There can be multiple PG types, indexed by ID.
     StringHash myPGs;
+
+    // Reference Name information
+    SamReferenceInfo myReferenceInfo;
 
     // Vector of comments
     std::vector<std::string> myComments;

@@ -23,7 +23,8 @@
 const std::string SamFileHeader::EMPTY_RETURN = "";
 
 SamFileHeader::SamFileHeader()
-    : myHD(NULL)
+    : myHD(NULL),
+      myReferenceInfo()
 {
     resetHeader();
 }
@@ -60,9 +61,7 @@ bool SamFileHeader::copy(const SamFileHeader& header)
 
     resetHeader();
     // Copy Reference contigs, hash, lengths.
-    referenceContigs = header.referenceContigs;
-    referenceHash = header.referenceHash;
-    referenceLengths = header.referenceLengths;
+    myReferenceInfo = header.myReferenceInfo;
 
     // Copy the records by getting the other header's header string
     // and parsing it.
@@ -82,9 +81,7 @@ bool SamFileHeader::copy(const SamFileHeader& header)
 // Reset the header for a new entry, clearing out previous values.
 void SamFileHeader::resetHeader()
 {
-    referenceContigs.Clear();
-    referenceHash.Clear();
-    referenceLengths.Clear();
+    myReferenceInfo.clear();
 
     // Clear the pointers to the header records.  They are deleted when the
     // vector is cleaned up.
@@ -135,43 +132,37 @@ bool SamFileHeader::getHeaderString(std::string& header) const
 }
 
 
-int SamFileHeader::GetReferenceID(const String & referenceName)
+int SamFileHeader::getReferenceID(const String & referenceName)
 {
-    if (referenceName == "*")
-        return -1;
-
-    int id = referenceHash.Find(referenceName);
-
-    if (id >= 0)
-        return referenceHash.Integer(id);
-
-    id = referenceContigs.Length();
-    referenceContigs.Push(referenceName);
-    referenceLengths.Push(0);
-    referenceHash.Add(referenceName, id);
-
-    return id;
+    return(myReferenceInfo.getReferenceID(referenceName));
 }
 
-int SamFileHeader::GetReferenceID(const char* referenceName)
-{
-    String referenceNameString = referenceName;
 
-    return(GetReferenceID(referenceNameString));
+int SamFileHeader::getReferenceID(const char* referenceName)
+{
+    return(myReferenceInfo.getReferenceID(referenceName));
 }
 
-const String & SamFileHeader::GetReferenceLabel(int id)
+
+const String & SamFileHeader::getReferenceLabel(int id) const
 {
-    static String noname("*");
-
-    if ((id < 0) || (id >= referenceContigs.Length()))
-    {
-        return noname;
-    }
-
-    return referenceContigs[id];
+    return(myReferenceInfo.getReferenceLabel(id));
 }
 
+
+// Get the Reference Information
+const SamReferenceInfo* SamFileHeader::getReferenceInfo() const
+{
+    return(&myReferenceInfo);
+}
+
+
+// Add reference sequence name and reference sequence length to the header.
+void SamFileHeader::addReferenceInfo(const char* referenceSequenceName, 
+                                     int32_t referenceSequenceLength)
+{
+    myReferenceInfo.add(referenceSequenceName, referenceSequenceLength);
+}
 
 // Add a header line that has an const char* value.
 bool SamFileHeader::addHeaderLine(const char* type, const char* tag, 
@@ -941,9 +932,7 @@ void SamFileHeader::generateReferenceInfo()
         {
             // Successfully converted the reference to an integer
             // so add the reference information.
-            referenceHash.Add(refName, referenceContigs.Length());
-            referenceContigs.Push(refName);
-            referenceLengths.Push(refLen);
+            myReferenceInfo.add(refName, refLen);
         }
         hdrRec = getNextHeaderRecord(sqIndex, SamHeaderRecord::SQ);
     }

@@ -149,7 +149,7 @@ public:
     // Validate the rname without validating against the header.
     static bool isValidRname(const char* rname,
                              SamValidationErrors& validationErrors);
-    static bool isValidRefID(int32_t refID, const StringArray& refContigs, 
+    static bool isValidRefID(int32_t refID, const SamReferenceInfo& refInfo, 
                              SamValidationErrors& validationErrors);
     static bool isValid1BasedPos(int32_t pos, 
                                  SamValidationErrors& validationErrors);

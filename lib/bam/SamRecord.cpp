@@ -205,7 +205,7 @@ bool SamRecord::setReferenceName(SamFileHeader& header,
     myStatus = SamStatus::SUCCESS;
 
     myReferenceName = referenceName;
-    myRecordPtr->myReferenceID = header.GetReferenceID(referenceName);
+    myRecordPtr->myReferenceID = header.getReferenceID(referenceName);
 
     return true;
 }
@@ -290,7 +290,7 @@ bool SamRecord::setMateReferenceName(SamFileHeader& header,
 
     // Set the Mate Reference ID.
     myRecordPtr->myMateReferenceID = 
-        header.GetReferenceID(myMateReferenceName);
+        header.getReferenceID(myMateReferenceName);
 
     return true;
 }
@@ -2228,9 +2228,9 @@ void SamRecord::setVariablesForNewBuffer(SamFileHeader& header)
     // Lookup the reference name & mate reference name associated with this
     // record.
     myReferenceName = 
-        header.GetReferenceLabel(myRecordPtr->myReferenceID);
+        header.getReferenceLabel(myRecordPtr->myReferenceID);
     myMateReferenceName = 
-        header.GetReferenceLabel(myRecordPtr->myMateReferenceID);      
+        header.getReferenceLabel(myRecordPtr->myMateReferenceID);      
 
     // Clear the SAM Strings that are now not in-sync with the buffer.
     myReadName.SetLength(0);

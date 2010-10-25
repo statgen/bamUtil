@@ -16,6 +16,7 @@
  */
 
 #include "BamInterface.h"
+#include "CharBuffer.h"
 
 BamInterface::BamInterface()
 {
@@ -48,9 +49,11 @@ SamStatus::Status BamInterface::readHeader(IFILE filePtr, SamFileHeader& header)
     int referenceCount;
     // Read the number of references sequences.
     ifread(filePtr, &referenceCount, sizeof(int));
-   
-    header.referenceContigs.Dimension(referenceCount);
-    header.referenceLengths.Dimension(referenceCount);
+
+//     header.referenceContigs.Dimension(referenceCount);
+//     header.referenceLengths.Dimension(referenceCount);
+    CharBuffer refName;
+
     // Read each reference sequence
     for (int i = 0; i < referenceCount; i++)
     {
@@ -59,13 +62,13 @@ SamStatus::Status BamInterface::readHeader(IFILE filePtr, SamFileHeader& header)
         ifread(filePtr, &nameLength, sizeof(int));
       
         // Read the name.
-        ifread(filePtr, header.referenceContigs[i].LockBuffer(nameLength),
-               nameLength);
+        refName.readFromFile(filePtr, nameLength);
+
         // Read the length of the reference sequence.
-        ifread(filePtr, &header.referenceLengths[i], sizeof(int));
-        header.referenceContigs[i].UnlockBuffer();
-      
-        header.referenceHash.Add(header.referenceContigs[i], i);
+        int32_t refLen;
+        ifread(filePtr, &refLen, sizeof(int));
+
+        header.addReferenceInfo(refName.c_str(), refLen);
     }
 
     // Successfully read the file.
@@ -116,30 +119,39 @@ SamStatus::Status BamInterface::writeHeader(IFILE filePtr,
     }
     
     ////////////////////////////////////////////////////////
-    // Write the number of sequences - size of referenceLengths.
-    int32_t numSeq = header.referenceLengths.Length();
+    // Write the Reference Information.
+    const SamReferenceInfo* refInfo = header.getReferenceInfo();
+    if(refInfo == NULL)
+    {
+        // Failed to get the reference info.
+        return(SamStatus::INVALID);
+    }
+
+    // Get the number of sequences.    
+    int32_t numSeq = refInfo->getNumEntries();
 
     // Check to see if the reference info has not yet been set.
     // If not, check for the SQ header.
     if(numSeq == 0)
     {
         header.generateReferenceInfo();
-        numSeq = header.referenceLengths.Length();
+        numSeq = refInfo->getNumEntries();
     }
     ifwrite(filePtr, &numSeq, sizeof(int32_t));
 
     // Write each reference sequence
     for (int i = 0; i < numSeq; i++)
     {
+        const char* refName = refInfo->getReferenceName(i);
         // Add one for the null value.
-        int32_t nameLength = header.referenceContigs[i].Length() + 1;
+        int32_t nameLength = strlen(refName) + 1;
         // Write the length of the reference name.
         ifwrite(filePtr, &nameLength, sizeof(int32_t));
       
         // Write the name.
-        ifwrite(filePtr, header.referenceContigs[i].c_str(), nameLength);
+        ifwrite(filePtr, refName, nameLength);
         // Write the length of the reference sequence.
-        int32_t refLen = header.referenceLengths[i];
+        int32_t refLen = refInfo->getReferenceLength(i);
         ifwrite(filePtr, &refLen, sizeof(int32_t));
     }
 

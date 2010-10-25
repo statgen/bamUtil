@@ -19,7 +19,7 @@
 #define __BUFFER_H__
 
 #include <stdint.h>
-#include <InputFile.h>
+#include "InputFile.h"
 
 class CharBuffer
 {
