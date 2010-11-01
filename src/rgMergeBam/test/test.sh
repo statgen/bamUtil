@@ -1,6 +1,6 @@
 ERROR=false
 
-../../bin/rgMergeBam -o results/merged.bam -l testFiles/merge.list
+../../bin/rgMergeBam --out results/merged.bam --list testFiles/merge.list
 
 diff results/merged.bam expected/merged.bam
 if [ $? -ne 0 ]

@@ -64,7 +64,7 @@ uint32_t addTokenizedStrings(const std::string& str, const std::string& delimite
 
 // print Usage
 void printUsage(std::ostream& os) {
-     os << "Usage: rgMergeBam (options) --list=<RGAListFile> --out=<outBamFile>\n" << std::endl;
+     os << "Usage: rgMergeBam [-v] [--log logFile] --list <listFile> --out <outFile>\n" << std::endl;
      os << "RGAMerge merges multiple sorted BAM files while appending readgroup taggs\n";
      os << "Required parameters :" << std::endl;
      os << "--out/-o : Output BAM file (sorted)" << std::endl;
@@ -81,7 +81,7 @@ void printUsage(std::ostream& os) {
      os << "\tPL : Platform/technology used to produce the read" << std::endl;
      os << "\t* (Required fields)" << std::endl;
      os << "Optional parameters : " << std::endl;
-     os << "--log/-l : Log file" << std::endl;
+     os << "--log/-L : Log file" << std::endl;
      os << "--verbose/-v : Turn on verbose mode" << std::endl;
 }
 
