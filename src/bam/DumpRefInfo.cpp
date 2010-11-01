@@ -98,18 +98,27 @@ int dumpRefInfo(int argc, char **argv)
     SamFileHeader samHeader;
     samIn.ReadHeader(samHeader);
 
-    for(int i = 0; i < samHeader.referenceContigs.Length(); i++)
+    const SamReferenceInfo* refInfoPtr = samHeader.getReferenceInfo();
+    if(refInfoPtr == NULL)
     {
-        std::cout << "Reference Index " << i;
-        std::cout << "; Name: " << samHeader.referenceContigs[i] << std::endl;
+        std::cerr << "Unable to get reference information.\n";
     }
-
-    if(samHeader.referenceContigs.Length() == 0)
+    else
     {
-        // There is no reference info.
-        std::cerr << "The header contains no reference information.\n";
+        int numReferences = refInfoPtr->getNumEntries();
+        
+        for(int i = 0; i < numReferences; i++)
+        {
+            std::cout << "Reference Index " << i;
+            std::cout << "; Name: " << refInfoPtr->getReferenceName(i)
+                      << std::endl;
+        }
+        if(numReferences == 0)
+        {
+            // There is no reference info.
+            std::cerr << "The header contains no reference information.\n";
+        }
     }
-
 
     // If we are to print the references as found in the records, loop
     // through reading the records.

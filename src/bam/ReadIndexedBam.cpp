@@ -62,8 +62,20 @@ int readIndexedBam(const char* inputFilename,
     SamRecord samRecord;
     SamValidationErrors samInvalidErrors;
 
+    // Get the number of references.
+    int numReferences = 0;
+    const SamReferenceInfo* refInfoPtr = samHeader.getReferenceInfo();
+    if(refInfoPtr == NULL)
+    {
+        std::cerr << "Unable to get reference information.\n";
+    }
+    else
+    {
+        numReferences = refInfoPtr->getNumEntries();
+    }
+
     // Loop through each Reference.
-    for(int i = -1; i < samHeader.referenceContigs.Length(); i++)
+    for(int i = -1; i < numReferences; i++)
     {
         int numSectionRecords = 0;
         samIn.SetReadSection(i);
