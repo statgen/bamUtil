@@ -1,0 +1,3 @@
+BAM	ID	SM	LB
+testFiles/sortedBam1.bam	RG1	mySAMPLE	mylib1
+testFiles/sortedBam2.bam	RG2	mySAMPLE	mylib2
