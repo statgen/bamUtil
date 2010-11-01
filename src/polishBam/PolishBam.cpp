@@ -53,7 +53,7 @@ void printUsage(std::ostream& os) {
      os << "-o/--out : output BAM file" << std::endl;
      os << "Optional parameters :" << std::endl;
      os << "-v : turn on verbose mode" << std::endl;
-     os << "-l/--log : writes logfile. <outBamFile>.log will be used if value is unspecified" << std::endl;
+     os << "-l/--log : writes logfile with specified name." << std::endl;
      os << "--HD : add @HD header line" << std::endl;
      os << "--RG : add @RG header line" << std::endl;
      os << "--PG : add @PG header line" << std::endl;
@@ -84,7 +84,7 @@ int main(int argc, char ** argv)
       { "in", required_argument, NULL, 'i'},
       { "out", required_argument, NULL, 'o'},
       { "verbose", no_argument, NULL, 'v'},
-      { "log", optional_argument, NULL, 'l'},
+      { "log", required_argument, NULL, 'l'},
       { "clear", no_argument, NULL, 0},
       { "AS", required_argument, NULL, 0},
       { "UR", required_argument, NULL, 0},
@@ -120,12 +120,7 @@ int main(int argc, char ** argv)
       bVerbose = true;
     }
     else if ( c == 'l' ) {
-      if ( getopt_long_options[n_option_index].has_arg ) {
 	sLogFile = optarg;
-      }
-      else {
-	sLogFile = "__NONE__";
-      }
     }
     else if ( strcmp(getopt_long_options[n_option_index].name,"AS") == 0 ) {
       sAS = optarg;
