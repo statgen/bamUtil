@@ -205,7 +205,7 @@ InputFile::~InputFile()
 }
 
 
-int InputFile::ifprintf(InputFile* output, char * format, ...)
+int ifprintf(IFILE output, char * format, ...)
 {
     String buffer;
 

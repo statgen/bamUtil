@@ -219,8 +219,6 @@ public:
         return myFileTypePtr->seek(offset, origin);
     }
 
-    int ifprintf(InputFile* output, char * format, ...);
-
 protected:
     // Open a file. Called by the constructor.
     // Returns true if the file was successfully opened, false otherwise.
@@ -343,7 +341,7 @@ inline bool ifseek(IFILE file, long int offset, int origin)
     return (file->ifseek(offset, origin));
 }
 
-int ifprintf(InputFile output, char * format, ...);
+int ifprintf(IFILE output, char * format, ...);
 
 inline IFILE operator >> (IFILE stream, std::string &str)
 {
