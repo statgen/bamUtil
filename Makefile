@@ -36,9 +36,12 @@ all test:
 		fi \
 	done
 
+RELEASE_FILE=statGen.$(VERSION).tgz
 release:
 	(make clean)
-	tar cvz --exclude="*~" --exclude="statGen.*.tgz" --exclude-vcs -f statGen.$(VERSION).tgz ../statgen
+# the touch gets rid of a tar warning
+	touch $(RELEASE_FILE)
+	tar cvz --exclude="*~" --exclude="statGen.*.tgz" --exclude-vcs -f $(RELEASE_FILE) ../statgen
 
 clean:
 	@for i in "$(SUBDIRS)"; do \
