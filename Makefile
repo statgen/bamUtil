@@ -11,9 +11,7 @@ OPTFLAG?=-O4 -fno-rtti
 # if important, figure out the right way to detect support for this flag:
 # OPTFLAG+=$(shell if [ `uname` = Linux ] ; then echo '-march=native' ; fi)
 
-FASTQ_VERSION=0.0.3
-GLF_VERSION=1.0.0
-BAM_VERSION=0.0.2
+VERSION=0.1.0
 
 #
 # see http://www.gnu.org/software/make/manual/make.html#Phony-Targets
@@ -38,30 +36,9 @@ all test:
 		fi \
 	done
 
-fastQRelease:
-	(cd thirdParty; make clean)
-	(cd libcsg; make clean)
-	(cd libcsg/test; make clean)
-	(cd fastQFile; make clean)
-	(cd fastQFile/test; make clean)
-	tar cvz --exclude="*~" --exclude-vcs -f fastQFile_$(FASTQ_VERSION).tgz -C .. pipeline/thirdParty pipeline/libcsg pipeline/fastQFile pipeline/Makefile pipeline/Makefile.toolchain
-
-
-glfRelease:
-	(cd thirdParty; make clean)
-	(cd libcsg; make clean)
-	(cd libcsg/test; make clean)
-	(cd glf; make clean)
-	tar cvz --exclude="*~" --exclude-vcs -f glfMerge_$(GLF_VERSION).tgz -C .. pipeline/thirdParty pipeline/libcsg pipeline/glf pipeline/Makefile pipeline/Makefile.toolchain
-
-
-bamRelease:
-	(cd thirdParty; make clean)
-	(cd libcsg; make clean)
-	(cd libcsg/test; make clean)
-	(cd bam; make clean)
-	tar cvz --exclude="*~" --exclude-vcs -f bam.$(BAM_VERSION).tgz -C .. pipeline/thirdParty pipeline/libcsg pipeline/bam pipeline/Makefile pipeline/Makefile.toolchain
-
+release:
+	(make clean)
+	tar cvz --exclude="*~" --exclude="statGen_*.tgz" --exclude-vcs -f statGen_$(VERSION).tgz ../statgen
 
 clean:
 	@for i in "$(SUBDIRS)"; do \
@@ -81,9 +58,3 @@ clean:
 		    break ; \
 		fi \
 	done
-
-release:
-	make clean
-	find . -name CVS | xargs rm -rf
-	find . -name '*~' | xargs rm -rf
-
