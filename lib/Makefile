@@ -10,7 +10,7 @@ SUBDIRS= "zlib samtools " $(TEST_SUBDIRS)
 # for a way of improving the following:
 #
 
-all: 
+all: tclap
 	@for i in "$(SUBDIRS)"; do \
 		if [ "XXX$$i" = XXX ] ;\
 		then \
@@ -48,7 +48,23 @@ test: all
 		fi \
 	done
 
+#
+# from http://tclap.sourceforge.net/
+#
+tclap: tclap-1.2.0
+	ln -s tclap-1.2.0 tclap
+
+#
+# tclap is header only - the tests are done using the
+# host compiler, but no libraries are used, so no need
+# to pass EXPORT_TOOLCHAIN
+#
+tclap-1.2.0: tclap-1.2.0.tar.gz
+	tar xvzf tclap-1.2.0.tar.gz
+	(cd tclap-1.2.0; ./configure; make)
+
 clean:
+	rm -rf tclap-1.2.0 tclap
 	@for i in "$(SUBDIRS)"; do \
 		if [ "XXX$$i" = XXX ] ;\
 		then \

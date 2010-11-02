@@ -10,6 +10,7 @@ TEST_DIR = test
 ZLIB_PATH = $(LIB_PATH)/zlib
 SAMTOOLS_PATH = $(LIB_PATH)/samtools
 INCLUDE_PATH = $(LIB_PATH)/include
+TCLAP_PATH = $(LIB_PATH)/tclap
 
 include $(PATH_TO_BASE)/Makefile.toolchain
 
