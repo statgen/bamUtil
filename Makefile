@@ -38,7 +38,7 @@ all test:
 
 release:
 	(make clean)
-	tar cvz --exclude="*~" --exclude="statGen_*.tgz" --exclude-vcs -f statGen_$(VERSION).tgz ../statgen
+	tar cvz --exclude="*~" --exclude="statGen.*.tgz" --exclude-vcs -f statGen.$(VERSION).tgz ../statgen
 
 clean:
 	@for i in "$(SUBDIRS)"; do \
