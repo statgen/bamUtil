@@ -14,9 +14,9 @@ BIN_DIR=$(PATH_TO_BASE)/src/bin
 #   VERSION - if not 0.0.1
 #   PATH_TO_BASE if it is not ../..
 #   BIN_DIR if it is not ../../src/bin
-include Makefile.tool
-
 include $(PATH_TO_BASE)/Makefile.include
+
+include Makefile.tool
 
 TOOLHDR = $(TOOLBASE:=.h) $(HDRONLY)
 TOOLSRC = $(TOOLBASE:=.cpp) $(SRCONLY)
@@ -50,19 +50,18 @@ test : all
         fi
 
 $(OBJDIR)/%.o: %.c
-	$(CXX) $(CFLAGS) -o $@ -c $*.c 
+	$(CXX) $(CFLAGS) -o $@ -c $<
 
 $(OBJDIR)/%.o: %.cpp 
-	$(CXX) $(CFLAGS) -o $@ -c $*.cpp -DVERSION="\"$(VERSION)\""
+	$(CXX) $(CFLAGS) -o $@ -c $< -DVERSION="\"$(VERSION)\""
 
 .SUFFIXES : .cpp .c .o .X.o $(SUFFIXES)
 
 DFLAGS=-Y
 
 cleandepend:
-	        makedepend -- $(DFLAGS) --
+	        makedepend -fMakefile.tool -- $(DFLAGS) --
 
 depend:
-	        makedepend -- $(DFLAGS) -- $(TOOLSRC) >/dev/null 2>&1
+	        makedepend -fMakefile.tool -- $(DFLAGS) -- $(TOOLSRC) >/dev/null 2>&1
 
-# DO NOT DELETE THIS LINE -- make depend depends on it
