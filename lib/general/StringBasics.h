@@ -71,7 +71,7 @@ public:
     String & Copy(const String & s, int start, int count);
     String & Copy(const char * s);
 
-    bool     IsEmpty()
+    bool     IsEmpty() const
     {
         return len == 0;
     }
