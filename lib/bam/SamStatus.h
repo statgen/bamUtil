@@ -87,7 +87,7 @@ public:
     // to this status's type.
     bool operator != (const SamStatus::Status& compStatus) const;
 
-    // Overload operator != to determine if the passed in type is equal
+    // Overload operator == to determine if the passed in type is equal
     // to this status's type.
     bool operator == (const SamStatus::Status& compStatus) const;
       

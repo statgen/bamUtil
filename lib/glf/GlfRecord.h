@@ -65,7 +65,7 @@ public:
     //bool setType1(all fields for type 1);
     bool setLk(int index, uint8_t value);
 
-//     // Accessors for setting record type 1;
+    // Accessors for setting record type 2
 //     bool setType2(all fields for type 2);
     bool setLkHom1(uint8_t lk);
     bool setLkHom2(uint8_t lk);
