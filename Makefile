@@ -11,7 +11,8 @@ OPTFLAG?=-O4 -fno-rtti
 # if important, figure out the right way to detect support for this flag:
 # OPTFLAG+=$(shell if [ `uname` = Linux ] ; then echo '-march=native' ; fi)
 
-VERSION=0.1.0
+VERSION=0.1.1
+RELEASE_FILE=statGen.$(VERSION).tgz
 
 #
 # see http://www.gnu.org/software/make/manual/make.html#Phony-Targets
@@ -36,12 +37,11 @@ all test:
 		fi \
 	done
 
-RELEASE_FILE=statGen.$(VERSION).tgz
 release:
 	(make clean)
 # the touch gets rid of a tar warning
 	touch $(RELEASE_FILE)
-	tar cvz --exclude="*~" --exclude="statGen.*.tgz" --exclude-vcs -f $(RELEASE_FILE) ../statgen
+	tar cvz --exclude="*~" --exclude=$(RELEASE_FILE) --exclude-vcs -f $(RELEASE_FILE) ../statgen
 
 clean:
 	@for i in "$(SUBDIRS)"; do \

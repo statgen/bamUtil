@@ -1,5 +1,5 @@
 VPATH=depthGCContent:libsrc:qplot
-CFLAGS+=-Ilibsrc -IdepthGCContent -Iqplot
+PROG_INCLUDES=-Ilibsrc -IdepthGCContent -Iqplot
 
 EXE=qplot
 TOOLBASE=GCContent  GenomeRegionSeqStats QSamFlag Sequence BamQC QCStats
