@@ -50,8 +50,6 @@ public:
 
     void print() const;
 
-    bool setRefBase(uint8_t refBase);
-
     // Accessors to set the generic values.
     bool setRtypeRef(uint8_t rtypeRef);
     bool setRecordType(uint8_t recType);
