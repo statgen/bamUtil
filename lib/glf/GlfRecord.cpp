@@ -247,67 +247,6 @@ bool GlfRecord::setRmsMapQ(uint8_t rmsMapQ)
     return(true);
 }
 
-bool GlfRecord::setLk(int index, uint8_t value)
-{
-    if((index < 0) || (index >= NUM_REC1_LIKELIHOOD))
-    {
-        //  Out of range.
-        throw(GlfException(GlfStatus::UNKNOWN, 
-                           "Trying to set Record Type 1 likelihood position< 0 or >= 10."));
-        return(false);
-    }
-
-    // In range.
-    myRec1Base.lk[index] = value;
-    return(true);
-}
-
-bool GlfRecord::setLkHom1(uint8_t lk)
-{
-    myRec2Base.lkHom1 = lk;
-    return(true);
-}
-
-bool GlfRecord::setLkHom2(uint8_t lk)
-{
-    myRec2Base.lkHom2 = lk;
-    return(true);
-}
-
-bool GlfRecord::setLkHet(uint8_t lk)
-{
-    myRec2Base.lkHet = lk;
-    return(true);
-}
-
-bool GlfRecord::setInsertionIndel1(const std::string& indelSeq)
-{
-    myRec2Base.indelLen1 = indelSeq.length();
-    myIndelSeq1 = indelSeq;
-    return(true);
-}
-
-bool GlfRecord::setDeletionIndel1(const std::string& indelSeq)
-{
-    myRec2Base.indelLen1 = -(indelSeq.length());
-    myIndelSeq1 = indelSeq;
-    return(true);
-}
-
-bool GlfRecord::setInsertionIndel2(const std::string& indelSeq)
-{
-    myRec2Base.indelLen2 = indelSeq.length();
-    myIndelSeq2 = indelSeq;
-    return(true);
-}
-
-bool GlfRecord::setDeletionIndel2(const std::string& indelSeq)
-{
-    myRec2Base.indelLen2 = -(indelSeq.length());
-    myIndelSeq2 = indelSeq;
-    return(true);
-}
-
 // Accessors to get the gneric values.
 char GlfRecord::getRefBaseChar() const
 {
@@ -336,7 +275,7 @@ uint32_t GlfRecord::getOffset()
     return(0);
 }
 
-uint8_t GlfRecord::getMinDepth()
+uint32_t GlfRecord::getMinDepth()
 {
     if(getRecordType() == 1)
     {
@@ -395,8 +334,24 @@ uint8_t GlfRecord::getRmsMapQ()
                        "Tried to call getRmsMapQ for Record not of type 1 or 2."));
     return(0);
 }
+
     
-    // Accessors for getting record type 1;
+// Accessors for getting record type 1
+bool GlfRecord::setLk(int index, uint8_t value)
+{
+    if((index < 0) || (index >= NUM_REC1_LIKELIHOOD))
+    {
+        //  Out of range.
+        throw(GlfException(GlfStatus::UNKNOWN, 
+                           "Trying to set Record Type 1 likelihood position< 0 or >= 10."));
+        return(false);
+    }
+
+    // In range.
+    myRec1Base.lk[index] = value;
+    return(true);
+}
+
 uint8_t GlfRecord::getLk(int index)
 {
     if(getRecordType() != 1)
@@ -413,8 +368,55 @@ uint8_t GlfRecord::getLk(int index)
     }
     return(myRec1Base.lk[index]);
 }
+
     
-// Accessors for setting record type 1;
+// Accessors for getting record type 2
+bool GlfRecord::setLkHom1(uint8_t lk)
+{
+    myRec2Base.lkHom1 = lk;
+    return(true);
+}
+
+bool GlfRecord::setLkHom2(uint8_t lk)
+{
+    myRec2Base.lkHom2 = lk;
+    return(true);
+}
+
+bool GlfRecord::setLkHet(uint8_t lk)
+{
+    myRec2Base.lkHet = lk;
+    return(true);
+}
+
+bool GlfRecord::setInsertionIndel1(const std::string& indelSeq)
+{
+    myRec2Base.indelLen1 = indelSeq.length();
+    myIndelSeq1 = indelSeq;
+    return(true);
+}
+
+bool GlfRecord::setDeletionIndel1(const std::string& indelSeq)
+{
+    myRec2Base.indelLen1 = -(indelSeq.length());
+    myIndelSeq1 = indelSeq;
+    return(true);
+}
+
+bool GlfRecord::setInsertionIndel2(const std::string& indelSeq)
+{
+    myRec2Base.indelLen2 = indelSeq.length();
+    myIndelSeq2 = indelSeq;
+    return(true);
+}
+
+bool GlfRecord::setDeletionIndel2(const std::string& indelSeq)
+{
+    myRec2Base.indelLen2 = -(indelSeq.length());
+    myIndelSeq2 = indelSeq;
+    return(true);
+}
+
 uint8_t GlfRecord::getLkHom1()
 {
     if(getRecordType() != 2)

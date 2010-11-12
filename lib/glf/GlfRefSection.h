@@ -29,39 +29,59 @@ public:
     GlfRefSection();
     ~GlfRefSection();
 
-    // Copy Constructor   
+    /// Copy Constructor
+    /// \param refSection reference section to copy into this one.
     GlfRefSection(const GlfRefSection& refSection);
 
-    // Overload operator = to copy the passed in refSection into this refSection.
+    /// Overload operator= to copy the passed in refSection into this one.
+    /// \param refSection reference section to copy into this one.
     GlfRefSection & operator = (const GlfRefSection& refSection);
 
-    // Overload operator = to copy the passed in refSection into this refSection.
+    /// Copy the passed in refSection into this refSection.
+    /// \param refSection reference section to copy into this one.
     bool copy(const GlfRefSection& refSection);
 
+    /// Clear this reference section back to the default setting.
     void resetRefSection();
    
-    // Read the refSection from the specified file.  Assumes the file is in
-    // the correct position for reading the refSection.
+    /// Read the refSection from the specified file (file MUST be in
+    /// the correct position for reading a refSection).
+    /// \param filePtr file to read from that is in the correct position.
+    /// \return true if the reference section was successfully read from the 
+    /// file, false if not.
     bool read(IFILE filePtr);
 
-    // Write the refSection to the specified file.
+    /// Write the refSection to the specified file.
+    /// \param filePtr file to write to that is in the correct position.
+    /// \return true if the reference section was successfully written to the 
+    /// file, false if not.
     bool write(IFILE filePtr) const;
 
     /////////////
     // Accessors.
 
-    //Get
+    /// Get the reference name.
+    /// \param name string to populate with the reference name.
+    /// \return true if the name was successfully returned, false if not.
     bool getName(std::string& name) const;
+
+    /// Get the length of the reference sequence.
+    /// \return reference sequence length for this reference section.
     uint32_t getRefLen() const;
 
-    // Set
+    /// Set the reference name.
+    /// \param name reference name to set this section to.
+    /// \return true if the name was successfully set, false if not.
     bool setName(const std::string& name);
+    /// Set the length of the reference sequence.
+    /// \param refLen reference sequence length to set this section to.
+    /// \return true if the length was successfully set, false if not.
     bool setRefLen(uint32_t refLen);
 
+    /// Print the reference section in a readable format.
     void print() const;
 
 private:
-
     CharBuffer myRefName;
     uint32_t myRefLen;
 };
