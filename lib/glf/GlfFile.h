@@ -27,7 +27,12 @@
 class GlfFile
 {
 public:
-    enum OpenType {READ, WRITE};
+    /// Enum for indicating whether to open the file for read or write.
+    enum OpenType 
+        {
+            READ, ///< open for reading.
+            WRITE ///< open for writing.
+        };
 
     /// Default Constructor.
     GlfFile();
@@ -41,17 +46,19 @@ public:
     virtual ~GlfFile();
    
     /// Open a glf file for reading with the specified filename.
-    /// \param  filename: the glf file to open for reading.
+    /// \param  filename glf file to open for reading.
     /// \return true = success; false = failure.   
     bool openForRead(const char * filename);
 
     /// Open a glf file for reading with the specified filename and read the
     /// header into the specified header.
-    /// \param  filename: the glf file to open for reading.
+    /// \param  filename glf file to open for reading.
+    /// \param  header header object to populate with the file's glf header.
     /// \return true = success; false = failure.   
     bool openForRead(const char * filename, GlfHeader& header);
 
     /// Open a glf file for writing with the specified filename.
+    /// \param  filename glf file to open for writing.
     /// \return true = success; false = failure.
     bool openForWrite(const char * filename);
 
@@ -65,34 +72,42 @@ public:
    
     /// Reads the header section from the file and stores it in
     /// the passed in header.
+    /// \param  header header object to populate with the file's glf header.
     /// \return true = success; false = failure.
     bool readHeader(GlfHeader& header);
    
     /// Writes the specified header into the file.
+    /// \param  header header object to write into the file.
     /// \return true = success; false = failure.
     bool writeHeader(GlfHeader& header);
 
     /// Gets the next reference section from the file & stores it in the
-    /// passed in section.  It will read until a new section is found.
+    /// passed in section.  It will read until a new section is found (TODO).
+    /// \param  refSection object to populate with the file's next reference 
+    ///                    section.
     /// \return true  = section was successfully set.
     ///         false = section was not successfully set.
     bool getNextRefSection(GlfRefSection& refSection);
    
     /// Write the reference section to the file.
+    /// \param  refSection reference section to write to the file.
     /// \return true = succes; false = failure.
     bool writeRefSection(const GlfRefSection& refSection);
 
     /// Gets the nextrecord from the file & stores it in the
     /// passed in record.
+    /// \param  record object to populate with the file's next record. 
     /// \return true  = record was successfully set.
     ///         false = record was not successfully set.
     bool getNextRecord(GlfRecord& record);
    
     /// Writes the specified record into the file.
+    /// \param record record to write to the file.
     /// \return true = success; false = failure.
     bool writeRecord(const GlfRecord& record);
    
     /// Return the number of records that have been read/written so far.
+    /// \return number of records that have been read/written so far.
     uint32_t getCurrentRecordCount();
 
     /// Get the Status of the last call that sets status.
@@ -103,35 +118,45 @@ public:
     }
 
     /// Get the Status of the last call that sets status.
+    /// \return status of the last method that sets a status.
     inline GlfStatus::Status getStatus()
     {
         return(myStatus.getStatus());
     }
 
     /// Get the Status of the last call that sets status.
+    /// \return status message of the last method that sets a status.
     inline const char* getStatusMessage()
     {
         return(myStatus.getStatusMessage());
     }
 
-protected:
+private:
+    /// reset this file including all its attributes.
     void resetFile();
 
+    /// Pointer to the file
     IFILE  myFilePtr;
 
     /// Flag to indicate if a file is open for reading.
     bool myIsOpenForRead;
     /// Flag to indicate if a file is open for writing.
     bool myIsOpenForWrite;
-    /// Flag to indicate if a header has been read/written - required before
-    /// being able to read/write a record.
-    bool myHasHeader;
-    /// Flag to indicate if a reference section has been read/written -
-    /// required before being able to read/write a record.
-    bool myHasRefSection;
-    
 
-    /// Keep a count of the number of records that have been read/written so far.
+    /// End marker that is inserted when writing files if a new section
+    /// is specified without one or if the file is closed without writing
+    /// an endMarker.
+    GlfRecord myEndMarker;
+
+    /// Track the state of this file as to what it is expecting to read next.
+    enum EXPECTED_SECTION
+    {
+        HEADER,
+        REF_SECTION,
+        RECORD
+    } myNextSection;
+    
+    /// Keep count of the number of records that have been read/written so far.
     uint32_t myRecordCount;
 
     /// The status of the last GlfFile command.
@@ -147,7 +172,8 @@ public:
     GlfFileReader();
 
     /// Constructor that opens the specified file for read.
-    GlfFileReader(const char* filename);
+     /// \param filename file to open for reading.
+   GlfFileReader(const char* filename);
 
     virtual ~GlfFileReader();
 };
@@ -160,6 +186,7 @@ public:
     GlfFileWriter();
 
     /// Constructor that opens the specified file for write.
+    /// \param filename file to open for writing.
     GlfFileWriter(const char* filename);
 
     virtual ~GlfFileWriter();

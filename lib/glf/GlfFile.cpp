@@ -21,7 +21,8 @@
 
 // Constructor, init variables.
 GlfFile::GlfFile()
-    : myFilePtr(NULL)
+    : myFilePtr(NULL),
+      myEndMarker()
 {
     resetFile();
 }
@@ -30,7 +31,8 @@ GlfFile::GlfFile()
 // Constructor, init variables and open the specified file based on the
 // specified mode (READ/WRITE).  Default is READ..
 GlfFile::GlfFile(const char* filename, OpenType mode)
-    : myFilePtr(NULL)
+    : myFilePtr(NULL),
+      myEndMarker()
 {
     resetFile();
 
@@ -164,7 +166,7 @@ bool GlfFile::readHeader(GlfHeader& header)
         return(false);
     }
 
-    if(myHasHeader == true)
+    if(myNextSection != HEADER)
     {
         // The header has already been read.
         myStatus.setStatus(GlfStatus::FAIL_ORDER, 
@@ -176,7 +178,7 @@ bool GlfFile::readHeader(GlfHeader& header)
     if(header.read(myFilePtr))
     {
         // The header has now been successfully read.
-        myHasHeader = true;
+        myNextSection = REF_SECTION;
         myStatus = GlfStatus::SUCCESS;
         return(true);
     }
@@ -201,7 +203,7 @@ bool GlfFile::writeHeader(GlfHeader& header)
         return(false);
     }
 
-    if(myHasHeader == true)
+    if(myNextSection != HEADER)
     {
         // The header has already been written.
         myStatus.setStatus(GlfStatus::FAIL_ORDER, 
@@ -213,7 +215,7 @@ bool GlfFile::writeHeader(GlfHeader& header)
     if(header.write(myFilePtr))
     {
         // The header has now been successfully written.
-        myHasHeader = true;
+        myNextSection = REF_SECTION;
         myStatus = GlfStatus::SUCCESS;
         return(true);
     }
@@ -239,7 +241,7 @@ bool GlfFile::getNextRefSection(GlfRefSection& refSection)
         return(false);
     }
 
-    if(myHasHeader == false)
+    if(myNextSection == HEADER)
     {
         // The header has not yet been read.
         // TODO - maybe just read the header.
@@ -249,18 +251,37 @@ bool GlfFile::getNextRefSection(GlfRefSection& refSection)
         return(false);
     }
 
+    // TODO - move to the section if not in the right spot...
+    if(myNextSection == RECORD)
+    {
+        GlfRecord record;
+        while(getNextRecord(record))
+        {
+            // Nothing to do, with the record.
+        }
+    }
+
     // Check for end of file.  If end of file, return false.
     if(isEOF())
     {
         return(false);
     }
-    // TODO - move to the section if not in the right spot...
+
+    if(myNextSection != REF_SECTION)
+    {
+        // Failed reading all the records, so throw exception.
+        myStatus.setStatus(GlfStatus::FAIL_IO, 
+                           "Failed to get to a reference section.");
+        throw(GlfException(myStatus));
+        return(false);
+    }
 
     // Ready to read the section:
     if(refSection.read(myFilePtr))
     {
         myStatus = GlfStatus::SUCCESS;
-        myHasRefSection = true;
+        // Next a record should be read.
+        myNextSection = RECORD;
         return(true);
     }
 
@@ -282,15 +303,13 @@ bool GlfFile::writeRefSection(const GlfRefSection& refSection)
     if(myIsOpenForWrite == false)
     {
         // File is not open for write
-        // -OR-
-        // The header has already been written.
         myStatus.setStatus(GlfStatus::FAIL_ORDER, 
                            "Cannot write reference section since the file is not open for writing");
         throw(GlfException(myStatus));
         return(false);
     }
 
-    if(myHasHeader == false)
+    if(myNextSection == HEADER)
     {
         // The header has not been written.
         myStatus.setStatus(GlfStatus::FAIL_ORDER, 
@@ -299,11 +318,33 @@ bool GlfFile::writeRefSection(const GlfRefSection& refSection)
        return(false);
     }
 
+    if(myNextSection == RECORD)
+    {
+        // did not write a end marker record, so write one now.
+        if(!writeRecord(myEndMarker))
+        {
+            // Failed to write the end marker record.
+            myStatus.setStatus(GlfStatus::FAIL_IO,
+                               "Failed to write end of chromosome/section marker.");
+            throw(GlfException(myStatus));
+            return(false);
+        }
+    }
+
+    if(myNextSection != REF_SECTION)
+    {
+        // Not ready to write a reference section.
+        myStatus.setStatus(GlfStatus::FAIL_IO,
+                           "Not ready for a chromosome/section header.");
+        throw(GlfException(myStatus));
+        return(false);
+    }
+
     if(refSection.write(myFilePtr))
     {
         myStatus = GlfStatus::SUCCESS;
         // A reference section has now been successfully written.
-        myHasRefSection = true;
+        myNextSection = RECORD;
         return(true);
     }
 
@@ -328,17 +369,16 @@ bool GlfFile::getNextRecord(GlfRecord& record)
         return(false);
     }
 
-    if(myHasHeader == false)
+    if(myNextSection == HEADER)
     {
         // The header has not yet been read.
-        // TODO - maybe just read the header.
         myStatus.setStatus(GlfStatus::FAIL_ORDER, 
                            "Cannot read reference section since the header has not been read.");
         throw(GlfException(myStatus));
         return(false);
     }
     
-    if(myHasRefSection == false)
+    if(myNextSection == REF_SECTION)
     {
         // The reference section has not yet been read.
         // TODO - maybe just read the reference section.
@@ -359,6 +399,8 @@ bool GlfFile::getNextRecord(GlfRecord& record)
         else
         {
             // Not an error, so no exception thrown, but no more records.
+            // The next thing is a reference section.
+            myNextSection = REF_SECTION;
             return(false);
         }
     }
@@ -384,7 +426,7 @@ bool GlfFile::writeRecord(const GlfRecord& record)
        return(false);
     }
 
-    if(myHasHeader == false)
+    if(myNextSection == HEADER)
     {
         // The header has not been written.
         myStatus.setStatus(GlfStatus::FAIL_ORDER, 
@@ -393,7 +435,7 @@ bool GlfFile::writeRecord(const GlfRecord& record)
         return(false);
     }
 
-    if(myHasRefSection == false)
+    if(myNextSection != RECORD)
     {
         // The header has not been written.
         myStatus.setStatus(GlfStatus::FAIL_ORDER, 
@@ -406,6 +448,13 @@ bool GlfFile::writeRecord(const GlfRecord& record)
     {
         myStatus = GlfStatus::SUCCESS;
         // The record has now been successfully written.
+
+        // Check if it was the end marker - if so, set that next a 
+        // reference section is expected.
+        if(record.getRecordType() == 0)
+        {
+            myNextSection = REF_SECTION;
+        }
         return(true);
     }
 
@@ -431,15 +480,27 @@ void GlfFile::resetFile()
     if (myFilePtr != NULL)
     {
         // If we already have an open file, close it.
+        // First check to see if an end record needs to be written, which
+        // is the case if the state is RECORD.
+        if(myNextSection == RECORD)
+        {
+            if(!writeRecord(myEndMarker))
+            {
+                // Failed to write the end marker record.
+                myStatus.setStatus(GlfStatus::FAIL_IO,
+                                   "Failed to write end of chromosome/section marker.");
+                throw(GlfException(myStatus));
+            }
+        }
         ifclose(myFilePtr);
         myFilePtr = NULL;
     }
 
     myIsOpenForRead = false;
     myIsOpenForWrite = false;
-    myHasHeader = false;
     myRecordCount = 0;
     myStatus = GlfStatus::SUCCESS;
+    myNextSection = HEADER;
 }
 
 
