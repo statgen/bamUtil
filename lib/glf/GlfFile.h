@@ -43,6 +43,8 @@ public:
     /// \param mode mode to use for opening the file (defaults to READ).
     GlfFile(const char* filename, OpenType mode = READ);
 
+    /// Closes the file if there is one open, adding an end marker record
+    /// if there is a previous section and one has not already been written.
     virtual ~GlfFile();
    
     /// Open a glf file for reading with the specified filename.
@@ -62,7 +64,8 @@ public:
     /// \return true = success; false = failure.
     bool openForWrite(const char * filename);
 
-    /// Close the file if there is one open.
+    /// Close the file if there is one open, adding an end marker record
+    /// if there is a previous section and one has not already been written.
     void close();
 
     /// Returns whether or not the end of the file has been reached.
@@ -82,14 +85,15 @@ public:
     bool writeHeader(GlfHeader& header);
 
     /// Gets the next reference section from the file & stores it in the
-    /// passed in section.  It consumes records until a new section is found.
+    /// passed in section, consuming records until a new section is found.
     /// \param  refSection object to populate with the file's next reference 
     ///                    section.
     /// \return true  = section was successfully set.
     ///         false = section was not successfully set.
     bool getNextRefSection(GlfRefSection& refSection);
    
-    /// Write the reference section to the file.
+    /// Write the reference section to the file, adding an end marker record
+    /// if there is a previous section and one has not already been written.
     /// \param  refSection reference section to write to the file.
     /// \return true = succes; false = failure.
     bool writeRefSection(const GlfRefSection& refSection);
@@ -98,7 +102,7 @@ public:
     /// passed in record.
     /// \param  record object to populate with the file's next record. 
     /// \return true  = record was successfully set.
-    ///         false = record was not successfully set.
+    ///         false = record not successfully set or for the endMarker record.
     bool getNextRecord(GlfRecord& record);
    
     /// Writes the specified record into the file.
