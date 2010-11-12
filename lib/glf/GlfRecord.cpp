@@ -617,6 +617,7 @@ void GlfRecord::writeType2(IFILE filePtr) const
         std::string errorString = errorMsg.c_str();
         throw(GlfException(GlfStatus::FAIL_IO, errorString));
     }
+    len = myIndelSeq2.length();
     numWrite = ifwrite(filePtr, myIndelSeq2.c_str(), len);
     if(numWrite != len)
     {
