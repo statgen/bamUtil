@@ -27,13 +27,29 @@
 class GlfException : public std::exception
 {
 public:
-    // constructor specifies default error message
+    /// Constructor that sets the exception to a default status
+    /// and error message.
     GlfException();
+
+    /// Constructor that sets the exception to a default status
+    /// and the specified error message. 
+    /// \param what_arg error message associated with this exception.
     GlfException(const std::string& what_arg);
+
+    /// Constructor that sets the exception to the specified status
+    /// and error message. 
+    /// \param status glf status associated with this exception.
+    /// \param errorMsg error message associated with this exception.
     GlfException(GlfStatus::Status status, const std::string& errorMsg);
+
+    /// Constructor that sets the exception to the specified status. 
+    /// \param status glf status associated with this exception.
     GlfException(const GlfStatus& status);
+
     virtual ~GlfException() throw();
 
+    /// Returns the error message of this exception. 
+    /// \return errror message
     virtual const char* what() const throw();
 
 private:

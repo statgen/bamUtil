@@ -1,3 +1,5 @@
 *~
 *.o
 *.a
+dox/
+dox_errors.txt
