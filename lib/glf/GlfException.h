@@ -22,8 +22,8 @@
 
 #include "GlfStatus.h"
 
-// GlfException objects should be thrown by functions that operate on 
-// Glf files.
+/// GlfException objects should be thrown by functions that operate on 
+/// Glf files for exceptions.
 class GlfException : public std::exception
 {
 public:

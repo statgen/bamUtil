@@ -20,6 +20,9 @@
 
 #include <iostream>
 
+/// This class is used to track the status results of some methods in the
+/// GLF classes using the status enum that is defined in this class to 
+/// describe the return value of a method. 
 class GlfStatus
 {
 public:

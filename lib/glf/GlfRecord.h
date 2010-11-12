@@ -24,6 +24,7 @@
 #include "InputFile.h" 
 #include "CharBuffer.h"
 
+/// This class allows a user to easily get/set the fields in a GLF record. 
 class GlfRecord
 {
 public:

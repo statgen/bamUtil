@@ -23,6 +23,11 @@
 #include "InputFile.h" 
 #include "CharBuffer.h"
 
+///This class allows a user to easily get/set the fields in a
+/// GLF section/chromosome header.
+/// The GlfRefSection contains:
+/// - Reference Sequence Name
+/// - Reference Sequence Length 
 class GlfRefSection
 {
 public:

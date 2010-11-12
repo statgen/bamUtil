@@ -23,6 +23,9 @@
 #include "InputFile.h" 
 #include "CharBuffer.h"
 
+/// This class allows a user to easily get/set the fields in a GLF header.
+/// The GlfHeader contains:
+/// - Variable length text string 
 class GlfHeader
 {
 public:

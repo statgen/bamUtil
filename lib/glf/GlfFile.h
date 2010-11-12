@@ -24,6 +24,7 @@
 #include "GlfRecord.h"
 #include "GlfStatus.h"
 
+/// This class allows a user to easily read/write a GLF file.
 class GlfFile
 {
 public:
