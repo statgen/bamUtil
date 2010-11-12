@@ -251,7 +251,7 @@ bool GlfFile::getNextRefSection(GlfRefSection& refSection)
         return(false);
     }
 
-    // TODO - move to the section if not in the right spot...
+    // Keep reading until the next section is found.
     if(myNextSection == RECORD)
     {
         GlfRecord record;

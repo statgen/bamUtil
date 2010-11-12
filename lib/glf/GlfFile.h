@@ -82,7 +82,7 @@ public:
     bool writeHeader(GlfHeader& header);
 
     /// Gets the next reference section from the file & stores it in the
-    /// passed in section.  It will read until a new section is found (TODO).
+    /// passed in section.  It consumes records until a new section is found.
     /// \param  refSection object to populate with the file's next reference 
     ///                    section.
     /// \return true  = section was successfully set.
