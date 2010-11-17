@@ -40,10 +40,12 @@ int main(int argc, char ** argv)
    bool baseComposition = false;
    bool quiet = false;
    bool params = false;
+   bool disableSeqIDCheck = false;
 
    BEGIN_LONG_PARAMETERS(longParameterList)
       LONG_STRINGPARAMETER("file", &filename)
       LONG_PARAMETER("baseComposition", &baseComposition)
+      LONG_PARAMETER("disableSeqIDCheck", &disableSeqIDCheck)
       LONG_PARAMETER("quiet", &quiet)
       LONG_PARAMETER("params", &params)
       LONG_INTPARAMETER("minReadLen", &minReadLength)
@@ -131,6 +133,9 @@ int main(int argc, char ** argv)
       std::cout << "\t--ignoreErrors       : Ignore all errors (same as printableErrors = 0)\n";
       std::cout << "\t                       overwrites the printableErrors option.\n";
       std::cout << "\t--baseComposition    : Print the Base Composition Statistics.\n";
+      std::cout << "\t--disableSeqIDCheck  : Disable the unique sequence identifier check.\n";
+      std::cout << "\t                       Use this option to save memory since the sequence id\n";
+      std::cout << "\t                       check uses a lot of memory.";
       std::cout << "\t--quiet              : Suppresses the display of errors and summary statistics.\n";
       std::cout << "\t                       Does not affect the printing of Base Composition Statistics.\n";
 
@@ -155,6 +160,11 @@ int main(int argc, char ** argv)
    if(quiet)
    {
       validator.disableMessages();
+   }
+
+   if(disableSeqIDCheck)
+   {
+       validator.disableSeqIDCheck();
    }
 
    validator.setMaxErrors(maxErrors);

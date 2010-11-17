@@ -15,6 +15,14 @@ then
     ERROR=true
 fi
 
+# Run on the same file but do not check for unique sequence id.
+$PATH_TO_EXE/fastQValidator --params --file testFile.txt --minReadLen 10 --auto --printableErrors 100 --baseComposition --disableSeqIDCheck > results/runResultsDisableSeqID.txt 2>&1
+diff results/runResultsDisableSeqID.txt expectedResults/ExpectedResultsDisableSeqID.txt
+if [ $? -ne 0 ]
+then
+    ERROR=true
+fi
+
 # Run on the same test file, but specify Base Sequences.
 $PATH_TO_EXE/fastQValidator --params --file testFile.txt --minReadLen 10 --baseSpace --printableErrors 100 --baseComposition > results/runResultsBase.txt 2>&1
 diff results/runResultsBase.txt expectedResults/ExpectedResultsBase.txt

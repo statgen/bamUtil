@@ -2,8 +2,8 @@
 The following parameters are available.  Ones with "[]" are in effect:
 
 Input Parameters
- --file [testFile.txt], --baseComposition [ON], --quiet, --params [ON],
-                --minReadLen [10], --maxErrors
+ --file [testFile.txt], --baseComposition [ON], --disableSeqIDCheck, --quiet,
+                --params [ON], --minReadLen [10], --maxErrors
    Space Type : --baseSpace [ON], --colorSpace, --auto
        Errors : --ignoreErrors, --printableErrors [100]
 
