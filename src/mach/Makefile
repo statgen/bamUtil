@@ -1,5 +1,5 @@
-TEST_SUBDIRS="bam fastqValidator glf karma qplot polishBam trimBam rgMergeBam splitBam  vcfGenomeStat mach"
-SUBDIRS=$(TEST_SUBDIRS)
+TEST_SUBDIRS=
+SUBDIRS="libmach mach1 thunder"
 
 # Build in all subdirectories.
 #
