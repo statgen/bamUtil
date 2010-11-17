@@ -146,7 +146,7 @@ int main(int argc, char ** argv)
       std::cout << std::endl;
 
       std::cout << "  Usage:" << std::endl;
-      std::cout << "\t./fastQValidator --file <fileName> [--minReadLen <minReadLen>] [--maxErrors <numErrors>] [--printableErrors <printableErrors>|--ignoreErrors] [--baseComposition] [--quiet] [--baseSpace|--colorSpace|--auto]\n\n";
+      std::cout << "\t./fastQValidator --file <fileName> [--minReadLen <minReadLen>] [--maxErrors <numErrors>] [--printableErrors <printableErrors>|--ignoreErrors] [--baseComposition] [--disableSeqIDCheck] [--quiet] [--baseSpace|--colorSpace|--auto]\n\n";
       std::cout << "  Examples:" << std::endl;
       std::cout << "\t../fastQValidator --file testFile.txt\n";
       std::cout << "\t../fastQValidator --file testFile.txt --minReadLen 10 --baseSpace --printableErrors 100\n";
