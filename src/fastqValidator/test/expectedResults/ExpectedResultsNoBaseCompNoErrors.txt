@@ -8,5 +8,5 @@ Input Parameters
        Errors : --ignoreErrors [ON], --printableErrors
 
 Finished processing testFile.txt with 95 lines containing 21 sequences.
-There were a total of 53 errors.
+There were a total of 48 errors.
 Returning: 1 : FASTQ_INVALID

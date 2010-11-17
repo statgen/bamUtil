@@ -30,6 +30,7 @@
 FastQFile::FastQFile(int minReadLength, int numPrintableErrors)
    : myFile(NULL),
      myBaseComposition(),
+     myCheckSeqID(true),
      myMinReadLength(minReadLength),
      myNumPrintableErrors(numPrintableErrors),
      myMaxErrors(-1),
@@ -50,6 +51,22 @@ void FastQFile::disableMessages()
 void FastQFile::enableMessages()
 {
    myDisableMessages = false;
+}
+
+
+// Disable Unique Sequence ID checking.  
+// Unique Sequence ID checking is enabled by default.
+void FastQFile::disableSeqIDCheck()
+{
+    myCheckSeqID = false;
+}
+
+
+// Enable Unique Sequence ID checking.
+// Unique Sequence ID checking is enabled by default.
+void FastQFile::enableSeqIDCheck()
+{
+    myCheckSeqID = true;
 }
 
 
@@ -456,24 +473,28 @@ bool FastQFile::validateSequenceIdentifierLine()
          (mySequenceIdLine.SubStr(1, endSequenceIdentifier - 1)).c_str();
    }
    
-   // Check to see if the sequenceIdentifier is a repeat by adding
-   // it to the set and seeing if it already existed.
-   std::pair<std::map<std::string, uint>::iterator,bool> insertResult;
-   insertResult = 
-      myIdentifierMap.insert(std::make_pair(mySequenceIdentifier.c_str(), 
-                                            myLineNum));
-   
-   if(insertResult.second == false)
+   // Check if sequence identifier should be validated for uniqueness.
+   if(myCheckSeqID)
    {
-      // Sequence Identifier is a repeat.
-      myErrorString = "Repeated Sequence Identifier: ";
-      myErrorString += mySequenceIdentifier.c_str();
-      myErrorString += " at Lines ";
-      myErrorString += insertResult.first->second;
-      myErrorString += " and ";
-      myErrorString += myLineNum;
-      reportErrorOnLine();
-      return(false);
+       // Check to see if the sequenceIdentifier is a repeat by adding
+       // it to the set and seeing if it already existed.
+       std::pair<std::map<std::string, uint>::iterator,bool> insertResult;
+       insertResult = 
+           myIdentifierMap.insert(std::make_pair(mySequenceIdentifier.c_str(), 
+                                                 myLineNum));
+       
+       if(insertResult.second == false)
+       {
+           // Sequence Identifier is a repeat.
+           myErrorString = "Repeated Sequence Identifier: ";
+           myErrorString += mySequenceIdentifier.c_str();
+           myErrorString += " at Lines ";
+           myErrorString += insertResult.first->second;
+           myErrorString += " and ";
+           myErrorString += myLineNum;
+           reportErrorOnLine();
+           return(false);
+       }
    }
 
    // Valid, return true.

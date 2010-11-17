@@ -65,9 +65,9 @@ const String NINTH_PLUS_LINE = "+";
 const String NINTH_QUALITY = "fghijklmnopqr";
 const String TENTH_SEQID_LINE = "@Valid";
 const String TENTH_SEQID = "Valid";
-const String TENTH_RAW_SEQ = "ACTGNactng.0123";
+const String TENTH_RAW_SEQ = "ACTGNactng";
 const String TENTH_PLUS_LINE = "+";
-const String TENTH_QUALITY = "!#\"$%&'()*+,-./";
+const String TENTH_QUALITY = "!#\"$%&'()*";
 const String ELEVENTH_SEQID_LINE = "@RawError1";
 const String ELEVENTH_SEQID = "RawError1";
 const String ELEVENTH_RAW_SEQ = "ACTNaHtng0aBZa";
@@ -725,6 +725,170 @@ void testReadSequence()
    assert(fastqfile.myQualityString == NINTH_QUALITY);
 
    assert(fastqfile.readFastQSequence() == FastQStatus::FASTQ_INVALID);
+   assert(fastqfile.mySequenceIdLine == TENTH_SEQID_LINE);
+   assert(fastqfile.mySequenceIdentifier == TENTH_SEQID);
+   assert(fastqfile.myRawSequence == TENTH_RAW_SEQ);
+   assert(fastqfile.myPlusLine == TENTH_PLUS_LINE);
+   assert(fastqfile.myQualityString == TENTH_QUALITY);
+
+   assert(fastqfile.readFastQSequence() == FastQStatus::FASTQ_INVALID);
+   assert(fastqfile.mySequenceIdLine == ELEVENTH_SEQID_LINE);
+   assert(fastqfile.mySequenceIdentifier == ELEVENTH_SEQID);
+   assert(fastqfile.myRawSequence == ELEVENTH_RAW_SEQ);
+   assert(fastqfile.myPlusLine == ELEVENTH_PLUS_LINE);
+   assert(fastqfile.myQualityString == ELEVENTH_QUALITY);
+
+   assert(fastqfile.readFastQSequence() == FastQStatus::FASTQ_INVALID);
+   assert(fastqfile.mySequenceIdLine == TWELFTH_SEQID_LINE);
+   assert(fastqfile.mySequenceIdentifier == TWELFTH_SEQID);
+   assert(fastqfile.myRawSequence == TWELFTH_RAW_SEQ);
+   assert(fastqfile.myPlusLine == TWELFTH_PLUS_LINE);
+   assert(fastqfile.myQualityString == TWELFTH_QUALITY);
+
+   assert(fastqfile.readFastQSequence() == FastQStatus::FASTQ_SUCCESS);
+   assert(fastqfile.mySequenceIdLine == THIRTEENTH_SEQID_LINE);
+   assert(fastqfile.mySequenceIdentifier == THIRTEENTH_SEQID);
+   assert(fastqfile.myRawSequence == THIRTEENTH_RAW_SEQ);
+   assert(fastqfile.myPlusLine == THIRTEENTH_PLUS_LINE);
+   assert(fastqfile.myQualityString == THIRTEENTH_QUALITY);
+
+   assert(fastqfile.readFastQSequence() == FastQStatus::FASTQ_INVALID);
+   assert(fastqfile.mySequenceIdLine == FOURTEENTH_SEQID_LINE);
+   assert(fastqfile.mySequenceIdentifier == FOURTEENTH_SEQID);
+   assert(fastqfile.myRawSequence == FOURTEENTH_RAW_SEQ);
+   assert(fastqfile.myPlusLine == FOURTEENTH_PLUS_LINE);
+   assert(fastqfile.myQualityString == FOURTEENTH_QUALITY);
+
+   assert(fastqfile.readFastQSequence() == FastQStatus::FASTQ_SUCCESS);
+   assert(fastqfile.mySequenceIdLine == FIFTEENTH_SEQID_LINE);
+   assert(fastqfile.mySequenceIdentifier == FIFTEENTH_SEQID);
+   assert(fastqfile.myRawSequence == FIFTEENTH_RAW_SEQ);
+   assert(fastqfile.myPlusLine == FIFTEENTH_PLUS_LINE);
+   assert(fastqfile.myQualityString == FIFTEENTH_QUALITY);
+
+   assert(fastqfile.readFastQSequence() == FastQStatus::FASTQ_INVALID);
+   assert(fastqfile.mySequenceIdLine == SIXTEENTH_SEQID_LINE);
+   assert(fastqfile.mySequenceIdentifier == SIXTEENTH_SEQID);
+   assert(fastqfile.myRawSequence == SIXTEENTH_RAW_SEQ);
+   assert(fastqfile.myPlusLine == SIXTEENTH_PLUS_LINE);
+   assert(fastqfile.myQualityString == SIXTEENTH_QUALITY);
+
+   assert(fastqfile.readFastQSequence() == FastQStatus::FASTQ_SUCCESS);
+   assert(fastqfile.mySequenceIdLine == SEVENTEENTH_SEQID_LINE);
+   assert(fastqfile.mySequenceIdentifier == SEVENTEENTH_SEQID);
+   assert(fastqfile.myRawSequence == SEVENTEENTH_RAW_SEQ);
+   assert(fastqfile.myPlusLine == SEVENTEENTH_PLUS_LINE);
+   assert(fastqfile.myQualityString == SEVENTEENTH_QUALITY);
+
+   assert(fastqfile.readFastQSequence() == FastQStatus::FASTQ_SUCCESS);
+   assert(fastqfile.mySequenceIdLine == EIGHTEENTH_SEQID_LINE);
+   assert(fastqfile.mySequenceIdentifier == EIGHTEENTH_SEQID);
+   assert(fastqfile.myRawSequence == EIGHTEENTH_RAW_SEQ);
+   assert(fastqfile.myPlusLine == EIGHTEENTH_PLUS_LINE);
+   assert(fastqfile.myQualityString == EIGHTEENTH_QUALITY);
+
+   assert(fastqfile.readFastQSequence() == FastQStatus::FASTQ_INVALID);
+   assert(fastqfile.mySequenceIdLine == NINETEENTH_SEQID_LINE);
+   assert(fastqfile.mySequenceIdentifier == NINETEENTH_SEQID);
+   assert(fastqfile.myRawSequence == NINETEENTH_RAW_SEQ);
+   assert(fastqfile.myPlusLine == NINETEENTH_PLUS_LINE);
+   assert(fastqfile.myQualityString == NINETEENTH_QUALITY);
+
+   assert(fastqfile.readFastQSequence() == FastQStatus::FASTQ_INVALID);
+   assert(fastqfile.mySequenceIdLine == TWENTIETH_SEQID_LINE);
+   assert(fastqfile.mySequenceIdentifier == TWENTIETH_SEQID);
+   assert(fastqfile.myRawSequence == TWENTIETH_RAW_SEQ);
+   assert(fastqfile.myPlusLine == TWENTIETH_PLUS_LINE);
+   assert(fastqfile.myQualityString == TWENTIETH_QUALITY);
+
+   assert(fastqfile.readFastQSequence() == FastQStatus::FASTQ_INVALID);
+   assert(fastqfile.mySequenceIdLine == TWENTY_FIRST_SEQID_LINE);
+   assert(fastqfile.mySequenceIdentifier == TWENTY_FIRST_SEQID);
+   assert(fastqfile.myRawSequence == TWENTY_FIRST_RAW_SEQ);
+   assert(fastqfile.myPlusLine == TWENTY_FIRST_PLUS_LINE);
+   assert(fastqfile.myQualityString == TWENTY_FIRST_QUALITY);
+
+   // Close the file, and verify isOpen = false;
+   assert(fastqfile.closeFile() == FastQStatus::FASTQ_SUCCESS);
+   assert(fastqfile.isOpen() == false);
+   
+
+   ////////////////////////////////
+   // Repeat test specifying to not check for unique sequence id.
+   fastqfile.disableSeqIDCheck();
+   assert(fastqfile.isOpen() == false);
+   assert(fastqfile.openFile("testFile.txt", BaseAsciiMap::UNKNOWN) == FastQStatus::FASTQ_SUCCESS);
+
+   assert(fastqfile.isOpen() == true);
+
+   assert(fastqfile.getSpaceType() == BaseAsciiMap::UNKNOWN);
+
+   // Read Sequence from test file.
+   assert(fastqfile.readFastQSequence() == FastQStatus::FASTQ_INVALID);
+   assert(fastqfile.mySequenceIdLine == FIRST_SEQID_LINE);
+   assert(fastqfile.mySequenceIdentifier == FIRST_SEQID);
+   assert(fastqfile.myRawSequence == FIRST_RAW_SEQ);
+   assert(fastqfile.myPlusLine == FIRST_PLUS_LINE);
+   assert(fastqfile.myQualityString == FIRST_QUALITY);
+   assert(fastqfile.getSpaceType() == BaseAsciiMap::BASE_SPACE);
+
+   assert(fastqfile.readFastQSequence() == FastQStatus::FASTQ_SUCCESS);
+   assert(fastqfile.mySequenceIdLine == SECOND_SEQID_LINE);
+   assert(fastqfile.mySequenceIdentifier == SECOND_SEQID);
+   assert(fastqfile.myRawSequence == SECOND_RAW_SEQ);
+   assert(fastqfile.myPlusLine == SECOND_PLUS_LINE);
+   assert(fastqfile.myQualityString == SECOND_QUALITY);
+
+   assert(fastqfile.readFastQSequence() == FastQStatus::FASTQ_INVALID);
+   assert(fastqfile.mySequenceIdLine == THIRD_SEQID_LINE);
+   assert(fastqfile.mySequenceIdentifier == THIRD_SEQID);
+   assert(fastqfile.myRawSequence == THIRD_RAW_SEQ);
+   assert(fastqfile.myPlusLine == THIRD_PLUS_LINE);
+   assert(fastqfile.myQualityString == THIRD_QUALITY);
+
+   assert(fastqfile.readFastQSequence() == FastQStatus::FASTQ_SUCCESS);
+   assert(fastqfile.mySequenceIdLine == FOURTH_SEQID_LINE);
+   assert(fastqfile.mySequenceIdentifier == FOURTH_SEQID);
+   assert(fastqfile.myRawSequence == FOURTH_RAW_SEQ);
+   assert(fastqfile.myPlusLine == FOURTH_PLUS_LINE);
+   assert(fastqfile.myQualityString == FOURTH_QUALITY);
+
+   assert(fastqfile.readFastQSequence() == FastQStatus::FASTQ_SUCCESS);
+   assert(fastqfile.mySequenceIdLine == FIFTH_SEQID_LINE);
+   assert(fastqfile.mySequenceIdentifier == FIFTH_SEQID);
+   assert(fastqfile.myRawSequence == FIFTH_RAW_SEQ);
+   assert(fastqfile.myPlusLine == FIFTH_PLUS_LINE);
+   assert(fastqfile.myQualityString == FIFTH_QUALITY);
+
+   assert(fastqfile.readFastQSequence() == FastQStatus::FASTQ_INVALID);
+   assert(fastqfile.mySequenceIdLine == SIXTH_SEQID_LINE);
+   assert(fastqfile.mySequenceIdentifier == SIXTH_SEQID);
+   assert(fastqfile.myRawSequence == SIXTH_RAW_SEQ);
+   assert(fastqfile.myPlusLine == SIXTH_PLUS_LINE);
+   assert(fastqfile.myQualityString == SIXTH_QUALITY);
+
+   assert(fastqfile.readFastQSequence() == FastQStatus::FASTQ_INVALID);
+   assert(fastqfile.mySequenceIdLine == SEVENTH_SEQID_LINE);
+   assert(fastqfile.mySequenceIdentifier == SEVENTH_SEQID);
+   assert(fastqfile.myRawSequence == SEVENTH_RAW_SEQ);
+   assert(fastqfile.myPlusLine == SEVENTH_PLUS_LINE);
+   assert(fastqfile.myQualityString == SEVENTH_QUALITY);
+
+   assert(fastqfile.readFastQSequence() == FastQStatus::FASTQ_INVALID);
+   assert(fastqfile.mySequenceIdLine == EIGHTH_SEQID_LINE);
+   assert(fastqfile.mySequenceIdentifier == EIGHTH_SEQID);
+   assert(fastqfile.myRawSequence == EIGHTH_RAW_SEQ);
+   assert(fastqfile.myPlusLine == EIGHTH_PLUS_LINE);
+   assert(fastqfile.myQualityString == EIGHTH_QUALITY);
+
+   assert(fastqfile.readFastQSequence() == FastQStatus::FASTQ_INVALID);
+   assert(fastqfile.mySequenceIdLine == NINTH_SEQID_LINE);
+   assert(fastqfile.mySequenceIdentifier == NINTH_SEQID);
+   assert(fastqfile.myRawSequence == NINTH_RAW_SEQ);
+   assert(fastqfile.myPlusLine == NINTH_PLUS_LINE);
+   assert(fastqfile.myQualityString == NINTH_QUALITY);
+
+   assert(fastqfile.readFastQSequence() == FastQStatus::FASTQ_SUCCESS);
    assert(fastqfile.mySequenceIdLine == TENTH_SEQID_LINE);
    assert(fastqfile.mySequenceIdentifier == TENTH_SEQID);
    assert(fastqfile.myRawSequence == TENTH_RAW_SEQ);

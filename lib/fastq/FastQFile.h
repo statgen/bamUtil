@@ -41,6 +41,13 @@ class FastQFile
    // Enable messages - write to cout.
    void enableMessages();
 
+   // Disable Unique Sequence ID checking.  
+   // Unique Sequence ID checking is enabled by default.
+    void disableSeqIDCheck();
+
+   // Enable Unique Sequence ID checking.
+   // Unique Sequence ID checking is enabled by default.
+   void enableSeqIDCheck();
 
    // Set the number of errors after which to quit reading/validating a file.
    // Defaults to -1.
@@ -174,6 +181,10 @@ class FastQFile
    int myNumErrors;   // Tracks the number of errors.
    uint myLineNum;    // Track the line number - used for reporting errors.
    BaseComposition myBaseComposition;  // Tracks the base composition.
+
+    // Whether or not to check the sequence identifier for uniqueness.
+    // Checking may use up a lot of memory.
+    bool myCheckSeqID;
 
    // Map to track which identifiers have appeared in the file.
    std::map<std::string, uint> myIdentifierMap;

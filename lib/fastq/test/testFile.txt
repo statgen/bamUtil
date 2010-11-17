@@ -39,9 +39,9 @@ ACTGACTNactng
 +
 fghijklmnopqr
 @Valid
-ACTGNactng.0123
+ACTGNactng
 +
-!#"$%&'()*+,-./
+!#"$%&'()*
 @RawError1
 ACTNaHtng0
 aBZa

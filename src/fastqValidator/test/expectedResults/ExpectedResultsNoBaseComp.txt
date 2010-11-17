@@ -29,11 +29,6 @@ ERROR on Line 29: First line of a sequence does not begin with @
 ERROR on Line 33: No Sequence Identifier specified before the comment.
 ERROR on Line 37: No Sequence Identifier specified before the comment.
 ERROR on Line 41: Repeated Sequence Identifier: Valid at Lines 1 and 41
-ERROR on Line 42: Invalid character ('.') in base sequence.
-ERROR on Line 42: Invalid character ('0') in base sequence.
-ERROR on Line 42: Invalid character ('1') in base sequence.
-ERROR on Line 42: Invalid character ('2') in base sequence.
-ERROR on Line 42: Invalid character ('3') in base sequence.
 ERROR on Line 46: Invalid character ('H') in base sequence.
 ERROR on Line 46: Invalid character ('0') in base sequence.
 ERROR on Line 47: Invalid character ('B') in base sequence.
@@ -61,5 +56,5 @@ ERROR on Line 91: Invalid character ('1') in base sequence.
 ERROR on Line 95: Reached the end of the file without a '+' line.
 ERROR on Line 95: Incomplete Sequence, missing Quality String.
 Finished processing testFile.txt with 95 lines containing 21 sequences.
-There were a total of 53 errors.
+There were a total of 48 errors.
 Returning: 1 : FASTQ_INVALID
