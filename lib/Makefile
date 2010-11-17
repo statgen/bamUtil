@@ -2,7 +2,7 @@ PATH_TO_BASE=..
 include $(PATH_TO_BASE)/Makefile.include
 
 TEST_SUBDIRS="general bam fastq glf"
-SUBDIRS= "zlib samtools " $(TEST_SUBDIRS)
+SUBDIRS= "samtools " $(TEST_SUBDIRS)
 
 # Build in all subdirectories.
 #

@@ -11,7 +11,7 @@ PATH_INCLUDE_TO_LIB_BASE=..
 # an error, but allow unused results and variables for the
 # time being.
 #
-CFLAGS=$(OPTFLAG) -Werror -Wno-unused-variable -Wno-unused-result -pipe -Wall -ggdb -D__ZLIB_AVAILABLE__  -D_FILE_OFFSET_BITS=64 -I$(ZLIB_PATH) -I$(SAMTOOLS_PATH) -D__STDC_LIMIT_MACROS
+CFLAGS=$(OPTFLAG) -Werror -Wno-unused-variable -Wno-unused-result -pipe -Wall -ggdb -D__ZLIB_AVAILABLE__  -D_FILE_OFFSET_BITS=64 -I$(SAMTOOLS_PATH) -D__STDC_LIMIT_MACROS
 
 SOURCES_WITH_HEADER=\
 	BaseAsciiMap.cpp \
@@ -126,7 +126,6 @@ $(OBJDIR)/BasicHash.o: BasicHash.h Error.h
 $(OBJDIR)/BaseQualityHelper.o: BaseQualityHelper.h
 $(OBJDIR)/BaseUtilities.o: BaseUtilities.h
 $(OBJDIR)/BgzfFileType.o: BgzfFileType.h $(SAMTOOLS_PATH)/bgzf.h
-$(OBJDIR)/BgzfFileType.o: $(ZLIB_PATH)/zlib.h $(ZLIB_PATH)/zconf.h
 $(OBJDIR)/BgzfFileType.o: FileType.h
 $(OBJDIR)/CharBuffer.o: CharBuffer.h InputFile.h
 $(OBJDIR)/Cigar.o: Cigar.h Generic.h StringBasics.h InputFile.h FileType.h
@@ -134,7 +133,6 @@ $(OBJDIR)/Cigar.o: STLUtilities.h
 $(OBJDIR)/CigarRoller.o: CigarRoller.h Cigar.h Generic.h StringBasics.h InputFile.h
 $(OBJDIR)/CigarRoller.o: FileType.h
 $(OBJDIR)/Error.o: Error.h
-$(OBJDIR)/GenomeSequence.o: $(ZLIB_PATH)/zlib.h $(ZLIB_PATH)/zconf.h
 $(OBJDIR)/GenomeSequence.o: Error.h Generic.h GenomeSequence.h MemoryMapArray.h
 $(OBJDIR)/GenomeSequence.o: MemoryMap.h StringArray.h StringBasics.h InputFile.h
 $(OBJDIR)/GenomeSequence.o: FileType.h
@@ -143,8 +141,8 @@ $(OBJDIR)/GenotypeLists.o: LongInt.h PedigreePerson.h PedigreeGlobals.h StringAr
 $(OBJDIR)/GenotypeLists.o: StringBasics.h InputFile.h FileType.h StringHash.h Hash.h
 $(OBJDIR)/GenotypeLists.o: IntArray.h MathVector.h PedigreeFamily.h
 $(OBJDIR)/GenotypeLists.o: PedigreeDescription.h PedigreeAlleleFreq.h
-$(OBJDIR)/GzipFileType.o: GzipFileType.h $(ZLIB_PATH)/zlib.h
-$(OBJDIR)/GzipFileType.o: $(ZLIB_PATH)/zconf.h FileType.h
+$(OBJDIR)/GzipFileType.o: GzipFileType.h
+$(OBJDIR)/GzipFileType.o: FileType.h
 $(OBJDIR)/GzipHeader.o: GzipHeader.h
 $(OBJDIR)/glfHandler.o: glfHandler.h InputFile.h FileType.h StringBasics.h
 $(OBJDIR)/glfHandler.o: BaseQualityHelper.h
@@ -156,7 +154,6 @@ $(OBJDIR)/Hash.o: Hash.h
 $(OBJDIR)/Input.o: Input.h Error.h Constant.h
 $(OBJDIR)/InputFile.o: InputFile.h FileType.h StringBasics.h GzipHeader.h
 $(OBJDIR)/InputFile.o: BgzfFileType.h $(SAMTOOLS_PATH)/bgzf.h
-$(OBJDIR)/InputFile.o: $(ZLIB_PATH)/zlib.h $(ZLIB_PATH)/zconf.h
 $(OBJDIR)/InputFile.o: GzipFileType.h UncompressedFileType.h
 $(OBJDIR)/IntArray.o: IntArray.h Error.h Hash.h Sort.h Constant.h
 $(OBJDIR)/IntHash.o: IntHash.h Error.h

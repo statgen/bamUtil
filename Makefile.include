@@ -7,7 +7,6 @@ REQ_LIBS = $(STAT_GEN_LIB) $(LIB_PATH)/samtools/libbam.a
 OBJDIR = obj
 TEST_DIR = test
 
-ZLIB_PATH = $(LIB_PATH)/zlib
 SAMTOOLS_PATH = $(LIB_PATH)/samtools
 INCLUDE_PATH = $(LIB_PATH)/include
 TCLAP_PATH = $(LIB_PATH)/tclap
