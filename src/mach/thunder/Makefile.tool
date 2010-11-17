@@ -1,4 +1,4 @@
-PATH_TO_BASE=$(HOME)/statgen/
+PATH_TO_BASE=../../..
 BIN_DIR=../../bin
 EXE=thunder
 TOOLBASE = ShotgunHaplotyper ShotgunManners
