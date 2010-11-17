@@ -24,7 +24,7 @@ include $(PATH_TO_BASE)/Makefile.include
 TOOLHDR = $(TOOLBASE:=.h) $(HDRONLY)
 TOOLSRC = $(TOOLBASE:=.cpp) $(SRCONLY)
 TOOLOBJ = $(TOOLSRC:.cpp=.o)
-LIBRARY = $(REQ_LIBS)
+LIBRARY = $(USER_LIBS) $(REQ_LIBS)
 OBJECTS=$(patsubst %,$(OBJDIR)/%,$(TOOLOBJ))
 
 # make everything
