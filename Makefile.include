@@ -13,7 +13,9 @@ TCLAP_PATH = $(LIB_PATH)/tclap
 
 include $(PATH_TO_BASE)/Makefile.toolchain
 
-OPTFLAG?=-ggdb -O0 -fno-rtti
+# -fno-ftti is sometimes useful to increase speed
+# 2-5%, but makes linking consistently more difficult
+OPTFLAG?=-ggdb -O0
 CXX?=g++ 
 
 CFLAGS?= -Wall  $(OPTFLAG) -I$(INCLUDE_PATH) -I$(SAMTOOLS_PATH) $(PROG_INCLUDES) -D__ZLIB_AVAILABLE__  -D_FILE_OFFSET_BITS=64 -D__STDC_LIMIT_MACROS

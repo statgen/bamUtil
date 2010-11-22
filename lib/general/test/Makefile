@@ -9,7 +9,7 @@ PARALLEL_MAKE+=$(shell if [ X$(OSTYPE) = XFreeBSD ] ; then echo -j `sysctl -n hw
 PARALLEL_MAKE+=$(shell if [ X$(OSTYPE) = Xlinux ] ; then echo -j `grep -c '^processor' /proc/cpuinfo` ; fi)
 PARALLEL_MAKE+=$(shell if [ `uname` = Linux ] ; then echo -j `grep -c '^processor' /proc/cpuinfo` ; fi)
 
-OPTFLAG?=-O0 -fno-rtti
+OPTFLAG?=-O0
 
 all test:
 	@for i in "$(SUBDIRS)"; do \

@@ -5,7 +5,7 @@ PARALLEL_MAKE+=$(shell if [ X$(OSTYPE) = XFreeBSD ] ; then echo -j `sysctl -n hw
 PARALLEL_MAKE+=$(shell if [ X$(OSTYPE) = Xlinux ] ; then echo -j `grep -c '^processor' /proc/cpuinfo` ; fi)
 PARALLEL_MAKE+=$(shell if [ `uname` = Linux ] ; then echo -j `grep -c '^processor' /proc/cpuinfo` ; fi)
 
-OPTFLAG?=-O4 -fno-rtti
+OPTFLAG?=-O4
 
 # redhat gcc version 4.1.2 20070626 doesn't support this flag.
 # if important, figure out the right way to detect support for this flag:

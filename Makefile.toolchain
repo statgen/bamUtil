@@ -68,4 +68,6 @@ CXX=clang
 CC=clang
 endif
 
-EXPORT_TOOLCHAIN="export RANLIB=$(RANLIB); export AR=$(AR); export CC='$(CC)'; export CXX='$(CXX)'; export LD=$(LD);"
+CCVERSION = $(shell $(CC) -dumpversion )
+
+EXPORT_TOOLCHAIN="export RANLIB=$(RANLIB); export AR=$(AR); export CC='$(CC)'; export CXX='$(CXX)'; export LD=$(LD); export CCVERSION=$(CCVERSION)"
