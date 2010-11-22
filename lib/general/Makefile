@@ -15,7 +15,7 @@ PATH_INCLUDE_TO_LIB_BASE=..
 
 WARNINGS=-Wno-unused-variable
 WARNINGS+=$(shell if [ X$(CCVERSION) \> X4.1.0 ] ; then echo " -Wno-unused-result" ; fi)
-CFLAGS=$(OPTFLAG) -Werror $(WARNINGS) -pipe -Wall -ggdb -D__ZLIB_AVAILABLE__  -D_FILE_OFFSET_BITS=64 -I$(ZLIB_PATH) -I$(SAMTOOLS_PATH) -D__STDC_LIMIT_MACROS
+CFLAGS=$(OPTFLAG) -Werror $(WARNINGS) -pipe -Wall -ggdb -D__ZLIB_AVAILABLE__  -D_FILE_OFFSET_BITS=64 -I$(SAMTOOLS_PATH) -D__STDC_LIMIT_MACROS
 
 SOURCES_WITH_HEADER=\
 	BaseAsciiMap.cpp \
