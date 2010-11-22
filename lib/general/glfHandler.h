@@ -21,8 +21,12 @@
 #include "InputFile.h"
 #include "StringBasics.h"
 
+#if defined(__APPLE__)
+// #pragma warn "Caution, glfHandler.h is non-portable"
+#else
 #pragma pack(push)
 #pragma pack(1)
+#endif
 
 struct glfIndel
 {
@@ -59,7 +63,11 @@ struct glfEntry
     glfEntry & operator = (glfEntry & rhs);
 };
 
+#if defined(__APPLE__)
+// #pragma warn "Caution, glfHandler.h is non-portable"
+#else
 #pragma pack(pop)
+#endif
 
 class glfHandler
 {
