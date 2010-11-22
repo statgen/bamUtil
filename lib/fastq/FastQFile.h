@@ -179,7 +179,7 @@ class FastQFile
    IFILE myFile; // Input file to be read.
    String myFileName; // Name of file being processed.
    int myNumErrors;   // Tracks the number of errors.
-   uint myLineNum;    // Track the line number - used for reporting errors.
+   unsigned int myLineNum;    // Track the line number - used for reporting errors.
    BaseComposition myBaseComposition;  // Tracks the base composition.
 
     // Whether or not to check the sequence identifier for uniqueness.
@@ -187,7 +187,7 @@ class FastQFile
     bool myCheckSeqID;
 
    // Map to track which identifiers have appeared in the file.
-   std::map<std::string, uint> myIdentifierMap;
+   std::map<std::string, unsigned int> myIdentifierMap;
  
    //////////////////////////////////////////////////////////////////////
    // Following member data do not change for each call to the validator.
