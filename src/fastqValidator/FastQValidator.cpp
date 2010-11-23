@@ -135,7 +135,8 @@ int main(int argc, char ** argv)
       std::cout << "\t--baseComposition    : Print the Base Composition Statistics.\n";
       std::cout << "\t--disableSeqIDCheck  : Disable the unique sequence identifier check.\n";
       std::cout << "\t                       Use this option to save memory since the sequence id\n";
-      std::cout << "\t                       check uses a lot of memory.";
+      std::cout << "\t                       check uses a lot of memory.\n";
+      std::cout << "\t--params             : Print the parameter settings.\n";
       std::cout << "\t--quiet              : Suppresses the display of errors and summary statistics.\n";
       std::cout << "\t                       Does not affect the printing of Base Composition Statistics.\n";
 
@@ -146,7 +147,7 @@ int main(int argc, char ** argv)
       std::cout << std::endl;
 
       std::cout << "  Usage:" << std::endl;
-      std::cout << "\t./fastQValidator --file <fileName> [--minReadLen <minReadLen>] [--maxErrors <numErrors>] [--printableErrors <printableErrors>|--ignoreErrors] [--baseComposition] [--disableSeqIDCheck] [--quiet] [--baseSpace|--colorSpace|--auto]\n\n";
+      std::cout << "\t./fastQValidator --file <fileName> [--minReadLen <minReadLen>] [--maxErrors <numErrors>] [--printableErrors <printableErrors>|--ignoreErrors] [--baseComposition] [--disableSeqIDCheck] [--quiet] [--baseSpace|--colorSpace|--auto] [--params]\n\n";
       std::cout << "  Examples:" << std::endl;
       std::cout << "\t../fastQValidator --file testFile.txt\n";
       std::cout << "\t../fastQValidator --file testFile.txt --minReadLen 10 --baseSpace --printableErrors 100\n";
