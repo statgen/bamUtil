@@ -169,6 +169,71 @@ bool SamRecord::isValid(SamFileHeader& header)
 }
 
 
+// Read the BAM record from a file.
+SamStatus::Status SamRecord::setBufferFromFile(IFILE filePtr, 
+                                               SamFileHeader& header)
+{
+    myStatus = SamStatus::SUCCESS;
+    if((filePtr == NULL) || (filePtr->isOpen() == false))
+    {
+        // File is not open, return failure.
+        myStatus.setStatus(SamStatus::FAIL_ORDER, 
+                           "Can't read from an unopened file.");
+        return(SamStatus::FAIL_ORDER);
+    }
+
+    // Clear the record.
+    resetRecord();
+
+    // read the record size.
+    int numBytes = 
+        ifread(filePtr, &(myRecordPtr->myBlockSize), sizeof(int32_t));
+
+    if(ifeof(filePtr))
+    {
+        if(numBytes == 0)
+        {
+            // End of file, nothing was read, no more records.
+            myStatus.setStatus(SamStatus::NO_MORE_RECS,
+                               "No more records left to read.");
+            return(SamStatus::NO_MORE_RECS);
+        }
+        else
+        {
+            // Error: end of the file reached prior to reading the rest of the
+            // record.
+            myStatus.setStatus(SamStatus::FAIL_PARSE, 
+                               "EOF reached in the middle of a record.");
+            return(SamStatus::FAIL_PARSE);
+        }
+    }
+
+    // allocate space for the record size.
+    if(!allocateRecordStructure(myRecordPtr->myBlockSize + sizeof(int32_t)))
+    {
+        // Failed to allocate space.
+        // Status is set by allocateRecordStructure.
+        return(SamStatus::FAIL_MEM);
+    }
+
+    // Read the rest of the alignment block, starting at the reference id.
+    if(ifread(filePtr, &(myRecordPtr->myReferenceID), myRecordPtr->myBlockSize)
+       != (unsigned int)myRecordPtr->myBlockSize)
+    {
+        // Error reading the record.  Reset it and return failure.
+        resetRecord();
+        myStatus.setStatus(SamStatus::FAIL_IO,
+                           "Failed to read the record");
+        return(SamStatus::FAIL_IO);
+    }
+
+    setVariablesForNewBuffer(header);
+
+    // Return the status of the record.
+    return(SamStatus::SUCCESS);
+}
+
+
 bool SamRecord::setReadName(const char* readName) 
 {
     myReadName = readName;
@@ -338,70 +403,6 @@ bool SamRecord::setQuality(const char* quality)
     return true;
 }
 
-
-// Read the BAM record from a file.
-SamStatus::Status SamRecord::setBufferFromFile(IFILE filePtr, 
-                                               SamFileHeader& header)
-{
-    myStatus = SamStatus::SUCCESS;
-    if((filePtr == NULL) || (filePtr->isOpen() == false))
-    {
-        // File is not open, return failure.
-        myStatus.setStatus(SamStatus::FAIL_ORDER, 
-                           "Can't read from an unopened file.");
-        return(SamStatus::FAIL_ORDER);
-    }
-
-    // Clear the record.
-    resetRecord();
-
-    // read the record size.
-    int numBytes = 
-        ifread(filePtr, &(myRecordPtr->myBlockSize), sizeof(int32_t));
-
-    if(ifeof(filePtr))
-    {
-        if(numBytes == 0)
-        {
-            // End of file, nothing was read, no more records.
-            myStatus.setStatus(SamStatus::NO_MORE_RECS,
-                               "No more records left to read.");
-            return(SamStatus::NO_MORE_RECS);
-        }
-        else
-        {
-            // Error: end of the file reached prior to reading the rest of the
-            // record.
-            myStatus.setStatus(SamStatus::FAIL_PARSE, 
-                               "EOF reached in the middle of a record.");
-            return(SamStatus::FAIL_PARSE);
-        }
-    }
-
-    // allocate space for the record size.
-    if(!allocateRecordStructure(myRecordPtr->myBlockSize + sizeof(int32_t)))
-    {
-        // Failed to allocate space.
-        // Status is set by allocateRecordStructure.
-        return(SamStatus::FAIL_MEM);
-    }
-
-    // Read the rest of the alignment block, starting at the reference id.
-    if(ifread(filePtr, &(myRecordPtr->myReferenceID), myRecordPtr->myBlockSize)
-       != (unsigned int)myRecordPtr->myBlockSize)
-    {
-        // Error reading the record.  Reset it and return failure.
-        resetRecord();
-        myStatus.setStatus(SamStatus::FAIL_IO,
-                           "Failed to read the record");
-        return(SamStatus::FAIL_IO);
-    }
-
-    setVariablesForNewBuffer(header);
-
-    // Return the status of the record.
-    return(SamStatus::SUCCESS);
-}
 
 // Set the BAM record from the passeed in buffer of the specified size.
 // Note: The size includes the block size.
