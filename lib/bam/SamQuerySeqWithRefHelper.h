@@ -23,24 +23,28 @@
 #include "SamRecord.h"
 #include "GenomeSequence.h"
 
-// This class contains the match/mismatch information
-// between the reference and a read for a single base.
+/// This class contains the match/mismatch information
+/// between the reference and a read for a single base.
 class SamSingleBaseMatchInfo
 {
 public:
-    // More types can be added later as needed.
+    /// More types can be added later as needed.
     enum Type {UNKNOWN, MATCH, MISMATCH};
 
     SamSingleBaseMatchInfo();
     ~SamSingleBaseMatchInfo();
 
 
-    // Get info from this class.
+    /// Get the type (match/mismatch/unknown) for this object.
     Type getType();
+
+    /// Get the query index for this object.
     int32_t getQueryIndex();
 
-    // Set info in this class.
+    /// Set the type (match/mismatch/unkown) for this object.
     void setType(Type newType);
+
+    /// Set the query index for this object.
     void setQueryIndex(int32_t queryIndex);
 
 private:
@@ -48,9 +52,9 @@ private:
     int32_t myQueryIndex;
 };
 
-// Iterates through the query and compare with reference.
-// NOTE: References to the GenomeSequence and SamRecord are stored, the objects
-// are not copied, so they must remain valid as long as this class is used.
+/// Iterates through the query and compare with reference.
+/// NOTE: References to the GenomeSequence and SamRecord are stored, the objects
+/// are not copied, so they must remain valid as long as this class is used.
 class SamQuerySeqWithRefIter
 {
 public:
@@ -58,13 +62,24 @@ public:
                            bool forward = true);
     virtual ~SamQuerySeqWithRefIter();
     
-    // Reset to start at the beginning of the record.
-    // This will re-read values from SamRecord, so can be used if it has
-    // changed to contain information for a new record.
-    // forward = true means to start from the beginning and go to the end.
-    // forward = false means to start from the end and go to the beginning.
+    /// Reset to start at the beginning of the record.
+    /// This will re-read values from SamRecord, so can be used if it has
+    /// changed to contain information for a new record.
+    /// \param forward true means to start from the beginning and go to the end;
+    /// false means to start from the end and go to the beginning.
+    /// \return true if successfully reset; false if failed to read the Cigar.
     bool reset(bool forward = true);
     
+    /// Returns information for the next position where the query and the 
+    /// reference match or mismatch.  To be a match or mismatch, both the query
+    /// and reference must have a base that is not 'N'.
+    /// This means:
+    ///    insertions and deletions are not mismatches or matches.
+    ///    'N' bases are not matches or mismatches
+    /// \param matchMismatchInfo return parameter with the information about
+    /// the matching/mismatching base.
+    /// \return true if there was another match/mismatch
+    /// (matchMismatchInfo was set); false if not.
     bool getNextMatchMismatch(SamSingleBaseMatchInfo& matchMismatchInfo);
     
 private:
@@ -72,9 +87,6 @@ private:
     SamQuerySeqWithRefIter();
     
     void nextIndex();
-
-    // Tells whether or not the two bases are equal
-    bool areEqual(char base1, char base2);
 
     SamRecord& myRecord;
     GenomeSequence& myRefSequence;
