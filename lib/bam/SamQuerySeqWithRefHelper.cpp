@@ -64,7 +64,7 @@ bool SamQuerySeqWithRefIter::reset(bool forward)
         myRefSequence.getGenomePosition(myRecord.getReferenceName()) +
         myRecord.get0BasedPosition();
 
-    forward = myForward;
+    myForward = forward;
 
     if(myForward)
     {
@@ -85,7 +85,6 @@ bool SamQuerySeqWithRefIter::reset(bool forward)
 // This means:
 //    insertions and deletions are not mismatches or matches.
 //    'N' bases are not matches or mismatches
-// NOTE: Only returns positions where both the query and the reference
 // Returns true if an entry was found, false if there are no more matches or
 // mismatches.
 bool SamQuerySeqWithRefIter::getNextMatchMismatch(SamSingleBaseMatchInfo& matchMismatchInfo)
@@ -109,7 +108,7 @@ bool SamQuerySeqWithRefIter::getNextMatchMismatch(SamSingleBaseMatchInfo& matchM
     // Repull the read length from the record to check just in case the
     // record has changed length.
     // Loop until a match or mismatch is found as long as query index
-    // is still within the read  (Loop is broken by a return.
+    // is still within the read  (Loop is broken by a return).
     while((myQueryIndex < myRecord.getReadLength()) &&
           (myQueryIndex >= 0))
     {
