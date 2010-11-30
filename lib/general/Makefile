@@ -61,6 +61,7 @@ SOURCES_WITH_HEADER=\
 	SmithWaterman.cpp \
 	Sort.cpp \
 	STLUtilities.cpp \
+	StringAlias.cpp \
 	StringArray.cpp \
 	StringBasics.cpp \
 	StringHash.cpp \
@@ -224,6 +225,7 @@ $(OBJDIR)/SmithWaterman.o: SmithWaterman.h CigarRoller.h Cigar.h Generic.h
 $(OBJDIR)/SmithWaterman.o: StringBasics.h InputFile.h FileType.h
 $(OBJDIR)/Sort.o: Sort.h Constant.h Error.h
 $(OBJDIR)/STLUtilities.o: STLUtilities.h
+$(OBJDIR)/StringAlias.o: StringAlias.h
 $(OBJDIR)/StringArray.o: StringArray.h StringBasics.h InputFile.h FileType.h Sort.h
 $(OBJDIR)/StringArray.o: Constant.h Error.h
 $(OBJDIR)/StringBasics.o: StringBasics.h InputFile.h FileType.h Error.h Constant.h
