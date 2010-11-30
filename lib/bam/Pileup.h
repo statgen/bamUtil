@@ -75,8 +75,6 @@ public:
 protected:
     FUNC_CLASS myAnalyzeFuncPtr;
 
-private:
-
     // Always need the reference position.
     void addAlignmentPosition(int refPosition, SamRecord& record);
 
@@ -92,7 +90,6 @@ private:
     virtual void resetElement(PILEUP_TYPE& element, int position);
     virtual void addElement(PILEUP_TYPE& element, SamRecord& record);
     virtual void analyzeElement(PILEUP_TYPE& element);
-
 
     std::vector<PILEUP_TYPE> myElements;
 
