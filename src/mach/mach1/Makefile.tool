@@ -4,4 +4,4 @@ EXE=mach1
 TOOLBASE = 
 SRCONLY = Main.cpp
 USER_LIBS = ../libmach/libmach.a
-PROG_INCLUDES = -I../libmach
+USER_INCLUDES = -I../libmach

@@ -14,8 +14,8 @@ BIN_DIR=$(PATH_TO_BASE)/src/bin
 #   VERSION - if not 0.0.1
 #   PATH_TO_BASE if it is not ../..
 #   BIN_DIR if it is not ../../src/bin
-#   PROG_INCLUDES if any additional directories need to be included to pick up
-#                 header files (example: PROG_INCLUDES=-ImyDir1 -ImyDir2)
+#   USER_INCLUDES if any additional directories need to be included to pick up
+#                 header files (example: USER_INCLUDES=-ImyDir1 -ImyDir2)
 include Makefile.tool
 
 # Must be after the include of Makefile.tool since it uses PATH_TO_BASE

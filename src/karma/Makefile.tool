@@ -1,7 +1,6 @@
 EXE=karma
 TOOLBASE = DumpInfo MapperBase MapperPEBaseSpace MapperPEColorSpace MapperPE MapperSEBaseSpace MapperSEColorSpace MapperSE MappingStats ReadIndexer ReadsProcessor SamHeader Test UserOptions Util WordHash WordIndex
 SRCONLY = Main.cpp
-PROG_INCLUDES = -I
 
 DATE=$(shell date)
 NODE=$(shell uname -n)
