@@ -177,10 +177,11 @@ void BamInterface::readRecord(IFILE filePtr, SamFileHeader& header,
 
 SamStatus::Status BamInterface::writeRecord(IFILE filePtr, 
                                             SamFileHeader& header,
-                                            SamRecord& record)
+                                            SamRecord& record,
+                                            SamRecord::SequenceTranslation translation)
 {
     // Write the file, returning the status.
-    return(record.writeRecordBuffer(filePtr));
+    return(record.writeRecordBuffer(filePtr, translation));
 }
 
 

@@ -20,6 +20,7 @@
 
 #include <stdint.h>
 
+#include "GenomeSequence.h"
 #include "SamStatus.h"
 #include "LongHash.h"
 #include "MathVector.h"
@@ -50,6 +51,15 @@ public:
 class SamRecord
 {
 public:
+    /// Enum containing the settings on how to translate the sequence if a
+    /// reference is available.  If no reference is available, no translation
+    /// is done.
+    enum SequenceTranslation { 
+        NONE,   ///< Leave the sequence as is.
+        EQUAL,  ///< Translate bases that match the reference to '='
+        BASES,  ///< Translate '=' to the actual base.
+    };
+
     /// Default Constructor.
     SamRecord();
 
@@ -82,6 +92,17 @@ public:
     /// \param header BAM header for the record.
     /// \return status of the reading the BAM record from the file.
     SamStatus::Status setBufferFromFile(IFILE filePtr, SamFileHeader& header);
+
+    /// Set the reference to the specified genome sequence object.
+    /// \param reference pointer to the GenomeSequence object.
+    void setReference(GenomeSequence* reference);
+
+    /// Set the type of sequence translation to use when getting
+    /// the sequence.  The default type (if this method is never called) is
+    /// NONE (the sequence is left as-is).  Can be over-ridden by using 
+    /// the accessors that take a SequenceTranslation parameter.
+    /// \param translation type of sequence translation to use.
+    void setSequenceTranslation(SequenceTranslation translation);
 
     ///////////////////////
     /// @name  Set Alignment Data
@@ -217,10 +238,24 @@ public:
     /// of the record.
     const void* getRecordBuffer();
 
+    /// Get a const pointer to the buffer that contains the BAM representation
+    /// of the record.
+    /// \param translation type of sequence translation to use.
+    /// \return const pointer to the buffer that contains the BAM representation
+    /// of the record.
+    const void* getRecordBuffer(SequenceTranslation translation);
+
     /// Write the record as a BAM into the specified file.
     /// \param filePtr file to write the BAM record into.
     /// \return status of the write.
     SamStatus::Status writeRecordBuffer(IFILE filePtr);
+
+    /// Write the record as a BAM into the specified file.
+    /// \param filePtr file to write the BAM record into.
+    /// \param translation type of sequence translation to use.
+    /// \return status of the write.
+    SamStatus::Status writeRecordBuffer(IFILE filePtr, 
+                                        SequenceTranslation translation);
 
     /// Get the block size of the record.
     /// \return BAM block size of the record.
@@ -336,19 +371,34 @@ public:
     /// \return cigar string.
     const char* getCigar();
 
-    /// Returns the SAM formatted sequence string.
+    /// Returns the SAM formatted sequence string, translating the base as
+    /// specified by setSequenceTranslation.
     /// \return sequence string.
     const char* getSequence();
+
+    /// Returns the SAM formatted sequence string performing the specified
+    /// sequence translation.
+    /// \param translation type of sequence translation to use.
+    /// \return sequence string.
+    const char* getSequence(SequenceTranslation translation);
 
     /// Returns the SAM formatted quality string.
     /// \return quality string.
     const char* getQuality();
 
     /// Get the sequence base at the specified index into this sequence 0 to
-    /// readLength - 1.
+    /// readLength - 1, translating the base as specified by
+    /// setSequenceTranslation.
     /// \param index index into the sequence string (0 to readLength-1).
     /// \return the sequence base at the specified index into the sequence.
     char getSequence(int index);
+    
+    /// Get the sequence base at the specified index into this sequence 0 to
+    /// readLength -  performing the specified sequence translation1.
+    /// \param index index into the sequence string (0 to readLength-1).
+    /// \param translation type of sequence translation to use.
+    /// \return the sequence base at the specified index into the sequence.
+    char getSequence(int index, SequenceTranslation translation);
     
     /// Get the quality character at the specified index into the quality 0 to
     /// readLength - 1.
@@ -388,6 +438,19 @@ public:
     /// \return true if all fields were successfully set, false otherwise.
     bool getFields(bamRecordStruct& recStruct, String& readName, 
                    String& cigar, String& sequence, String& quality);
+
+    /// Returns the values of all fields except the tags.
+    /// \param recStruct structure containing the contents of all 
+    /// non-variable length fields.
+    /// \param readName read name from the record (return param)
+    /// \param cigar cigar string from the record (return param)
+    /// \param sequence sequence string from the record (return param)
+    /// \param quality quality string from the record (return param)
+    /// \param translation type of sequence translation to use.
+    /// \return true if all fields were successfully set, false otherwise.
+    bool getFields(bamRecordStruct& recStruct, String& readName, 
+                   String& cigar, String& sequence, String& quality,
+                   SequenceTranslation translation);
 
     //@}
 
@@ -464,7 +527,6 @@ public:
     /// \return true if the value associated with the tag is a string.
    bool checkTag(const char * tag, char type);
 
-
     
     /// Return the number of bases in this read that overlap the passed in
     /// region.
@@ -496,7 +558,7 @@ private:
 
     // Fixes the buffer to match the variable length fields.
     // Adds any errors to myStatus.
-    bool fixBuffer();
+    bool fixBuffer(SequenceTranslation translation);
 
     // Sets the Sequence and Quality strings from the buffer.
     // They are done together in one method because they require the same
@@ -577,6 +639,9 @@ private:
     String mySequence;
     String myQuality;
 
+    std::string mySeqWithEq;
+    std::string mySeqWithoutEq;
+
     // The length of the alignment.
     int32_t myAlignmentLength;
     // Unclipped alignment positions.
@@ -601,6 +666,17 @@ private:
     bool myIsBinValid;
 
     SamStatus myStatus;
+
+    // The current translation of the sequence as it occurs in the buffer.
+    // Only applicable if myIsSequenceBufferValid == true.
+    SequenceTranslation myBufferSequenceTranslation;
+
+
+    // Track the Reference.
+    GenomeSequence* myRefPtr;
+
+    // The type of translation to do when getting a sequence.
+    SequenceTranslation mySequenceTranslation;
 
     String NOT_FOUND_TAG_STRING;
     int NOT_FOUND_TAG_INT;

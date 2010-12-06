@@ -22,6 +22,7 @@
 #include "ModifyVar.h"
 #include "Modify.h"
 #include "SamFileTest.h"
+#include "TestEquals.h"
 
 int main(int argc, char ** argv)
 {
@@ -55,6 +56,8 @@ int main(int argc, char ** argv)
         testModify();
 
         testSamFile();
+
+        testEqSam();
     }
     else
     {

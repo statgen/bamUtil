@@ -96,4 +96,29 @@ private:
     bool myForward;
 };
 
+
+/// Contains methods for converting between query sequence and reference.
+/// Sequence.
+/// NOTE: References to the GenomeSequence and SamRecord are stored, the objects
+/// are not copied, so they must remain valid as long as this class is used.
+class SamQuerySeqWithRef
+{
+public:
+    static void seqWithEquals(const char* currentSeq,
+                              int32_t seq0BasedPos,
+                              Cigar& cigar, 
+                              const char* referenceName,
+                              GenomeSequence& refSequence,
+                              std::string& updatedSeq);
+
+    static void seqWithoutEquals(const char* currentSeq,
+                                 int32_t seq0BasedPos,
+                                 Cigar& cigar, 
+                                 const char* referenceName,
+                                 GenomeSequence& refSequence,
+                                 std::string& updatedSeq);
+
+private:
+    SamQuerySeqWithRef();
+};
 #endif

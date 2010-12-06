@@ -44,7 +44,8 @@ public:
     // Writes the specified record into the specified BAM file.
     virtual SamStatus::Status writeRecord(IFILE filePtr, 
                                           SamFileHeader& header,
-                                          SamRecord& record);
+                                          SamRecord& record,
+                                          SamRecord::SequenceTranslation translation);
 };
 
 #endif

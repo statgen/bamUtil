@@ -27,7 +27,10 @@ SamFile::SamFile()
       myInterfacePtr(NULL),
       myStatistics(NULL),
       myStatus(),
-      myBamIndex(NULL)
+      myBamIndex(NULL),
+      myRefPtr(NULL),
+      myReadTranslation(SamRecord::NONE),
+      myWriteTranslation(SamRecord::NONE)
 {
     resetFile();
 }
@@ -39,7 +42,10 @@ SamFile::SamFile(ErrorHandler::HandlingType errorHandlingType)
       myInterfacePtr(NULL),
       myStatistics(NULL),
       myStatus(errorHandlingType),
-      myBamIndex(NULL)
+      myBamIndex(NULL),
+      myRefPtr(NULL),
+      myReadTranslation(SamRecord::NONE),
+      myWriteTranslation(SamRecord::NONE)
 {
     resetFile();
 }
@@ -52,7 +58,10 @@ SamFile::SamFile(const char* filename, OpenType mode)
       myInterfacePtr(NULL),
       myStatistics(NULL),
       myStatus(),
-      myBamIndex(NULL)
+      myBamIndex(NULL),
+      myRefPtr(NULL),
+      myReadTranslation(SamRecord::NONE),
+      myWriteTranslation(SamRecord::NONE)
 {
     resetFile();
 
@@ -85,7 +94,10 @@ SamFile::SamFile(const char* filename, OpenType mode,
       myInterfacePtr(NULL),
       myStatistics(NULL),
       myStatus(errorHandlingType),
-      myBamIndex(NULL)
+      myBamIndex(NULL),
+      myRefPtr(NULL),
+      myReadTranslation(SamRecord::NONE),
+      myWriteTranslation(SamRecord::NONE)
 {
     resetFile();
 
@@ -310,6 +322,26 @@ bool SamFile::ReadBamIndex(const char* bamIndexFilename)
 }
 
 
+// Sets the reference to the specified genome sequence object.
+void SamFile::SetReference(GenomeSequence* reference)
+{
+    myRefPtr = reference;
+}
+
+
+// Set the type of sequence translation to use when reading the sequence.
+void SamFile::SetReadSequenceTranslation(SamRecord::SequenceTranslation translation)
+{
+    myReadTranslation = translation;
+}
+
+
+// Set the type of sequence translation to use when writing the sequence.
+void SamFile::SetWriteSequenceTranslation(SamRecord::SequenceTranslation translation)
+{
+    myWriteTranslation = translation;
+}
+
 // Close the file if there is one open.
 void SamFile::Close()
 {
@@ -443,6 +475,9 @@ bool SamFile::ReadRecord(SamFileHeader& header,
         return(readIndexedRecord(header, record));
     }
 
+    record.setReference(myRefPtr);
+    record.setSequenceTranslation(myReadTranslation);
+
     // File is open for reading and the header has been read, so read the next
     // record.
     myInterfacePtr->readRecord(myFilePtr, header, record, myStatus);
@@ -500,9 +535,13 @@ bool SamFile::WriteRecord(SamFileHeader& header,
         return(false);
     }
 
+    record.setReference(myRefPtr);
+    record.setSequenceTranslation(myReadTranslation);
+
     // File is open for writing and the header has been written, so write the
     // record.
-    myStatus = myInterfacePtr->writeRecord(myFilePtr, header, record);
+    myStatus = myInterfacePtr->writeRecord(myFilePtr, header, record,
+                                           myWriteTranslation);
 
     if(myStatus == SamStatus::SUCCESS)
     {
@@ -618,6 +657,9 @@ bool SamFile::SetReadSection(const char* refName, int32_t start, int32_t end)
 // region that is currently set.
 uint32_t SamFile::GetNumOverlaps(SamRecord& samRecord)
 {
+    samRecord.setReference(myRefPtr);
+    samRecord.setSequenceTranslation(myReadTranslation);
+
     // Get the overlaps in the sam record for the region currently set
     // for this file.
     return(samRecord.getNumOverlaps(myStartPos, myEndPos));
@@ -704,6 +746,9 @@ void SamFile::resetFile()
 // If the sort order is UNSORTED, true is returned.
 bool SamFile::validateSortOrder(SamRecord& record, SamFileHeader& header)
 {
+    record.setReference(myRefPtr);
+    record.setSequenceTranslation(myReadTranslation);
+
     bool status = false;
     if(mySortedType == UNSORTED)
     {
@@ -831,6 +876,9 @@ SamFile::SortedType SamFile::getSortOrderFromHeader(SamFileHeader& header)
 bool SamFile::readIndexedRecord(SamFileHeader& header, 
                                 SamRecord& record)
 {
+    record.setReference(myRefPtr);
+    record.setSequenceTranslation(myReadTranslation);
+
     // A section to read is set and the file is open for reading, as verified
     // prior to calling into this protected method.
     bool recordFound = false;

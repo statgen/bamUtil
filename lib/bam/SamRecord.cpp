@@ -25,14 +25,16 @@
 #include "SamValidation.h"
 
 #include "BaseUtilities.h"
-
+#include "SamQuerySeqWithRefHelper.h"
 
 const char* SamRecord::DEFAULT_READ_NAME = "UNKNOWN";
 const char* SamRecord::FIELD_ABSENT_STRING = "=";
 
 
 SamRecord::SamRecord()
-    : myStatus()
+    : myStatus(),
+      myRefPtr(NULL),
+      mySequenceTranslation(NONE)
 {
     int32_t defaultAllocSize = DEFAULT_BLOCK_SIZE + sizeof(int32_t);
 
@@ -49,7 +51,9 @@ SamRecord::SamRecord()
 
 
 SamRecord::SamRecord(ErrorHandler::HandlingType errorHandlingType)
-    : myStatus(errorHandlingType)
+    : myStatus(errorHandlingType),
+      myRefPtr(NULL),
+      mySequenceTranslation(NONE)
 {
     int32_t defaultAllocSize = DEFAULT_BLOCK_SIZE + sizeof(int32_t);
 
@@ -102,11 +106,15 @@ void SamRecord::resetRecord()
     myRecordPtr->myInsertSize = 0;
    
     // Set the sam values for the variable length fields.
+    // TODO - one way to speed this up might be to not set to "*" and just
+    // clear them, and write out a '*' for SAM if it is empty.
     myReadName = DEFAULT_READ_NAME;
     myReferenceName = "*";
     myMateReferenceName = "*";
     myCigar = "*";
     mySequence = "*";
+    mySeqWithEq.clear();
+    mySeqWithoutEq.clear();
     myQuality = "*";
     myNeedToSetTagsFromBuffer = false;
     myNeedToSetTagsInBuffer = false;
@@ -129,6 +137,7 @@ void SamRecord::resetRecord()
     myIsReadNameBufferValid = true;
     myIsCigarBufferValid = true;
     myIsSequenceBufferValid = true;
+    myBufferSequenceTranslation = NONE;
     myIsQualityBufferValid = true;
     myIsTagsBufferValid = true;
     myIsBinValid = true;
@@ -231,6 +240,21 @@ SamStatus::Status SamRecord::setBufferFromFile(IFILE filePtr,
 
     // Return the status of the record.
     return(SamStatus::SUCCESS);
+}
+
+
+void SamRecord::setReference(GenomeSequence* reference)
+{
+    myRefPtr = reference;
+}
+
+
+// Set the type of sequence translation to use when getting
+// the sequence.  The default type (if this method is never called) is
+// NONE (the sequence is left as-is).  This is used 
+void SamRecord::setSequenceTranslation(SequenceTranslation translation)
+{
+    mySequenceTranslation = translation;
 }
 
 
@@ -387,6 +411,8 @@ bool SamRecord::setSequence(const char* seq)
 {
     myStatus = SamStatus::SUCCESS;
     mySequence = seq;
+    mySeqWithEq.clear();
+    mySeqWithoutEq.clear();
    
     myIsBufferSynced = false;
     myIsSequenceBufferValid = false;
@@ -561,13 +587,23 @@ bool SamRecord::addTag(const char* tag, char vtype, const char* valuePtr)
 
 
 // Get methods for record fields.
-const void* SamRecord::getRecordBuffer() 
+const void* SamRecord::getRecordBuffer()
+{
+    return(getRecordBuffer(mySequenceTranslation));
+}
+
+
+// Get methods for record fields.
+const void* SamRecord::getRecordBuffer(SequenceTranslation translation) 
 {
     myStatus = SamStatus::SUCCESS;
     bool status = true;
-    if(myIsBufferSynced == false)
+    // If the buffer is not synced or the sequence in the buffer is not
+    // properly translated, fix the buffer.
+    if((myIsBufferSynced == false) ||
+       (myBufferSequenceTranslation != translation))
     {
-        status &= fixBuffer();
+        status &= fixBuffer(translation);
     }
     // If the buffer is synced, check to see if the tags need to be synced.
     if(myNeedToSetTagsInBuffer)
@@ -582,8 +618,17 @@ const void* SamRecord::getRecordBuffer()
 }
 
 
-// Get methods for record fields.
+// Write the record as a buffer into the file using the class's 
+// sequence translation setting.
 SamStatus::Status SamRecord::writeRecordBuffer(IFILE filePtr)
+{
+    return(writeRecordBuffer(filePtr, mySequenceTranslation));
+}
+
+
+// Write the record as a buffer into the file using the specified translation.
+SamStatus::Status SamRecord::writeRecordBuffer(IFILE filePtr, 
+                                               SequenceTranslation translation)
 {
     myStatus = SamStatus::SUCCESS;
     if((filePtr == NULL) || (filePtr->isOpen() == false))
@@ -594,9 +639,10 @@ SamStatus::Status SamRecord::writeRecordBuffer(IFILE filePtr)
         return(SamStatus::FAIL_ORDER);
     }
 
-    if(myIsBufferSynced == false)
+    if((myIsBufferSynced == false) ||
+       (myBufferSequenceTranslation != translation))
     {
-        if(!fixBuffer())
+        if(!fixBuffer(translation))
         {
             return(myStatus.getStatus());
         }
@@ -625,7 +671,10 @@ int32_t SamRecord::getBlockSize()
     // block size.
     if(myIsBufferSynced == false)
     {
-        fixBuffer();
+        // Since this just returns the block size, the translation of
+        // the sequence does not matter, so just use the currently set
+        // value.
+        fixBuffer(myBufferSequenceTranslation);
     }
     return myRecordPtr->myBlockSize;
 }
@@ -904,6 +953,12 @@ const char* SamRecord::getCigar()
 
 const char* SamRecord::getSequence()
 {
+    return(getSequence(mySequenceTranslation));
+}
+
+
+const char* SamRecord::getSequence(SequenceTranslation translation)
+{
     myStatus = SamStatus::SUCCESS;
     if(mySequence.Length() == 0)
     {
@@ -911,7 +966,58 @@ const char* SamRecord::getSequence()
         // been synced to the string, so do the sync.
         setSequenceAndQualityFromBuffer();
     }
-    return mySequence.c_str();
+
+    // Determine if translation needs to be done.
+    if((translation == NONE) || (myRefPtr == NULL))
+    {
+        return mySequence.c_str();
+    }
+    else if(translation == EQUAL)
+    {
+        if(mySeqWithEq.length() == 0)
+        {
+            // Check to see if the sequence is defined.
+            if(mySequence == "*")
+            {
+                // Sequence is undefined, so no translation necessary.
+                mySeqWithEq = '*';
+            }
+            else
+            {
+                // Sequence defined, so translate it.
+                SamQuerySeqWithRef::seqWithEquals(mySequence.c_str(), 
+                                                  myRecordPtr->myPosition,
+                                                  myCigarRoller,
+                                                  getReferenceName(),
+                                                  *myRefPtr,
+                                                  mySeqWithEq);
+            }
+        }
+        return(mySeqWithEq.c_str());
+    }
+    else
+    {
+        // translation == BASES
+        if(mySeqWithoutEq.length() == 0)
+        {
+            if(mySequence == "*")
+            {
+                // Sequence is undefined, so no translation necessary.
+                mySeqWithoutEq = '*';
+            }
+            else
+            {
+                // Sequence defined, so translate it.
+                SamQuerySeqWithRef::seqWithoutEquals(mySequence.c_str(), 
+                                                     myRecordPtr->myPosition,
+                                                     myCigarRoller,
+                                                     getReferenceName(),
+                                                     *myRefPtr,
+                                                     mySeqWithoutEq);
+            }
+        }
+        return(mySeqWithoutEq.c_str());
+    }
 }
 
 
@@ -929,6 +1035,12 @@ const char* SamRecord::getQuality()
 
 
 char SamRecord::getSequence(int index)
+{
+    return(getSequence(index, mySequenceTranslation));
+}
+
+
+char SamRecord::getSequence(int index, SequenceTranslation translation)
 {
     static const char * asciiBases = "0AC.G...T......N";
 
@@ -953,24 +1065,102 @@ char SamRecord::getSequence(int index)
         throw std::runtime_error(exceptionString.c_str());
     }
 
-    if(mySequence.Length() == 0)
+    // Determine if translation needs to be done.
+    if((translation == NONE) || (myRefPtr == NULL))
     {
-        // Parse BAM sequence.
-        // TODO - maybe store this pointer - and use that to track when valid?
-        unsigned char * packedSequence = 
-            (unsigned char *)myRecordPtr->myData + myRecordPtr->myReadNameLength +
-            myRecordPtr->myCigarLength * sizeof(int);
-        
-        return(index & 1 ?
-               asciiBases[packedSequence[index / 2] & 0xF] :
-               asciiBases[packedSequence[index / 2] >> 4]);
-    }
-    else 
-    {
+        // No translation needs to be done.
+        if(mySequence.Length() == 0)
+        {
+            // Parse BAM sequence.
+            // TODO - maybe store this pointer - and use that to track when
+            // valid?
+            unsigned char * packedSequence = 
+                (unsigned char *)myRecordPtr->myData + 
+                myRecordPtr->myReadNameLength +
+                myRecordPtr->myCigarLength * sizeof(int);
+            
+            return(index & 1 ?
+                   asciiBases[packedSequence[index / 2] & 0xF] :
+                   asciiBases[packedSequence[index / 2] >> 4]);
+        }
         // Already have string.
         return(mySequence[index]);
     }
+    else
+    {
+        // Need to translate the sequence either to have '=' or to not
+        // have it.
+        // First check to see if the sequence has been set.
+        if(mySequence.Length() == 0)
+        {
+            // 0 Length, means that it is in the buffer, but has not yet
+            // been synced to the string, so do the sync.
+            setSequenceAndQualityFromBuffer();
+        }
+
+        // Check the type of translation.
+        if(translation == EQUAL)
+        {
+            // Check whether or not the string has already been 
+            // retrieved that has the '=' in it.
+            if(mySeqWithEq.length() == 0)
+            {
+                // The string with '=' has not yet been determined,
+                // so get the string.
+                // Check to see if the sequence is defined.
+                if(mySequence == "*")
+                {
+                    // Sequence is undefined, so no translation necessary.
+                    mySeqWithEq = '*';
+                }
+                else
+                {
+                    // Sequence defined, so translate it.
+                    SamQuerySeqWithRef::seqWithEquals(mySequence.c_str(), 
+                                                      myRecordPtr->myPosition, 
+                                                      myCigarRoller,
+                                                      getReferenceName(),
+                                                      *myRefPtr,
+                                                      mySeqWithEq);
+                }
+            }
+            // Sequence is set, so return it.
+            return(mySeqWithEq[index]);
+        }
+        else
+        {
+            // translation == BASES
+            // Check whether or not the string has already been 
+            // retrieved that does not have the '=' in it.
+            if(mySeqWithoutEq.length() == 0)
+            {
+                // The string with '=' has not yet been determined,
+                // so get the string.
+                // Check to see if the sequence is defined.
+                if(mySequence == "*")
+                {
+                    // Sequence is undefined, so no translation necessary.
+                    mySeqWithoutEq = '*';
+                }
+                else
+                {
+                    // Sequence defined, so translate it.
+                    // The string without '=' has not yet been determined,
+                    // so get the string.
+                    SamQuerySeqWithRef::seqWithoutEquals(mySequence.c_str(), 
+                                                         myRecordPtr->myPosition, 
+                                                         myCigarRoller,
+                                                         getReferenceName(),
+                                                         *myRefPtr,
+                                                         mySeqWithoutEq);
+                }
+            }
+            // Sequence is set, so return it.
+            return(mySeqWithoutEq[index]);
+        }
+    }
 }
+
 
 char SamRecord::getQuality(int index)
 {
@@ -1145,10 +1335,20 @@ bool SamRecord::getNextSamTag(char* tag, char& vtype, void** value)
 bool SamRecord::getFields(bamRecordStruct& recStruct, String& readName, 
                           String& cigar, String& sequence, String& quality)
 {
+    return(getFields(recStruct, readName, cigar, sequence, quality,
+                     mySequenceTranslation));
+}
+
+
+// Returns the values of all fields except the tags.
+bool SamRecord::getFields(bamRecordStruct& recStruct, String& readName, 
+                          String& cigar, String& sequence, String& quality,
+                          SequenceTranslation translation)
+{
     myStatus = SamStatus::SUCCESS;
     if(myIsBufferSynced == false)
     {
-        if(!fixBuffer())
+        if(!fixBuffer(translation))
         {
             // failed to set the buffer, return false.
             return(false);
@@ -1170,7 +1370,7 @@ bool SamRecord::getFields(bamRecordStruct& recStruct, String& readName,
         // Failed to set the fields, return false.
         return(false);
     }
-    sequence = getSequence();
+    sequence = getSequence(translation);
     // Check the status.
     if(myStatus != SamStatus::SUCCESS)
     {
@@ -1476,10 +1676,11 @@ void* SamRecord::getDoublePtr(int offset)
 
 
 // Fixes the buffer to match the variable length fields if they are set.
-bool SamRecord::fixBuffer()
+bool SamRecord::fixBuffer(SequenceTranslation translation)
 {
     // Check to see if the buffer is already synced.
-    if(myIsBufferSynced)
+    if(myIsBufferSynced &&
+       (myBufferSequenceTranslation == translation))
     {
         // Already synced, nothing to do.
         return(true);
@@ -1594,7 +1795,8 @@ bool SamRecord::fixBuffer()
         myRecordPtr->myCigarLength * sizeof(int);
     unsigned char * packedQuality = packedSequence + bamSequenceLen;
    
-    if(!myIsSequenceBufferValid || !myIsQualityBufferValid)
+    if(!myIsSequenceBufferValid || !myIsQualityBufferValid || 
+       (myBufferSequenceTranslation != translation))
     {
         myRecordPtr->myReadLength = newReadLen;
         // Determine if the quality needs to be set and is just a * and needs to
@@ -1605,13 +1807,24 @@ bool SamRecord::fixBuffer()
             noQuality = true;
         }
       
+        const char* translatedSeq = NULL;
+        // If the sequence is not valid in the buffer or it is not
+        // properly translated, get the properly translated sequence
+        // that needs to be put into the buffer.
+        if((!myIsSequenceBufferValid) ||
+           (translation != myBufferSequenceTranslation))
+        {
+            translatedSeq = getSequence(translation);
+        }
+
         for (int i = 0; i < myRecordPtr->myReadLength; i++) 
         {
-            if(!myIsSequenceBufferValid)
+            if((!myIsSequenceBufferValid) ||
+               (translation != myBufferSequenceTranslation))
             {
                 // Sequence buffer is not valid, so set the sequence.
                 int seqVal = 0;
-                switch(mySequence[i])
+                switch(translatedSeq[i])
                 {
                     case '=':
                         seqVal = 0;
@@ -1675,6 +1888,7 @@ bool SamRecord::fixBuffer()
         }
         myIsQualityBufferValid = true;
         myIsSequenceBufferValid = true;
+        myBufferSequenceTranslation = translation;
     }
 
     if(!myIsTagsBufferValid)
@@ -2237,6 +2451,8 @@ void SamRecord::setVariablesForNewBuffer(SamFileHeader& header)
     myReadName.SetLength(0);
     myCigar.SetLength(0);
     mySequence.SetLength(0);
+    mySeqWithEq.clear();
+    mySeqWithoutEq.clear();
     myQuality.SetLength(0);
     myNeedToSetTagsFromBuffer = true;
     myNeedToSetTagsInBuffer = false;
@@ -2247,6 +2463,7 @@ void SamRecord::setVariablesForNewBuffer(SamFileHeader& header)
     myIsReadNameBufferValid = true;
     myIsCigarBufferValid = true;
     myIsSequenceBufferValid = true;
+    myBufferSequenceTranslation = NONE;
     myIsQualityBufferValid = true;
     myIsTagsBufferValid = true;
     myIsBinValid = true;

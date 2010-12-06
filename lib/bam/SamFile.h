@@ -26,11 +26,17 @@
 #include "BamIndex.h"
 #include "SamStatistics.h"
 
+/// Allows the user to easily read/write a SAM/BAM file.
 class SamFile
 {
 public:
-    enum OpenType {READ, WRITE};
-
+    /// Enum for indicating whether to open the file for read or write.
+    enum OpenType {
+        READ, ///< open for reading.
+        WRITE ///< open for writing.
+    };
+    
+    
     /// Enum for indicating the type of sort for the file.
     enum SortedType {
         UNSORTED = 0, ///< file is not sorted.
@@ -75,6 +81,24 @@ public:
     /// read section, for seeking and reading portions of a bam file.
     /// \return true = success; false = failure.   
     bool ReadBamIndex(const char * filename);
+
+    /// Sets the reference to the specified genome sequence object.
+    /// \param reference pointer to the GenomeSequence object.
+    void SetReference(GenomeSequence* reference);
+
+    /// Set the type of sequence translation to use when reading
+    /// the sequence.  Passed down to the SamRecord when it is read.  
+    // The default type (if this method is never called) is
+    /// NONE (the sequence is left as-is).
+    /// \param translation type of sequence translation to use.
+    void SetReadSequenceTranslation(SamRecord::SequenceTranslation translation);
+
+    /// Set the type of sequence translation to use when writing
+    /// the sequence.  Passed down to the SamRecord when it is written.
+    /// The default type (if this method is never called) is
+    /// NONE (the sequence is left as-is).
+    /// \param translation type of sequence translation to use.
+    void SetWriteSequenceTranslation(SamRecord::SequenceTranslation translation);
 
     /// Close the file if there is one open.
     void Close();
@@ -187,10 +211,11 @@ public:
     inline void PrintStatistics() {if(myStatistics != NULL) myStatistics->print();}
 
 protected:
+    /// Resets the file prepping for a new file.
     void resetFile();
 
-    /// Validate that the record is sorted compared to the previously read record
-    /// if there is one, according to the specified sort order.
+    /// Validate that the record is sorted compared to the previously read
+    /// record if there is one, according to the specified sort order.
     /// If the sort order is UNSORTED, true is returned.
     bool validateSortOrder(SamRecord& record, SamFileHeader& header);
    
@@ -240,6 +265,10 @@ protected:
     SortedChunkList myChunksToRead;
     BamIndex* myBamIndex;
 
+    GenomeSequence* myRefPtr;
+    SamRecord::SequenceTranslation myReadTranslation;
+    SamRecord::SequenceTranslation myWriteTranslation;
+    
     std::string myRefName;
 };
 

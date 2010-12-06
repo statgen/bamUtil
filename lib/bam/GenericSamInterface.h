@@ -53,7 +53,8 @@ public:
     // file.
     // Will be implemented specifically for sam/bam files.
     virtual SamStatus::Status writeRecord(IFILE filePtr, SamFileHeader& header,
-                                          SamRecord& record) = 0;
+                                          SamRecord& record,
+                                          SamRecord::SequenceTranslation translation) = 0;
 
 };
 

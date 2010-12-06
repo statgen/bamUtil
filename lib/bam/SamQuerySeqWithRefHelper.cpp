@@ -126,7 +126,7 @@ bool SamQuerySeqWithRefIter::getNextMatchMismatch(SamSingleBaseMatchInfo& matchM
         }
         
         // Both the reference and the read have a base, so get the bases.
-        char readBase = myRecord.getSequence(myQueryIndex);
+        char readBase = myRecord.getSequence(myQueryIndex, SamRecord::NONE);
         char refBase = myRefSequence[myStartOfReadOnRefIndex + refOffset];
        
         // If either the read or the reference bases are unknown, then
@@ -214,4 +214,96 @@ void SamSingleBaseMatchInfo::setType(Type newType)
 void SamSingleBaseMatchInfo::setQueryIndex(int32_t queryIndex)
 {
     myQueryIndex = queryIndex;
+}
+
+
+///////////////////////////////////////////////////////////////////////////
+void SamQuerySeqWithRef::seqWithEquals(const char* currentSeq,
+                                       int32_t seq0BasedPos,
+                                       Cigar& cigar, 
+                                       const char* referenceName,
+                                       GenomeSequence& refSequence,
+                                       std::string& updatedSeq)
+{
+    updatedSeq = currentSeq;
+
+    int32_t seqLength = updatedSeq.length();
+    int32_t queryIndex = 0;
+
+    uint32_t startOfReadOnRefIndex = 
+        refSequence.getGenomePosition(referenceName) + seq0BasedPos;
+
+    // Loop until the entire sequence has been updated.
+    while(queryIndex < seqLength)
+    {
+        // Still more bases, look for matches.
+
+        // Get the reference offset for this read position.
+        int32_t refOffset = cigar.getRefOffset(queryIndex);
+        if(refOffset != Cigar::INDEX_NA)
+        {
+            // Both the reference and the read have a base, so get the bases.
+            char readBase = currentSeq[queryIndex];
+            char refBase = refSequence[startOfReadOnRefIndex + refOffset];
+
+            // If neither base is unknown and they are the same, count it
+            // as a match.
+            if(!BaseUtilities::isAmbiguous(readBase) && 
+               !BaseUtilities::isAmbiguous(refBase) && 
+               (BaseUtilities::areEqual(readBase, refBase)))
+            {
+                // Match.
+                updatedSeq[queryIndex] = '=';
+            }
+        }
+        // Increment the query index to the next position.
+        ++queryIndex;
+        continue;
+    }
+}
+
+
+void SamQuerySeqWithRef::seqWithoutEquals(const char* currentSeq,
+                                          int32_t seq0BasedPos,
+                                          Cigar& cigar, 
+                                          const char* referenceName,
+                                          GenomeSequence& refSequence,
+                                          std::string& updatedSeq)
+{
+    updatedSeq = currentSeq;
+
+    int32_t seqLength = updatedSeq.length();
+    int32_t queryIndex = 0;
+
+    uint32_t startOfReadOnRefIndex = 
+        refSequence.getGenomePosition(referenceName) + seq0BasedPos;
+
+    // Loop until the entire sequence has been updated.
+    while(queryIndex < seqLength)
+    {
+        // Still more bases, look for matches.
+
+        // Get the reference offset for this read position.
+        int32_t refOffset = cigar.getRefOffset(queryIndex);
+        if(refOffset != Cigar::INDEX_NA)
+        {
+            // Both the reference and the read have a base, so get the bases.
+            char readBase = currentSeq[queryIndex];
+            char refBase = refSequence[startOfReadOnRefIndex + refOffset];
+            
+            // If the bases are equal, set the sequence to the reference
+            // base. (Skips the check for ambiguous to catch a case where
+            // ambiguous had been converted to a '=', and if both are ambiguous,
+            // it will still be set to ambiguous.)
+            if(BaseUtilities::areEqual(readBase, refBase))
+            {
+                // Match.
+                updatedSeq[queryIndex] = refBase;
+            }
+        }
+
+        // Increment the query index to the next position.
+        ++queryIndex;
+        continue;
+    }
 }

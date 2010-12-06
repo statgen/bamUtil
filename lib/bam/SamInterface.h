@@ -44,7 +44,8 @@ public:
     // Writes the specified record into the specified SAM file.
     virtual SamStatus::Status writeRecord(IFILE filePtr,
                                           SamFileHeader& header, 
-                                          SamRecord& record);
+                                          SamRecord& record,
+                                          SamRecord::SequenceTranslation translation);
    
 private:
     void ParseHeaderLine(StringIntHash & tags, StringArray & values);

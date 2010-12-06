@@ -334,9 +334,11 @@ void SamInterface::readRecord(IFILE filePtr, SamFileHeader& header,
     return;
 }
 
+
 SamStatus::Status SamInterface::writeRecord(IFILE filePtr,
                                             SamFileHeader& header, 
-                                            SamRecord& record)
+                                            SamRecord& record,
+                                            SamRecord::SequenceTranslation translation)
 {
     // Store all the fields into a string, then write the string.
     String recordString = record.getReadName();
@@ -357,7 +359,7 @@ SamStatus::Status SamInterface::writeRecord(IFILE filePtr,
     recordString += "\t";
     recordString += record.getInsertSize();
     recordString += "\t";
-    recordString += record.getSequence();
+    recordString += record.getSequence(translation);
     recordString += "\t";
     recordString += record.getQuality();
    

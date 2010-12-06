@@ -1,4 +1,4 @@
 EXE = samTest
-TOOLBASE = WriteFiles ValidationTest ReadFiles BamIndexTest ModifyVar Modify SamFileTest Validate
+TOOLBASE = WriteFiles ValidationTest ReadFiles BamIndexTest ModifyVar Modify SamFileTest Validate TestEquals
 SRCONLY = Main.cpp
 TEST_COMMAND = ./samTest
