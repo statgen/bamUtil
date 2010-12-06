@@ -1,2 +1,2 @@
-TEST_COMMAND = mkdir -p results; ./samTests.sh; \
+TEST_COMMAND = mkdir -p results; ./samTests.sh && \
                ./testFilter.sh
