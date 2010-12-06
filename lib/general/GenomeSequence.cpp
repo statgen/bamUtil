@@ -180,7 +180,7 @@ void PackedRead::set(const char *rhs, int padWithNCount)
     return;
 }
 
-std::string GenomeSequence::IntegerToSeq(unsigned int n, unsigned int wordsize)
+std::string GenomeSequence::IntegerToSeq(unsigned int n, unsigned int wordsize) const
 {
     std::string sequence("");
     for (unsigned int i = 0; i < wordsize; i ++)
@@ -273,7 +273,7 @@ bool GenomeSequence::open(bool isColorSpace, int flags)
     return false;
 }
 
-void GenomeSequence::sanityCheck(MemoryMap &fasta)
+void GenomeSequence::sanityCheck(MemoryMap &fasta) const
 {
     unsigned int i;
 
@@ -710,13 +710,13 @@ bool GenomeSequence::create()
     return false;
 }
 
-int GenomeSequence::getChromosomeCount()
+int GenomeSequence::getChromosomeCount() const
 {
     return header->_chromosomeCount;
 }
 
 //return chromosome index: 0, 1, ... 24;
-int GenomeSequence::getChromosome(genomeIndex_t position)
+int GenomeSequence::getChromosome(genomeIndex_t position) const
 {
     if (position == INVALID_GENOME_INDEX) return INVALID_CHROMOSOME_INDEX;
 
@@ -760,7 +760,7 @@ int GenomeSequence::getChromosome(genomeIndex_t position)
 //
 genomeIndex_t GenomeSequence::getGenomePosition(
     const char *chromosomeName,
-    unsigned int chromosomeIndex)
+    unsigned int chromosomeIndex) const
 {
     genomeIndex_t i = getGenomePosition(chromosomeName);
     if (i == INVALID_GENOME_INDEX) return INVALID_GENOME_INDEX;
@@ -769,7 +769,7 @@ genomeIndex_t GenomeSequence::getGenomePosition(
 
 genomeIndex_t GenomeSequence::getGenomePosition(
     int chromosome,
-    unsigned int chromosomeIndex)
+    unsigned int chromosomeIndex) const
 {
     if (chromosome<0 || chromosome >= (int) header->_chromosomeCount) return INVALID_GENOME_INDEX;
 
@@ -786,14 +786,14 @@ genomeIndex_t GenomeSequence::getGenomePosition(
 // modest chromosome name parsing.... e.g. '%d/X/Y' or 'chr%d/chrX/chrY' or
 // other schemes.
 //
-genomeIndex_t GenomeSequence::getGenomePosition(const char *chromosomeName)
+genomeIndex_t GenomeSequence::getGenomePosition(const char *chromosomeName) const
 {
     int chromosome = getChromosome(chromosomeName);
     if (chromosome==INVALID_CHROMOSOME_INDEX) return INVALID_GENOME_INDEX;
     return header->_chromosomes[chromosome].start;
 }
 
-int GenomeSequence::getChromosome(const char *chromosomeName)
+int GenomeSequence::getChromosome(const char *chromosomeName) const
 {
     unsigned int i;
     for (i=0; i<header->_chromosomeCount; i++)
@@ -810,7 +810,7 @@ int GenomeSequence::getChromosome(const char *chromosomeName)
 // Given a read, reverse the string and swap the base
 // pairs for the reverse strand equivalents.
 //
-void GenomeSequence::getReverseRead(std::string &read)
+void GenomeSequence::getReverseRead(std::string &read) const
 {
     std::string newRead;
     if (read.size()) for (int32_t i=(int) read.size() - 1; i>=0; i--)
@@ -820,7 +820,7 @@ void GenomeSequence::getReverseRead(std::string &read)
     read = newRead;
 }
 
-void GenomeSequence::getReverseRead(String& read)
+void GenomeSequence::getReverseRead(String& read) const
 {
     int i = 0;
     int j = read.Length()-1;
@@ -842,7 +842,7 @@ int GenomeSequence::debugPrintReadValidation(
     int sumQuality,
     int mismatchCount,
     bool recurse
-)
+) const
 {
     int validateSumQ = 0;
     int validateMismatchCount = 0;
@@ -911,7 +911,7 @@ int GenomeSequence::debugPrintReadValidation(
 #undef ABS
 
 
-bool GenomeSequence::wordMatch(unsigned int index, std::string &word)
+bool GenomeSequence::wordMatch(unsigned int index, std::string &word) const
 {
     for (uint32_t i = 0; i<word.size(); i++)
     {
@@ -920,7 +920,7 @@ bool GenomeSequence::wordMatch(unsigned int index, std::string &word)
     return true;
 }
 
-bool GenomeSequence::printNearbyWords(unsigned int index, unsigned int deviation, std::string &word)
+bool GenomeSequence::printNearbyWords(unsigned int index, unsigned int deviation, std::string &word) const
 {
     for (unsigned int i = index - deviation; i < index + deviation; i++)
     {
@@ -939,7 +939,7 @@ bool GenomeSequence::printNearbyWords(unsigned int index, unsigned int deviation
     return false;
 }
 
-void GenomeSequence::dumpSequenceSAMDictionary(std::ostream &file)
+void GenomeSequence::dumpSequenceSAMDictionary(std::ostream &file) const
 {
     for (unsigned int i=0; i<header->_chromosomeCount; i++)
     {
@@ -955,7 +955,7 @@ void GenomeSequence::dumpSequenceSAMDictionary(std::ostream &file)
     }
 }
 
-void GenomeSequence::dumpHeaderTSV(std::ostream &file)
+void GenomeSequence::dumpHeaderTSV(std::ostream &file) const
 {
     file << "# Reference: " << _baseFilename << std::endl;
     file << "# SN: sample name - must be unique" << std::endl;
@@ -979,13 +979,8 @@ void GenomeSequence::dumpHeaderTSV(std::ostream &file)
     }
 }
 
-bool loadHeaderFromTSV(std::istream &input)
-{
-    return false;
-}
 
-
-void GenomeSequence::getString(std::string &str, int chromosome, genomeIndex_t index, int baseCount)
+void GenomeSequence::getString(std::string &str, int chromosome, genomeIndex_t index, int baseCount) const
 {
     //
     // calculate the genome index for the lazy caller...
@@ -995,14 +990,14 @@ void GenomeSequence::getString(std::string &str, int chromosome, genomeIndex_t i
     getString(str, genomeIndex, baseCount);
 }
 
-void GenomeSequence::getString(String &str, int chromosome, genomeIndex_t index, int baseCount)
+void GenomeSequence::getString(String &str, int chromosome, genomeIndex_t index, int baseCount) const
 {
     std::string string;
     this-> getString(string, chromosome, index, baseCount);
     str = string.c_str();
 }
 
-void GenomeSequence::getString(std::string &str, genomeIndex_t index, int baseCount)
+void GenomeSequence::getString(std::string &str, genomeIndex_t index, int baseCount) const
 {
     str.clear();
     if (baseCount > 0)
@@ -1023,14 +1018,14 @@ void GenomeSequence::getString(std::string &str, genomeIndex_t index, int baseCo
     }
 }
 
-void GenomeSequence::getString(String &str, genomeIndex_t index, int baseCount)
+void GenomeSequence::getString(String &str, genomeIndex_t index, int baseCount) const
 {
     std::string string;
     getString(string, index, baseCount);
     str = string.c_str();
 }
 
-void GenomeSequence::getHighLightedString(std::string &str, genomeIndex_t index, int baseCount, genomeIndex_t highLightStart, genomeIndex_t highLightEnd)
+void GenomeSequence::getHighLightedString(std::string &str, genomeIndex_t index, int baseCount, genomeIndex_t highLightStart, genomeIndex_t highLightEnd) const
 {
     str.clear();
     if (baseCount > 0)
@@ -1057,7 +1052,7 @@ void GenomeSequence::getHighLightedString(std::string &str, genomeIndex_t index,
     }
 }
 
-void GenomeSequence::print30(genomeIndex_t index)
+void GenomeSequence::print30(genomeIndex_t index) const
 {
     std::cout << "index: " << index << "\n";
     for (genomeIndex_t i=index-30; i<index+30; i++)
@@ -1069,7 +1064,7 @@ void GenomeSequence::print30(genomeIndex_t index)
     std::cout << std::endl;
 }
 
-void GenomeSequence::getMismatchHatString(std::string &result, const std::string &read, genomeIndex_t location)
+void GenomeSequence::getMismatchHatString(std::string &result, const std::string &read, genomeIndex_t location) const
 {
     result = "";
     for (uint32_t i=0; i < read.size(); i++)
@@ -1081,7 +1076,7 @@ void GenomeSequence::getMismatchHatString(std::string &result, const std::string
     }
 }
 
-void GenomeSequence::getMismatchString(std::string &result, const std::string &read, genomeIndex_t location)
+void GenomeSequence::getMismatchString(std::string &result, const std::string &read, genomeIndex_t location) const
 {
     result = "";
     for (uint32_t i=0; i < read.size(); i++)
@@ -1093,7 +1088,7 @@ void GenomeSequence::getMismatchString(std::string &result, const std::string &r
     }
 }
 
-genomeIndex_t GenomeSequence::simpleLocalAligner(std::string &read, std::string &quality, genomeIndex_t index, int windowSize)
+genomeIndex_t GenomeSequence::simpleLocalAligner(std::string &read, std::string &quality, genomeIndex_t index, int windowSize) const
 {
     int bestScore = 1000000; // either mismatch count or sumQ
     genomeIndex_t bestMatchLocation = INVALID_GENOME_INDEX;
@@ -1149,7 +1144,7 @@ std::ostream &operator << (std::ostream &stream, genomeSequenceMmapHeader &h)
     return stream;
 }
 
-void GenomeSequence::getChromosomeAndIndex(std::string &s, genomeIndex_t i)
+void GenomeSequence::getChromosomeAndIndex(std::string &s, genomeIndex_t i) const
 {
     int whichChromosome = 0;
 
@@ -1173,7 +1168,7 @@ void GenomeSequence::getChromosomeAndIndex(std::string &s, genomeIndex_t i)
 }
 
 
-void GenomeSequence::getChromosomeAndIndex(String& s, genomeIndex_t i)
+void GenomeSequence::getChromosomeAndIndex(String& s, genomeIndex_t i) const
 {
     std::string ss;
     getChromosomeAndIndex(ss, i);
@@ -1199,7 +1194,7 @@ void GenomeSequence::getChromosomeAndIndex(String& s, genomeIndex_t i)
 //   False: if not succeed
 bool GenomeSequence::populateDBSNP(
     mmapArrayBool_t &dbSNP,
-    std::ifstream &inputFile)
+    std::ifstream &inputFile) const
 {
     std::string inputLine;
 
@@ -1256,7 +1251,7 @@ bool GenomeSequence::populateDBSNP(
 
 bool GenomeSequence::loadDBSNP(
     mmapArrayBool_t &dbSNP,
-    const char *inputFileName)
+    const char *inputFileName) const
 {
     //
     // the goal in this section of code is to allow the user

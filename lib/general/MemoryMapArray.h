@@ -303,7 +303,7 @@ public:
         if (header) header->debugPrint(f);
     }
 
-    size_t getElementCount()
+    size_t getElementCount() const
     {
         return header->elementCount;
     }

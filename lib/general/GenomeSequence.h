@@ -36,10 +36,13 @@
 // Goncalo's String class
 #include "StringArray.h"
 
-#ifndef __STDC_LIMIT_MACROS
-#define __STDC_LIMIT_MACROS
-#endif
 #include <stdint.h>
+
+// stdint.h will define this, but only if __STDC_LIMIT_MACROS was
+// defined prior to the first include of stdint.h
+#ifndef UINT32_MAX
+#define UINT32_MAX 0xFFFFFFFF
+#endif
 
 typedef uint32_t    genomeIndex_t;
 #define INVALID_GENOME_INDEX UINT32_MAX
@@ -235,6 +238,7 @@ public:
 class GenomeSequence : public genomeSequenceArray
 {
 public:
+    // TODO - these are found in BaseAsciiMap so should be removed from here.
     static const int baseAIndex = 000;
     static const int baseTIndex = 001;
     static const int baseCIndex = 002;
@@ -247,6 +251,8 @@ public:
     // a value 4 and 5, for 'N' (indelible) and 'M' (unknown to me).
     //
     static unsigned char base2int[];        // base space read (ATCG)
+
+    // TODO - these are found in BaseAsciiMap so should be removed from here.
     static const char int2base[];
     static const char int2colorSpace[];
     static unsigned char base2complement[];
@@ -344,25 +350,25 @@ public:
     {
         _application = application;     // used in ::create() to set application name
     }
-    const std::string &getFastaName()
+    const std::string &getFastaName() const
     {
         return _fastaFilename;
     }
-    const std::string &getReferenceName()
+    const std::string &getReferenceName() const
     {
         return _referenceFilename;
     }
 
     /// tell us if we are a color space reference or not
     /// \return true if colorspace, false otherwise
-    bool isColorSpace()
+    bool isColorSpace() const
     {
         return _colorSpace;
     }
 
     /// return the number of bases represented in this reference
     /// \return count of bases
-    genomeIndex_t   getNumberBases()
+    genomeIndex_t   getNumberBases() const
     {
         return getElementCount();
     }
@@ -374,7 +380,8 @@ public:
     ///
     /// \param 0-based position the base in the genome
     /// \return 0-based index into chromosome table - INVALID_CHROMOSOME_INDEX if error
-    int getChromosome(genomeIndex_t position);
+    int getChromosome(genomeIndex_t position) const;
+
     /// given a chromosome name, return the chromosome index
     ///
     /// This is done via a linear search of the chromosome table in the
@@ -382,16 +389,16 @@ public:
     ///
     /// \param chromosomeName the name of the chromosome - exact match only
     /// \return 0-based index into chromosome table - INVALID_CHROMOSOME_INDEX if error
-    int getChromosome(const char *chromosomeName);
+    int getChromosome(const char *chromosomeName) const;
     /// Return the number of chromosomes in the genome
     /// \return number of chromosomes in the genome
-    int getChromosomeCount();
+    int getChromosomeCount() const;
 
     /// given a chromosome, return the genome base it starts in
     ///
     /// \param 0-based chromosome index
     /// \return 0-based genome index of the base that starts the chromosome
-    genomeIndex_t getChromosomeStart(int chromosomeIndex)
+    genomeIndex_t getChromosomeStart(int chromosomeIndex) const
     {
         if (chromosomeIndex==INVALID_CHROMOSOME_INDEX) return INVALID_GENOME_INDEX;
         return header->_chromosomes[chromosomeIndex].start;
@@ -401,7 +408,7 @@ public:
     ///
     /// \param 0-based chromosome index
     /// \return size of the chromosome in bases
-    genomeIndex_t getChromosomeSize(int chromosomeIndex)
+    genomeIndex_t getChromosomeSize(int chromosomeIndex) const
     {
         if (chromosomeIndex==INVALID_CHROMOSOME_INDEX) return 0;
         return header->_chromosomes[chromosomeIndex].size;
@@ -414,7 +421,7 @@ public:
     /// \return genome index of the above chromosome position
     genomeIndex_t getGenomePosition(
         const char *chromosomeName,
-        unsigned int chromosomeIndex);
+        unsigned int chromosomeIndex) const;
 
     /// given a chromosome index and position, return the genome position
     ///
@@ -423,18 +430,19 @@ public:
     /// \return genome index of the above chromosome position
     genomeIndex_t getGenomePosition(
         int chromosome,
-        unsigned int chromosomeIndex);
+        unsigned int chromosomeIndex) const;
 
     /// given the chromosome name, get the corresponding 0 based genome index
     /// for the start of that chromosome
-    genomeIndex_t getGenomePosition(const char *chromosomeName);
-    genomeIndex_t getGenomePosition(int chromosomeIndex);
+    genomeIndex_t getGenomePosition(const char *chromosomeName) const;
+    genomeIndex_t getGenomePosition(int chromosomeIndex) const;
 
-    const std::string &getBaseFilename()
+    const std::string &getBaseFilename() const
     {
         return _baseFilename;
     }
-    const char *getChromosomeName(int chromosomeIndex)
+
+    const char *getChromosomeName(int chromosomeIndex) const
     {
         return header->_chromosomes[chromosomeIndex].name;
     }
@@ -444,27 +452,32 @@ public:
         _debugFlag = d;
     }
 
-    genomeIndex_t sequenceLength()
+    genomeIndex_t sequenceLength() const
     {
         return (genomeIndex_t) header->elementCount;
     }
-    const char *chromosomeName(int chr)
+
+    const char *chromosomeName(int chr) const
     {
         return header->_chromosomes[chr].name;
     }
 
-    void sanityCheck(MemoryMap &fasta);
-    std::string IntegerToSeq(unsigned int n, unsigned int wordsize);
+    void sanityCheck(MemoryMap &fasta) const;
 
-    bool wordMatch(unsigned int index, std::string &word);
-    bool printNearbyWords(unsigned int index, unsigned int variance, std::string &word);
-    char BasePair(char c)
+    // TODO - this will be moved somewhere else and be made a static method.
+    std::string IntegerToSeq(unsigned int n, unsigned int wordsize) const;
+
+    bool wordMatch(unsigned int index, std::string &word) const;
+    bool printNearbyWords(unsigned int index, unsigned int variance, std::string &word) const;
+
+    // TODO - this will be moved somewhere else and be made a static method.
+    char BasePair(char c) const
     {
         return base2complement[(int) c];
     }
-    void dumpSequenceSAMDictionary(std::ostream&);
-    void dumpHeaderTSV(std::ostream&);
-    void loadHeaderFromTSV(std::istream&);
+
+    void dumpSequenceSAMDictionary(std::ostream&) const;
+    void dumpHeaderTSV(std::ostream&) const;
 
     ///
     /// Return the bases in base space or color space for within range index, ot
@@ -494,13 +507,13 @@ public:
     // This block of code is a functional duplicate of the following
     // code - leave this here for reference and possibly later
     // performance testing as well as compiler evaluation.
-    inline char operator[](genomeIndex_t index)
+    inline char operator[](genomeIndex_t index) const
     {
         return int2base[(*((genomeSequenceArray*) this))[index]];
     }
 #endif
 
-    inline char operator[](genomeIndex_t index)
+    inline char operator[](genomeIndex_t index) const
     {
         uint8_t val;
         if (index < getNumberBases())
@@ -522,14 +535,16 @@ public:
         return val;
     }
 
-    inline uint8_t getInteger(genomeIndex_t index)
+    inline uint8_t getInteger(genomeIndex_t index) const
     {
         return (*((genomeSequenceArray*) this))[index];
     }
+
     inline void set(genomeIndex_t index, char value)
     {
         genomeSequenceArray::set(index, base2int[(uint8_t) value]);
     }
+
     /// obtain the pointer to the raw data for other access methods
     ///
     /// this is a fairly ugly hack to reach into the
@@ -550,10 +565,16 @@ private:
     /// we can write the SAM SQ headers properly.
     /// NB: operates on the last fully loaded chromosome.
     bool setChromosomeMD5andLength(uint32_t whichChromosome);
+
 public:
+
+    // TODO - this will be moved somewhere else and be made a static method.
     // replace read with the reversed one
-    void getReverseRead(std::string &read);
-    void getReverseRead(String& read);
+    void getReverseRead(std::string &read) const;
+
+    // TODO - this will be moved somewhere else and be made a static method.
+    void getReverseRead(String& read) const;
+
     // debug the given read - print nice results
     int debugPrintReadValidation(
         std::string &read,
@@ -563,24 +584,30 @@ public:
         int sumQuality,
         int mismatchCount,
         bool recurse = true
-    );
+    ) const;
 
-    void getString(std::string &str, int chromosome, genomeIndex_t index, int baseCount);
-    void getString(String &str, int chromosome, genomeIndex_t index, int baseCount);
+    void getString(std::string &str, int chromosome, genomeIndex_t index, int baseCount) const;
+    void getString(String &str, int chromosome, genomeIndex_t index, int baseCount) const;
     //
     // get the sequence from this GenomeSequence.
     // if baseCount < 0, get the reverse complement
     // that starts at index (but do not reverse the string?)
     //
-    void getString(std::string &str, genomeIndex_t index, int baseCount);
-    void getString(String &str, genomeIndex_t index, int baseCount);
+    void getString(std::string &str, genomeIndex_t index, int baseCount) const;
+    void getString(String &str, genomeIndex_t index, int baseCount) const;
 
-    void getHighLightedString(std::string &str, genomeIndex_t index, int baseCount, genomeIndex_t highLightStart, genomeIndex_t highLightEnd);
+    void getHighLightedString(std::string &str, genomeIndex_t index, int baseCount, genomeIndex_t highLightStart, genomeIndex_t highLightEnd) const;
 
-    void print30(genomeIndex_t);
+    void print30(genomeIndex_t) const;
 
     // for debugging, not for speed:
-    genomeIndex_t simpleLocalAligner(std::string &read, std::string &quality, genomeIndex_t index, int windowSize);
+    genomeIndex_t simpleLocalAligner(std::string &read, std::string &quality, genomeIndex_t index, int windowSize) const;
+
+
+    // TODO - these methods do not handle a CIGAR string and do not handle '=' when a read matches the reference.
+    // They are here for alignment and should be moved to the aligner (karma).
+    // OR they should optionally take a CIGAR and use that if specified....
+    // maybe they should be helper methods that are found somewhere else
 
     /// Return the mismatch count, disregarding CIGAR strings
     ///
@@ -589,7 +616,7 @@ public:
     /// \param exclude is a wildcard character (e.g. '.' or 'N')
     ///
     /// \return number of bases that don't match the reference, except those that match exclude
-    int getMismatchCount(std::string &read, genomeIndex_t location, char exclude='\0')
+    int getMismatchCount(std::string &read, genomeIndex_t location, char exclude='\0') const
     {
         int mismatchCount = 0;
         for (uint32_t i=0; i<read.size(); i++)
@@ -602,7 +629,7 @@ public:
     /// \param read shotgun sequencer read string
     /// \param qualities phred quality string of same length
     /// \param location the alignment location to check sumQ
-    int getSumQ(std::string &read, std::string &qualities, genomeIndex_t location)
+    int getSumQ(std::string &read, std::string &qualities, genomeIndex_t location) const
     {
         int sumQ = 0;
         for (uint32_t i=0; i<read.size(); i++)
@@ -610,11 +637,13 @@ public:
         return sumQ;
     };
     // return a string highlighting mismatch postions with '^' chars:
-    void getMismatchHatString(std::string &result, const std::string &read, genomeIndex_t location);
-    void getMismatchString(std::string &result, const std::string &read, genomeIndex_t location);
+    void getMismatchHatString(std::string &result, const std::string &read, genomeIndex_t location) const;
+    void getMismatchString(std::string &result, const std::string &read, genomeIndex_t location) const;
 
-    void getChromosomeAndIndex(std::string &, genomeIndex_t);
-    void getChromosomeAndIndex(String &, genomeIndex_t);
+    // END TODO
+
+    void getChromosomeAndIndex(std::string &, genomeIndex_t) const;
+    void getChromosomeAndIndex(String &, genomeIndex_t) const;
 
     /// check a SAM format read, using phred quality scores and
     /// the CIGAR string to determine if it is correct.
@@ -636,9 +665,9 @@ public:
         int &gapExtendCount,    // output only
         int &gapDeleteCount,    // output only
         std::string &result
-    );
+    ) const;
 
-    bool populateDBSNP(mmapArrayBool_t &dbSNP, std::ifstream &inputFile);
+    bool populateDBSNP(mmapArrayBool_t &dbSNP, std::ifstream &inputFile) const;
 
     /// user friendly dbSNP loader.
     ///
@@ -654,7 +683,7 @@ public:
     ///
     /// \return false if a dbSNP file was correctly loaded, true otherwise
     ///
-    bool loadDBSNP(mmapArrayBool_t &dbSNP, const char *inputFileName);
+    bool loadDBSNP(mmapArrayBool_t &dbSNP, const char *inputFileName) const;
 };
 
 #endif
