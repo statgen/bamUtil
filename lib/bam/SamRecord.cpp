@@ -1042,7 +1042,7 @@ char SamRecord::getSequence(int index)
 
 char SamRecord::getSequence(int index, SequenceTranslation translation)
 {
-    static const char * asciiBases = "0AC.G...T......N";
+    static const char * asciiBases = "=AC.G...T......N";
 
     // Determine the read length.
     int32_t readLen = getReadLength();
@@ -1962,7 +1962,7 @@ void SamRecord::setSequenceAndQualityFromBuffer()
     unsigned char * packedQuality = 
         packedSequence + (myRecordPtr->myReadLength + 1) / 2;
 
-    const char * asciiBases = "0AC.G...T......N";
+    const char * asciiBases = "=AC.G...T......N";
 
     // Flag to see if the quality is specified - the quality contains a value
     // other than 0xFF.  If all values are 0xFF, then there is no quality.

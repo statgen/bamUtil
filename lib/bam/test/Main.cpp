@@ -57,7 +57,7 @@ int main(int argc, char ** argv)
 
         testSamFile();
 
-        testEqSam();
+        testSeqEquals();
     }
     else
     {

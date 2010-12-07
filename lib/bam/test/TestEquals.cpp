@@ -20,81 +20,98 @@
 
 
 
-void testEqSam()
+void testSeqEquals()
 {
-    SamFile inSam;
-    assert(inSam.OpenForRead("testFiles/testEq.sam"));
-
     // Call generic test which since the sam and bam are identical, should
     // contain the same results.
-    EqualsTest::testEq(inSam);
-}
-
-void testEqBam()
-{
-//     SamFile inSam;
-//     assert(inSam.OpenForRead("testFiles/testBam.bam"));
-
-//     // Call generic test which since the sam and bam are identical, should
-//     // contain the same results.
-//     EqualsTest::testEq(inSam);
+    EqualsTest::testEq(EqualsTest::SAM);
+    EqualsTest::testEq(EqualsTest::BAM);
 }
 
 
 const char* EqualsTest::READ_NAMES[] = 
     {"01:====", "02:===X", "03:==X=", "04:==XX", "05:=X==", "06:=X=X",
      "07:=XX=", "08:=XXX", "09:X===", "10:X==X", "11:X=X=", "12:X=XX",
-     "13:XX==", "14:XX=X", "15:XXX=", "16:XXXX", "Read:ggCCTA;Ref:CCTA",
+     "13:XX==", "14:XX=X", "15:XXX=", "16:XXXX", "Read:GGCCTA;Ref:CCTA",
      "Read:CCTA;Ref:CCTA", "Read:CCGTxxxC;Ref:CCxTAACC", 
      "Read:CCxxAC;Ref:CCTAACC"};
 
 const char* EqualsTest::READ_SEQS_BASES[] = 
-    {"CCTA", "CCTT", "CCAA", "CCAT", "CTTA", "CTTT", "CTAA", "CTAT", "TCTA", "TCTT", "TCAA", "TCAT", "TTTA", "TTTT", "TTAA", "TTAT", "ggCCTA",
+    {"CCTA", "CCTT", "CCAA", "CCAT", "CTTA", "CTTT", "CTAA", "CTAT", "TCTA", "TCTT", "TCAA", "TCAT", "TTTA", "TTTT", "TTAA", "TTAT", "GGCCTA",
      "CCTA", "CCGTC", "CCAC"};
 
 const char* EqualsTest::READ_SEQS_EQUALS[] = 
-    {"====", "===T", "==A=", "==AT", "=T==", "=T=T", "=TA=", "=TAT", "T===", "T==T", "T=A=", "T=AT", "TT==", "TT=T", "TTA=", "TTAT", "gg====",
+    {"====", "===T", "==A=", "==AT", "=T==", "=T=T", "=TA=", "=TAT", "T===", "T==T", "T=A=", "T=AT", "TT==", "TT=T", "TTA=", "TTAT", "GG====",
      "====", "==G==", "===="};
 
 const char* EqualsTest::READ_SEQS_MIXED[] = 
-    {"C===", "=C=T", "==AA", "==AT", "=TTA", "CT=T", "=TAA", "=TAT", "T=TA", "TC=T", "TCA=", "TCAT", "TT=A", "TT=T", "TTA=", "TTAT", "ggC=T=",
+    {"C===", "=C=T", "==AA", "==AT", "=TTA", "CT=T", "=TAA", "=TAT", "T=TA", "TC=T", "TCA=", "TCAT", "TT=A", "TT=T", "TTA=", "TTAT", "GGC=T=",
      "C=T=", "C=GT=", "C=A="};
 
-const char* EqualsTest::expectedReferenceName = "1";
-const char* EqualsTest::expectedMateReferenceName = "1";
-const char* EqualsTest::expectedMateReferenceNameOrEqual = "=";
-const char* EqualsTest::expectedCigar = "4M";
-const char* EqualsTest::expectedQuality = "I00?";
+const char* EqualsTest::expectedReferenceName;
+const char* EqualsTest::expectedMateReferenceName;
+const char* EqualsTest::expectedMateReferenceNameOrEqual;
+const char* EqualsTest::expectedCigar;
+const char* EqualsTest::expectedQuality;
 
+std::vector<unsigned int> EqualsTest::expectedCigarHex;
 
-    // The First cigar is 4M which is 4 << 4 | 0 = 0x40 = 64
-std::vector<unsigned int> EqualsTest::expectedCigarHex(1, 0x40);
+int EqualsTest::expected0BasedAlignmentEnd;
+int EqualsTest::expected1BasedAlignmentEnd;
+int EqualsTest::expectedAlignmentLength;
+int EqualsTest::expected0BasedUnclippedStart;
+int EqualsTest::expected1BasedUnclippedStart;
+int EqualsTest::expected0BasedUnclippedEnd;
+int EqualsTest::expected1BasedUnclippedEnd;
+bamRecordStruct EqualsTest::expectedRecord;
 
-int EqualsTest::expected0BasedAlignmentEnd = 10013;
-int EqualsTest::expected1BasedAlignmentEnd = expected0BasedAlignmentEnd + 1;
-int EqualsTest::expectedAlignmentLength = 4;
-int EqualsTest::expected0BasedUnclippedStart = expectedRecord.myPosition;
-int EqualsTest::expected1BasedUnclippedStart = expected0BasedUnclippedStart + 1;
-int EqualsTest::expected0BasedUnclippedEnd = expected0BasedAlignmentEnd;
-int EqualsTest::expected1BasedUnclippedEnd = expected1BasedAlignmentEnd;
-bamRecordStruct EqualsTest::expectedRecord = {50, // block size
-                                              0, // refID
-                                              10010, // position
-                                              8, // read name length
-                                              0, // map quality
-                                              4681, // bin
-                                              1, // cigar length
-                                              73, // flag
-                                              4, // read length
-                                              0, // mate ref id
-                                              10008, // mate position
-                                              0}; // insert size
-
-void EqualsTest::testEq(SamFile &inSam)
+void EqualsTest::testEq(FileType inputType)
 {
-    // Read the SAM Header.
+    reset();
+    SamFile inSam;
+
+    std::string outputBase = "results/out";
+
+    if(inputType == SAM)
+    {
+        assert(inSam.OpenForRead("testFiles/testEq.sam"));
+        outputBase += "SamEq";
+    }
+    else
+    {
+        assert(inSam.OpenForRead("testFiles/testEq.bam"));
+        outputBase += "BamEq";
+    }
+
+   // Read the SAM Header.
     SamFileHeader samHeader;
     assert(inSam.ReadHeader(samHeader));
+
+    std::string outputName = outputBase + "Bases.sam";
+    SamFile outBasesSam( outputName.c_str(), SamFile::WRITE);
+    outputName = outputBase + "Equals.sam";
+    SamFile outEqualsSam(outputName.c_str(), SamFile::WRITE);
+    outputName = outputBase + "Orig.sam";
+    SamFile outOrigSam(  outputName.c_str(), SamFile::WRITE);
+    outputName = outputBase + "Bases.bam";
+    SamFile outBasesBam( outputName.c_str(), SamFile::WRITE);
+    outputName = outputBase + "Equals.bam";
+    SamFile outEqualsBam(outputName.c_str(), SamFile::WRITE);
+    outputName = outputBase + "Orig.bam";
+    SamFile outOrigBam(  outputName.c_str(), SamFile::WRITE);
+    assert(outBasesSam.WriteHeader(samHeader));
+    assert(outEqualsSam.WriteHeader(samHeader));
+    assert(outOrigSam.WriteHeader(samHeader));
+    assert(outBasesBam.WriteHeader(samHeader));
+    assert(outEqualsBam.WriteHeader(samHeader));
+    assert(outOrigBam.WriteHeader(samHeader));
+
+    outBasesSam.SetWriteSequenceTranslation(SamRecord::BASES);
+    outEqualsSam.SetWriteSequenceTranslation(SamRecord::EQUAL);
+    outOrigSam.SetWriteSequenceTranslation(SamRecord::NONE);
+    outBasesBam.SetWriteSequenceTranslation(SamRecord::BASES);
+    outEqualsBam.SetWriteSequenceTranslation(SamRecord::EQUAL);
+    outOrigBam.SetWriteSequenceTranslation(SamRecord::NONE);
 
     GenomeSequence reference("testFiles/chr1_partial.fa");
 
@@ -112,16 +129,34 @@ void EqualsTest::testEq(SamFile &inSam)
     {
         assert(inSam.ReadRecord(samHeader, samRecord) == true);
         validateEqRead(samRecord, j, READ_SEQS_BASES[j]);
+        assert(outBasesSam.WriteRecord(samHeader, samRecord));
+        assert(outEqualsSam.WriteRecord(samHeader, samRecord));
+        assert(outOrigSam.WriteRecord(samHeader, samRecord));
+        assert(outBasesBam.WriteRecord(samHeader, samRecord));
+        assert(outEqualsBam.WriteRecord(samHeader, samRecord));
+        assert(outOrigBam.WriteRecord(samHeader, samRecord));
     }
     for(int j = 0; j < 16; j++)
     {
         assert(inSam.ReadRecord(samHeader, samRecord) == true);
         validateEqRead(samRecord, j, READ_SEQS_EQUALS[j]);
+        assert(outBasesSam.WriteRecord(samHeader, samRecord));
+        assert(outEqualsSam.WriteRecord(samHeader, samRecord));
+        assert(outOrigSam.WriteRecord(samHeader, samRecord));
+        assert(outBasesBam.WriteRecord(samHeader, samRecord));
+        assert(outEqualsBam.WriteRecord(samHeader, samRecord));
+        assert(outOrigBam.WriteRecord(samHeader, samRecord));
     }
     for(int j = 0; j < 16; j++)
     {
         assert(inSam.ReadRecord(samHeader, samRecord) == true);
         validateEqRead(samRecord, j, READ_SEQS_MIXED[j]);
+        assert(outBasesSam.WriteRecord(samHeader, samRecord));
+        assert(outEqualsSam.WriteRecord(samHeader, samRecord));
+        assert(outOrigSam.WriteRecord(samHeader, samRecord));
+        assert(outBasesBam.WriteRecord(samHeader, samRecord));
+        assert(outEqualsBam.WriteRecord(samHeader, samRecord));
+        assert(outOrigBam.WriteRecord(samHeader, samRecord));
     }
 
     expectedCigar = "2S4M";
@@ -137,6 +172,12 @@ void EqualsTest::testEq(SamFile &inSam)
     expectedQuality = "??I00?";
     assert(inSam.ReadRecord(samHeader, samRecord) == true);
     validateEqRead(samRecord, 16, READ_SEQS_MIXED[16]);
+        assert(outBasesSam.WriteRecord(samHeader, samRecord));
+        assert(outEqualsSam.WriteRecord(samHeader, samRecord));
+        assert(outOrigSam.WriteRecord(samHeader, samRecord));
+        assert(outBasesBam.WriteRecord(samHeader, samRecord));
+        assert(outEqualsBam.WriteRecord(samHeader, samRecord));
+        assert(outOrigBam.WriteRecord(samHeader, samRecord));
 
     expectedCigar = "4M4H";
     expectedCigarHex.clear();
@@ -153,6 +194,12 @@ void EqualsTest::testEq(SamFile &inSam)
     expectedQuality = "I00?";
     assert(inSam.ReadRecord(samHeader, samRecord) == true);
     validateEqRead(samRecord, 17, READ_SEQS_MIXED[17]);
+        assert(outBasesSam.WriteRecord(samHeader, samRecord));
+        assert(outEqualsSam.WriteRecord(samHeader, samRecord));
+        assert(outOrigSam.WriteRecord(samHeader, samRecord));
+        assert(outBasesBam.WriteRecord(samHeader, samRecord));
+        assert(outEqualsBam.WriteRecord(samHeader, samRecord));
+        assert(outOrigBam.WriteRecord(samHeader, samRecord));
 
     expectedCigar = "1M1P1M1I1M3D1M";
     expectedCigarHex.clear();
@@ -177,6 +224,12 @@ void EqualsTest::testEq(SamFile &inSam)
     expectedQuality = "I00??";
     assert(inSam.ReadRecord(samHeader, samRecord) == true);
     validateEqRead(samRecord, 18, READ_SEQS_MIXED[18]);
+        assert(outBasesSam.WriteRecord(samHeader, samRecord));
+        assert(outEqualsSam.WriteRecord(samHeader, samRecord));
+        assert(outOrigSam.WriteRecord(samHeader, samRecord));
+        assert(outBasesBam.WriteRecord(samHeader, samRecord));
+        assert(outEqualsBam.WriteRecord(samHeader, samRecord));
+        assert(outOrigBam.WriteRecord(samHeader, samRecord));
 
     expectedCigar = "2M2N2M";
     expectedCigarHex.clear();
@@ -197,9 +250,49 @@ void EqualsTest::testEq(SamFile &inSam)
     expectedQuality = "I00?";
     assert(inSam.ReadRecord(samHeader, samRecord) == true);
     validateEqRead(samRecord, 19, READ_SEQS_MIXED[19]);
+        assert(outBasesSam.WriteRecord(samHeader, samRecord));
+        assert(outEqualsSam.WriteRecord(samHeader, samRecord));
+        assert(outOrigSam.WriteRecord(samHeader, samRecord));
+        assert(outBasesBam.WriteRecord(samHeader, samRecord));
+        assert(outEqualsBam.WriteRecord(samHeader, samRecord));
+        assert(outOrigBam.WriteRecord(samHeader, samRecord));
 
 }
 
+
+void EqualsTest::reset()
+{
+    expectedReferenceName = "1";
+    expectedMateReferenceName = "1";
+    expectedMateReferenceNameOrEqual = "=";
+    expectedCigar = "4M";
+    expectedQuality = "I00?";
+
+    // The First cigar is 4M which is 4 << 4 | 0 = 0x40 = 64
+    expectedCigarHex.clear();
+    expectedCigarHex.push_back(0x40);
+
+    expectedRecord.myBlockSize = 50;
+    expectedRecord.myReferenceID = 0;
+    expectedRecord.myPosition = 10010;
+    expectedRecord.myReadNameLength = 8;
+    expectedRecord.myMapQuality = 0;
+    expectedRecord.myBin = 4681;
+    expectedRecord.myCigarLength = 1;
+    expectedRecord.myFlag = 73;
+    expectedRecord.myReadLength = 4;
+    expectedRecord.myMateReferenceID = 0;
+    expectedRecord.myMatePosition = 10008;
+    expectedRecord.myInsertSize = 0;
+
+    expected0BasedAlignmentEnd = 10013;
+    expected1BasedAlignmentEnd = expected0BasedAlignmentEnd + 1;
+    expectedAlignmentLength = 4;
+    expected0BasedUnclippedStart = expectedRecord.myPosition;
+    expected1BasedUnclippedStart = expected0BasedUnclippedStart + 1;
+    expected0BasedUnclippedEnd = expected0BasedAlignmentEnd;
+    expected1BasedUnclippedEnd = expected1BasedAlignmentEnd;
+}
 
 void EqualsTest::validateEqRead(SamRecord& samRecord, 
                                 int readIndex,

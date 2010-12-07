@@ -16,15 +16,17 @@
  */
 
 #include "SamFile.h"
-void testEqSam();
-void testEqBam();
+void testSeqEquals();
 
 class EqualsTest
 {
 public:
-    static void testEq(SamFile &inSam);
+    enum FileType{SAM, BAM};
+    static void testEq(FileType inputType);
     
 private:
+    static void reset();
+
     static void validateEqRead(SamRecord& samRecord, 
                                int readIndex,
                                const char* actualExpectedSequence);

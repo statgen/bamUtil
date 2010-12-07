@@ -535,8 +535,10 @@ bool SamFile::WriteRecord(SamFileHeader& header,
         return(false);
     }
 
-    record.setReference(myRefPtr);
-    record.setSequenceTranslation(myReadTranslation);
+    if(myRefPtr != NULL)
+    {
+        record.setReference(myRefPtr);
+    }
 
     // File is open for writing and the header has been written, so write the
     // record.
@@ -657,7 +659,10 @@ bool SamFile::SetReadSection(const char* refName, int32_t start, int32_t end)
 // region that is currently set.
 uint32_t SamFile::GetNumOverlaps(SamRecord& samRecord)
 {
-    samRecord.setReference(myRefPtr);
+    if(myRefPtr != NULL)
+    {
+        samRecord.setReference(myRefPtr);
+    }
     samRecord.setSequenceTranslation(myReadTranslation);
 
     // Get the overlaps in the sam record for the region currently set
@@ -746,7 +751,10 @@ void SamFile::resetFile()
 // If the sort order is UNSORTED, true is returned.
 bool SamFile::validateSortOrder(SamRecord& record, SamFileHeader& header)
 {
-    record.setReference(myRefPtr);
+    if(myRefPtr != NULL)
+    {
+        record.setReference(myRefPtr);
+    }
     record.setSequenceTranslation(myReadTranslation);
 
     bool status = false;
