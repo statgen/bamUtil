@@ -222,7 +222,7 @@ void SamQuerySeqWithRef::seqWithEquals(const char* currentSeq,
                                        int32_t seq0BasedPos,
                                        Cigar& cigar, 
                                        const char* referenceName,
-                                       GenomeSequence& refSequence,
+                                       const GenomeSequence& refSequence,
                                        std::string& updatedSeq)
 {
     updatedSeq = currentSeq;
@@ -267,7 +267,7 @@ void SamQuerySeqWithRef::seqWithoutEquals(const char* currentSeq,
                                           int32_t seq0BasedPos,
                                           Cigar& cigar, 
                                           const char* referenceName,
-                                          GenomeSequence& refSequence,
+                                          const GenomeSequence& refSequence,
                                           std::string& updatedSeq)
 {
     updatedSeq = currentSeq;

@@ -97,25 +97,42 @@ private:
 };
 
 
-/// Contains methods for converting between query sequence and reference.
-/// Sequence.
-/// NOTE: References to the GenomeSequence and SamRecord are stored, the objects
-/// are not copied, so they must remain valid as long as this class is used.
+/// Contains methods for converting between the query sequence and reference.
 class SamQuerySeqWithRef
 {
 public:
+    /// Gets the sequence with '=' in any position where the sequence matches
+    /// the reference.  
+    /// NOTE: 'N' in both the sequence and the reference is not considered a
+    /// match.
+    /// \param currentSeq sequence that should be converted
+    /// \param seq0BasedPos 0 based start position of currentSeq on the reference.
+    /// \param cigar cigar string for currentSeq (used for determining how the sequence aligns to the reference)
+    /// \param referenceName reference name associated with this sequence
+    /// \param refSequence reference sequence object
+    /// \param updatedSeq return parameter that this method sets to the
+    ///  current sequence, replacing any matches to the reference with '='.
     static void seqWithEquals(const char* currentSeq,
                               int32_t seq0BasedPos,
                               Cigar& cigar, 
                               const char* referenceName,
-                              GenomeSequence& refSequence,
+                              const GenomeSequence& refSequence,
                               std::string& updatedSeq);
 
+    /// Gets the sequence converting '=' to the appropriate base using the
+    /// reference.
+    /// \param currentSeq sequence that should be converted
+    /// \param seq0BasedPos 0 based start position of currentSeq on the reference.
+    /// \param cigar cigar string for currentSeq (used for determining how the sequence aligns to the reference)
+    /// \param referenceName reference name associated with this sequence
+    /// \param refSequence reference sequence object
+    /// \param updatedSeq return parameter that this method sets to the
+    ///  current sequence, replacing any '=' with the base from the reference.
     static void seqWithoutEquals(const char* currentSeq,
                                  int32_t seq0BasedPos,
                                  Cigar& cigar, 
                                  const char* referenceName,
-                                 GenomeSequence& refSequence,
+                                 const GenomeSequence& refSequence,
                                  std::string& updatedSeq);
 
 private:
