@@ -623,8 +623,6 @@ int MapperPEBaseSpace::test(int testNum,
 
     int rc = 0;
 
-    debugPosition = gs->getGenomePosition(chr1-1, index1);
-
     init(r1, q1, t1);
 
     otherMapper->init(r2, q2, t2);

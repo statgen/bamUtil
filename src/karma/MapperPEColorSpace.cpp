@@ -464,7 +464,7 @@ int MapperPEColorSpace::test(int testNum,
     check(rc, testNum, "mismatch1", misMatches1, getBestMatch().mismatchCount);
 //    check(rc, testNum, "quality1", quality1, getBestMatch().quality);
 
-    int c = gs->getChromosome(getBestMatch().genomeMatchPosition);
+    int c = gs->getChromosome(this->getBestMatch().genomeMatchPosition);
     genomeIndex_t i = getBestMatch().genomeMatchPosition - gs->getChromosomeStart(c) + 1;
 
     check(rc, testNum, "chromosome1", chr1-1, c);

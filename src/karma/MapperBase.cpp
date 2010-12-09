@@ -23,6 +23,7 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include "GenomeSequence.h"
 #include "MappingStats.h"
 #include "MapperBase.h"
 #include "MapperSEColorSpace.h"
@@ -1457,8 +1458,6 @@ MapperBase::MapperBase() :  forward(mapperOptions), backward(mapperOptions)
     // lame:
     forward.isForward = true;
     backward.isForward = false;
-
-    debugPosition = 0;
 
     localGappedAlignment = false;
     isProperAligned = false;

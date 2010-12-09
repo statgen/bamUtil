@@ -226,7 +226,7 @@ int MapperSEColorSpace::test(int testNum, const char *read, const char *qual, ch
     check(rc, testNum, "mismatch", misMatches, getBestMatch().mismatchCount);
     check(rc, testNum, "quality", quality, getBestMatch().quality);
 
-    int c = gs->getChromosome(getBestMatch().genomeMatchPosition);
+    int c = gs->getChromosome(this->getBestMatch().genomeMatchPosition);
     genomeIndex_t i = getBestMatch().genomeMatchPosition - gs->getChromosomeStart(c) + 1;
     check(rc, testNum, "chromosome", chr-1, c);
     check(rc, testNum, "index", index, i);

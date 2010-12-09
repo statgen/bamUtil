@@ -213,8 +213,6 @@ int MapperSEBaseSpace::test(int testNum, const char *read, const char *qual, cha
     setReadAndQuality(read, strlen(read), qual);
     fragmentTag = "";
 
-    debugPosition = gs->getGenomePosition(chr-1, index);
-
     MapSingleRead();
 
     //

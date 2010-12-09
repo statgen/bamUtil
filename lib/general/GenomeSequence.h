@@ -570,10 +570,10 @@ public:
 
     // TODO - this will be moved somewhere else and be made a static method.
     // replace read with the reversed one
-    void getReverseRead(std::string &read) const;
+    void getReverseRead(std::string &read);
 
     // TODO - this will be moved somewhere else and be made a static method.
-    void getReverseRead(String& read) const;
+    void getReverseRead(String& read);
 
     // debug the given read - print nice results
     int debugPrintReadValidation(
@@ -584,7 +584,7 @@ public:
         int sumQuality,
         int mismatchCount,
         bool recurse = true
-    ) const;
+        );
 
     void getString(std::string &str, int chromosome, genomeIndex_t index, int baseCount) const;
     void getString(String &str, int chromosome, genomeIndex_t index, int baseCount) const;

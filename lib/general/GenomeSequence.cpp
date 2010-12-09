@@ -810,7 +810,7 @@ int GenomeSequence::getChromosome(const char *chromosomeName) const
 // Given a read, reverse the string and swap the base
 // pairs for the reverse strand equivalents.
 //
-void GenomeSequence::getReverseRead(std::string &read) const
+void GenomeSequence::getReverseRead(std::string &read)
 {
     std::string newRead;
     if (read.size()) for (int32_t i=(int) read.size() - 1; i>=0; i--)
@@ -820,7 +820,7 @@ void GenomeSequence::getReverseRead(std::string &read) const
     read = newRead;
 }
 
-void GenomeSequence::getReverseRead(String& read) const
+void GenomeSequence::getReverseRead(String& read)
 {
     int i = 0;
     int j = read.Length()-1;
@@ -842,7 +842,7 @@ int GenomeSequence::debugPrintReadValidation(
     int sumQuality,
     int mismatchCount,
     bool recurse
-) const
+) 
 {
     int validateSumQ = 0;
     int validateMismatchCount = 0;

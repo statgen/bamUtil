@@ -503,7 +503,7 @@ int Test::testRemapReference(std::string &outputFile, std::string &whichChromoso
     }
     if (whichChromosome != "")
     {
-        int which = gs->getChromosome(whichChromosome.c_str());
+        int which = gs->getChromosome((const char*)whichChromosome.c_str());
         if (which < 0 || which >= gs->getChromosomeCount())
         {
             std::cerr << "The given reference does not have a chromosome named " << whichChromosome << std::endl;
