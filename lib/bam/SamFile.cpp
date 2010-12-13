@@ -54,35 +54,9 @@ SamFile::SamFile(ErrorHandler::HandlingType errorHandlingType)
 // Constructor, init variables and open the specified file based on the
 // specified mode (READ/WRITE).
 SamFile::SamFile(const char* filename, OpenType mode)
-    : myFilePtr(NULL),
-      myInterfacePtr(NULL),
-      myStatistics(NULL),
-      myStatus(),
-      myBamIndex(NULL),
-      myRefPtr(NULL),
-      myReadTranslation(SamRecord::NONE),
-      myWriteTranslation(SamRecord::NONE)
+    : myStatus()
 {
-    resetFile();
-
-    bool openStatus = true;
-    if(mode == READ)
-    {
-        // open the file for read.
-        openStatus = OpenForRead(filename);
-    }
-    else
-    {
-        // open the file for write.
-        openStatus = OpenForWrite(filename);
-    }
-    if(!openStatus)
-    {
-        // Failed to open the file - print error and abort.
-        fprintf(stderr, "%s\n", GetStatusMessage());
-        std::cerr << "FAILURE - EXITING!!!" << std::endl;
-        exit(-1);
-    }
+    init(filename, mode, NULL);
 }
 
 
@@ -90,35 +64,29 @@ SamFile::SamFile(const char* filename, OpenType mode)
 // specified mode (READ/WRITE).  Default is READ..
 SamFile::SamFile(const char* filename, OpenType mode,
                  ErrorHandler::HandlingType errorHandlingType)
-    : myFilePtr(NULL),
-      myInterfacePtr(NULL),
-      myStatistics(NULL),
-      myStatus(errorHandlingType),
-      myBamIndex(NULL),
-      myRefPtr(NULL),
-      myReadTranslation(SamRecord::NONE),
-      myWriteTranslation(SamRecord::NONE)
+    : myStatus(errorHandlingType)
 {
-    resetFile();
+    init(filename, mode, NULL);
+}
 
-    bool openStatus = true;
-    if(mode == READ)
-    {
-        // open the file for read.
-        openStatus = OpenForRead(filename);
-    }
-    else
-    {
-        // open the file for write.
-        openStatus = OpenForWrite(filename);
-    }
-    if(!openStatus)
-    {
-        // Failed to open the file - print error and abort.
-        fprintf(stderr, "%s\n", GetStatusMessage());
-        std::cerr << "FAILURE - EXITING!!!" << std::endl;
-        exit(-1);
-    }
+
+// Constructor, init variables and open the specified file based on the
+// specified mode (READ/WRITE).
+SamFile::SamFile(const char* filename, OpenType mode, SamFileHeader* header)
+    : myStatus()
+{
+    init(filename, mode, header);
+}
+
+
+// Constructor, init variables and open the specified file based on the
+// specified mode (READ/WRITE).  Default is READ..
+SamFile::SamFile(const char* filename, OpenType mode,
+                 ErrorHandler::HandlingType errorHandlingType, 
+                 SamFileHeader* header)
+    : myStatus(errorHandlingType)
+{
+    init(filename, mode, header);
 }
 
 
@@ -133,7 +101,7 @@ SamFile::~SamFile()
 
 
 // Open a sam/bam file for reading with the specified filename.
-bool SamFile::OpenForRead(const char * filename)
+bool SamFile::OpenForRead(const char * filename, SamFileHeader* header)
 {
     // Reset for any previously operated on files.
     resetFile();
@@ -218,6 +186,13 @@ bool SamFile::OpenForRead(const char * filename)
 
     // File is open for reading.
     myIsOpenForRead = true;
+
+    // Read the header if one was passed in.
+    if(header != NULL)
+    {
+        return(ReadHeader(*header));
+    }
+
     // Successfully opened the file.
     myStatus = SamStatus::SUCCESS;
     return(true);
@@ -225,7 +200,7 @@ bool SamFile::OpenForRead(const char * filename)
 
 
 // Open a sam/bam file for writing with the specified filename.
-bool SamFile::OpenForWrite(const char * filename)
+bool SamFile::OpenForWrite(const char * filename, SamFileHeader* header)
 {
     // Reset for any previously operated on files.
     resetFile();
@@ -287,6 +262,12 @@ bool SamFile::OpenForWrite(const char * filename)
     }
    
     myIsOpenForWrite = true;
+
+    // Write the header if one was passed in.
+    if(header != NULL)
+    {
+        return(WriteHeader(*header));
+    }
 
     // Successfully opened the file.
     myStatus = SamStatus::SUCCESS;
@@ -696,6 +677,40 @@ void SamFile::GenerateStatistics(bool genStats)
 }
 
 
+// initialize.
+void SamFile::init(const char* filename, OpenType mode, SamFileHeader* header)
+{
+    myFilePtr = NULL;
+    myInterfacePtr = NULL;
+    myStatistics = NULL;
+    myBamIndex = NULL;
+    myRefPtr = NULL;
+    myReadTranslation = SamRecord::NONE;
+    myWriteTranslation = SamRecord::NONE;
+        
+    resetFile();
+
+    bool openStatus = true;
+    if(mode == READ)
+    {
+        // open the file for read.
+        openStatus = OpenForRead(filename, header);
+    }
+    else
+    {
+        // open the file for write.
+        openStatus = OpenForWrite(filename, header);
+    }
+    if(!openStatus)
+    {
+        // Failed to open the file - print error and abort.
+        fprintf(stderr, "%s\n", GetStatusMessage());
+        std::cerr << "FAILURE - EXITING!!!" << std::endl;
+        exit(-1);
+    }
+}
+
+
 // Reset variables for each file.
 void SamFile::resetFile()
 {
@@ -1059,20 +1074,42 @@ bool SamFile::processNewSection(SamFileHeader &header)
 
 // Default Constructor.
 SamFileReader::SamFileReader()
+    : SamFile()
 {
 }
 
 
 // Constructor that opens the specified file for read.
 SamFileReader::SamFileReader(const char* filename)
+    : SamFile(filename, READ)
 {
-    if(!OpenForRead(filename))
-    {
-        // Failed to open for reading - print error and abort.
-        fprintf(stderr, "%s\n", GetStatusMessage());
-        std::cerr << "FAILURE - EXITING!!!" << std::endl;
-        exit(-1);
-    }
+}
+
+
+
+
+// Constructor that opens the specified file for read.
+SamFileReader::SamFileReader(const char* filename,
+                             ErrorHandler::HandlingType errorHandlingType)
+    : SamFile(filename, READ, errorHandlingType)
+{
+}
+
+
+// Constructor that opens the specified file for read.
+SamFileReader::SamFileReader(const char* filename,
+                             SamFileHeader* header)
+    : SamFile(filename, READ, header)
+{
+}
+
+
+// Constructor that opens the specified file for read.
+SamFileReader::SamFileReader(const char* filename,
+                             ErrorHandler::HandlingType errorHandlingType,
+                             SamFileHeader* header)
+    : SamFile(filename, READ, errorHandlingType, header)
+{
 }
 
 
@@ -1083,20 +1120,40 @@ SamFileReader::~SamFileReader()
 
 // Default Constructor.
 SamFileWriter::SamFileWriter()
+    : SamFile()
 {
 }
 
 
 // Constructor that opens the specified file for write.
 SamFileWriter::SamFileWriter(const char* filename)
+    : SamFile(filename, WRITE)
 {
-    if(!OpenForWrite(filename))
-    {
-        // Failed to open for reading - print error and abort.
-        fprintf(stderr, "%s\n", GetStatusMessage());
-        std::cerr << "FAILURE - EXITING!!!" << std::endl;
-        exit(-1);
-    }
+}
+
+
+// Constructor that opens the specified file for write.
+SamFileWriter::SamFileWriter(const char* filename,
+                             ErrorHandler::HandlingType errorHandlingType)
+    : SamFile(filename, WRITE, errorHandlingType)
+{
+}
+
+
+// Constructor that opens the specified file for write.
+SamFileWriter::SamFileWriter(const char* filename,
+                             SamFileHeader* header)
+    : SamFile(filename, WRITE, header)
+{
+}
+
+
+// Constructor that opens the specified file for write.
+SamFileWriter::SamFileWriter(const char* filename,
+                             ErrorHandler::HandlingType errorHandlingType,
+                             SamFileHeader* header)
+    : SamFile(filename, WRITE, errorHandlingType, header)
+{
 }
 
 

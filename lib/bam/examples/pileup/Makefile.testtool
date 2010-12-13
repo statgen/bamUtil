@@ -1,0 +1,6 @@
+EXE = pileup
+PATH_TO_BASE=../../../..
+
+SRCONLY = Main.cpp
+
+TEST_COMMAND = ./pileup

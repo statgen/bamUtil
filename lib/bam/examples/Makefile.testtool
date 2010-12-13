@@ -1,3 +1,0 @@
-EXE = pileup
-
-SRCONLY = Main.cpp

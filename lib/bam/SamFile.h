@@ -66,16 +66,36 @@ public:
     SamFile(const char* filename, OpenType mode,
             ErrorHandler::HandlingType errorHandlingType);
 
+    /// Constructor that opens the specified file based on the specified mode
+    /// (READ/WRITE).
+    /// \param filename name of the file to open.
+    /// \param mode mode to use for opening the file.
+    /// \param header to read into or write from
+    SamFile(const char* filename, OpenType mode, SamFileHeader* header);
+
+    /// Constructor that opens the specified file based on the specified mode
+    /// (READ/WRITE) and handles errors per the specified handleType.
+    /// \param filename name of the file to open.
+    /// \param mode mode to use for opening the file.
+    /// \param errorHandlingType how to handle errors.
+    /// \param header to read into or write from
+    SamFile(const char* filename, OpenType mode,
+            ErrorHandler::HandlingType errorHandlingType,
+            SamFileHeader* header);
+
     virtual ~SamFile();
    
     /// Open a sam/bam file for reading with the specified filename.
-    /// \param  filename: the sam/bam file to open for reading.
+    /// \param  filename the sam/bam file to open for reading.
+    /// \param header to read into or write from (optional)
     /// \return true = success; false = failure.   
-    bool OpenForRead(const char * filename);
+    bool OpenForRead(const char * filename, SamFileHeader* header = NULL);
 
     /// Open a sam/bam file for writing with the specified filename.
+    /// \param  filename the sam/bam file to open for writing.
+    /// \param header to read into or write from (optional)
     /// \return true = success; false = failure.
-    bool OpenForWrite(const char * filename);
+    bool OpenForWrite(const char * filename, SamFileHeader* header = NULL);
 
     /// Reads the specified bam index file.  It must be read prior to setting a
     /// read section, for seeking and reading portions of a bam file.
@@ -211,6 +231,8 @@ public:
     inline void PrintStatistics() {if(myStatistics != NULL) myStatistics->print();}
 
 protected:
+    void init(const char* filename, OpenType mode, SamFileHeader* header);
+
     /// Resets the file prepping for a new file.
     void resetFile();
 
@@ -283,6 +305,21 @@ public:
     /// Constructor that opens the specified file for read.
     SamFileReader(const char* filename);
 
+    /// Constructor that opens the specified file for read.
+    SamFileReader(const char* filename,
+                  ErrorHandler::HandlingType errorHandlingType);
+
+    /// Constructor that opens the specified file for read and reads
+    /// the header from the file.
+    SamFileReader(const char* filename,
+                  SamFileHeader* header);
+
+    /// Constructor that opens the specified file for read and reads
+    /// the header from the file.
+    SamFileReader(const char* filename,
+                  ErrorHandler::HandlingType errorHandlingType,
+                  SamFileHeader* header);
+
     virtual ~SamFileReader();
 };
 
@@ -295,6 +332,21 @@ public:
 
     /// Constructor that opens the specified file for write.
     SamFileWriter(const char* filename);
+
+    /// Constructor that opens the specified file for write.
+    SamFileWriter(const char* filename,
+                  ErrorHandler::HandlingType errorHandlingType);
+
+    /// Constructor that opens the specified file for write and write
+    /// the specified header into the file.
+    SamFileWriter(const char* filename,
+                  SamFileHeader* header);
+
+    /// Constructor that opens the specified file for write and write
+    /// the specified header into the file.
+    SamFileWriter(const char* filename,
+                  ErrorHandler::HandlingType errorHandlingType,
+                  SamFileHeader* header);
 
     virtual ~SamFileWriter();
 };

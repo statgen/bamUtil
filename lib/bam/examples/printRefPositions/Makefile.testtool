@@ -1,0 +1,7 @@
+EXE = printRefPositions
+PATH_TO_BASE=../../../..
+
+SRCONLY = Main.cpp
+TOOLBASE = PrintRefPositions
+
+TEST_COMMAND = mkdir -p results; ./printRefPositions > results/test.txt; diff results/test.txt expected/test.txt

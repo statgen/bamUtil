@@ -47,8 +47,8 @@ private:
 
 int main(int argc, char ** argv)
 {
-    const char* fileName = "../test/testFiles/sortedBam.bam";
-    const char* indexName = "../test/testFiles/sortedBam.bam.bai";
+    const char* fileName = "../../test/testFiles/sortedBam.bam";
+    const char* indexName = "../../test/testFiles/sortedBam.bam.bai";
 
     printf("\nPileup<PileupElementBaseQual> on entire file: %s\n", fileName);
     Pileup<PileupElementBaseQual> pileup(1024);
