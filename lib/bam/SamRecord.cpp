@@ -987,7 +987,7 @@ const char* SamRecord::getSequence(SequenceTranslation translation)
                 // Sequence defined, so translate it.
                 SamQuerySeqWithRef::seqWithEquals(mySequence.c_str(), 
                                                   myRecordPtr->myPosition,
-                                                  myCigarRoller,
+                                                  *(getCigarInfo()),
                                                   getReferenceName(),
                                                   *myRefPtr,
                                                   mySeqWithEq);
@@ -1010,7 +1010,7 @@ const char* SamRecord::getSequence(SequenceTranslation translation)
                 // Sequence defined, so translate it.
                 SamQuerySeqWithRef::seqWithoutEquals(mySequence.c_str(), 
                                                      myRecordPtr->myPosition,
-                                                     myCigarRoller,
+                                                     *(getCigarInfo()),
                                                      getReferenceName(),
                                                      *myRefPtr,
                                                      mySeqWithoutEq);
@@ -1118,7 +1118,7 @@ char SamRecord::getSequence(int index, SequenceTranslation translation)
                     // Sequence defined, so translate it.
                     SamQuerySeqWithRef::seqWithEquals(mySequence.c_str(), 
                                                       myRecordPtr->myPosition, 
-                                                      myCigarRoller,
+                                                      *(getCigarInfo()),
                                                       getReferenceName(),
                                                       *myRefPtr,
                                                       mySeqWithEq);
@@ -1149,7 +1149,7 @@ char SamRecord::getSequence(int index, SequenceTranslation translation)
                     // so get the string.
                     SamQuerySeqWithRef::seqWithoutEquals(mySequence.c_str(), 
                                                          myRecordPtr->myPosition, 
-                                                         myCigarRoller,
+                                                         *(getCigarInfo()),
                                                          getReferenceName(),
                                                          *myRefPtr,
                                                          mySeqWithoutEq);

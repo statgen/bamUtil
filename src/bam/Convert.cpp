@@ -29,7 +29,7 @@
 void convertDescription()
 {
     std::cerr << " convert - Convert SAM/BAM to SAM/BAM:" << std::endl;
-    std::cerr << "\t./bam convert --in <inputFile> --out <outputFile.sam/bam/ubam (ubam is uncompressed bam)> [--noeof] [--params]" << std::endl;
+    std::cerr << "\t./bam convert --in <inputFile> --out <outputFile.sam/bam/ubam (ubam is uncompressed bam)> [--refFile] [--seqBases|--seqEquals|--seqOrig] [--noeof] [--params]" << std::endl;
 }
 
 
@@ -40,9 +40,14 @@ void convertUsage()
     std::cerr << "\t\t--in       : the SAM/BAM file to be read" << std::endl;
     std::cerr << "\t\t--out      : the SAM/BAM file to be written" << std::endl;
     std::cerr << "\tOptional Parameters:" << std::endl;
+    std::cerr << "\t\t--refFile  : reference file name" << std::endl;
     std::cerr << "\t\t--noeof    : do not expect an EOF block on a bam file." << std::endl;
     std::cerr << "\t\t--params   : print the parameter settings" << std::endl;
     std::cerr << std::endl;
+    std::cerr << "\tOptional Sequence Parameters (only specify one):" << std::endl;
+    std::cerr << "\t\t--seqOrig  : Leave the sequence as is (default & used if reference is not specified)." << std::endl;
+    std::cerr << "\t\t--seqBases : Convert any '=' in the sequence to the appropriate base using the reference (requires --ref)." << std::endl;
+    std::cerr << "\t\t--seqEquals : Convert any bases that match the reference to '=' (requires --ref)." << std::endl;
 }
 
 
@@ -51,15 +56,25 @@ int convert(int argc, char **argv)
     // Extract command line arguments.
     String inFile = "";
     String outFile = "";
+    String refFile = "";
     bool noeof = false;
     bool params = false;
+
+    bool seqBases = false;
+    bool seqEquals = false;
+    bool seqOrig = false;
     
     ParameterList inputParameters;
     BEGIN_LONG_PARAMETERS(longParameterList)
         LONG_STRINGPARAMETER("in", &inFile)
         LONG_STRINGPARAMETER("out", &outFile)
+        LONG_STRINGPARAMETER("refFile", &refFile)
         LONG_PARAMETER("noeof", &noeof)
         LONG_PARAMETER("params", &params)
+        LONG_PARAMETER_GROUP("SequenceConversion")
+            EXCLUSIVE_PARAMETER("seqBases", &seqBases)
+            EXCLUSIVE_PARAMETER("seqEquals", &seqEquals)
+            EXCLUSIVE_PARAMETER("seqOrig", &seqOrig)
         END_LONG_PARAMETERS();
    
     inputParameters.Add(new LongParameters ("Input Parameters", 
@@ -67,6 +82,7 @@ int convert(int argc, char **argv)
     
     inputParameters.Read(argc-1, &(argv[1]));
     
+
     // If no eof block is required for a bgzf file, set the bgzf file type to 
     // not look for it.
     if(noeof)
@@ -85,6 +101,7 @@ int convert(int argc, char **argv)
                   << "but was not specified" << std::endl;
         return(-1);
     }
+
     if(outFile == "")
     {
         convertUsage();
@@ -95,6 +112,29 @@ int convert(int argc, char **argv)
         return(-1);
     }
 
+    // Check to see if the ref file was specified.
+    // Open the reference.
+    GenomeSequence* refPtr = NULL;
+    if(refFile != "")
+    {
+        refPtr = new GenomeSequence(refFile);
+    }
+
+    SamRecord::SequenceTranslation translation;
+    if((seqBases) && (refPtr != NULL))
+    {
+        translation = SamRecord::BASES;
+    }
+    else if((seqEquals) && (refPtr != NULL))
+    {
+        translation = SamRecord::EQUAL;
+    }
+    else
+    {
+        seqOrig = true;
+        translation = SamRecord::NONE;
+    }
+    
     if(params)
     {
         inputParameters.Status();
@@ -107,6 +147,8 @@ int convert(int argc, char **argv)
     // Open the output file for writing.
     SamFile samOut;
     samOut.OpenForWrite(outFile);
+    samOut.SetWriteSequenceTranslation(translation);
+    samOut.SetReference(refPtr);
 
     // Read the sam header.
     SamFileHeader samHeader;
@@ -138,6 +180,11 @@ int convert(int argc, char **argv)
         samIn.GetCurrentRecordCount() << std::endl;
     std::cerr << "Number of records written = " << 
         samOut.GetCurrentRecordCount() << std::endl;
+
+    if(refPtr != NULL)
+    {
+        delete(refPtr);
+    }
 
     // Since the reads were successful, return the status based
     // on the status of the writes.  If any failed, return

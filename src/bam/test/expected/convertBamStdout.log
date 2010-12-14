@@ -2,7 +2,8 @@
 The following parameters are available.  Ones with "[]" are in effect:
 
 Input Parameters
- --in [testFiles/testBam.bam], --out [-], --noeof, --params [ON]
+ --in [testFiles/testBam.bam], --out [-], --refFile [], --noeof, --params [ON]
+   SequenceConversion : --seqBases, --seqEquals, --seqOrig [ON]
 
 
 Number of records read = 10
