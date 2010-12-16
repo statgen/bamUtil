@@ -19,6 +19,21 @@
 // This file contains the processing for the executable option "dumpHeader"
 // which prints the SAM/BAM header file to the screen.
 
-void dumpHeaderDescription();
-void dumpHeaderUsage();
-int dumpHeader(const char* filename);
+#ifndef __DUMP_HEADER_H__
+#define __DUMP_HEADER_H__
+
+#include "BamExecutable.h"
+
+class DumpHeader : public BamExecutable
+{
+public:
+    static void dumpHeaderDescription();
+    void description();
+    void usage();
+    int execute(int argc, char **argv);
+
+private:
+    int dumpHeader(const char* filename);
+};
+
+#endif

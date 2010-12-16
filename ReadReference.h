@@ -17,6 +17,18 @@
 
 //////////////////////////////////////////////////////////////////////////
 
-void readReferenceDescription();
-void readReferenceUsage();
-int readReference(int argc, char **argv);
+#ifndef __READ_REFERENCE_H__
+#define __READ_REFERENCE_H__
+
+#include "BamExecutable.h"
+
+class ReadReference : public BamExecutable
+{
+public:
+    static void readReferenceDescription();
+    void description();
+    void usage();
+    int execute(int argc, char **argv);
+};
+
+#endif

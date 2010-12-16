@@ -25,15 +25,21 @@
 #include "SamFilter.h"
 
 
-void filterDescription()
+void Filter::filterDescription()
 {
     std::cerr << " filter - Filter reads by clipping ends with too high of a mismatch percentage and by marking reads unmapped if the quality of mismatches is too high" << std::endl;
-    std::cerr << "\t./bam filter --in <inputFilename>  --refFile <referenceFilename>  --out <outputFilename> [--noeof] [--qualityThreshold <qualThresh>] [--defaultQualityInt <defaultQual>] [--mismatchThreshold <mismatchThresh>] [--params]"<< std::endl;
 }
 
-void filterUsage()
+void Filter::description()
 {
     filterDescription();
+}
+
+
+void Filter::usage()
+{
+    BamExecutable::usage();
+    std::cerr << "\t./bam filter --in <inputFilename>  --refFile <referenceFilename>  --out <outputFilename> [--noeof] [--qualityThreshold <qualThresh>] [--defaultQualityInt <defaultQual>] [--mismatchThreshold <mismatchThresh>] [--params]"<< std::endl;
     std::cerr << "\tRequired Parameters:" << std::endl;
     std::cerr << "\t\t--in       : the SAM/BAM file to be read" << std::endl;
     std::cerr << "\t\t--refFile  : the reference file" << std::endl;
@@ -52,7 +58,7 @@ void filterUsage()
 }
 
 
-int filter(int argc, char **argv)
+int Filter::execute(int argc, char **argv)
 {
     String inFile = "";
     String refFile = "";
@@ -93,7 +99,7 @@ int filter(int argc, char **argv)
     // Check to see if the in file was specified, if not, report an error.
     if(inFile == "")
     {
-        filterUsage();
+        usage();
         inputParameters.Status();
         // In file was not specified but it is mandatory.
         std::cerr << "--in is a mandatory argument, "
@@ -102,7 +108,7 @@ int filter(int argc, char **argv)
     }
     if(outFile == "")
     {
-        filterUsage();
+        usage();
         inputParameters.Status();
         // In file was not specified but it is mandatory.
         std::cerr << "--out is a mandatory argument, "

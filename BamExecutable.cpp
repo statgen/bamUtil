@@ -20,18 +20,44 @@
 // which reads an SAM/BAM file and writes a SAM/BAM file (it can convert 
 // between SAM and BAM formats).
 
-#ifndef __CONVERT_H__
-#define __CONVERT_H__
-
+#include <iostream>
+#include <string.h>
+#include <stdlib.h>
 #include "BamExecutable.h"
 
-class Convert : public BamExecutable
+BamExecutable::BamExecutable()
 {
-public:
-    static void convertDescription();
-    void description();
-    void usage();
-    int execute(int argc, char **argv);
-};
+}
 
-#endif
+
+BamExecutable::~BamExecutable()
+{
+}
+
+
+void BamExecutable::bamVersion()
+{
+    std::cerr << "bam Version: " << VERSION << std::endl;
+    std::cerr << "Built on " << DATE << " by "<< USER << std::endl
+              << "Last Commit: " << COMMIT << std::endl;
+}
+
+void BamExecutable::bamExecutableDescription()
+{
+    std::cerr << "Set of tools for operating on SAM/BAM files." << std::endl;
+    bamVersion();
+}
+
+
+void BamExecutable::description()
+{
+    bamExecutableDescription();
+}
+
+
+void BamExecutable::usage()
+{
+    bamVersion();
+    std::cerr << std::endl;
+    description();
+}

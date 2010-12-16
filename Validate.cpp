@@ -19,22 +19,29 @@
 // This file contains the processing for the executable option "validate"
 // which reads and validates SAM/BAM file and can generate some statistics
 // from it.
+#include "Validate.h"
 #include "SamFile.h"
 #include "Parameters.h"
 #include "BgzfFileType.h"
 #include "SamValidation.h"
 
 
-void validateDescription()
+void Validate::validateDescription()
 {
-    std::cerr << " validate - Validate a SAM/BAM File:" << std::endl;
-    std::cerr << "\t./bam validate --in <inputFile> [--noeof] [--so_flag|--so_coord|--so_query] [--maxErrors <numErrors>] [--verbose] [--printableErrors <numReportedErrors>] [--disableStatistics] [--params]" << std::endl;
+    std::cerr << " validate - Validate a SAM/BAM File" << std::endl;
 }
 
 
-void validateUsage()
+void Validate::description()
 {
     validateDescription();
+}
+
+
+void Validate::usage()
+{
+    BamExecutable::usage();
+    std::cerr << "\t./bam validate --in <inputFile> [--noeof] [--so_flag|--so_coord|--so_query] [--maxErrors <numErrors>] [--verbose] [--printableErrors <numReportedErrors>] [--disableStatistics] [--params]" << std::endl;
     std::cerr << "\tRequired Parameters:" << std::endl;
     std::cerr << "\t\t--in : the SAM/BAM file to be validated" << std::endl;
     std::cerr << "\tOptional Parameters:" << std::endl;
@@ -56,7 +63,7 @@ void validateUsage()
 }
 
 
-int validate(int argc, char **argv)
+int Validate::execute(int argc, char **argv)
 {
     // Extract command line arguments.
     String inFile = "";
@@ -116,7 +123,7 @@ int validate(int argc, char **argv)
     // Check to see if the in file was specified, if not, report an error.
     if(inFile == "")
     {
-        validateUsage();
+        usage();
         inputParameters.Status();
         // In file was not specified but it is mandatory.
         std::cerr << "--in is a mandatory argument for validate, "
