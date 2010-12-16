@@ -19,21 +19,28 @@
 // This file contains the processing for the executable option "dumpRefInfo"
 // which prints the SAM/BAM Reference Name information to the screen.
 
+#include "DumpRefInfo.h"
 #include "SamFile.h"
 #include "Parameters.h"
 #include "BgzfFileType.h"
 
-void dumpRefInfoDescription()
+void DumpRefInfo::dumpRefInfoDescription()
 {
-    std::cerr << " dumpRefInfo - Print SAM/BAM Reference Name Information:" 
+    std::cerr << " dumpRefInfo - Print SAM/BAM Reference Name Information" 
               << std::endl;
-    std::cerr << "\t./bam dumpRefInfo --in <inputFilename> [--noeof] [--printRecordRefs] [--params]" << std::endl;
 }
 
 
-void dumpRefInfoUsage()
+void DumpRefInfo::description()
 {
     dumpRefInfoDescription();
+}
+
+
+void DumpRefInfo::usage()
+{
+    BamExecutable::usage();
+    std::cerr << "\t./bam dumpRefInfo --in <inputFilename> [--noeof] [--printRecordRefs] [--params]" << std::endl;
     std::cerr << "\tRequired Parameters:" << std::endl;
     std::cerr << "\t\t--in               : the SAM/BAM file to be read" << std::endl;
     std::cerr << "\tOptional Parameters:" << std::endl;
@@ -45,7 +52,7 @@ void dumpRefInfoUsage()
 
 
 // Dump the reference information from specified SAM/BAM file.
-int dumpRefInfo(int argc, char **argv)
+int DumpRefInfo::execute(int argc, char **argv)
 {
     // Extract command line arguments.
     String inFile = "";
@@ -77,7 +84,7 @@ int dumpRefInfo(int argc, char **argv)
     // Check to see if the in file was specified, if not, report an error.
     if(inFile == "")
     {
-        dumpRefInfoUsage();
+        usage();
         inputParameters.Status();
         // In file was not specified but it is mandatory.
         std::cerr << "--in is a mandatory argument, "

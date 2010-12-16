@@ -19,6 +19,18 @@
 // This file contains the processing for the executable option "writeRegion"
 // which writes a file with the reads in the specified region.
 
-void writeRegionDescription();
-void writeRegionUsage();
-int writeRegion(int argc, char **argv);
+#ifndef __WRITE_REGION_H__
+#define __WRITE_REGION_H__
+
+#include "BamExecutable.h"
+
+class WriteRegion : public BamExecutable
+{
+public:
+    static void writeRegionDescription();
+    void description();
+    void usage();
+    int execute(int argc, char **argv);
+};
+
+#endif

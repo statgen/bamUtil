@@ -20,6 +20,18 @@
 // which reads and validates SAM/BAM file and can generate some statistics
 // from it.
 
-void validateDescription();
-void validateUsage();
-int validate(int argc, char **argv);
+#ifndef __VALIDATE_H__
+#define __VALIDATE_H__
+
+#include "BamExecutable.h"
+
+class Validate : public BamExecutable
+{
+public:
+    static void validateDescription();
+    void description();
+    void usage();
+    int execute(int argc, char **argv);
+};
+
+#endif

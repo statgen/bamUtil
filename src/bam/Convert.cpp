@@ -20,38 +20,45 @@
 // which reads an SAM/BAM file and writes a SAM/BAM file (it can convert 
 // between SAM and BAM formats).
 
+#include "Convert.h"
 #include "SamFile.h"
 #include "Parameters.h"
 #include "BgzfFileType.h"
 #include "SamValidation.h"
 
 
-void convertDescription()
+void Convert::convertDescription()
 {
-    std::cerr << " convert - Convert SAM/BAM to SAM/BAM:" << std::endl;
-    std::cerr << "\t./bam convert --in <inputFile> --out <outputFile.sam/bam/ubam (ubam is uncompressed bam)> [--refFile] [--seqBases|--seqEquals|--seqOrig] [--noeof] [--params]" << std::endl;
+    std::cerr << " convert - Convert SAM/BAM to SAM/BAM" << std::endl;
 }
 
 
-void convertUsage()
+void Convert::description()
 {
     convertDescription();
-    std::cerr << "\tRequired Parameters:" << std::endl;
-    std::cerr << "\t\t--in       : the SAM/BAM file to be read" << std::endl;
-    std::cerr << "\t\t--out      : the SAM/BAM file to be written" << std::endl;
-    std::cerr << "\tOptional Parameters:" << std::endl;
-    std::cerr << "\t\t--refFile  : reference file name" << std::endl;
-    std::cerr << "\t\t--noeof    : do not expect an EOF block on a bam file." << std::endl;
-    std::cerr << "\t\t--params   : print the parameter settings" << std::endl;
-    std::cerr << std::endl;
-    std::cerr << "\tOptional Sequence Parameters (only specify one):" << std::endl;
-    std::cerr << "\t\t--seqOrig  : Leave the sequence as is (default & used if reference is not specified)." << std::endl;
-    std::cerr << "\t\t--seqBases : Convert any '=' in the sequence to the appropriate base using the reference (requires --ref)." << std::endl;
-    std::cerr << "\t\t--seqEquals : Convert any bases that match the reference to '=' (requires --ref)." << std::endl;
 }
 
 
-int convert(int argc, char **argv)
+void Convert::usage()
+{
+    BamExecutable::usage();
+    std::cerr << "\t./bam convert --in <inputFile> --out <outputFile.sam/bam/ubam (ubam is uncompressed bam)> [--refFile <reference filename>] [--useBases|--useEquals|--useOrigSeq] [--noeof] [--params]" << std::endl;
+    std::cerr << "\tRequired Parameters:" << std::endl;
+    std::cerr << "\t\t--in         : the SAM/BAM file to be read" << std::endl;
+    std::cerr << "\t\t--out        : the SAM/BAM file to be written" << std::endl;
+    std::cerr << "\tOptional Parameters:" << std::endl;
+    std::cerr << "\t\t--refFile    : reference file name" << std::endl;
+    std::cerr << "\t\t--noeof      : do not expect an EOF block on a bam file." << std::endl;
+    std::cerr << "\t\t--params     : print the parameter settings" << std::endl;
+    std::cerr << std::endl;
+    std::cerr << "\tOptional Sequence Parameters (only specify one):" << std::endl;
+    std::cerr << "\t\t--useOrigSeq : Leave the sequence as is (default & used if reference is not specified)." << std::endl;
+    std::cerr << "\t\t--useBases   : Convert any '=' in the sequence to the appropriate base using the reference (requires --ref)." << std::endl;
+    std::cerr << "\t\t--useEquals  : Convert any bases that match the reference to '=' (requires --ref)." << std::endl;
+}
+
+
+int Convert::execute(int argc, char **argv)
 {
     // Extract command line arguments.
     String inFile = "";
@@ -60,9 +67,9 @@ int convert(int argc, char **argv)
     bool noeof = false;
     bool params = false;
 
-    bool seqBases = false;
-    bool seqEquals = false;
-    bool seqOrig = false;
+    bool useBases = false;
+    bool useEquals = false;
+    bool useOrigSeq = false;
     
     ParameterList inputParameters;
     BEGIN_LONG_PARAMETERS(longParameterList)
@@ -72,9 +79,9 @@ int convert(int argc, char **argv)
         LONG_PARAMETER("noeof", &noeof)
         LONG_PARAMETER("params", &params)
         LONG_PARAMETER_GROUP("SequenceConversion")
-            EXCLUSIVE_PARAMETER("seqBases", &seqBases)
-            EXCLUSIVE_PARAMETER("seqEquals", &seqEquals)
-            EXCLUSIVE_PARAMETER("seqOrig", &seqOrig)
+            EXCLUSIVE_PARAMETER("useBases", &useBases)
+            EXCLUSIVE_PARAMETER("useEquals", &useEquals)
+            EXCLUSIVE_PARAMETER("useOrigSeq", &useOrigSeq)
         END_LONG_PARAMETERS();
    
     inputParameters.Add(new LongParameters ("Input Parameters", 
@@ -94,7 +101,7 @@ int convert(int argc, char **argv)
     // Check to see if the in file was specified, if not, report an error.
     if(inFile == "")
     {
-        convertUsage();
+        usage();
         inputParameters.Status();
         // In file was not specified but it is mandatory.
         std::cerr << "--in is a mandatory argument, "
@@ -104,7 +111,7 @@ int convert(int argc, char **argv)
 
     if(outFile == "")
     {
-        convertUsage();
+        usage();
         inputParameters.Status();
         // In file was not specified but it is mandatory.
         std::cerr << "--out is a mandatory argument, "
@@ -121,17 +128,17 @@ int convert(int argc, char **argv)
     }
 
     SamRecord::SequenceTranslation translation;
-    if((seqBases) && (refPtr != NULL))
+    if((useBases) && (refPtr != NULL))
     {
         translation = SamRecord::BASES;
     }
-    else if((seqEquals) && (refPtr != NULL))
+    else if((useEquals) && (refPtr != NULL))
     {
         translation = SamRecord::EQUAL;
     }
     else
     {
-        seqOrig = true;
+        useOrigSeq = true;
         translation = SamRecord::NONE;
     }
     

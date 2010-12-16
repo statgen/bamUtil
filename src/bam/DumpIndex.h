@@ -19,6 +19,18 @@
 // This file contains the processing for the executable option "dumpIndex"
 // which prints a BAM Index File in a readable format.
 
-void dumpIndexDescription();
-void dumpIndexUsage();
-int dumpIndex(int argc, char **argv);
+#ifndef __DUMP_INDEX_H__
+#define __DUMP_INDEX_H__
+
+#include "BamExecutable.h"
+
+class DumpIndex : public BamExecutable
+{
+public:
+    static void dumpIndexDescription();
+    void description();
+    void usage();
+    int execute(int argc, char **argv);
+};
+
+#endif
