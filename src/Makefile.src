@@ -2,6 +2,7 @@ EXE=
 TOOLBASE=
 SRCONLY=
 HDRONLY = 
+COMPILE_ANY_CHANGE = 
 VERSION = 0.0.1
 PATH_TO_BASE=../..
 BIN_DIR=$(PATH_TO_BASE)/src/bin
@@ -11,6 +12,10 @@ BIN_DIR=$(PATH_TO_BASE)/src/bin
 #   TOOLBASE - the base filename for files with .h & .cpp versions
 #   SRCONLY - any cpp files without headers.
 #   HDRONLY - any header files without cpp
+#   COMPILE_ANY_CHANGE - any files that should be compiled if any of the
+#                        files change.  These files MUST also be
+#                        included in TOOLBASE or SRCONLY.  Here they are
+#                        just the base name without the extension.
 #   VERSION - if not 0.0.1
 #   PATH_TO_BASE if it is not ../..
 #   BIN_DIR if it is not ../../src/bin
@@ -26,15 +31,16 @@ TOOLSRC = $(TOOLBASE:=.cpp) $(SRCONLY)
 TOOLOBJ = $(TOOLSRC:.cpp=.o)
 LIBRARY = $(USER_LIBS) $(REQ_LIBS)
 OBJECTS=$(patsubst %,$(OBJDIR)/%,$(TOOLOBJ))
+ALWAYS_COMP_OBJ = $(patsubst %,$(OBJDIR)/%,$(COMPILE_ANY_CHANGE:=.o))
 
 # make everything
 all : $(EXE)
 
 # dependencies for executables
-$(EXE) : $(LIBRARY) $(OBJECTS) $(BINDIR)
+$(EXE) : $(LIBRARY) $(OBJECTS)
 	$(CXX) $(CFLAGS) -o $(BIN_DIR)/$@ $(OBJECTS) $(LIBRARY) -lm -lz -lssl
 
-$(OBJECTS): $(TOOLHDR) $(LIBHDR) | $(OBJDIR)
+$(OBJECTS): $(TOOLHDR) | $(OBJDIR)
 
 $(OBJDIR):
 	mkdir $(OBJDIR)
@@ -51,6 +57,9 @@ test : all
         then \
         $(MAKE) $(PARALLEL_MAKE) -C $(TEST_DIR) OPTFLAG="$(OPTFLAG)" --no-print-directory $@; \
         fi
+
+$(ALWAYS_COMP_OBJ):  $(COMPILE_ANY_CHANGE:=.cpp)  $(filter-out $(ALWAYS_COMP_OBJ),$(OBJECTS))
+	$(CXX) $(CFLAGS) -o $@ -c  $(*F).cpp -DVERSION="\"$(VERSION)\""
 
 $(OBJDIR)/%.o: %.c
 	$(CXX) $(CFLAGS) -o $@ -c $<
