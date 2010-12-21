@@ -4,7 +4,7 @@ The following parameters are available.  Ones with "[]" are in effect:
 Input Parameters
  --in [-.bam], --out [results/convertSamStdoutBamPipeSam.sam], --refFile [],
                         --noeof, --params [ON]
-   SequenceConversion : --seqBases, --seqEquals, --seqOrig [ON]
+   SequenceConversion : --useBases, --useEquals, --useOrigSeq [ON]
 
 
 Number of records read = 10
