@@ -37,9 +37,8 @@ BamExecutable::~BamExecutable()
 
 void BamExecutable::bamVersion()
 {
-    std::cerr << "bam Version: " << VERSION << std::endl;
-    std::cerr << "Built on " << DATE << " by "<< USER << std::endl
-              << "Last Commit: " << COMMIT << std::endl;
+    std::cerr << "Version: " << VERSION
+              << "; Built: " << DATE << " by "<< USER << std::endl;
 }
 
 void BamExecutable::bamExecutableDescription()
