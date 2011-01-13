@@ -741,7 +741,7 @@ void SamFile::resetFile()
     myIsOpenForWrite = false;
     myHasHeader = false;
     mySortedType = UNSORTED;
-    myPrevReadName = "";
+    myPrevReadName.clear();
     myPrevCoord = -1;
     myPrevRefID = 0;
     myRecordCount = 0;
