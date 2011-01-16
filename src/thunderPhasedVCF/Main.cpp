@@ -381,6 +381,7 @@ int main(int argc, char ** argv)
    int burnin = 0, rounds = 0, polling = 0, samples = 0;
    bool weighted = false, compact = false;
    bool mle = false, mledetails = false, uncompressed = false;
+   bool inputPhased = false;
 
    SetupCrashHandlers();
    SetCrashExplanation("reading command line options");
@@ -406,6 +407,7 @@ BEGIN_LONG_PARAMETERS(longParameters)
       LONG_DOUBLEPARAMETER("errorRate", &errorRate)
       LONG_PARAMETER("weighted", &weighted)
       LONG_PARAMETER("compact", &compact)
+      LONG_PARAMETER("inputPhased", &inputPhased)
    LONG_PARAMETER_GROUP("Imputation")
       LONG_PARAMETER("geno", &OutputManager::outputGenotypes)
       LONG_PARAMETER("quality", &OutputManager::outputQuality)
@@ -555,8 +557,14 @@ END_LONG_PARAMETERS();
 
    SetCrashExplanation("searching for initial haplotype set");
 
-   //engine.RandomSetup();
-   engine.LoadHaplotypesFromVCF(shotgunfile);
+   if ( inputPhased ) {
+     printf("Loading phased information from the input VCF file\n\n");
+     engine.LoadHaplotypesFromVCF(shotgunfile);
+   }
+   else {
+     printf("Assigning random set of haplotypes\n\n");
+     engine.RandomSetup();
+   }
    printf("Found initial haplotype set\n\n");
 //OutputManager::WriteHaplotypes(outfile, ped, engine.haplotypes);
 //return 0;
