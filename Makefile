@@ -41,7 +41,7 @@ release:
 	(make clean)
 # the touch gets rid of a tar warning
 	touch $(RELEASE_FILE)
-	tar cvz --exclude="*~" --exclude=$(RELEASE_FILE) --exclude=mach --exclude-vcs -f $(RELEASE_FILE) ../statgen
+	tar cvz --exclude="*~" --exclude=$(RELEASE_FILE) --exclude=mach --exclude="glfMultiples" --exclude-vcs -f $(RELEASE_FILE) ../statgen
 
 clean:
 	@for i in "$(SUBDIRS)"; do \
