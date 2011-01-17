@@ -11,7 +11,7 @@ OPTFLAG?=-O4
 # if important, figure out the right way to detect support for this flag:
 # OPTFLAG+=$(shell if [ `uname` = Linux ] ; then echo '-march=native' ; fi)
 
-VERSION=0.1.2
+VERSION=0.1.3
 RELEASE_FILE=statGen.$(VERSION).tgz
 
 #
