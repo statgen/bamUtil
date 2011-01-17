@@ -29,7 +29,7 @@
 #include "GenomeSequence.h"
 #include "SamFile.h"
 #include "genmat/GenMatrix.h"
-#include "base/logger.h"
+#include "Logger.h"
 #include "base/string_tokenizer.h"
 #include "BgzfFileType.h"
 #include "tclap/CmdLine.h"

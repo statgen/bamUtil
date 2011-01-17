@@ -4,7 +4,6 @@ HDRONLY =
 NEW_LIB=libvcf.a
 VERSION = 0.0.1
 PATH_TO_BASE=../../..
-#USER_INCLUDES=-I../include/
 
 include $(PATH_TO_BASE)/Makefile.include
 
