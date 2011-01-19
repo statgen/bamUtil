@@ -1,4 +1,4 @@
-EXE=thunderPhasedVCF
+EXE=thunderVCF
 TOOLBASE = ShotgunHaplotyper ShotgunManners
 SRCONLY = Main.cpp
 USER_LIBS = libmach/libmach.a ../vcfCooker/libvcf/libvcf.a
