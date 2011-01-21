@@ -69,6 +69,23 @@ void QuickIndex::IndexCounts(const StringIntMap & source_data)
     Index(counts);
 }
 
+void QuickIndex::IndexCounts(const StringIntHash & source_data)
+{
+    IntArray counts(source_data.Capacity());
+
+    for (int i = 0; i < source_data.Capacity(); i++)
+        if (source_data.SlotInUse(i))
+            counts[i] = source_data.Integer(i);
+        else
+            counts[i] = -1;
+
+    Index(counts);
+
+    Reverse();
+    Dimension(source_data.Entries());
+    Reverse();
+}
+
 bool QuickIndex::IsBefore(int i, int j)
 {
     i = (*this)[i];
