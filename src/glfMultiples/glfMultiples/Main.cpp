@@ -237,17 +237,17 @@ void ReportSNP(glfHandler * glf, int n, int position,
     fprintf(baseCalls, "depth=%d;mapQ=%d;", totalCoverage, averageMapQuality);
 
     if (allele1 != refBase)
-        fprintf(baseCalls, "AF=%.3f,%.3f\t", 1.0 - af, af);
+        fprintf(baseCalls, "AF=%.6lf,%.6lf\t", 1.0 - af, af);
     else
-        fprintf(baseCalls, "AF=%.3f\t", af);
+        fprintf(baseCalls, "AF=%.6lf\t", af);
 
     // Format for this call
-    fprintf(baseCalls, "GT:GD:GQ");
+    fprintf(baseCalls, "GT:DP:GQ");
 
-    if (allele2 == refBase && allele1 == refBase)
-        fprintf(baseCalls, "\t");
-    else
-        fprintf(baseCalls, ":GL%s\t", allele1 == refBase ? "" : "3");
+    if ((allele2 != refBase) || (allele1 != refBase))
+    {
+        fprintf(baseCalls, ":GL%s", allele1 == refBase ? "" : "3");
+    }
 
     ReportGenotypes(lk, glf, n, position, refBase, allele1, allele2);
 }
