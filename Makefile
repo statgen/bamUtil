@@ -11,7 +11,7 @@ OPTFLAG?=-O4
 # if important, figure out the right way to detect support for this flag:
 # OPTFLAG+=$(shell if [ `uname` = Linux ] ; then echo '-march=native' ; fi)
 
-VERSION=0.1.3
+VERSION=0.1.4
 RELEASE_FILE=statGen.$(VERSION).tgz
 
 #
@@ -41,7 +41,7 @@ release:
 	(make clean)
 # the touch gets rid of a tar warning
 	touch $(RELEASE_FILE)
-	tar cvz --exclude="*~" --exclude=$(RELEASE_FILE) --exclude=mach --exclude="glfMultiples" --exclude-vcs -f $(RELEASE_FILE) ../statgen
+	tar cvz --exclude="*~" --exclude=$(RELEASE_FILE) --exclude=mach --exclude-vcs -f $(RELEASE_FILE) ../statgen
 
 clean:
 	@for i in "$(SUBDIRS)"; do \
