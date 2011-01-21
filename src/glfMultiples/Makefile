@@ -14,7 +14,6 @@ CXX=g++
 
 # default compilation flags are 
 #
-# CFLAGS=-O2 -I./libsrc/ -I./pdf/
 # 
 # The following special options may also be added to the default
 # 
@@ -27,7 +26,10 @@ CXX=g++
 #                                    on systems where gcc supports the long
 #                                    long data type and on Windows.
 # 
-CFLAGS=-O2 -I./libsrc -I./pdf  -D_FILE_OFFSET_BITS=64
+OPT_FLAG=-O2
+PATH_TO_BASE=../..
+
+include $(PATH_TO_BASE)/Makefile.include
 
 # executable file names and locations
 BINDIR = ../bin
@@ -38,27 +40,6 @@ EXECUTABLES = $(TARGET)
 # For best results, consider editing this manually ...
 TOOLSRC = $(TOOL)/Main.cpp
 
-# Utility Library File Set
-LIBFILE = libsrc/lib-goncalo.a
-LIBMAIN = libsrc/BaseQualityHelper libsrc/BasicHash libsrc/Error libsrc/FortranFormat \
- libsrc/GenotypeLists libsrc/glfHandler \
- libsrc/IntArray libsrc/InputFile libsrc/Hash \
- libsrc/LongArray libsrc/Kinship libsrc/KinshipX  libsrc/MapFunction \
- libsrc/MathCholesky libsrc/MathDeriv libsrc/MathFloatVector \
- libsrc/MathGenMin libsrc/MathGold libsrc/MathMatrix libsrc/MathStats \
- libsrc/MathNormal libsrc/MathSVD libsrc/MathVector \
- libsrc/MemoryInfo libsrc/MiniDeflate \
- libsrc/Parameters libsrc/Pedigree libsrc/PedigreeAlleleFreq \
- libsrc/PedigreeDescription libsrc/PedigreeFamily libsrc/PedigreeGlobals \
- libsrc/PedigreePerson libsrc/QuickIndex libsrc/Random libsrc/Sort \
- libsrc/StringAlias libsrc/StringArray libsrc/StringBasics libsrc/StringMap \
- libsrc/StringHash libsrc/TraitTransformations
-LIBPED = libsrc/PedigreeLoader libsrc/PedigreeTwin libsrc/PedigreeTrim
-LIBSRC = $(LIBMAIN:=.cpp) $(LIBPED:=.cpp)
-LIBHDR = $(LIBMAIN:=.h) libsrc/Constant.h \
- libsrc/MathConstant.h libsrc/PedigreeAlleles.h libsrc/LongInt.h
-LIBOBJ = $(LIBSRC:.cpp=.o)
- 
 # PDF Library File Sets
 PDFLIB = pdf/libpdf.a
 PDFFILES = pdf/PDF pdf/PDFfont pdf/PDFinfo pdf/PDFpage
@@ -93,18 +74,12 @@ $(BINDIR) :
 	mkdir -p $(BINDIR)
 
 # dependencies for executables
-$(TARGET) : $(LIBFILE) $(TOOLSRC) $(PDFLIB)
-	$(CXX) $(CFLAGS) -o $@ -include version/VersionInfo.h $(TOOL)/*.cpp $(PDFLIB) $(LIBFILE) -lm -lz
-
-$(LIBFILE) : $(LIBOBJ) $(LIBHDR)
-	ar -cr $@ $(LIBOBJ)
-	ranlib $@
+$(TARGET) : $(REQ_LIBS) $(TOOLSRC) $(PDFLIB)
+	$(CXX) $(CFLAGS) -o $@ -include version/VersionInfo.h $(TOOL)/*.cpp $(PDFLIB) $(REQ_LIBS) -lm -lz
 
 $(PDFLIB) : $(PDFOBJ)
 	ar -cr $@ $(PDFOBJ)
 	ranlib $@
-
-$(LIBOBJ) : $(LIBHDR)
 
 $(PDFOBJ) : $(PDFHDR)
 
@@ -135,7 +110,6 @@ new-version :
 
 fetch : 
 	cd $(FETCHDIR) ; tcsh -c "cp $(TOOL)/*.{h,cpp} $(DISTRIBDIR)/$(TOOL)"
-	cd $(FETCHDIR) ; cp $(LIBSRC) $(LIBHDR) $(DISTRIBDIR)/libsrc
 	cd $(FETCHDIR) ; cp $(PDFSRC) $(PDFHDR) $(DISTRIBDIR)/pdf
 	cd $(DISTRIBDIR) ; csh ../stamp Goncalo Generic
 	mkdir -p version 
