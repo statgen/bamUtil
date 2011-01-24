@@ -86,6 +86,12 @@ $(PDFOBJ) : $(PDFHDR)
 clean :
 	-rm -f */*.a */*.o $(EXECUTABLES) 
 
+test : all
+	if test -d $(TEST_DIR); \
+        then \
+        $(MAKE) $(PARALLEL_MAKE) -C $(TEST_DIR) OPTFLAG="$(OPTFLAG)" --no-print-directory $@; \
+        fi
+
 install : all $(INSTALLDIR)
 	@echo " "
 	@echo Installing to directory $(INSTALLDIR)
