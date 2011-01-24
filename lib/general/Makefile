@@ -107,7 +107,7 @@ selftest:
 		then \
 		    continue; \
 		fi;\
-		(echo "building in self test $$i"; g++ -DTEST -D__STDC_LIMIT_MACROS -fno-rtti -o test_$$i $$i  -L. -lcsg -lm -lz -lssl ; ./test_$$i) ; \
+		(echo "building in self test $$i"; g++ -DTEST -D__STDC_LIMIT_MACROS -o test_$$i $$i  -L. -lcsg -lm -lz -lssl ; ./test_$$i) ; \
 		if [ $$? -ne 0 ] ; \
 		then \
 		    echo "make stopped because of errors." ; \
