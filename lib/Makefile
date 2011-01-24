@@ -10,7 +10,7 @@ SUBDIRS= "samtools " $(TEST_SUBDIRS)
 # for a way of improving the following:
 #
 
-all: tclap
+all: tclap samtools
 	@for i in "$(SUBDIRS)"; do \
 		if [ "XXX$$i" = XXX ] ;\
 		then \
@@ -63,8 +63,19 @@ tclap-1.2.0: tclap-1.2.0.tar.gz
 	tar xvzf tclap-1.2.0.tar.gz
 	(cd tclap-1.2.0; ./configure; make)
 
-clean:
+tclap_clean:
 	rm -rf tclap-1.2.0 tclap
+
+samtools: samtools-0.1.12a
+	ln -s samtools-0.1.12a samtools
+
+samtools-0.1.12a: samtools-0.1.12a.tar.bz2
+	tar xvf samtools-0.1.12a.tar.bz2
+
+samtools_clean:
+	rm -rf samtools-0.1.12a samtools
+
+clean: tclap_clean samtools_clean
 	@for i in "$(SUBDIRS)"; do \
 		if [ "XXX$$i" = XXX ] ;\
 		then \
