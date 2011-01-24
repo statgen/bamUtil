@@ -2,3 +2,5 @@ tclap/*
 tclap-1.2.0/*
 samtools/*
 samtools-0.1.12a/*
+samtools
+tclap
