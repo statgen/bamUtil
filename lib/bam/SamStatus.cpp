@@ -69,7 +69,7 @@ SamStatus::~SamStatus()
 void SamStatus::reset()
 {
     myType = UNKNOWN;
-    myMessage = "";
+    myMessage.clear();
 }
 
 

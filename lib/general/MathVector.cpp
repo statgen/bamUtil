@@ -296,6 +296,15 @@ double Vector::Var() const
     return var;
 }
 
+double Vector::StandardDeviation() const
+{
+    double var = Var();
+
+    if (var < 0.0) var = 0.0;
+
+    return sqrt(var);
+}
+
 void Vector::Print(FILE * f, int d)
 {
     if (d == -1 || d > dim) d = dim;
@@ -667,3 +676,10 @@ double Vector::Var(double returnIfNull)
     return Var();
 }
 
+double Vector::StandardDeviation(double returnIfNull)
+{
+    if (Length() == 0)
+        return returnIfNull;
+
+    return StandardDeviation();
+}

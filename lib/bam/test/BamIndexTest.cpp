@@ -62,6 +62,7 @@ void testBamIndex()
     // Test reading an indexed bam file.
     SamFile inFile;
     assert(inFile.OpenForRead("testFiles/sortedBam.bam"));
+    inFile.setSortedValidation(SamFile::COORDINATE);
     assert(inFile.ReadBamIndex("testFiles/sortedBam.bam.bai"));
     SamFileHeader samHeader;
     assert(inFile.ReadHeader(samHeader));

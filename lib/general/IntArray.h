@@ -130,6 +130,19 @@ public:
     }
     int  Sum(int start, int end) const;
 
+    double  dSum() const
+    {
+        return dSum(0, count - 1);
+    }
+    double  dSum(int start) const
+    {
+        return dSum(start, count - 1);
+    }
+    double  dSum(int start, int end) const;
+
+    int     SumProduct(const IntArray & weight) const;
+    double  dSumProduct(const IntArray & weight) const;
+
     int  Max() const
     {
         return Max(0, count - 1);

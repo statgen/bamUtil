@@ -148,6 +148,8 @@ public:
    
     /// Set the flag to validate that the file is sorted as it is read/written.
     /// Must be called after the file has been opened.
+    /// Sorting validation is reset everytime SetReadPosition is called since
+    /// it can jump around in the file.
     void setSortedValidation(SortedType sortType);
 
     /// Return the number of records that have been read/written so far.
@@ -178,6 +180,8 @@ public:
     /// records have been retrieved for the specified reference id, ReadRecord
     /// will return failure until a new read section is set.
     /// Must be called only after the file has been opened for reading.
+    /// Sorting validation is reset everytime SetReadPosition is called since
+    /// it can jump around in the file.
     /// \param  refID the reference ID of the records to read from the file.
     /// \return true = success; false = failure.
     bool SetReadSection(int32_t refID);
@@ -188,6 +192,8 @@ public:
     /// records have been retrieved for the specified reference name,
     /// ReadRecord will return failure until a new read section is set.
     /// Must be called only after the file has been opened for reading.
+    /// Sorting validation is reset everytime SetReadPosition is called since
+    /// it can jump around in the file.
     /// \param  refName the reference name of the records to read from the file.
     /// \return true = success; false = failure.
     bool SetReadSection(const char* refName);
@@ -198,6 +204,8 @@ public:
     /// call.  When all records have been retrieved for the specified section,
     /// ReadRecord will return failure until a new read section is set.
     /// Must be called only after the file has been opened for reading.
+    /// Sorting validation is reset everytime SetReadPosition is called since
+    /// it can jump around in the file.
     /// \param  refID the reference ID of the records to read from the file.
     /// \param  start inclusive 0-based start position of records that should be read for this refID.
     /// \param  end exclusive 0-based end position of records that should be read for this refID.
@@ -210,6 +218,8 @@ public:
     /// call.  When all records have been retrieved for the specified section,
     /// ReadRecord will return failure until a new read section is set.
     /// Must be called only after the file has been opened for reading.
+    /// Sorting validation is reset everytime SetReadPosition is called since
+    /// it can jump around in the file.
     /// \param  refName the reference name of the records to read from the file.
     /// \param  start inclusive 0-based start position of records that should be read for this refID.
     /// \param  end exclusive 0-based end position of records that should be read for this refID.
@@ -239,6 +249,8 @@ protected:
     /// Validate that the record is sorted compared to the previously read
     /// record if there is one, according to the specified sort order.
     /// If the sort order is UNSORTED, true is returned.
+    /// Sorting validation is reset everytime SetReadPosition is called since
+    /// it can jump around in the file.
     bool validateSortOrder(SamRecord& record, SamFileHeader& header);
    
     // Return the sort order as defined by the header.  If it is undefined

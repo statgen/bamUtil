@@ -94,7 +94,7 @@ void SamStatistics::print()
     if(myReadCount < DIVIDE_UNITS)
     {
         DIVIDE_UNITS = 1;
-        units = "";
+        units.clear();
     }
     
     // Read Counts

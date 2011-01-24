@@ -592,7 +592,12 @@ bool SamFile::SetReadSection(int32_t refID, int32_t start, int32_t end)
     // we no longer have a "current chunk" that we are reading.
     myCurrentChunkEnd = 0;
     myStatus = SamStatus::SUCCESS;
-    
+
+    // Reset the sort order criteria since we moved around in the file.    
+    myPrevCoord = -1;
+    myPrevRefID = 0;
+    myPrevReadName.clear();
+
     return(true);
 }
 
@@ -632,6 +637,11 @@ bool SamFile::SetReadSection(const char* refName, int32_t start, int32_t end)
     myCurrentChunkEnd = 0;
     myStatus = SamStatus::SUCCESS;
     
+    // Reset the sort order criteria since we moved around in the file.    
+    myPrevCoord = -1;
+    myPrevRefID = 0;
+    myPrevReadName.clear();
+
     return(true);
 }
 
@@ -731,7 +741,7 @@ void SamFile::resetFile()
     myIsOpenForWrite = false;
     myHasHeader = false;
     mySortedType = UNSORTED;
-    myPrevReadName = "";
+    myPrevReadName.clear();
     myPrevCoord = -1;
     myPrevRefID = 0;
     myRecordCount = 0;

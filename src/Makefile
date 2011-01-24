@@ -1,4 +1,4 @@
-TEST_SUBDIRS="bam fastqValidator glf karma qplot polishBam trimBam rgMergeBam splitBam  vcfGenomeStat"
+TEST_SUBDIRS="bam fastqValidator glf glfMerge glfMultiples karma mgpileup qplot polishBam trimBam rgMergeBam splitBam thunderVCF vcfCooker vcfGenomeStat verifyBamID"
 SUBDIRS=$(TEST_SUBDIRS)
 
 # Build in all subdirectories.
