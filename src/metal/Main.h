@@ -22,7 +22,6 @@
 #include "StringHash.h"
 #include "MathVector.h"
 #include "MathStats.h"
-#include "InputFile.h"
 #include "IntArray.h"
 
 class FileSummary
@@ -49,6 +48,9 @@ class FileSummary
       int firstColumn;
       int secondColumn;
       int stderrColumn;
+      int inteffectColumn;
+      int intstderrColumn;
+      int intcovColumn;
       int freqColumn;
       int strandColumn;
       int minColumns;
@@ -100,6 +102,7 @@ void ClearFilters();
 void NumbersToLetters(String & al);
 void FlipAllele(String & al);
 bool FlipAlleles(String & al1, String & al2, double & effect, double & freq);
+bool FlipIntAlleles(String & al1, String & al2, double & effect, double & inteffect, double & freq);
 bool GuessSecondAllele(int marker, String & al1, String & al2);
 
 // Workhorses
