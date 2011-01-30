@@ -341,7 +341,7 @@ BedFile::BedFile() {
   iFile = NULL;
   iBimFile = NULL;
   iFamFile = NULL;
-  bAllowFlip = false;
+  bAllowFlip = true; // allow flip
   bRefIsAllele1 = true;
   pBedBuffer = NULL;
   nBytes = 0;
@@ -476,6 +476,8 @@ bool VcfFile::iterateMarker() {
     ++nNumMarkers;
   }
 
+  //Logger::gLogger->writeLog("foo, %s:%s",lineTokens[0].c_str(),lineTokens[1].c_str());
+
   try {
     pMarker->setChrom(lineTokens[0]);
     pMarker->setPos(lineTokens[1]);
@@ -499,9 +501,6 @@ bool VcfFile::iterateMarker() {
       }
     }
     pMarker->setInfo(lineTokens[7], bUpgrade);
-
-    //Logger::gLogger->writeLog("goo, %s:%d nNumMarkers = %d, nHead = %d, nBuffers = %d", getLastMarker()->sChrom.c_str(), getLastMarker()->nPos, nNumMarkers, nHead, nBuffers);
-
   }
   catch (VcfFileException exc) {
     // add the line number to the error message
@@ -640,6 +639,8 @@ void VcfMarker::setInfo(const String& s, bool upgrade) {
       vnPLs.resize(n * 3);
       vnDPs.resize(n);
 
+      bool multiAlt = (asAlts.Length() > 1) ? true : false;
+
       for(int i=0; i < n; ++i) {
 	int g1 = asSampleValues[i*m][0] - '0';
 	int g2 = asSampleValues[i*m][2] - '0';
@@ -647,14 +648,43 @@ void VcfMarker::setInfo(const String& s, bool upgrade) {
 	vnDPs[i] = dp;
 
 	const char* s = asSampleValues[i*m+3].c_str();
-	for(int j=0, k=3*i; s[j] != '\0'; ++j) {
+
+	// read the GL fields to assign vnPL values for calculating allele balanace
+	int pl = 0;
+	int k = 0;
+	for(int j=0; s[j] != '\0'; ++j) {
 	  if ( s[j] == ',' ) {
+	    if ( multiAlt ) {
+	      if ( k == 2 ) { vnPLs[3*i+0] = pl; }
+	      else if ( k == 4 ) { vnPLs[3*i+1] = pl; }
+	      //else { fprintf(stderr,"%s\n",s); abort(); }
+	    }
+	    else {
+	      vnPLs[3*i+k] = pl;
+	    }
 	    ++k;
+	    pl = 0;
 	  }
 	  else {
-	    vnPLs[k] = vnPLs[k] * 10 + (s[j]-'0');
+	    pl = pl * 10 + (s[j]-'0');
 	  }
 	}
+	if ( multiAlt ) {
+	  if ( k == 5 ) { vnPLs[3*i+2] = pl; }
+	  else { fprintf(stderr,"%s, k=%d\n",s,k); abort(); }
+	}
+	else {
+	  vnPLs[3*i+k] = pl;
+	}	
+
+	//for(int j=0, k=3*i; s[j] != '\0'; ++j) {
+	//  if ( s[j] == ',' ) {
+        //    ++k;
+	//  }
+	//  else {
+	//    vnPLs[k] = vnPLs[k] * 10 + (s[j]-'0');
+	//  }
+	//}
 
 	/*
 	asPLs.ReplaceColumns(asSampleValues[i*m+3],',');
@@ -791,10 +821,17 @@ void VcfMarker::setSample(int sampleIndex, const String& sampleValue, bool parse
   }
   //Logger::gLogger->error("VcfMarker::setSample(%d, %s, %d, %d, %d)",sampleIndex,sampleValue.c_str(),parseGenotypes,parseDosages,parseValues);
 
-  if ( sampleValue.Compare(".") == 0 ) { 
-    // some VCF files have zero values with no data
+  if ( (sampleValue.Compare("./.") == 0) || ( sampleValue.Compare(".") == 0 ) ) {
     if ( parseValues ) {
-      // do nothing?
+      for(int i=0; i < asFormatKeys.Length(); ++i) {
+	asSampleValues[i + asFormatKeys.Length() * sampleIndex] = ".";
+      }
+    }
+    if ( parseGenotypes ) {
+      vnSampleGenotypes[sampleIndex] = 0xffff;
+    }
+    if ( parseDosages ) {
+      vfSampleDosages[sampleIndex] = -1; // missing
     }
   }
   else {
@@ -802,7 +839,7 @@ void VcfMarker::setSample(int sampleIndex, const String& sampleValue, bool parse
     if ( tmpTokens.Length() != asFormatKeys.Length() ) {
       throw VcfFileException("# values = %s do not match with # fields in FORMAT field = %d at sampleIndex = %d",sampleValue.c_str(),asFormatKeys.Length(),sampleIndex);
     }
-
+    
     if ( parseValues ) {
       for(int i=0; i < tmpTokens.Length(); ++i) {
 	asSampleValues[i + tmpTokens.Length() * sampleIndex] = tmpTokens[i];
@@ -827,19 +864,19 @@ void VcfMarker::setSample(int sampleIndex, const String& sampleValue, bool parse
 	    throw VcfFileException("Cannot parse the genotype field " + tmpTokens[GTindex]);
 	  }
 	}
-
+	
 	tmpTokens[GTindex][sepPos] = '\0';
 	//Logger::gLogger->writeLog("GTindex = %d, %s, %s",GTindex, tmpTokens[GTindex].c_str(), tmpTokens[GTindex].c_str()+sepPos+1);
 	
 	int n1 = atoi(tmpTokens[GTindex].c_str());
 	int n2 = atoi(tmpTokens[GTindex].c_str() + sepPos+1);
-
+	
 	if ( ( !phased ) && ( n1 > n2 ) ) {
 	  int tmp = n1;
 	  n1 = n2;
 	  n2 = tmp;
 	}
-
+	
 	unsigned short g = (unsigned short)( ((n1 & 0x00ff) << 8) | (n2 & 0x00ff) | ((phased & 0x0001) << 15) );
 	
 	vnSampleGenotypes[sampleIndex] = g;
@@ -1064,7 +1101,7 @@ char BedFile::determineAltBase(char refBase, char a1, char a2) {
 	  return f1;
 	}
       }
-      throw VcfFileException("The ref/alt allele does not match to reference genome");
+      //throw VcfFileException("The ref/alt allele does not match to reference genome");
       return '.';
     }
 }
