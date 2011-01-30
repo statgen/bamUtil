@@ -25,9 +25,10 @@ class ShotgunHaplotyper : public Haplotyper
       
       char   * refalleles;
       double * freq1s;
+      bool weightByMismatch;
 
-      virtual void CalculateWeights();
       virtual void RandomSetup(Random * rand = NULL);
+      virtual void PhaseByReferenceSetup(Random * rand = NULL);
       virtual void LoadHaplotypesFromVCF(String& fileName);
       virtual void ConditionOnData(float * matrix, int marker, 
                                    char phred11, char phred12, char phred22);
@@ -40,7 +41,9 @@ class ShotgunHaplotyper : public Haplotyper
       virtual void SampleChromosomes(Random * rand);
       virtual bool ForceMemoryAllocation();
       
-      
+      virtual void SelectReferenceSet(int * array, int forWhom);
+      virtual void WeightByMismatch();
+
       virtual void RetrieveMemoryBlock(int marker);
       
       //void   SetShotgunError(double rate);

@@ -22,6 +22,7 @@
 #include "VcfFile.h"
 #include "Error.h"
 #include <math.h>
+#include <limits.h>
 
 ShotgunHaplotyper::ShotgunHaplotyper()
    {
@@ -35,6 +36,7 @@ ShotgunHaplotyper::ShotgunHaplotyper()
    
    refalleles = NULL;
    freq1s = NULL;
+   weightByMismatch = false;
    }
 
 ShotgunHaplotyper::~ShotgunHaplotyper()
@@ -67,27 +69,33 @@ void ShotgunHaplotyper::CalculatePhred2Prob()
 }
 
 
-void ShotgunHaplotyper::CalculateWeights()
-   {
-   /*AllocateWeights();
+void ShotgunHaplotyper::WeightByMismatch()
+{
+  // assume that the individual to 
+  AllocateWeights();
 
-   // Calculate weights ...
-   float sum = 0.0;
-   for (int i = 0; i < individuals - phased; i++)
-      {
-      weights[i] = 0.0;
-
-      for (int j = 0; j < markers; j++)
-         weights[i] += (genotypes[i][j] % 16) + (genotypes[i][j] / 16);
-
-      sum += weights[i];
+  float sum = 0.0;
+  for (int i = 0; i < individuals-1; ++i) {
+    // Calculate the mismatch between the haplotypes
+    int minMismatches = INT_MAX;
+    int mismatches = 1;
+    for(int j=0; j < 2; ++j) {
+      char* ha  = haplotypes[2*(individuals-1)+j];
+      for(int k=0; k < 2; ++k) {
+	char* hb  = haplotypes[ 2*i + k ];
+	for(int l=0; l < markers; ++l) {
+	  mismatches += (ha[l] ^ hb[l]);
+	}
       }
-
-   // Give up if there are no genotyped individuals
-   if (sum == 0.0)
-      FreeWeights();
-   */
-   }
+    }
+    if ( mismatches < minMismatches ) 
+      minMismatches = mismatches;
+    weights[i] = 1.0/minMismatches;
+    sum += weights[i];
+  }
+  weights[individuals-1] = 0.0;
+  //fprintf(stderr,"Weighting by mismatch count, sum = %f\n",sum);
+}
 
 void ShotgunHaplotyper::LoadHaplotypesFromVCF(String& fileName)
 {
@@ -217,6 +225,82 @@ void ShotgunHaplotyper::RandomSetup(Random * rand)
 
             haplotypes[i * 2][j] = bit;
             haplotypes[i * 2 + 1][j] = bit ^ 1;
+            }
+         else
+            {
+            haplotypes[i * 2][j] = 1;
+            haplotypes[i * 2 + 1][j] = 1;
+            }
+
+         }
+      }
+   }
+
+
+void ShotgunHaplotyper::PhaseByReferenceSetup(Random * rand)
+   {
+   if (rand == NULL)
+      rand = &globalRandom;
+
+   CalculatePhred2Prob();
+   
+   for (int j = 0; j < markers; j++)
+      {
+      double mac = 0;
+      int markerindex = 3*j;
+      
+      double hyperprior11 = freq1s[j] * freq1s[j];
+      double hyperprior12 = 2.0 * freq1s[j] * (1.0 - freq1s[j]);
+      double hyperprior22 = (1.0 - freq1s[j]) * (1.0 - freq1s[j]);
+      
+      for (int i = 0; i < individuals; i++)
+         {
+         double post11 = hyperprior11 * phred2prob[genotypes[i][markerindex]];
+         double post12 = hyperprior12 * phred2prob[genotypes[i][markerindex+1]];
+         double post22 = hyperprior22 * phred2prob[genotypes[i][markerindex+2]];
+         double sumpost = post11 + post12 + post22;
+         post11 /= sumpost;
+         post12 /= sumpost;
+         post22 /= sumpost;
+
+         // estimated counts of AL2
+         mac += post12+ 2*post22;
+         }
+
+      //here, each person contributes two alleles
+      double freq = 0.5 * mac / (double) individuals;
+      
+      double prior_11 = (1.0 - freq) * (1.0 - freq);
+      double prior_12 = 2.0 * freq * (1.0 - freq);
+      double prior_22 = freq * freq;
+
+      for (int i = 0; i < individuals; i++)
+         {
+         int observed = (unsigned char) (genotypes[i][j]);
+
+         double posterior_11 = prior_11 * phred2prob[genotypes[i][markerindex]];
+         double posterior_12 = prior_12 * phred2prob[genotypes[i][markerindex+1]];
+         double posterior_22 = prior_22 * phred2prob[genotypes[i][markerindex+2]];
+         double sum = posterior_11 + posterior_12 + posterior_22;
+
+         if (sum == 0)
+            printf("Problem!\n");
+
+         posterior_11 /= sum;
+         posterior_12 /= sum;
+
+         double r = rand->Next();
+         if (r < posterior_11)
+            {
+            haplotypes[i * 2][j] = 0;
+            haplotypes[i * 2 + 1][j] = 0;
+            }
+         else if (r < posterior_11 + posterior_12)
+            {
+	      //bool bit = rand->Binary();
+
+	      haplotypes[i * 2][j] = 0;
+	      haplotypes[i * 2 + 1][j] = 1;
             }
          else
             {
@@ -754,3 +838,42 @@ bool ShotgunHaplotyper::ForceMemoryAllocation()
    return true;
    }
 
+
+void ShotgunHaplotyper::SelectReferenceSet(int * array, int forWhom) {
+  //fprintf(stderr,"ShotgunHaplotyper::SelectReferenceSet() called\n");
+  if ( weightByMismatch ) {
+    WeightByMismatch();
+    globalRandom.Choose(array, weights, individuals - 1, states / 2);
+  }
+  else {
+    if (greedy)
+      {
+	// Sanity check
+	assert(states == phased * 2);
+	
+	// We exclude inferred haplotypes from the reference set
+	for (int i = 0; i < individuals - phased; i++)
+	  array[i] = 0;
+	
+	// We include phased haplotypes as our reference set
+	for (int i = individuals - phased; i < individuals - 1; i++)
+	  array[i] = 1;
+	
+	// For the last entry in the reference set, we may need to pick
+	// a pair of inferred haplotypes
+	if (forWhom < individuals - phased)
+	  array[forWhom] = 1;
+	else
+	  array[globalRandom.NextInt() % (individuals - phased)] = 1;
+      }
+    else if (weights != NULL)
+      globalRandom.Choose(array, weights, individuals - 1, states / 2);
+    else
+      globalRandom.Choose(array, individuals - 1, states / 2);
+  }
+  
+  // Swap reference set into position
+  for (int j = 0, out = 0; j < individuals; j++)
+    if (array[j])
+      SwapIndividuals(j, out++);
+}
