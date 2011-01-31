@@ -74,6 +74,7 @@ int main(int argc, char ** argv)
    bool bOutPlain = true;
    bool bOutBgzf = false;
    bool bOutGzip = false;
+   bool bKeepFilter = false;
 
    ParameterList pl;
 
@@ -130,6 +131,7 @@ int main(int argc, char ** argv)
      LONG_INTPARAMETER("minLQZ",&nMinLQZ)
      LONG_INTPARAMETER("maxRBZ",&nMaxRBZ)
      LONG_INTPARAMETER("minRBZ",&nMinRBZ)
+     LONG_PARAMETER("keepFilter",&bKeepFilter)
    END_LONG_PARAMETERS();
 
    pl.Add(new LongParameters("Available Options", longParameters));
@@ -455,8 +457,18 @@ int main(int argc, char ** argv)
 	 //Logger::gLogger->writeLog("%s:%d\n",pMarker->sChrom.c_str(),pMarker->nPos);
 
 	 // Apply filters
-	 if ( bRecipesFilter ) {
-	   pMarker->asFilters.Clear();
+         if ( bRecipesFilter ) {
+            if ( bKeepFilter ) {
+               if ( ( pMarker->asFilters.Length() == 1 ) &&
+                    ( ( pMarker->asFilters[0].Compare(".") == 0 ) ||
+                      ( pMarker->asFilters[0].Compare("PASS") == 0 ) ||
+                      ( pMarker->asFilters[0].Compare("0") == 0 ) ) ) {
+                  pMarker->asFilters.Clear();
+               }
+            }
+            else {
+               pMarker->asFilters.Clear();
+            }
 
 	   // QUAL filter
 	   if ( pMarker->fQual < nMinQUAL ) {
