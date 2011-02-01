@@ -97,7 +97,7 @@ $(OBJDIR)/%.o : %.cpp
 	$(CXX) $(CFLAGS) -o $@ -c $*.cpp -DVERSION=\"$(VERSION)\"
 
 test : all
-	(cd test; $(MAKE) $(PARALLEL_MAKE) OPTFLAG="$(OPTFLAG)" --no-print-directory $@);
+	@(cd test; $(MAKE) $(PARALLEL_MAKE) OPTFLAG="$(OPTFLAG)" --no-print-directory $@);
 
 
 CPP_TESTS := $(shell grep -m 1 'if defined(TEST)' *cpp |cut -f1 -d: )

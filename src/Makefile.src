@@ -69,13 +69,13 @@ $(OBJDIR):
 
 clean :
 	-rm -f $(OBJDIR)/*.o $(BIN_DIR)/$(EXE) *~
-	if test -d $(TEST_DIR); \
+	@if test -d $(TEST_DIR); \
         then \
 	$(MAKE) $(PARALLEL_MAKE) -C $(TEST_DIR) OPTFLAG="$(OPTFLAG)" --no-print-directory $@; \
         fi
 
 test : all
-	if test -d $(TEST_DIR); \
+	@if test -d $(TEST_DIR); \
         then \
         $(MAKE) $(PARALLEL_MAKE) -C $(TEST_DIR) OPTFLAG="$(OPTFLAG)" --no-print-directory $@; \
         fi

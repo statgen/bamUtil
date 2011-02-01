@@ -1,65 +1,13 @@
-TEST_SUBDIRS="bam fastqValidator glf glfMerge glfMultiples karma mgpileup qplot polishBam trimBam rgMergeBam splitBam thunderVCF vcfCooker vcfGenomeStat verifyBamID"
-SUBDIRS=$(TEST_SUBDIRS)
+SUBDIRS=bam fastqValidator glf glfMerge glfMultiples karma mgpileup qplot polishBam trimBam rgMergeBam splitBam thunderVCF vcfCooker vcfGenomeStat verifyBamID
 
 # Build in all subdirectories.
 #
-# see http://www.gnu.org/software/make/manual/make.html#Phony-Targets
-# for a way of improving the following:
-#
+.PHONY: $(SUBDIRS) all test clean
 
-all: 
-	@for i in "$(SUBDIRS)"; do \
-		if [ "XXX$$i" = XXX ] ;\
-		then \
-		    continue; \
-		fi;\
-		if [ \! -d $$i ] ; \
-		then \
-		    echo "directory $$i does not exist, skipping." ; \
-		    continue ; \
-		fi ; \
-		(echo "building in directory $$i";cd $$i; $(MAKE) $(PARALLEL_MAKE) OPTFLAG="$(OPTFLAG)" --no-print-directory $@) ; \
-		if [ $$? -ne 0 ] ; \
-		then \
-		    echo "make stopped because of errors." ; \
-		    break ; \
-		fi \
-	done
+all: TARGET = all
+test: TARGET = test
+clean: TARGET = clean
+all test clean: $(SUBDIRS)
 
-test: 
-	@for i in "$(TEST_SUBDIRS)"; do \
-		if [ "XXX$$i" = XXX ] ;\
-		then \
-		    continue; \
-		fi;\
-		if [ \! -d $$i ] ; \
-		then \
-		    echo "directory $$i does not exist, skipping." ; \
-		    continue ; \
-		fi ; \
-		(echo "building in directory $$i";cd $$i; $(MAKE) $(PARALLEL_MAKE) OPTFLAG="$(OPTFLAG)" --no-print-directory $@) ; \
-		if [ $$? -ne 0 ] ; \
-		then \
-		    echo "make stopped because of errors." ; \
-		    break ; \
-		fi \
-	done
-
-clean:
-	@for i in "$(SUBDIRS)"; do \
-		if [ "XXX$$i" = XXX ] ;\
-		then \
-		    continue; \
-		fi;\
-		if [ \! -d $$i ] ; \
-		then \
-		    echo "directory $$i does not exist, skipping." ; \
-		    continue ; \
-		fi ; \
-		(echo "building in directory $$i";cd $$i; $(MAKE) $(PARALLEL_MAKE) --no-print-directory $@) ; \
-		if [ $$? -ne 0 ] ; \
-		then \
-		    echo "make stopped because of errors." ; \
-		    break ; \
-		fi \
-	done
+$(SUBDIRS):
+	@$(MAKE) $(PARALLEL_MAKE) OPTFLAG="$(OPTFLAG)" -C $@ $(TARGET)
