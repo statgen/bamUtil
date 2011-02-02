@@ -52,12 +52,12 @@ clean :
 	-rm -f $(OBJDIR)/*.o *~ $(addprefix $(INCLUDE_PATH)/, $(HEADERS))
 	$(AR) d $(STAT_GEN_LIB) $(OBJECTS)
 	$(RANLIB) $(STAT_GEN_LIB)
-	$(MAKE) $(PARALLEL_MAKE) -C $(TEST_DIR) OPTFLAG="$(OPTFLAG)" --no-print-directory $@
+	$(MAKE) -C $(TEST_DIR) OPTFLAG="$(OPTFLAG)" --no-print-directory $@
 
 test: all
 	@if test -d $(TEST_DIR); \
         then \
-	$(MAKE) $(PARALLEL_MAKE) -C $(TEST_DIR) OPTFLAG="$(OPTFLAG)" --no-print-directory $@; \
+	$(MAKE) -C $(TEST_DIR) OPTFLAG="$(OPTFLAG)" --no-print-directory $@; \
         fi
 
 $(OBJDIR)/%.o: %.c

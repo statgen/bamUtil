@@ -2,54 +2,24 @@ PATH_TO_LIB_BASE=../..
 PATH_TO_BASE=../$(PATH_TO_LIB_BASE)
 include $(PATH_TO_BASE)/Makefile.include
 
-SUBDIRS="inputFileTest cigar"
-
-# try and optimize build on SMP machines
-PARALLEL_MAKE+=$(shell if [ X$(OSTYPE) = XFreeBSD ] ; then echo -j `sysctl -n hw.ncpu` ; fi)
-PARALLEL_MAKE+=$(shell if [ X$(OSTYPE) = Xlinux ] ; then echo -j `grep -c '^processor' /proc/cpuinfo` ; fi)
-PARALLEL_MAKE+=$(shell if [ `uname` = Linux ] ; then echo -j `grep -c '^processor' /proc/cpuinfo` ; fi)
+SUBDIRS=inputFileTest cigar
 
 OPTFLAG?=-O0
 
-all test:
-	@for i in "$(SUBDIRS)"; do \
-		if [ "XXX$$i" = XXX ] ;\
-		then \
-		    continue; \
-		fi;\
-		if [ \! -d $$i ] ; \
-		then \
-		    echo "directory $$i does not exist, skipping." ; \
-		    continue ; \
-		fi ; \
-		(echo "building in directory $$i";cd $$i; $(MAKE) $(PARALLEL_MAKE) OPTFLAG="$(OPTFLAG)" --no-print-directory $@) ; \
-		if [ $$? -ne 0 ] ; \
-		then \
-		    echo "make stopped because of errors." ; \
-		    break ; \
-		fi \
-	done
+.PHONY: $(SUBDIRS) all test clean
 
-clean:
-	@for i in "$(SUBDIRS)"; do \
-		if [ "XXX$$i" = XXX ] ;\
-		then \
-		    continue; \
-		fi;\
-		if [ \! -d $$i ] ; \
-		then \
-		    echo "directory $$i does not exist, skipping." ; \
-		    continue ; \
-		fi ; \
-		(echo "building in directory $$i";cd $$i; $(MAKE) $(PARALLEL_MAKE) --no-print-directory $@) ; \
-		if [ $$? -ne 0 ] ; \
-		then \
-		    echo "make stopped because of errors." ; \
-		    break ; \
-		fi \
-	done
+all: TARGET = all
+test: TARGET = test
+clean: TARGET = clean
+
+all test: $(SUBDIRS)
+
+clean: $(SUBDIRS)
 	# clean current directory
 	rm -f *.o *~
+
+$(SUBDIRS):
+	@$(MAKE) OPTFLAG="$(OPTFLAG)" -C $@ $(TARGET)
 
 ######################################################################
 

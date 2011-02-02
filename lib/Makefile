@@ -23,10 +23,10 @@ clean: tclap_clean samtools_clean $(CLEAN_SUBDIRS)
 bam fastq glf: general
 
 $(CLEAN_SUBDIRS):  
-	@$(MAKE) $(PARALLEL_MAKE) OPTFLAG="$(OPTFLAG)" -C $(patsubst %_clean,%,$@) $(TARGET)
+	@$(MAKE) OPTFLAG="$(OPTFLAG)" -C $(patsubst %_clean,%,$@) $(TARGET)
 
 $(SUBDIRS): samtools
-	@$(MAKE) $(PARALLEL_MAKE) OPTFLAG="$(OPTFLAG)" -C $@ $(TARGET)
+	@$(MAKE) OPTFLAG="$(OPTFLAG)" -C $@ $(TARGET)
 
 
 #
@@ -52,7 +52,7 @@ samtools: samtools-0.1.12a
 
 samtools-0.1.12a: samtools-0.1.12a.tar.bz2
 	tar xvf samtools-0.1.12a.tar.bz2 
-	@$(MAKE) $(PARALLEL_MAKE) OPTFLAG="$(OPTFLAG)" -C $@
+	@$(MAKE) OPTFLAG="$(OPTFLAG)" -C $@
 
 samtools_clean:
 	rm -rf samtools-0.1.12a samtools

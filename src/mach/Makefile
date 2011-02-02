@@ -18,7 +18,7 @@ all:
 		    echo "directory $$i does not exist, skipping." ; \
 		    continue ; \
 		fi ; \
-		(echo "building in directory $$i";cd $$i; $(MAKE) $(PARALLEL_MAKE) OPTFLAG="$(OPTFLAG)" --no-print-directory $@) ; \
+		(echo "building in directory $$i";cd $$i; $(MAKE) OPTFLAG="$(OPTFLAG)" --no-print-directory $@) ; \
 		if [ $$? -ne 0 ] ; \
 		then \
 		    echo "make stopped because of errors." ; \
@@ -37,7 +37,7 @@ test:
 		    echo "directory $$i does not exist, skipping." ; \
 		    continue ; \
 		fi ; \
-		(echo "building in directory $$i";cd $$i; $(MAKE) $(PARALLEL_MAKE) OPTFLAG="$(OPTFLAG)" --no-print-directory $@) ; \
+		(echo "building in directory $$i";cd $$i; $(MAKE) OPTFLAG="$(OPTFLAG)" --no-print-directory $@) ; \
 		if [ $$? -ne 0 ] ; \
 		then \
 		    echo "make stopped because of errors." ; \
@@ -56,7 +56,7 @@ clean:
 		    echo "directory $$i does not exist, skipping." ; \
 		    continue ; \
 		fi ; \
-		(echo "building in directory $$i";cd $$i; $(MAKE) $(PARALLEL_MAKE) --no-print-directory $@) ; \
+		(echo "building in directory $$i";cd $$i; $(MAKE) --no-print-directory $@) ; \
 		if [ $$? -ne 0 ] ; \
 		then \
 		    echo "make stopped because of errors." ; \

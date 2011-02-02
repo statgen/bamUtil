@@ -14,6 +14,8 @@ OPTFLAG?=-O4
 VERSION=0.1.4
 RELEASE_FILE=statGen.$(VERSION).tgz
 
+.PHONY: all test clean release
+
 #
 # see http://www.gnu.org/software/make/manual/make.html#Phony-Targets
 # for a way of improving the following:

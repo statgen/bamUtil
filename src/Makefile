@@ -10,4 +10,4 @@ clean: TARGET = clean
 all test clean: $(SUBDIRS)
 
 $(SUBDIRS):
-	@$(MAKE) $(PARALLEL_MAKE) OPTFLAG="$(OPTFLAG)" -C $@ $(TARGET)
+	@$(MAKE) OPTFLAG="$(OPTFLAG)" -C $@ $(TARGET)

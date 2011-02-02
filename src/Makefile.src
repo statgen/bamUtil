@@ -39,8 +39,12 @@ LIBRARY = $(USER_LIBS) $(REQ_LIBS)
 OBJECTS=$(patsubst %,$(OBJDIR)/%,$(TOOLOBJ))
 ALWAYS_COMP_OBJ = $(patsubst %,$(OBJDIR)/%,$(COMPILE_ANY_CHANGE:=.o))
 
+PROG = $(BIN_DIR)/$(EXE)
+
+.PHONY: all test clean install
+
 # make everything
-all : $(EXE)
+all : $(PROG)
 
 # helpful screen listing available options
 help : 
@@ -59,8 +63,8 @@ help :
 	@echo "make test         Execute tests (if there are any)"
 
 # dependencies for executables
-$(EXE) : $(LIBRARY) $(OBJECTS)
-	$(CXX) $(CFLAGS) -o $(BIN_DIR)/$@ $(OBJECTS) $(LIBRARY) -lm -lz -lssl
+$(PROG) : $(LIBRARY) $(OBJECTS)
+	$(CXX) $(CFLAGS) -o $(PROG) $(OBJECTS) $(LIBRARY) -lm -lz -lssl
 
 $(OBJECTS): $(TOOLHDR) | $(OBJDIR)
 
@@ -71,13 +75,13 @@ clean :
 	-rm -f $(OBJDIR)/*.o $(BIN_DIR)/$(EXE) *~
 	@if test -d $(TEST_DIR); \
         then \
-	$(MAKE) $(PARALLEL_MAKE) -C $(TEST_DIR) OPTFLAG="$(OPTFLAG)" --no-print-directory $@; \
+	$(MAKE) -C $(TEST_DIR) OPTFLAG="$(OPTFLAG)" --no-print-directory $@; \
         fi
 
 test : all
 	@if test -d $(TEST_DIR); \
         then \
-        $(MAKE) $(PARALLEL_MAKE) -C $(TEST_DIR) OPTFLAG="$(OPTFLAG)" --no-print-directory $@; \
+        $(MAKE) -C $(TEST_DIR) OPTFLAG="$(OPTFLAG)" --no-print-directory $@; \
         fi
 
 install : all $(INSTALLDIR)

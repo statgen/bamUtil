@@ -97,7 +97,7 @@ $(OBJDIR)/%.o : %.cpp
 	$(CXX) $(CFLAGS) -o $@ -c $*.cpp -DVERSION=\"$(VERSION)\"
 
 test : all
-	@(cd test; $(MAKE) $(PARALLEL_MAKE) OPTFLAG="$(OPTFLAG)" --no-print-directory $@);
+	@$(MAKE) OPTFLAG="$(OPTFLAG)" -C test $@
 
 
 CPP_TESTS := $(shell grep -m 1 'if defined(TEST)' *cpp |cut -f1 -d: )
@@ -118,7 +118,7 @@ clean:
 	-rm -rf $(OBJECTS) $(addprefix $(INCLUDE_PATH)/, $(HEADERS))
 	$(AR) d $(STAT_GEN_LIB) $(OBJECTS)
 	$(RANLIB) $(STAT_GEN_LIB)
-	(cd test; $(MAKE) $(PARALLEL_MAKE) OPTFLAG="$(OPTFLAG)" --no-print-directory $@);
+	(cd test; $(MAKE) OPTFLAG="$(OPTFLAG)" --no-print-directory $@);
 
 .SUFFIXES : .cpp .c .o .X.o $(SUFFIXES)
 
