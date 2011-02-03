@@ -22,11 +22,17 @@
 #include "Parameters.h"
 #include "Pedigree.h"
 #include "Error.h"
+#include "VcfEntry.h"
+//#include "BgzfFileType.h"
 
 #include <math.h>
 #include <time.h>
+#include <limits.h>
 
 FILE * baseCalls = NULL;
+
+double VcfEntry::phred2Err[256];
+bool dummy = VcfEntry::initPhred2Error();
 
 void ReportDate(FILE * output)
 {
@@ -45,14 +51,14 @@ void ReportDate(FILE * output)
 
 void DumpDetails(glfHandler * glf, int n, int position, char refBase)
 {
-    char alleles[] = { 0, 'a', 'c', 'g', 't' };
+    char alleles[] = { 0, 'A', 'C', 'G', 'T' };
 
     int firstGlf = 0;
     while (glf[firstGlf].isStub)
         firstGlf++;
 
     printf("Dump for section %s, position %d [%c]\n",
-           (const char *) glf[firstGlf].label, position, alleles[refBase]);
+           (const char *) glf[firstGlf].label, position, alleles[(int)refBase]);
 
     printf("Depth");
     for (int i = 0; i < n; i++)
@@ -74,106 +80,6 @@ void DumpDetails(glfHandler * glf, int n, int position, char refBase)
         }
 }
 
-int GetBestGenotype(const double likelihoods[], const double priors[])
-{
-    int best = 0;
-
-    for (int i = 1; i < 10; i++)
-        if (likelihoods[i] * priors[i] > likelihoods[best] * priors[best])
-            best = i;
-
-    return best;
-}
-
-const char * GetBestGenotypeLabel(const double likelihoods[], const double priors[])
-{
-    const char * genotypeLabel[10] = {"A/A", "A/C", "A/G", "A/T", "C/C", "C/G", "C/T", "G/G", "G/T", "T/T"};
-
-    return genotypeLabel[GetBestGenotype(likelihoods, priors)];
-}
-
-int GetBestRatio(const double likelihoods[], const double priors[])
-{
-    double sum = 0.0;
-    int best = 0;
-
-    for (int i = 1; i < 10; i++)
-        if (likelihoods[i] * priors[i] > likelihoods[best] * priors[best])
-            best = i;
-
-    for (int i = 0; i < 10; i++)
-        sum += likelihoods[i] * priors[i];
-
-    double error = 1.0 - likelihoods[best] * priors[best]/sum;
-
-    if (error < 0.0000000001)
-        return 100;
-
-    return int (-log10(error) * 10 + 0.5);
-}
-
-void ReportGenotypes(GenotypeLikelihood & lk, glfHandler * glf, int n, int position, int refAllele, int al1, int al2)
-{
-    if (baseCalls == NULL)
-        return;
-
-    double priors[10];
-    lk.GetPriors(priors, lk.min);
-
-    int geno11 = glfHandler::GenotypeIndex(al1, al1);
-    int geno12 = glfHandler::GenotypeIndex(al1, al2);
-    int geno22 = glfHandler::GenotypeIndex(al2, al2);
-
-    int label1 = al1 == refAllele ? 0 : 1;
-    int label2 = al2 == refAllele ? 0 : al1 == al2 ? label1 : label1 + 1;
-
-    int genoRR, genoR1, genoR2;
-
-    if (label2 == 2)
-    {
-        genoRR = glfHandler::GenotypeIndex(refAllele, refAllele);
-        genoR1 = glfHandler::GenotypeIndex(refAllele, al1);
-        genoR2 = glfHandler::GenotypeIndex(refAllele, al2);
-    }
-
-    String label11, label12, label22;
-    label11.printf("%d/%d", label1, label1);
-    label12.printf("%d/%d", label1, label2);
-    label22.printf("%d/%d", label2, label2);
-
-    // fprintf(baseCalls, "\t%.3f", lk.min);
-
-    for (int i = 0; i < n; i++)
-    {
-        // Report on the best genotype for the current SNP model
-        int quality = GetBestRatio(glf[i].GetLikelihoods(position), priors);
-        int best = GetBestGenotype(glf[i].GetLikelihoods(position), priors);
-
-        fprintf(baseCalls, "\t%s:%d:%d",
-                (const char *)
-                (best == geno11 ? label11 : best == geno12 ? label12 : label22),
-                glf[i].GetDepth(position), quality);
-
-        if (label1 == 0 && label2 == 0)
-            continue;
-
-        if (label2 < 2)
-            fprintf(baseCalls, ":%d,%d,%d", glf[i].GetLogLikelihoods(position)[geno11],
-                    glf[i].GetLogLikelihoods(position)[geno12],
-                    glf[i].GetLogLikelihoods(position)[geno22]);
-        else
-            fprintf(baseCalls, ":%d,%d,%d,%d,%d,%d",
-                    glf[i].GetLogLikelihoods(position)[genoRR],
-                    glf[i].GetLogLikelihoods(position)[genoR1],
-                    glf[i].GetLogLikelihoods(position)[geno11],
-                    glf[i].GetLogLikelihoods(position)[genoR2],
-                    glf[i].GetLogLikelihoods(position)[geno12],
-                    glf[i].GetLogLikelihoods(position)[geno22]);
-    }
-
-    fprintf(baseCalls, "\n");
-}
-
 void ReportSNP(glfHandler * glf, int n, int position,
                int refBase, int allele1, int allele2,
                const char * filter,
@@ -188,42 +94,18 @@ void ReportSNP(glfHandler * glf, int n, int position,
         allele2 = swap;
     }
 
-    char alleles[] = { 0, 'a', 'c', 'g', 't' };
+    //char alleles[] = { 0, 'A', 'C', 'G', 'T' };
 
     // Find the location of the first non-stub glf
     int firstGlf = 0;
     while (glf[firstGlf].isStub)
         firstGlf++;
 
-    // #Chrom   Pos   Id
-    fprintf(baseCalls, "%s\t%d\t.\t", (const char *) glf[firstGlf].label, position + 1);
-
-    // Reference allele
-    int nalleles = 1;
-    fprintf(baseCalls, "%c\t", alleles[refBase]);
-
-    // Other alleles
-    if (allele1 != refBase)
-        fprintf(baseCalls, "%c", alleles[allele1]), nalleles++;
-
-    if (allele2 != refBase && allele2 != allele1)
-        fprintf(baseCalls, "%s%c", nalleles > 1 ? "," : "", alleles[allele2]), nalleles++;
-
-    if (nalleles == 1)
-        fprintf(baseCalls, ".");
-
-    fprintf(baseCalls, "\t");
-
     int quality = posterior > 0.9999999999 ? 100 : -10 * log10(1.0 - posterior);
 
-    // Quality for this call
-    fprintf(baseCalls, "%d\t", quality);
-
-    // Filter for this call
-    fprintf(baseCalls, "%s\t", filter == NULL || filter[0] == 0 ? "PASS" : filter);
+    VcfEntry entry(glf[firstGlf].label.c_str(), position, refBase, allele1, allele2, quality, filter, n);
 
     GenotypeLikelihood lk;
-
     // Find best frequency
     lk.glf = glf;
     lk.n = n;
@@ -231,25 +113,8 @@ void ReportSNP(glfHandler * glf, int n, int position,
     lk.SetAlleles(allele1, allele2);
     lk.OptimizeFrequency();
 
-    double af = 1.0 - lk.min;
-
-    // Information for this call
-    fprintf(baseCalls, "depth=%d;mapQ=%d;", totalCoverage, averageMapQuality);
-
-    if (allele1 != refBase)
-        fprintf(baseCalls, "AF=%.6lf,%.6lf\t", 1.0 - af, af);
-    else
-        fprintf(baseCalls, "AF=%.6lf\t", af);
-
-    // Format for this call
-    fprintf(baseCalls, "GT:DP:GQ");
-
-    if ((allele2 != refBase) || (allele1 != refBase))
-    {
-        fprintf(baseCalls, ":GL%s", allele1 == refBase ? "" : "3");
-    }
-
-    ReportGenotypes(lk, glf, n, position, refBase, allele1, allele2);
+    entry.fillGenotypes(lk, glf, totalCoverage, averageMapQuality);
+    entry.printSNP(baseCalls);
 }
 
 double FilteringLikelihood
@@ -327,9 +192,9 @@ int main(int argc, char ** argv)
     ParameterList pl;
 
     double posterior = 0.50;
-    int    mapQuality = 60;
+    int    mapQuality = 0;
     int    minTotalDepth = 1;
-    int    maxTotalDepth = 1000;
+    int    maxTotalDepth = INT_MAX;
     bool   verbose = false;
     bool   mapQualityStrict = false;
     bool   hardFilter = false;
@@ -404,6 +269,8 @@ int main(int argc, char ** argv)
             error("No pedigree file present and no glf files listed at the end of command line\n");
 
     // Prior for finding difference from the reference at a particular site
+    //BgzfFileType::setRequireEofBlock(false);
+
     double prior = 0.0;
     for (int i = 1; i <= 2 * n; i++)
         prior += 1.0 / i;
@@ -467,10 +334,21 @@ int main(int argc, char ** argv)
         fprintf(baseCalls, "##minMapQuality=%d\n", mapQuality);
         fprintf(baseCalls, "##minPosterior=%.4f\n", posterior);
         fprintf(baseCalls, "##INFO=<ID=DP,Number=1,Type=Integer,Description=\"Total Depth\">\n");
-        fprintf(baseCalls, "##INFO=<ID=AF,Number=.,Type=Float,Description=\"Alternate Allele Frequency\">\n");
-        fprintf(baseCalls, "##INFO=<ID=mapQ,Number=1,Type=Integer,Description=\"Root Mean Squared Mapping Quality\">\n");
-        fprintf(baseCalls, "##FILTER=<ID=mapQ,Description=\"Mapping Quality Below Threshold\">\n");
-        fprintf(baseCalls, "##FILTER=<ID=depth,Description=\"Read Depth Too High or Too Low\">\n");
+        fprintf(baseCalls, "##INFO=<ID=MQ,Number=1,Type=Integer,Description=\"Root Mean Squared Mapping Quality\">\n");
+        fprintf(baseCalls, "##INFO=<ID=NS,Number=1,Type=Integer,Description=\"Number of samples with coverage\">\n");
+        fprintf(baseCalls, "##INFO=<ID=AN,Number=1,Type=Integer,Description=\"Total number of alleles (with coverage)\">\n");
+        fprintf(baseCalls, "##INFO=<ID=AC,Number=.,Type=Integer,Description=\"Alternative allele count (with coverage)\">\n");
+        fprintf(baseCalls, "##INFO=<ID=AF,Number=.,Type=Float,Description=\"Alternate allele frequency\">\n");
+        fprintf(baseCalls, "##INFO=<ID=AB,Number=1,Type=Float,Description=\"Estimated allele balance between the alleles\">\n");
+	if ( mapQuality > 0 ) {
+	  fprintf(baseCalls, "##FILTER=<ID=mq%d,Description=\"Mapping Quality less than %d\">\n",mapQuality,mapQuality);
+	}
+	if ( minTotalDepth > 1 ) {
+	  fprintf(baseCalls, "##FILTER=<ID=dp%d,Description=\"Total Read Depth less than %d\">\n",minTotalDepth,minTotalDepth);
+	}
+	if ( minTotalDepth < INT_MAX ) {
+	  fprintf(baseCalls, "##FILTER=<ID=DP%d,Description=\"Total Read Depth greater than %d\">\n",maxTotalDepth,maxTotalDepth);
+	}
         fprintf(baseCalls, "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Most Likely Genotype\">\n");
         fprintf(baseCalls, "##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"Genotype Call Quality\">\n");
         fprintf(baseCalls, "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Read Depth\">\n");
@@ -580,7 +458,7 @@ int main(int argc, char ** argv)
             if (position >= glf[firstGlf].maxPosition)
                 break;
 
-            baseCounts[refBase]++;
+            baseCounts[(int)refBase]++;
 
             // These lines can be uncommented for debugging purposes
             // for (int i = 0; i < n; i++)
@@ -626,21 +504,21 @@ int main(int argc, char ** argv)
             {
                 if (filter.Length() == 0) mapQualityFilter++;
                 if (hardFilter) continue;
-                filter.catprintf("%smapQ<%d", filter.Length() ? ";" : "", mapQuality);
+                filter.catprintf("%smq%d", filter.Length() ? ";" : "", mapQuality);
             }
 
             if (totalDepth < minTotalDepth)
             {
                 if (filter.Length() == 0) depthFilter++;
                 if (hardFilter) continue;
-                filter.catprintf("%sdepth<=%d", filter.Length() ? ";" : "", totalDepth);
+                filter.catprintf("%sdp%d", filter.Length() ? ";" : "", minTotalDepth);
             }
 
             if (totalDepth > maxTotalDepth)
             {
                 if (filter.Length() == 0) depthFilter++;
                 if (hardFilter) continue;
-                filter.catprintf("%sdepth>=%d", filter.Length() ? ";" : "", totalDepth);
+                filter.catprintf("%sDP%d", filter.Length() ? ";" : "", maxTotalDepth);
             }
 
             // Create convenient aliases for each base
@@ -656,8 +534,8 @@ int main(int argc, char ** argv)
                 lRef += log(glf[i].GetLikelihoods(position)[homRef]);
 
             // Figure out the correct type of analysis
-            int cType = chromosomeType != CT_CHRX ? chromosomeType :
-                position >= xStart && position <= xStop ? CT_CHRX : CT_AUTOSOME;
+            //int cType = chromosomeType != CT_CHRX ? chromosomeType :
+            //    position >= xStart && position <= xStop ? CT_CHRX : CT_AUTOSOME;
 
             // Calculate maximum likelihood for a variant
             if (smartFilter)
@@ -670,6 +548,8 @@ int main(int argc, char ** argv)
                     continue;
                 }
             }
+
+	    //fprintf(stderr,"position = %d\n",position);
 
             double pTs = uniformPrior ? 1./3. : 2./3.;
             double pTv = uniformPrior ? 1./3. : 1./6.;
