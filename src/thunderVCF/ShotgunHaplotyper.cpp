@@ -36,7 +36,9 @@ ShotgunHaplotyper::ShotgunHaplotyper()
    
    refalleles = NULL;
    freq1s = NULL;
-   weightByMismatch = false;
+   //weightByMismatch = false;
+   weightByLikelihood = false;
+   weightByLongestMatch = false;
    }
 
 ShotgunHaplotyper::~ShotgunHaplotyper()
@@ -68,6 +70,63 @@ void ShotgunHaplotyper::CalculatePhred2Prob()
   
 }
 
+void ShotgunHaplotyper::WeightByLikelihood()
+{
+  // Calculate \logPr(Data|h1,h2), weight by Pr(Data|)
+  AllocateWeights();
+  int minPhred = INT_MAX;
+  int* phreds = new int[individuals-1];
+  for(int i=0; i < individuals-1; ++i) {
+    int phred = 0;
+    for(int l=0; l < markers; ++l) {
+      char* h1 = haplotypes[2*i];
+      char* h2 = haplotypes[2*i+1];
+      phred += genotypes[i][ 3*l + h1[l] + h2[l] ];
+    }
+    phreds[i] = phred;
+    if ( minPhred > phred ) minPhred = phred;
+  }
+  for(int i=0; i < individuals-1; ++i) {
+    int phredDiff = phreds[i]-minPhred;
+    weights[i] = (phredDiff > 100) ? 0.0000000001 : phred2prob[phredDiff];
+  }
+  delete [] phreds;  
+}
+
+void ShotgunHaplotyper::WeightByLongestMatch() 
+{
+  AllocateWeights();
+  int* sumDiff = new int[markers]();
+  int nDiff2, nMaxDiff2, nPrev, nLongestMatch;
+  for(int i=0; i < individuals-1; ++i) {
+    // find longest match
+    nLongestMatch = 0;
+    for(int j=0; j < 2; ++j) {
+      char* ha  = haplotypes[2*(individuals-1)+j];
+      for(int k=0; k < 2; ++k) {
+	char* hb  = haplotypes[ 2*i + k ];
+	for(int l=0; l < markers; ++l) {
+	  sumDiff[l] = ( l == 0 ? (ha[l] ^ hb[l]) : sumDiff[l-1] + ha[l] ^ hb[l]);
+	}
+	nPrev = 0;
+	nDiff2 = 0;
+	nMaxDiff2 = 0;
+	for(int l=1; l < markers; ++l) {
+	  if (sumDiff[l] != sumDiff[l-1] ) {
+	    if ( l - nPrev > nMaxDiff2 ) {
+	      nMaxDiff2 = l-nPrev;
+	    }
+	    nPrev = l;
+	  }
+	}
+	if ( nLongestMatch < nMaxDiff2 ) 
+	  nLongestMatch = nMaxDiff2;
+      }
+    }
+    weights[i] = (float)nLongestMatch;
+  }
+  delete [] sumDiff;
+}
 
 void ShotgunHaplotyper::WeightByMismatch()
 {
@@ -841,8 +900,17 @@ bool ShotgunHaplotyper::ForceMemoryAllocation()
 
 void ShotgunHaplotyper::SelectReferenceSet(int * array, int forWhom) {
   //fprintf(stderr,"ShotgunHaplotyper::SelectReferenceSet() called\n");
+  /*
   if ( weightByMismatch ) {
     WeightByMismatch();
+    globalRandom.Choose(array, weights, individuals - 1, states / 2);
+    }*/
+  if ( weightByLikelihood ) {
+    WeightByLikelihood();
+    globalRandom.Choose(array, weights, individuals - 1, states / 2);
+  }
+  else if ( weightByLongestMatch ) {
+    WeightByLongestMatch();
     globalRandom.Choose(array, weights, individuals - 1, states / 2);
   }
   else {

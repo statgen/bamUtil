@@ -384,6 +384,9 @@ int main(int argc, char ** argv)
    bool inputPhased = false;
    bool phaseByRef = false;
    bool randomPhase = true;
+   bool noWeight = true;
+   bool likeWeight = false;
+   bool matchWeight = false;
 
    SetupCrashHandlers();
    SetCrashExplanation("reading command line options");
@@ -413,6 +416,10 @@ BEGIN_LONG_PARAMETERS(longParameters)
       EXCLUSIVE_PARAMETER("randomPhase", &randomPhase)
       EXCLUSIVE_PARAMETER("inputPhased", &inputPhased)
       EXCLUSIVE_PARAMETER("refPhased",  &phaseByRef)
+  LONG_PARAMETER_GROUP("Weighting")
+      EXCLUSIVE_PARAMETER("noWeight", &noWeight)
+      EXCLUSIVE_PARAMETER("likeWeight", &likeWeight)
+      EXCLUSIVE_PARAMETER("matchWeight",  &matchWeight)
    LONG_PARAMETER_GROUP("Imputation")
       LONG_PARAMETER("geno", &OutputManager::outputGenotypes)
       LONG_PARAMETER("quality", &OutputManager::outputQuality)
@@ -547,9 +554,16 @@ END_LONG_PARAMETERS();
    if (doses.readyForUse == false)
       return MemoryAllocationFailure();
 
+   /*
    if (weighted) {
      engine.weightByMismatch = true;
      printf("Using weighting approach\n\n");
+     }*/
+   if ( likeWeight ) {
+     engine.weightByLikelihood = true;
+   }
+   else if ( matchWeight ) {
+     engine.weightByLongestMatch = true;
    }
    //   engine.CalculateWeights();
 
