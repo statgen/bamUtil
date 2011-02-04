@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2010  Regents of the University of Michigan
+ *  Copyright (C) 2008-2011  Regents of the University of Michigan
  *
  *   This program is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -43,7 +43,7 @@ void ReportDate(FILE * output)
             digestedTime->tm_mday);
 }
 
-void DumpDetails(glfHandler * glf, int n, int position, char refBase)
+void DumpDetails(glfHandler * glf, int n, int position, int refBase)
 {
     char alleles[] = { 0, 'a', 'c', 'g', 't' };
 
@@ -127,7 +127,9 @@ void ReportGenotypes(GenotypeLikelihood & lk, glfHandler * glf, int n, int posit
     int label1 = al1 == refAllele ? 0 : 1;
     int label2 = al2 == refAllele ? 0 : al1 == al2 ? label1 : label1 + 1;
 
-    int genoRR, genoR1, genoR2;
+    int genoRR = 0;
+    int genoR1 = 0;
+    int genoR2 = 0;
 
     if (label2 == 2)
     {
@@ -535,7 +537,7 @@ int main(int argc, char ** argv)
         printf("Processing section %s with %d entries\n",
                (const char *) glf[firstGlf].label, glf[firstGlf].maxPosition);
 
-        char refBase = 0;
+        int refBase = 0;
         int position = 0;
         int mapQualityFilter = 0;
         int depthFilter = 0;
@@ -656,8 +658,8 @@ int main(int argc, char ** argv)
                 lRef += log(glf[i].GetLikelihoods(position)[homRef]);
 
             // Figure out the correct type of analysis
-            int cType = chromosomeType != CT_CHRX ? chromosomeType :
-                position >= xStart && position <= xStop ? CT_CHRX : CT_AUTOSOME;
+            // int cType = chromosomeType != CT_CHRX ? chromosomeType :
+            //    position >= xStart && position <= xStop ? CT_CHRX : CT_AUTOSOME;
 
             // Calculate maximum likelihood for a variant
             if (smartFilter)
