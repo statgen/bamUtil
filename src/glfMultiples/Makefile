@@ -40,13 +40,6 @@ EXECUTABLES = $(TARGET)
 # For best results, consider editing this manually ...
 TOOLSRC = $(TOOL)/Main.cpp
 
-# PDF Library File Sets
-PDFLIB = pdf/libpdf.a
-PDFFILES = pdf/PDF pdf/PDFfont pdf/PDFinfo pdf/PDFpage
-PDFSRC = $(PDFFILES:=.cpp)
-PDFHDR = $(PDFFILES:=.h)
-PDFOBJ = $(PDFFILES:=.o)
-
 # private parameters
 FETCHDIR=$(HOME)/code
 DISTRIBDIR=$(HOME)/code/distrib/generic-$(TOOL)
@@ -74,14 +67,8 @@ $(BINDIR) :
 	mkdir -p $(BINDIR)
 
 # dependencies for executables
-$(TARGET) : $(REQ_LIBS) $(TOOLSRC) $(PDFLIB)
-	$(CXX) $(CFLAGS) -o $@ -include version/VersionInfo.h $(TOOL)/*.cpp $(PDFLIB) $(REQ_LIBS) -lm -lz
-
-$(PDFLIB) : $(PDFOBJ)
-	ar -cr $@ $(PDFOBJ)
-	ranlib $@
-
-$(PDFOBJ) : $(PDFHDR)
+$(TARGET) : $(REQ_LIBS) $(TOOLSRC)
+	$(CXX) $(CFLAGS) -o $@ -include version/VersionInfo.h $(TOOL)/*.cpp $(REQ_LIBS) -lm -lz
 
 clean :
 	-rm -f */*.a */*.o $(EXECUTABLES) 
@@ -109,14 +96,13 @@ $(INSTALLDIR) :
 
 new-version :
 	mkdir -p $(DISTRIBDIR) $(DISTRIBDIR)/$(TOOL)
-	mkdir -p $(DISTRIBDIR)/libsrc $(DISTRIBDIR)/pdf $(DISTRIBDIR)/examples
+	mkdir -p $(DISTRIBDIR)/examples
 	cp ChangeLog LICENSE.twister README $(DISTRIBDIR)
 	cp Makefile $(DISTRIBDIR)
 	cp -R examples $(DISTRIBDIR)
 
 fetch : 
 	cd $(FETCHDIR) ; tcsh -c "cp $(TOOL)/*.{h,cpp} $(DISTRIBDIR)/$(TOOL)"
-	cd $(FETCHDIR) ; cp $(PDFSRC) $(PDFHDR) $(DISTRIBDIR)/pdf
 	cd $(DISTRIBDIR) ; csh ../stamp Goncalo Generic
 	mkdir -p version 
 	echo "#ifndef __VERSION_INFO_H__" >  version/VersionInfo.h
@@ -138,7 +124,7 @@ fetch :
 archive : clean
 	mkdir -p generic-$(TOOL)
 	cp -R LICENSE.twister README Makefile ChangeLog generic-$(TOOL)
-	cp -R libsrc pdf examples version $(TOOL) generic-$(TOOL)
+	cp -R examples version $(TOOL) generic-$(TOOL)
 	tar -cvf generic-$(TOOL)-`date +%F`.tar generic-$(TOOL) 
 	gzip -f --best generic-$(TOOL)-`date +%F`.tar
 	rm -rf generic-$(TOOL)
