@@ -73,7 +73,7 @@ class VcfInd {
   String sMotID;
   enum {UNKNOWN, MALE, FEMALE} gender;
 
- VcfInd(const String& indID) : sIndID(indID) {};
+ VcfInd(const String& indID) : sIndID(indID) { gender = UNKNOWN; };
   VcfInd(const String& indID, const String& famID, const String& fatID, const String& motID, const String& gender);
 };
 

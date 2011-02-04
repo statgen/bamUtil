@@ -1269,24 +1269,33 @@ void VcfMarker::printVCFMarker(IFILE oFile, bool siteOnly) {
 }
 
 void VcfMarker::printBEDMarker(IFILE oBedFile, IFILE oBimFile, bool siteOnly) {
-  ifprintf(oBimFile,"%s\t%s\t0\t%d\t%s\t%s\n",sChrom.c_str(),sID.c_str(),nPos,sRef.c_str(),asAlts[0].c_str());
+  if ( sID.Compare(".") == 0 ) {
+    ifprintf(oBimFile,"%s\t%s:%d\t0\t%d\t%s\t%s\n",sChrom.c_str(),sChrom.c_str(),nPos,nPos,sRef.c_str(),asAlts[0].c_str());
+  }
+  else {
+    ifprintf(oBimFile,"%s\t%s\t0\t%d\t%s\t%s\n",sChrom.c_str(),sID.c_str(),nPos,sRef.c_str(),asAlts[0].c_str());
+  }
+
   int nBytes = (getSampleSize()+3)/4;
   char* genos = new char[nBytes]();
+  int g1, g2;
   for(int i=0; i < getSampleSize(); ++i) {
-    if ( vnSampleGenotypes[i] == 0x0000 ) {
-      genos[i/4] |= (0x00 << ((i%4)*2));
-    }
-    else if ( vnSampleGenotypes[i] == 0x0001 ) {
-      genos[i/4] |= (0x10 << ((i%4)*2));
-    }
-    else if ( vnSampleGenotypes[i] == 0x0100 ) {
-      genos[i/4] |= (0x10 << ((i%4)*2));
-    }
-    else if ( vnSampleGenotypes[i] == 0x0101 ) {
-      genos[i/4] |= (0x11 << ((i%4)*2));
-    }
-    else {
-      genos[i/4] |= (0x01 << ((i%4)*2));
+    g1 = (vnSampleGenotypes[i] & 0x007f);
+    g2 = ((vnSampleGenotypes[i] & 0x7f00) >> 8);
+    //fprintf(stderr,"%s:%d\t%d\t%x\t%d/%d\n",sChrom.c_str(),nPos,i,vnSampleGenotypes[i],g1,g2);
+    switch( g1 + g2 ) {
+    case 0:
+      genos[i/4] |= (0x0 << ((i%4)*2));
+      break;
+    case 1:
+      genos[i/4] |= (0x2 << ((i%4)*2));
+      break;
+    case 2:
+      genos[i/4] |= (0x3 << ((i%4)*2));
+      break;
+    default:
+      genos[i/4] |= (0x1 << ((i%4)*2));
+      break;
     }
   }
   oBedFile->ifwrite(genos,nBytes);
