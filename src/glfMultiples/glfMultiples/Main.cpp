@@ -774,9 +774,9 @@ int main(int argc, char ** argv)
                baseCounts[1], baseCounts[4]);
 
         printf("              G/C bases = %9d (%.3f%%, %d G, %d C)\n",
-               baseCounts[2] + baseCounts[3],
-               (baseCounts[2] + baseCounts[3]) * 100. / actualBases,
-               baseCounts[2], baseCounts[3]);
+               baseCounts[3] + baseCounts[2],
+               (baseCounts[3] + baseCounts[2]) * 100. / actualBases,
+               baseCounts[3], baseCounts[2]);
 
         printf("           Depth Filter = %9d bases (%.3f%%)\n",
                depthFilter, depthFilter * 100. / actualBases);
