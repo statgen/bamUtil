@@ -62,8 +62,9 @@ public:
 
     /// Open a glf file for writing with the specified filename.
     /// \param  filename glf file to open for writing.
+    /// \param  compressed whether or not to compress the file, defaults to true
     /// \return true = success; false = failure.
-    bool openForWrite(const char * filename);
+    bool openForWrite(const char * filename, bool compressed = true);
 
     /// Close the file if there is one open, adding an end marker record
     /// if there is a previous section and one has not already been written.
