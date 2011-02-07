@@ -248,7 +248,7 @@ void ReportSNP(glfHandler * glf, int n, int position,
 
     if ((allele2 != refBase) || (allele1 != refBase))
     {
-        fprintf(baseCalls, ":GL%s", allele1 == refBase ? "" : "3");
+        fprintf(baseCalls, ":PL%s", allele1 == refBase ? "" : "3");
     }
 
     ReportGenotypes(lk, glf, n, position, refBase, allele1, allele2);
@@ -476,8 +476,8 @@ int main(int argc, char ** argv)
         fprintf(baseCalls, "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Most Likely Genotype\">\n");
         fprintf(baseCalls, "##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"Genotype Call Quality\">\n");
         fprintf(baseCalls, "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Read Depth\">\n");
-        fprintf(baseCalls, "##FORMAT=<ID=GL,Number=3,Type=Integer,\"Genotype Likelihoods for Genotypes 0/0,0/1,1/1\">\n");
-        fprintf(baseCalls, "##FORMAT=<ID=GL3,Number=6,Type=Integer,\"Genotype Likelihoods for Genotypes 0/0,0/1,1/1,0/2,1/2,2/2\">\n");
+        fprintf(baseCalls, "##FORMAT=<ID=PL,Number=3,Type=Integer,\"Genotype Likelihoods for Genotypes 0/0,0/1,1/1\">\n");
+        fprintf(baseCalls, "##FORMAT=<ID=PL3,Number=6,Type=Integer,\"Genotype Likelihoods for Genotypes 0/0,0/1,1/1,0/2,1/2,2/2\">\n");
         fprintf(baseCalls, "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT");
         for (int i = 0; i < n; i++)
             fprintf(baseCalls, "\t%s", ped.count ?
