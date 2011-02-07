@@ -43,6 +43,7 @@ SOURCES_WITH_HEADER=\
 	LongHash.cpp \
 	LongLongCounter.cpp \
 	MapFunction.cpp \
+	MathMatrix.cpp \
 	MathVector.cpp \
 	MemoryAllocators.cpp \
 	MemoryInfo.cpp \
