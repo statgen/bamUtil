@@ -36,6 +36,7 @@
 #include "MemoryMapArray.h"
 #include "HashErrorModel.h"
 #include "Prediction.h"
+#include "BaseAsciiMap.h"
 
 
 class ReCab {
@@ -69,14 +70,11 @@ public:
    ReCab();
    ~ReCab();
    // conversion table
-   static int nt2idx2[256];
-   static void conversionTable();
-   static int nt2idx(char c);
-   static char complement(char c);
-   static int matoi(char *s);
    inline bool processRead(SamRecord& record,int processtype,quality_t& quality_strings);
    static uint32_t addTokenizedStrings(const std::string& str, const std::string& delimiters, std::vector<std::string>& tokens);
 
+private:
+    BaseAsciiMap myBaseAsciiMap;
 };
 
 class CigarCol
