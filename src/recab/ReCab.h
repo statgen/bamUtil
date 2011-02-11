@@ -70,6 +70,10 @@ public:
    ReCab();
    ~ReCab();
    // conversion table
+   static int nt2idx2[256];
+   static void conversionTable();
+   static int nt2idx(char c);
+   static char complement(char c);
    inline bool processRead(SamRecord& record,int processtype,quality_t& quality_strings);
    static uint32_t addTokenizedStrings(const std::string& str, const std::string& delimiters, std::vector<std::string>& tokens);
 

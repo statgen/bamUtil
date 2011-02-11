@@ -82,6 +82,35 @@ ReCab::~ReCab(){
 
 }
 
+int ReCab::nt2idx(char c) {
+    switch(toupper(c)){
+        case 'A': return(0);
+        case 'C': return(1);
+        case 'G': return(2);
+        case 'T': return(3);
+            //case 'N': return(4);
+        default:  return(5);
+    }
+}
+
+char ReCab::complement(char c)
+{
+    switch(toupper(c)){
+        case 'A': return('T');
+        case 'C': return('G');
+        case 'G': return('C');
+        case 'T': return('A');
+        default:  return(toupper(c));
+    }
+}
+
+int ReCab::nt2idx2[256];
+
+void ReCab::conversionTable(){
+    for(int i=0; i<256; i++) 
+        nt2idx2[i] = nt2idx(i);
+}
+
 // from Hyun
 uint32_t ReCab::addTokenizedStrings(const std::string& str, const std::string& delimiters, std::vector<std::string>& tokens)
 {
@@ -158,15 +187,6 @@ bool ReCab::processRead(SamRecord& samRecord,int processtype, ReCab::quality_t& 
         return false;
     }
 
-    std::string aligTypes = "";
-    Cigar* cigarPtr = samRecord.getCigarInfo();
-    if(cigarPtr == NULL)
-    {
-        Logger::gLogger->warning("Failed to get the cigar");
-        return(false);
-    }
-    cigarPtr->getExpandedString(aligTypes);
-
     if(qField.empty())
     {
         quality_strings.oldq = samRecord.getQuality();
@@ -179,7 +199,16 @@ bool ReCab::processRead(SamRecord& samRecord,int processtype, ReCab::quality_t& 
         //printf("%s\n",samRecord.getQuality());
         //printf("%s:%s\n",qField.c_str(),temp.c_str());
     }
-    
+
+    std::string aligTypes = "";
+    Cigar* cigarPtr = samRecord.getCigarInfo();
+    if(cigarPtr == NULL)
+    {
+        Logger::gLogger->warning("Failed to get the cigar");
+        return(false);
+    }
+    cigarPtr->getExpandedString(aligTypes);
+
     quality_strings.newq = samRecord.getQuality();
 
     //get tile information
@@ -228,8 +257,8 @@ bool ReCab::processRead(SamRecord& samRecord,int processtype, ReCab::quality_t& 
         if(reverse ==true)
         {
             cycleIdx = nSeq-seqpos-1;
-            refBase = BaseAsciiMap::base2complement[(unsigned int)refBase];
-            readBase = BaseAsciiMap::base2complement[(unsigned int)readBase];
+            refBase = complement(refBase);
+            readBase = complement(readBase);
         }
         else
         {
@@ -238,7 +267,7 @@ bool ReCab::processRead(SamRecord& samRecord,int processtype, ReCab::quality_t& 
 
         // Get quality string
         // Is other field definied?
-        cqual = BaseUtilities::getPhredBaseQuality(quality_strings.oldq[seqpos]);
+        cqual = quality_strings.oldq[seqpos]-33;
         
         // skip bases with quality below <5
         if(cqual<5)
@@ -246,9 +275,9 @@ bool ReCab::processRead(SamRecord& samRecord,int processtype, ReCab::quality_t& 
             continue;
         }
 
-        cobs = myBaseAsciiMap.getBaseIndex(readBase);
-        cref = myBaseAsciiMap.getBaseIndex(refBase);
-        
+        cobs = nt2idx2[(unsigned int)readBase];
+        cref = nt2idx2[(unsigned int)refBase];
+
         if((cobs==cref) && (cobs<4))
             BMappedCount++;
         else
@@ -286,14 +315,13 @@ bool ReCab::processRead(SamRecord& samRecord,int processtype, ReCab::quality_t& 
             {
                 // reverse, so complement the bases.  If they were not set,
                 // the default value will be complemented.
-                prebase = BaseAsciiMap::base2complement[(unsigned int)prebase];
-                nexbase = BaseAsciiMap::base2complement[(unsigned int)nexbase];
+                prebase= complement(prebase);
+                nexbase = complement(nexbase);
             }
         }
 
-        cprebase = myBaseAsciiMap.getBaseIndex(prebase);
-        cnexbase = myBaseAsciiMap.getBaseIndex(nexbase);
-        
+        cprebase = nt2idx2[(unsigned int)prebase];
+        cnexbase = nt2idx2[(unsigned int)nexbase];
         //read
         if(processtype==PROCREAD)
         {
@@ -387,6 +415,7 @@ int main(int argc, char *argv[])
         Logger::gLogger->error("Argument with no option");
     }
 
+    recab.conversionTable();
     recabFile = outFile + ".recab";
 
     ////////////////////////////////////////////
