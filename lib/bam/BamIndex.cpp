@@ -144,7 +144,7 @@ SamStatus::Status BamIndex::readIndex(const char* filename)
 
     IFILE indexFile = ifopen(filename, "rb");
 
-    // Failed to opren the index file.
+    // Failed to open the index file.
     if(indexFile == NULL)
     {
         return(SamStatus::FAIL_IO);
