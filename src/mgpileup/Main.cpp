@@ -80,17 +80,9 @@ Alignment statistics are written to the VCF file specified, if the file name end
         std::string refSeqFileName = argRefSeqFileName.getValue();	
         std::cout << "reference sequence file : " << argRefSeqFileName.getValue() << std::endl; 
         std::string inputVCFFileName = argInputVCFFileName.getValue();
-        //if input VCF is detected, look for BAM index file
-        std::string inputBAMIndexFileName = "";
         if (inputVCFFileName != "")
         {
             std::cout << "input VCF file          : " << inputVCFFileName << std::endl; 
-            if (inputBAMFileName.length()>4 && (inputBAMFileName.substr(inputBAMFileName.length()-4, 4) == ".bam"))
-            {
-                inputBAMIndexFileName.append(inputBAMFileName.c_str());
-                inputBAMIndexFileName.append(".bai");
-            }	
-            std::cout << "bam index file          : " << inputBAMIndexFileName << std::endl; 
         }
         std::string outputVCFFileName = argOutputVCFFileName .getValue();
 
@@ -128,7 +120,7 @@ Alignment statistics are written to the VCF file specified, if the file name end
         //process file with index    	
         if (inputVCFFileName != "")
         {
-            pileup.processFile(inputBAMFileName, inputBAMIndexFileName, inputVCFFileName, outputVCFFileName);
+            pileup.processFile(inputBAMFileName, inputVCFFileName, outputVCFFileName);
         }
         else
         {
