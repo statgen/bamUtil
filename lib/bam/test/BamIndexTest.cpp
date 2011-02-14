@@ -17,15 +17,12 @@
 
 #include "BamIndex.h"
 #include "Validate.h"
+#include "BamIndexTest.h"
 
 #include <assert.h>
 
-void testBamIndex()
+void testIndex(BamIndex& bamIndex)
 {
-    // Create a bam index.
-    BamIndex bamIndex;
-    bamIndex.readIndex("testFiles/sortedBam.bam.bai");
-
     // Get the chunks for reference id 1.
     Chunk testChunk;
     SortedChunkList chunkList;
@@ -179,3 +176,56 @@ void testBamIndex()
     assert(inFile.ReadRecord(samHeader, samRecord) == false);
            
 }
+
+
+void testBamIndex()
+{
+    // Create a bam index.
+    BamIndex bamIndex;
+    bamIndex.readIndex("testFiles/sortedBam.bam.bai");
+    testIndex(bamIndex);
+
+    BamIndexFileTest test1;
+    bool caughtException = false;
+    try
+    {
+        // Try reading the bam index without specifying a
+        // filename and before opening a bam file.
+        assert(test1.ReadBamIndex() == false);
+    }
+    catch (std::exception& e)
+    {
+        caughtException = true;
+        assert(strcmp(e.what(), "FAIL_ORDER: Failed to read the bam Index file - the BAM file needs to be read first in order to determine the index filename.") == 0);
+    }
+    // Should have failed and thrown an exception.
+    assert(caughtException);
+
+    // Read the bam index with a specified name.
+    assert(test1.ReadBamIndex("testFiles/sortedBam.bam.bai"));
+    BamIndex* index = test1.getBamIndex();
+    assert(index != NULL);
+    testIndex(*index);
+
+    // Open the bam file so the index can be opened.
+    assert(test1.OpenForRead("testFiles/sortedBam.bam"));
+    // Try reading the bam index without specifying a
+    // filename after opening a bam file.
+    assert(test1.ReadBamIndex() == true);
+    index = test1.getBamIndex();
+    assert(index != NULL);
+    testIndex(*index);
+
+    // Open the bam file so the index can be opened.
+    // This time the index file does not have .bam in it.
+    assert(test1.OpenForRead("testFiles/sortedBam2.bam"));
+    // Try reading the bam index without specifying a
+    // filename after opening a bam file.
+    assert(test1.ReadBamIndex() == true);
+    index = test1.getBamIndex();
+    assert(index != NULL);
+    testIndex(*index);
+
+}
+
+

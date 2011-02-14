@@ -88,7 +88,7 @@ public:
     /// Open a sam/bam file for reading with the specified filename.
     /// \param  filename the sam/bam file to open for reading.
     /// \param header to read into or write from (optional)
-    /// \return true = success; false = failure.   
+    /// \return true = success; false = failure.
     bool OpenForRead(const char * filename, SamFileHeader* header = NULL);
 
     /// Open a sam/bam file for writing with the specified filename.
@@ -97,10 +97,21 @@ public:
     /// \return true = success; false = failure.
     bool OpenForWrite(const char * filename, SamFileHeader* header = NULL);
 
-    /// Reads the specified bam index file.  It must be read prior to setting a
+    /// Read the specified bam index file.  It must be read prior to setting a
     /// read section, for seeking and reading portions of a bam file.
-    /// \return true = success; false = failure.   
+    /// \param filename the name of the bam index file to be read.
+    /// \return true = success; false = failure.
     bool ReadBamIndex(const char * filename);
+
+    /// Read the bam index file using the BAM filename as a base. 
+    /// It must be read prior to setting a read section, for seeking
+    /// and reading portions of a bam file.
+    /// Must be read after opening the BAM file since it uses the
+    /// BAM filename as a base name for the index file.
+    /// First it tries filename.bam.bai. If that fails, it tries
+    /// it without the .bam extension, filename.bai.
+    /// \return true = success; false = failure.
+    bool ReadBamIndex();
 
     /// Sets the reference to the specified genome sequence object.
     /// \param reference pointer to the GenomeSequence object.

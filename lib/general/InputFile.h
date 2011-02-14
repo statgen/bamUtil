@@ -43,6 +43,7 @@ public:
         myFileTypePtr = NULL;
         myBufferIndex = 0;
         myCurrentBufferSize = 0;
+        myFileName.clear();
     }
 
     // Destructor
@@ -62,6 +63,7 @@ public:
         int result = myFileTypePtr->close();
         delete myFileTypePtr;
         myFileTypePtr = NULL;
+        myFileName.clear();
         return result;
     }
 
@@ -219,6 +221,11 @@ public:
         return myFileTypePtr->seek(offset, origin);
     }
 
+    const char* getFileName() const
+    {
+        return(myFileName.c_str());
+    }
+
 protected:
     // Open a file. Called by the constructor.
     // Returns true if the file was successfully opened, false otherwise.
@@ -267,6 +274,7 @@ protected:
     // end of what was read.
     int myCurrentBufferSize;
 
+    std::string myFileName;
 };
 
 typedef InputFile* IFILE;

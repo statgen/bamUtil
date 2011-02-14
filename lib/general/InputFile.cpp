@@ -30,6 +30,7 @@ InputFile::InputFile(const char * filename, const char * mode,
     myFileTypePtr = NULL;
     myBufferIndex = 0;
     myCurrentBufferSize = 0;
+    myFileName.clear();
 
     openFile(filename, mode, compressionMode);
 }
@@ -130,6 +131,8 @@ bool InputFile::openFile(const char * filename, const char * mode,
         myFileTypePtr = NULL;
         return false;
     }
+
+    myFileName = filename;
     return true;
 }
 
@@ -192,6 +195,7 @@ bool InputFile::openFile(const char * filename, const char * mode)
         myFileTypePtr = NULL;
         return false;
     }
+    myFileName = filename;
     return true;
 }
 

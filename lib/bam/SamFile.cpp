@@ -303,6 +303,58 @@ bool SamFile::ReadBamIndex(const char* bamIndexFilename)
 }
 
 
+// Read BAM Index file.
+bool SamFile::ReadBamIndex()
+{
+    if(myFilePtr == NULL)
+    {
+        // Can't read the bam index file because the BAM file has not yet been
+        // opened, so we don't know the base filename for the index file.
+        std::string errorMessage = "Failed to read the bam Index file -"
+            " the BAM file needs to be read first in order to determine"
+            " the index filename.";
+        myStatus.setStatus(SamStatus::FAIL_ORDER, errorMessage.c_str());
+        return(false);
+    }
+
+    const char* bamBaseName = myFilePtr->getFileName();
+    
+    std::string indexName = bamBaseName;
+    indexName += ".bai";
+
+    bool foundFile = true;
+    try
+    {
+        if(ReadBamIndex(indexName.c_str()) == false)
+        {
+            foundFile = false;
+        }
+    }
+    catch (std::exception& e)
+    {
+        foundFile = false;
+    }
+
+    // Check to see if the index file was found.
+    if(!foundFile)
+    {
+        // Not found - try without the bam extension.
+        // Locate the start of the bam extension
+        size_t startExt = indexName.find(".bam");
+        if(startExt == std::string::npos)
+        {
+            // Could not find the .bam extension, so just return false since the
+            // call to ReadBamIndex set the status.
+            return(false);
+        }
+        // Remove ".bam" and try reading the index again.
+        indexName.erase(startExt,  4);
+        return(ReadBamIndex(indexName.c_str()));
+    }
+    return(true);
+}
+
+
 // Sets the reference to the specified genome sequence object.
 void SamFile::SetReference(GenomeSequence* reference)
 {
