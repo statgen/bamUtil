@@ -395,6 +395,7 @@ void Random::Choose(int * array, float * weights, int n, int k)
                     cumulative[i] = cumulative[i - 1];
 
             reject = 0.0;
+	    sum = cumulative[n];
         }
 
         k--;

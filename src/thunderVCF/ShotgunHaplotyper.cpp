@@ -88,9 +88,79 @@ void ShotgunHaplotyper::WeightByLikelihood()
   }
   for(int i=0; i < individuals-1; ++i) {
     int phredDiff = phreds[i]-minPhred;
-    weights[i] = (phredDiff > 100) ? 0.0000000001 : phred2prob[phredDiff];
+    weights[i] = 1./phredDiff;
+    //weights[i] = (phredDiff > 60) ? 0.000001 : phred2prob[phredDiff];
   }
   delete [] phreds;  
+}
+
+void ShotgunHaplotyper::ChooseByLongestMatch(int* array) {
+  int* sumDiff = new int[markers]();
+  int* longestMatches = new int[individuals-1];
+  int nDiff2, nMaxDiff2, nPrev, nLongestMatch;
+  int min = INT_MAX, max = 0, sum = 0, sumsq = 0, minIdx = -1;
+
+  for(int i=0; i < individuals-1; ++i) {
+    // find longest match
+    array[i] = 0; // initial do not deselect it
+    nLongestMatch = 0;
+    for(int j=0; j < 2; ++j) {
+      char* ha  = haplotypes[2*(individuals-1)+j];
+      for(int k=0; k < 2; ++k) {
+	char* hb  = haplotypes[ 2*i + k ];
+	for(int l=0; l < markers; ++l) {
+	  sumDiff[l] = ( l == 0 ? (ha[l] ^ hb[l]) : sumDiff[l-1] + ha[l] ^ hb[l]);
+	}
+	nPrev = 0;
+	nDiff2 = 0;
+	nMaxDiff2 = 0;
+	for(int l=1; l < markers; ++l) {
+	  if (sumDiff[l] != sumDiff[l-1] ) {
+	    if ( l - nPrev > nMaxDiff2 ) {
+	      nMaxDiff2 = l-nPrev;
+	    }
+	    nPrev = l;
+	  }
+	}
+	if ( nLongestMatch < nMaxDiff2 ) 
+	  nLongestMatch = nMaxDiff2;
+      }
+    }
+    if ( min > nLongestMatch ) min = nLongestMatch;
+    if ( max < nLongestMatch ) max = nLongestMatch;
+    sum += nLongestMatch;
+    sumsq += (nLongestMatch*nLongestMatch);
+
+    longestMatches[i] = nLongestMatch;
+    if ( i < states / 2 ) {
+      array[i] = 1;
+    }
+    else { // using n^2 algorithm for selection -- could be better, but should be fine
+      int minVal = INT_MAX;
+      int minIdx = -1;
+      for(int j=0; j <= i; ++j) {
+	if ( array[j] == 1 ) {
+	  if ( minVal > longestMatches[j] ) {
+	    minVal = longestMatches[j];
+	    minIdx = j;
+	  }
+	}
+      }
+      if ( minIdx < 0 )
+	error("Cannot find minimum longest match");
+
+      if ( minIdx != i ) {
+	array[minIdx] = 0;
+	array[i] = 1;
+      }
+    }
+  }
+  //fprintf(stderr,"%d\t%d\t%.2lf\t%.2lf\n",min,max,(double)sum/(individuals-1),sqrt((double)sumsq/(individuals-1.)-(double)sum*sum/(individuals-1.)/(individuals-1.)));
+  //for(int i=0; i < individuals-1; ++i) {
+  //  fprintf(stderr,"%d\t%d\t%d\n",i,array[i],longestMatches[i]);
+  //}
+  delete [] sumDiff;  
+  delete [] longestMatches;
 }
 
 void ShotgunHaplotyper::WeightByLongestMatch() 
@@ -98,6 +168,8 @@ void ShotgunHaplotyper::WeightByLongestMatch()
   AllocateWeights();
   int* sumDiff = new int[markers]();
   int nDiff2, nMaxDiff2, nPrev, nLongestMatch;
+  int min = INT_MAX, max = 0, sum = 0, sumsq = 0;
+
   for(int i=0; i < individuals-1; ++i) {
     // find longest match
     nLongestMatch = 0;
@@ -123,8 +195,13 @@ void ShotgunHaplotyper::WeightByLongestMatch()
 	  nLongestMatch = nMaxDiff2;
       }
     }
+    if ( min > nLongestMatch ) min = nLongestMatch;
+    if ( max < nLongestMatch ) max = nLongestMatch;
+    sum += nLongestMatch;
+    sumsq += (nLongestMatch*nLongestMatch);
     weights[i] = (float)nLongestMatch;
   }
+  fprintf(stderr,"%d\t%d\t%.2lf\t%.2lf\n",min,max,(double)sum/(individuals-1),sqrt((double)sumsq/(individuals-1.)-(double)sum*sum/(individuals-1.)/(individuals-1.)));
   delete [] sumDiff;
 }
 
@@ -906,12 +983,15 @@ void ShotgunHaplotyper::SelectReferenceSet(int * array, int forWhom) {
     globalRandom.Choose(array, weights, individuals - 1, states / 2);
     }*/
   if ( weightByLikelihood ) {
+    //fprintf(stderr,"Weighting by likelihood for %d\n",forWhom);
     WeightByLikelihood();
     globalRandom.Choose(array, weights, individuals - 1, states / 2);
   }
   else if ( weightByLongestMatch ) {
-    WeightByLongestMatch();
-    globalRandom.Choose(array, weights, individuals - 1, states / 2);
+    ChooseByLongestMatch(array);
+    //fprintf(stderr,"Weighting by longest match for %d\n",forWhom);
+    //WeightByLongestMatch();
+    //globalRandom.Choose(array, weights, individuals - 1, states / 2);
   }
   else {
     if (greedy)

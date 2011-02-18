@@ -15,7 +15,8 @@ include $(PATH_TO_BASE)/Makefile.toolchain
 
 # -fno-ftti is sometimes useful to increase speed
 # 2-5%, but makes linking consistently more difficult
-OPTFLAG?=-ggdb -O0
+#OPTFLAG?=-ggdb -O0
+OPTFLAG?=-O4
 CXX?=g++ 
 
 # User specific variables listed here.

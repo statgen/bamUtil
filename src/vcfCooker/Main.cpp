@@ -17,6 +17,7 @@
 
 #include <map>
 #include <limits.h>
+#include <vector>
 
 #include "Parameters.h"
 #include "InputFile.h"
@@ -38,11 +39,17 @@ int main(int argc, char ** argv)
    //bool bRecipesMerge = false;
    bool bRecipesFilter = false;
    //bool bRecipesProfile = false;
+   bool bRecipesSubset = false;
 
-   String sInputVcf, sInputBfile, sInputBed, sInputBim, sInputFam;
+   bool bFiltOnlySubset = false;
+
+   String sInputVcf, sInputBfile, sInputBed, sInputBim, sInputFam, sInputSubset;
    String sFasta("/data/local/ref/karma.ref/human.g1k.v37.fa");
 
    String sOut("./vcfCooker");
+
+   int nMinGQ = 0;
+   int nMinGD = 0;
 
    //bool bMergeGeno = false;
    //int nMergeWay = 0;
@@ -86,6 +93,7 @@ int main(int argc, char ** argv)
      LONG_PARAMETER("summarize",&bRecipesSummarize)
      //LONG_PARAMETER("merge",&bRecipesMerge)
      LONG_PARAMETER("filter",&bRecipesFilter)
+     LONG_PARAMETER("subset",&bRecipesSubset)
      //LONG_PARAMETER("profile",&bRecipesProfile)
 
      LONG_PARAMETER_GROUP("VCF Input options")
@@ -98,6 +106,10 @@ int main(int argc, char ** argv)
      LONG_STRINGPARAMETER("in-fam",&sInputFam)
      LONG_STRINGPARAMETER("ref",&sFasta)
 
+     LONG_PARAMETER_GROUP("Subsetting options")
+     LONG_STRINGPARAMETER("in-subset",&sInputSubset)
+     LONG_PARAMETER("filt-only-subset",&bFiltOnlySubset)
+
      LONG_PARAMETER_GROUP("Output Options")
      LONG_STRINGPARAMETER("out",&sOut)
 
@@ -105,6 +117,10 @@ int main(int argc, char ** argv)
      EXCLUSIVE_PARAMETER("plain",&bOutPlain)
      EXCLUSIVE_PARAMETER("bgzf",&bOutBgzf)
      EXCLUSIVE_PARAMETER("gzip",&bOutGzip)
+
+     LONG_PARAMETER_GROUP("Genotype-level Filter Options")
+     LONG_INTPARAMETER("minGQ",&nMinGQ)
+     LONG_INTPARAMETER("minGD",&nMinGD)
 
      //LONG_PARAMETER_GROUP("Merge Options")
      //LONG_PARAMETER("merge-geno",&bMergeGeno)
@@ -190,6 +206,12 @@ int main(int argc, char ** argv)
    if ( bRecipesFilter ) {
      if ( !bVCF ) {
        Logger::gLogger->error("--filter recipes are compatible only with VCF input");
+     }
+   }
+
+   if ( bRecipesSubset ) {
+     if ( sInputSubset.IsEmpty() ) {
+       Logger::gLogger->error("--in-subset option is required for --subset");
      }
    }
 
@@ -373,7 +395,7 @@ int main(int argc, char ** argv)
        Logger::gLogger->writeLog("");
      }
 
-     if ( ( bRecipesWriteVcf ) || ( bRecipesWriteBed) ) {
+     if ( ( bRecipesWriteVcf ) || ( bRecipesWriteBed) || ( bRecipesSubset ) ) {
 
        // Open input VCF/BED file
        VcfFile* pVcf;
@@ -381,7 +403,10 @@ int main(int argc, char ** argv)
 	 pVcf = new VcfFile();
 	 pVcf->setUpgrade(bRecipesUpgrade);
 	 pVcf->setParseValues(true);
+	 pVcf->setParseGenotypes(true);
 	 pVcf->openForRead(sInputVcf.c_str(), 1);
+	 pVcf->nMinGD = nMinGD;
+	 pVcf->nMinGQ = nMinGQ;
        }
        else {
 	 BedFile* pBed = new BedFile();
@@ -423,7 +448,7 @@ int main(int argc, char ** argv)
 
 	 pVcf->printVCFHeader(oFile);
        }
-       else {
+       else if ( bRecipesWriteBed ) {
 	 if ( bOutPlain ) {
 	   oFile = ifopen((sOut+".bed").c_str(),"wb");
 	   oBimFile = ifopen((sOut+".bim").c_str(),"wb");
@@ -448,7 +473,99 @@ int main(int argc, char ** argv)
 	 }
 	 pVcf->printBEDHeader(oFile,oFamFile);
        }
-       
+
+       // identify the list of individuals to be subsetted
+       std::vector< std::string > subsetNames;        // list of subset IDs
+       std::vector< std::vector<int> > subsetIndices; // per subset list of individuals
+       std::vector< IFILE > subsetOutFiles;           // per subset list of output files
+       if ( bRecipesSubset ) {
+	 String line;
+	 IFILE iSubsetFile = ifopen( sInputSubset.c_str(), "rb" );
+	 std::map< std::string, int > name2SampleInd;
+	 StringArray tok, tok2;
+	 std::string ind, subset;
+	 int subsetId;
+
+	 // build map to sample name to index
+	 for(int i=0; i < (int)pVcf->vpVcfInds.size(); ++i) {
+	   name2SampleInd[pVcf->vpVcfInds[i]->sIndID.c_str()] = i;
+	 }
+
+	 if ( iSubsetFile == NULL ) {
+	   Logger::gLogger->error("Cannot open %s file",sInputSubset.c_str());
+	 }
+	 while ( line.ReadLine(iSubsetFile) > 0 ) {
+	   tok.ReplaceTokens(line,"\t\r\n ");
+	   if ( tok.Length() < 2 ) {
+	     Logger::gLogger->error("Cannot recognize subset label for in %s ",sInputSubset.c_str());
+	   }
+	   tok2.ReplaceColumns(tok[1],',');
+	   ind = tok[0].c_str();
+
+	   //fprintf(stderr,"%s\t%s\t%s\n",line.c_str(),tok[0].c_str(),tok[1].c_str());
+
+	   // check if sample exists in the VCF
+	   if ( name2SampleInd.find(ind) == name2SampleInd.end() ) {
+	     Logger::gLogger->error("Cannot recognize individual ID %s",ind.c_str());
+	   }
+
+	   // iterate thru subset names
+	   for(int i=0; i < tok2.Length(); ++i) {
+	     subset = tok2[i].c_str();
+	     subsetId = -1;
+	     for(int j=0; j < (int)subsetNames.size(); ++j) {
+	       if ( subset.compare(subsetNames[j]) == 0 ) {
+		 subsetId = j;
+		 break;
+	       }
+	     }
+	     if ( subsetId < 0 ) {
+	       subsetNames.push_back(subset);
+	       subsetIndices.push_back(std::vector<int>());
+	       subsetId = subsetNames.size()-1;
+	     }
+	     subsetIndices[subsetId].push_back(name2SampleInd[ind]);
+	   }
+	 }
+	 
+	 // and create output files
+	 for(int i=0; i < (int)subsetNames.size(); ++i) {
+	   String sOutVcf = sOut + "." + subsetNames[i].c_str();
+	   IFILE f;
+
+	   if ( bOutPlain ) {
+	     if ( ( sOutVcf.Right(7).Compare(".vcf.gz") != 0 ) && ( sOutVcf.Right(4).Compare(".vcf") != 0 ) ) {
+	       sOutVcf += ".vcf";  // append .vcf extension
+	     }
+	     f = ifopen(sOutVcf.c_str(),"wb");
+	   }
+	   else if ( bOutBgzf || bOutGzip ) {
+	     InputFile::ifileCompression cMode = bOutBgzf ? InputFile::BGZF : InputFile::GZIP;
+	     if ( sOutVcf.Right(4).Compare(".vcf") == 0 ) {
+	       sOutVcf += ".gz";
+	     }
+	     else if ( sOutVcf.Right(7).Compare(".vcf.gz") != 0 ) {
+	       sOutVcf += ".vcf.gz";
+	     }
+	     f = ifopen(sOutVcf.c_str(),"wb",cMode);
+	   }
+	   else {
+	     throw VcfFileException("Cannot recognize output compression option");
+	   }
+
+	   if ( f == NULL ) {
+	     Logger::gLogger->error("Error in opening output file");
+	   }
+
+	   subsetOutFiles.push_back(f);
+	   pVcf->printVCFHeaderSubset(f,subsetIndices[i]);
+	 }
+
+	 Logger::gLogger->writeLog("Found %d groups for subsetting",subsetNames.size());
+	 for(int i=0; i < (int)subsetNames.size(); ++i) {
+	   Logger::gLogger->writeLog("%s - %u individuals",subsetNames[i].c_str(), subsetIndices[i].size());
+	 }
+       }
 
        // read input files
        for( int cnt = 0; pVcf->iterateMarker(); ++cnt ) {
@@ -533,21 +650,43 @@ int main(int argc, char ** argv)
 	 }
 
 	 if ( bRecipesWriteVcf ) {
-	   pMarker->printVCFMarker(oFile);
+	   pMarker->printVCFMarker(oFile,false);
 	 }
-	 else {
-	   pMarker->printBEDMarker(oFile,oBimFile,oFamFile);
+	 else if ( bRecipesWriteBed ) {
+	   pMarker->printBEDMarker(oFile,oBimFile,false);
+	 }
+
+	 if ( bRecipesSubset ) {
+	   bool filterPass = true;
+	   if ( bFiltOnlySubset ) {
+	     if ( ( pMarker->asFilters.Length() > 0 ) && ( pMarker->asFilters[0].Compare("PASS") != 0 ) ) {
+	       filterPass = false;
+	     }
+	   }
+
+	   if ( filterPass ) {
+	     for(int i=0; i < (int)subsetNames.size(); ++i) {
+	       pMarker->printVCFMarkerSubset(subsetOutFiles[i],subsetIndices[i]);
+	     }
+	   }
 	 }
        }
        
-       ifclose(oFile);
+       if ( oFile != NULL ) {
+	 ifclose(oFile);
+       }
        if ( bRecipesWriteBed ) {
 	 ifclose(oBimFile);
 	 ifclose(oFamFile);
        }
+       if ( bRecipesSubset ) {
+	 for(int i=0; i < (int)subsetNames.size(); ++i) {
+	   ifclose(subsetOutFiles[i]);
+	 }
+       }
      }
      else {
-       Logger::gLogger->error("One of --write-vcf, --write-bed, or --summarize recipes must be provided to process the input file");
+       Logger::gLogger->error("One of --write-vcf, --write-bed, --subset or --summarize recipes must be provided to process the input file");
      }
    }
    catch (VcfFileException e) {

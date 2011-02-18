@@ -47,6 +47,7 @@ class ShotgunHaplotyper : public Haplotyper
       virtual void WeightByMismatch();
       virtual void WeightByLikelihood();
       virtual void WeightByLongestMatch();
+      virtual void ChooseByLongestMatch(int * array);
 
       virtual void RetrieveMemoryBlock(int marker);
       
