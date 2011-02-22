@@ -15,22 +15,22 @@
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __PILEUP_ELEMENT_BASE_QUAL_H__
-#define __PILEUP_ELEMENT_BASE_QUAL_H__
+#ifndef __PILEUP_ELEMENT_SUMMARY_H__
+#define __PILEUP_ELEMENT_SUMMARY_H__
 
 #include <stdint.h>
 #include "PileupElement.h"
 
-/// This class inherits from the base class and stores base and qualities.
-class PileupElementBaseQual : public PileupElement
+/// This class inherits from the base class and stores base count summaries.
+class PileupElementSummary : public PileupElement
 {
 public:
-    PileupElementBaseQual();
+    PileupElementSummary();
     // NOTE that this method does not actually copy, it just resets.
-    PileupElementBaseQual(const PileupElementBaseQual& q);
-    virtual ~PileupElementBaseQual();
+    PileupElementSummary(const PileupElementSummary& q);
+    virtual ~PileupElementSummary();
 
-    // Add an entry to this pileup element.  
+    // Add an entry to this pileup element.
     virtual void addEntry(SamRecord& record);
 
     // Perform the alalysis associated with this class.  In this case, it is
@@ -41,13 +41,13 @@ public:
     virtual void reset(int32_t refPosition);
 
 private:
-    static const char UNSET_QUAL = 0xFF;
+    // Reset the allele counts.
+    void reset();
 
-    char* myBases;
-    char* myQualities;
-    int myAllocatedSize;
-    int myIndex;
-    bool myAddDelAsBase;
+    int myNumAlleles[6];
+    int myDepth;
+    int myNumDeletes;
+    char myRefAllele;
 };
 
 #endif

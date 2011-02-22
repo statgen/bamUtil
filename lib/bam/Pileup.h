@@ -49,6 +49,16 @@ public:
 
     Pileup(int window, const FUNC_CLASS& fp = FUNC_CLASS());
 
+    // Perform pileup with a reference.
+    Pileup(const std::string& refSeqFileName,
+           const FUNC_CLASS& fp = FUNC_CLASS());
+
+    // Perform pileup with a reference.
+    Pileup(int window, const std::string& refSeqFileName, 
+           const FUNC_CLASS& fp = FUNC_CLASS());
+
+    ~Pileup();
+
     // Performs a pileup on the specified file.
     // Returns 0 for success and non-zero for failure.
     // If excludeFlag is specified, any bit may be set for the
@@ -65,8 +75,7 @@ public:
                             uint16_t includeFlag = 0);
 
     // This should be overwritten to perform any necessary
-    // filtering on the record.  processFile does no
-    // filtering and process all records in the file.
+    // filtering on the record.
     virtual void processAlignment(SamRecord& record);
    
 
@@ -99,6 +108,8 @@ protected:
     int    pileupWindow;
 
     int myCurrentRefID;
+
+    GenomeSequence* myRefPtr;
 };
 
 
@@ -110,10 +121,11 @@ Pileup<PILEUP_TYPE, FUNC_CLASS>::Pileup(const FUNC_CLASS& fp)
       pileupHead(0),
       pileupTail(0),
       pileupWindow(1024),
-      myCurrentRefID(-2)
+      myCurrentRefID(-2),
+      myRefPtr(NULL)
 {
     // Not using pointers since this is templated.
-    myElements.resize(pileupWindow, PILEUP_TYPE());
+    myElements.resize(pileupWindow);
 }
 
 
@@ -125,12 +137,63 @@ Pileup<PILEUP_TYPE, FUNC_CLASS>::Pileup(int window, const FUNC_CLASS& fp)
       pileupHead(0),
       pileupTail(0),
       pileupWindow(window),
-      myCurrentRefID(-2)
+      myCurrentRefID(-2),
+      myRefPtr(NULL)
 {
     // Not using pointers since this is templated.
-    myElements.resize(window, PILEUP_TYPE());
+    myElements.resize(window);
 }
 
+
+template <class PILEUP_TYPE, class FUNC_CLASS>
+Pileup<PILEUP_TYPE, FUNC_CLASS>::Pileup(const std::string& refSeqFileName, const FUNC_CLASS& fp)
+    : myAnalyzeFuncPtr(fp),
+      myElements(),
+      pileupStart(0),
+      pileupHead(0),
+      pileupTail(0),
+      pileupWindow(1024),
+      myCurrentRefID(-2),
+      myRefPtr(NULL)
+{
+    myRefPtr = new GenomeSequence(refSeqFileName.c_str());
+
+    // Not using pointers since this is templated.
+    myElements.resize(pileupWindow);
+
+    PILEUP_TYPE::setReference(myRefPtr);
+}
+
+
+template <class PILEUP_TYPE, class FUNC_CLASS>
+Pileup<PILEUP_TYPE, FUNC_CLASS>::Pileup(int window, const std::string& refSeqFileName, const FUNC_CLASS& fp)
+    : myAnalyzeFuncPtr(fp),
+      myElements(),
+      pileupStart(0),
+      pileupHead(0),
+      pileupTail(0),
+      pileupWindow(window),
+      myCurrentRefID(-2),
+      myRefPtr(NULL)
+{
+    myRefPtr = new GenomeSequence(refSeqFileName.c_str());
+
+    // Not using pointers since this is templated.
+    myElements.resize(window);
+
+    PILEUP_TYPE::setReference(myRefPtr);
+}
+
+
+template <class PILEUP_TYPE, class FUNC_CLASS>
+Pileup<PILEUP_TYPE, FUNC_CLASS>::~Pileup()
+{
+    if(myRefPtr != NULL)
+    {
+        delete myRefPtr;
+        myRefPtr = NULL;
+    }
+}
 
 template <class PILEUP_TYPE, class FUNC_CLASS>
 int Pileup<PILEUP_TYPE, FUNC_CLASS>::processFile(const std::string& fileName, 
@@ -141,6 +204,11 @@ int Pileup<PILEUP_TYPE, FUNC_CLASS>::processFile(const std::string& fileName,
     SamFileHeader header;
     SamRecord record;
     
+    if(myRefPtr != NULL)
+    {
+        samIn.SetReference(myRefPtr);
+    }
+
     if(!samIn.OpenForRead(fileName.c_str()))
     {
         fprintf(stderr, "%s\n", samIn.GetStatusMessage());
