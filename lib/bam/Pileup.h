@@ -119,7 +119,7 @@ Pileup<PILEUP_TYPE, FUNC_CLASS>::Pileup(const FUNC_CLASS& fp)
       myElements(),
       pileupStart(0),
       pileupHead(0),
-      pileupTail(0),
+      pileupTail(-1),
       pileupWindow(1024),
       myCurrentRefID(-2),
       myRefPtr(NULL)
@@ -135,7 +135,7 @@ Pileup<PILEUP_TYPE, FUNC_CLASS>::Pileup(int window, const FUNC_CLASS& fp)
       myElements(),
       pileupStart(0),
       pileupHead(0),
-      pileupTail(0),
+      pileupTail(-1),
       pileupWindow(window),
       myCurrentRefID(-2),
       myRefPtr(NULL)
@@ -151,7 +151,7 @@ Pileup<PILEUP_TYPE, FUNC_CLASS>::Pileup(const std::string& refSeqFileName, const
       myElements(),
       pileupStart(0),
       pileupHead(0),
-      pileupTail(0),
+      pileupTail(-1),
       pileupWindow(1024),
       myCurrentRefID(-2),
       myRefPtr(NULL)
@@ -171,7 +171,7 @@ Pileup<PILEUP_TYPE, FUNC_CLASS>::Pileup(int window, const std::string& refSeqFil
       myElements(),
       pileupStart(0),
       pileupHead(0),
-      pileupTail(0),
+      pileupTail(-1),
       pileupWindow(window),
       myCurrentRefID(-2),
       myRefPtr(NULL)
@@ -279,11 +279,15 @@ void Pileup<PILEUP_TYPE, FUNC_CLASS>::processAlignment(SamRecord& record)
 template <class PILEUP_TYPE, class FUNC_CLASS>
 void Pileup<PILEUP_TYPE, FUNC_CLASS>::flushPileup()
 {
-    while (pileupHead <= pileupTail)
+    // while there are still entries between the head and tail, flush,
+    // but no need to flush if pileupTail == -1 because in that case 
+    // no entries have been added
+    while ((pileupHead <= pileupTail) && (pileupTail != -1))
     {
         flushPileup(pileupHead+1);
     }
-    pileupStart = pileupHead = pileupTail = 0;
+    pileupStart = pileupHead = 0;
+    pileupTail = -1;
 }
 
 
@@ -332,7 +336,8 @@ void Pileup<PILEUP_TYPE, FUNC_CLASS>::flushPileup(int refID, int position)
 template <class PILEUP_TYPE, class FUNC_CLASS>
 void Pileup<PILEUP_TYPE, FUNC_CLASS>::flushPileup(int position)
 {
-    // Flush up to this new position.
+    // Flush up to this new position, but no reason to flush if
+    // pileupHead has not been set.
     while((pileupHead < position) && (pileupHead <= pileupTail))
     {
         analyzeElement(myElements[pileupHead - pileupStart]);
