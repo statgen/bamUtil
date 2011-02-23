@@ -9,6 +9,10 @@ CLEAN_SUBDIRS= $(patsubst %, %_clean, $(SUBDIRS))
 # see http://www.gnu.org/software/make/manual/make.html#Phony-Targets
 # for a way of improving the following:
 #
+
+# Can't build lib in parallel since multiple subdirs write to the library archive
+.NOTPARALLEL:
+
 .PHONY: $(SUBDIRS) all test clean $(CLEAN_SUBDIRS)
 all: TARGET = all
 test: TARGET = test
