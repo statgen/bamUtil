@@ -1,4 +1,4 @@
-SUBDIRS=bam fastqValidator glf glfMerge glfMultiples karma mgpileup qplot polishBam trimBam rgMergeBam splitBam thunderVCF vcfCooker vcfGenomeStat verifyBamID
+SUBDIRS=bam fastqValidator glf glfMerge glfMultiples karma mgpileup qplot polishBam trimBam rgMergeBam splitBam squeezeBam thunderVCF vcfCooker vcfGenomeStat verifyBamID
 
 # Build in all subdirectories.
 #
