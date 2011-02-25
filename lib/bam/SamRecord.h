@@ -483,6 +483,8 @@ public:
     /// Does not set SamStatus.
     void clearTags();
    
+    bool rmTag(const char* tag, char type);
+
     /// Returns the status associated with the last method that sets the status.
     /// \return SamStatus of the last command that sets status.
     const SamStatus& getStatus();
@@ -550,7 +552,6 @@ private:
     // block size field.
     // Adds any errors to myStatus.
     bool allocateRecordStructure(int size);
-
 
     void* getStringPtr(int offset);
     void* getIntegerPtr(int offset);
@@ -651,6 +652,11 @@ private:
     CigarRoller myCigarRoller;
 
     LongHash<int>  extras;
+    // Note: not all values in strings, integers, and doubles are always
+    // in extras.  They will not be if the tags were removed.  Removed
+    // tags are removed from extras, but not from strings, integers, or doubles
+    // since if one was removed from these arrays, all other entries would
+    // need their indices updated in extras.
     StringArray    strings;
     IntArray       integers;
     Vector         doubles;
