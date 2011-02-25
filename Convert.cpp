@@ -165,7 +165,6 @@ int Convert::execute(int argc, char **argv)
     samOut.WriteHeader(samHeader);
 
     SamRecord samRecord;
-    SamValidationErrors samInvalidErrors;
 
     // Set returnStatus to success.  It will be changed
     // to the failure reason if any of the writes fail.
