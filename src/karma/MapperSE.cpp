@@ -35,11 +35,6 @@
 #include <iostream>
 #include <vector>
 
-void MatchedReadSE::updateMatch(MatchedReadSE& betterMatch)
-{
-    ((MatchedReadBase*)this)->updateMatch((MatchedReadBase&) betterMatch);
-    return;
-}
 
 
 MatchedReadBase &MapperSE::getBestMatch()

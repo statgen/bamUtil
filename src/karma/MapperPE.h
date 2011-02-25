@@ -27,42 +27,15 @@
 #define _MAPPERPE_H
 
 #include "GenomeSequence.h"
-#include "MapperBase.h"
 #include "MemoryMapArray.h"
-#include "WordIndex.h"
+#include "MapperBase.h"
 #include "MapperSE.h"
+#include "WordIndex.h"
+#include "MatchedReadPE.h"
 
 #include <iostream>
 #include <vector>
 
-//
-// these are actually match candidates, and serve three
-// purposes:
-// 1) running bestMatch
-// 2) working currentMatch
-// 3) part of a list of possible matches, which we
-//    evaluate the Q score for in a lazy fashion.
-//    In this instance, we need all args to pass to wordIndex::getQvalue
-//
-class MatchedReadPE : public MatchedReadBase
-{
-public:
-    int             pairQuality;
-    inline bool pairQualityIsValid() const
-    {
-        return pairQuality >=0;
-    }
-    double          pairCumulativePosteriorProbabilities;
-
-    MatchedReadPE()
-    {
-        constructorClear();
-    }
-    void constructorClear();
-    void printOptionalTags(std::ostream &, bool isProperAligned, const std::string &sampleGroupID, const std::string &alignmentPathTag);
-    void updateMatch(MatchedReadPE &);
-    double getQualityScore();
-};
 
 //
 // Mapper algorithms for Paired End reads (PE)
@@ -70,11 +43,13 @@ public:
 class MapperPE : public MapperBase
 {
 public:
-    typedef vector<MatchedReadPE>  matchCandidates_t;
-    typedef vector<MatchedReadPE *>  matchCandidatesPointers_t;
-    typedef vector<std::pair<
-    matchCandidatesPointers_t::iterator,
-    matchCandidatesPointers_t::iterator> >  matchCandidatesIndex_t;
+    // Define types
+    typedef vector<MatchedReadPE>  MatchCandidates_t;
+    typedef vector<MatchedReadPE *>  MatchCandidatesPointers_t;
+    typedef MatchCandidatesPointers_t::iterator MatchCandidatesPointersIter_t;
+    typedef vector< std::pair 
+        <MatchCandidatesPointersIter_t, MatchCandidatesPointersIter_t> > MatchCandidatesIndex_t;
+public:
 
     MapperPE    *otherEndMapper;
     MapperPE();
@@ -101,15 +76,7 @@ public:
     unsigned int backwardCount;
 
     virtual void mapReads(MapperPE *)=0;
-protected:
-#if 0
-    virtual bool mapPairedReads(
-        ReadIndexer         &indexer,
-        int                 whichWord,
-        int                 candidateCount,
-        genomeIndex_t       *candidates
-    )=0;
-#endif
+
 public:
     MatchedReadPE   bestMatch;
     MatchedReadPE   matchCandidate;
@@ -133,13 +100,13 @@ public:
     // are candidate positions with additional information necessary for
     // keeping track of mapped locations later (e.g. during printing).
     //
-    matchCandidates_t           matchCandidates;
+    MatchCandidates_t           matchCandidates;
     //
     // matchCandidatesPointers is a vector containing pointers into
     // the above matchCandidates vector, and is used to make merge
     // sorting more efficient.
     //
-    matchCandidatesPointers_t   matchCandidatesPointers;
+    MatchCandidatesPointers_t   matchCandidatesPointers;
     //
     // matchCandidatesIndex is a vector (initially un-ordered) of
     // pointers to begin and end subsets (which themselves are sorted),
@@ -147,7 +114,7 @@ public:
     // at the end, there is a top level iterator that points to the
     // entire ordered set.
     //
-    matchCandidatesIndex_t      matchCandidatesIndex;
+    MatchCandidatesIndex_t      matchCandidatesIndex;
 
 
     bool populateMatchCandidates(bool isColorSpace);
@@ -157,12 +124,11 @@ public:
         int candidateCount,
         genomeIndex_t *candidates
     );
-    matchCandidatesIndex_t::iterator mergeSortedMatchCandidates(matchCandidatesIndex_t::iterator, matchCandidatesIndex_t::iterator);
+    MatchCandidatesIndex_t::iterator mergeSortedMatchCandidates(MatchCandidatesIndex_t::iterator, MatchCandidatesIndex_t::iterator);
 
     void testMatchCandidates();
-    void testMatchCandidates(matchCandidatesIndex_t::iterator);
-    void printMatchCandidates(matchCandidatesIndex_t::iterator);
-
+    void testMatchCandidates(MatchCandidatesIndex_t::iterator);
+    void printMatchCandidates(MatchCandidatesIndex_t::iterator);
     void printMatchCandidates();
 
     void clearBestMatch()
@@ -187,6 +153,16 @@ public:
     void setMappingMethodToLocal(void);
 
     MatchedReadBase* chooseBestMatch();
+
+#if 0
+protected:
+    virtual bool mapPairedReads(
+        ReadIndexer         &indexer,
+        int                 whichWord,
+        int                 candidateCount,
+        genomeIndex_t       *candidates
+    )=0;
+#endif
 
 };
 

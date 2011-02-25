@@ -63,8 +63,8 @@ public:
 public:
 
     void testMatchCandidates();
-    void testMatchCandidates(matchCandidatesIndex_t::iterator);
-    void printMatchCandidates(matchCandidatesIndex_t::iterator);
+    void testMatchCandidates(MatchCandidatesIndex_t::iterator);
+    void printMatchCandidates(MatchCandidatesIndex_t::iterator);
 
     void printMatchCandidates();
     int test(

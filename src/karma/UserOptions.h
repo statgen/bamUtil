@@ -39,56 +39,6 @@
 #include <vector>
 #include <string>
 
-struct MapperUserOptions
-{
-    MapperUserOptions() :
-            checkIndexWordMutations(false),
-            debug(false),
-            expectedSNPRate(.001),
-            expectedErrorRate(.01),
-            expectedInDelRate(.0001),
-            mismatchCutoff(-1),
-            minimumIndexCount(2),
-            maximumIndexCount(4),
-            forceSmithWaterman(false),
-            allowSmithWaterman(false),
-            smithWatermanBandSize(4),
-            readSumQCutoff(-1),
-            showReferenceBases(false),
-            qValueCutoff(INT32_MAX),
-            genomePositionFilterWidth(1500),
-            trimLeft(0),
-            trimRight(0),
-            qualityTrim(0)
-    {
-    }
-    bool     checkIndexWordMutations;
-    bool     debug;
-
-    double   expectedSNPRate;
-    double   expectedErrorRate;
-    double   expectedInDelRate;
-    double   expectedInDelErrorRate;
-
-    int      mismatchCutoff;
-    uint32_t minimumIndexCount;
-    uint32_t maximumIndexCount;
-    bool     forceSmithWaterman;
-    bool     allowSmithWaterman;
-    int      smithWatermanBandSize;
-    int         readSumQCutoff;
-    bool     showReferenceBases;
-    int32_t  qValueCutoff;
-
-    uint32_t   genomePositionFilterWidth;
-
-    int trimLeft, trimRight;
-
-    int qualityTrim;
-
-    std::string readGroupID;
-};
-
 
 //
 // base class of a hierarchy of command argument processing.
@@ -129,7 +79,6 @@ public:
         out << "seed " << seed << " (default 12345)" << std::endl;
     }
     virtual void usage();  // pretty printing of values/defaults/etc
-    virtual void processArguments();
     void getopt();
 };
 
@@ -138,12 +87,12 @@ class MapArguments : public BaseArguments
 public:
     int mapInColorSpace;
     int insertSize;
-    int maxBases;
-    int maxReads;
+    uint64_t maxBases;
+    uint64_t maxReads;
     int occurrenceCutoff;
     int qualityTrim;
     bool showReferenceBases;// show all reference bases in the sam file
-    bool tomMode;           // quiet mode
+    bool quietMode;           // quiet mode
     int wordSize;
 
     std::string                 outputFilename;
@@ -157,7 +106,7 @@ public:
             occurrenceCutoff(5000),
             qualityTrim(0),
             showReferenceBases(false),
-            tomMode(false),
+            quietMode(false),
             wordSize(15)
     {
         optionString += "a:B:cEH:m:o:O:r:R:q:Qw:";
@@ -179,7 +128,7 @@ public:
         out << "maxBases " << maxBases << " (default 0)" << std::endl;
         out << "maxReads " << maxReads << " (default 0)" << std::endl;
         out << "occurrenceCutoff " << occurrenceCutoff << " (default 5000)" << std::endl;
-        out << "quiet mode " << tomMode << " (default off)" << std::endl;;
+        out << "quiet mode " << quietMode << " (default off)" << std::endl;;
         out << "show reference bases " << showReferenceBases << " (default off)" << std::endl;;
         out << "reference(s) (no default):";
         for (std::vector<std::string>::iterator it=references.begin(); it<references.end(); it++)
@@ -191,7 +140,6 @@ public:
         BaseArguments::print(out);
     }
     void usage();  // pretty printing of values/defaults/etc
-    void processArguments();
     void getoptH();
 };
 
@@ -239,7 +187,6 @@ public:
         BaseArguments::print(out);
     }
     void usage();  // pretty printing of values/defaults/etc
-    void processArguments();
     void getoptH();
 };
 
@@ -271,7 +218,6 @@ public:
         BaseArguments::print(out);
     }
     void usage();  // pretty printing of values/defaults/etc
-    void processArguments();
     void getoptH();
 };
 
@@ -293,7 +239,6 @@ public:
         BaseArguments::print(out);
     }
     void usage();  // pretty printing of values/defaults/etc
-    void processArguments();
     void getoptH();
 };
 
@@ -319,7 +264,6 @@ public:
         BaseArguments::print(out);
     }
     void usage();  // pretty printing of values/defaults/etc
-    void processArguments();
     void getoptH();
 };
 
@@ -348,7 +292,6 @@ public:
         BaseArguments::print(out);
     }
     void usage();  // pretty printing of values/defaults/etc
-    void processArguments();
     void getoptH();
 };
 

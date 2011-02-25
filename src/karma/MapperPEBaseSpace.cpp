@@ -285,7 +285,7 @@ bool MapperPEBaseSpace::mapReads(
         // In this instance, std::distance() is slower than (end-begin) by a wide margin.
         //
         //
-        matchCandidatesPointers_t::iterator low, high, it;
+        MatchCandidatesPointers_t::iterator low, high, it;
 #if 0
         // old code always calls lower_bound, upper_bound - no clear performance
         // gain, but I need to check this change in.  We can revert later if need be.
@@ -308,8 +308,8 @@ bool MapperPEBaseSpace::mapReads(
         // When I test with paired end phiX reads, I get better and more reads mapped
         // using this little snippet.  This should NOT happen.
         //
-        matchCandidatesPointers_t::iterator begin = otherEndMapper->matchCandidatesPointers.begin();
-        matchCandidatesPointers_t::iterator end = otherEndMapper->matchCandidatesPointers.end();
+        MatchCandidatesPointers_t::iterator begin = otherEndMapper->matchCandidatesPointers.begin();
+        MatchCandidatesPointers_t::iterator end = otherEndMapper->matchCandidatesPointers.end();
         if ((end - begin) < 2)
         {
             low = begin;

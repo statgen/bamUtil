@@ -64,10 +64,6 @@ void BaseArguments::getoptH()
     }
 }
 
-void BaseArguments::processArguments()
-{
-}
-
 void BaseArguments::usage()
 {
     std::cerr  << "   -d           -> debug" << std::endl;
@@ -80,6 +76,7 @@ void BaseArguments::usage()
     exit(1);
 }
 
+////////////////////////////////////////////////////////////
 //
 // "Map" argument methods
 //
@@ -139,7 +136,7 @@ void MapArguments::getoptH()
             qualityTrim = atoi(optarg);
             return;
         case 'Q':
-            tomMode = true;
+            quietMode = true;
             return;
         case 'r':
             references.push_back(optarg);
@@ -153,10 +150,6 @@ void MapArguments::getoptH()
             break;
     }
     BaseArguments::getoptH();
-}
-
-void MapArguments::processArguments()
-{
 }
 
 //
@@ -206,10 +199,6 @@ void RemapArguments::getoptH()
     BaseArguments::getoptH();
 }
 
-void RemapArguments::processArguments()
-{
-}
-
 //
 // "Create" argument methods
 //
@@ -241,10 +230,6 @@ void CreateArguments::getoptH()
     BaseArguments::getoptH();
 }
 
-void CreateArguments::processArguments()
-{
-}
-
 //
 // "Check" argument methods
 //
@@ -266,10 +251,6 @@ void CheckArguments::getoptH()
             break;
     }
     BaseArguments::getoptH();
-}
-
-void CheckArguments::processArguments()
-{
 }
 
 //
@@ -303,10 +284,6 @@ void HeaderArguments::getoptH()
     BaseArguments::getoptH();
 }
 
-void HeaderArguments::processArguments()
-{
-}
-
 //
 // "FastQCheck" argument methods
 //
@@ -336,8 +313,3 @@ void FastQCheckArguments::getoptH()
     }
     BaseArguments::getoptH();
 }
-
-void FastQCheckArguments::processArguments()
-{
-}
-

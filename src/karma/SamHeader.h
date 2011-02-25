@@ -32,11 +32,17 @@
 
 class SamHeader
 {
+private:
     std::map<std::string, std::map<std::string, std::string> > header;
 public:
     std::map<std::string, std::string> &operator[](std::string &key)
     {
         return header[key];
+    }
+    std::map<std::string, std::string> &operator[](const char* key)
+    {
+        std::string k = key;
+        return header[k];
     }
     void set(std::string &key1, std::string &key2, std::string &val);
     void set(const char *key1, const char *key2, const char *val)
@@ -45,6 +51,17 @@ public:
         set(k1,k2,v);
     }
     void dump(std::ostream &);
+    void clear() { header.clear(); };
+    bool conformSpecification(); // check if the header conforms to SAM specification
+    bool containTag(const std::string& key) { 
+        if (header.find(key) != header.end()) return true;
+        return false;
+    };
+    bool containTag(const char* key) { 
+        std::string k = key;
+        return containTag(k);
+    };
+
 };
 
 #endif

@@ -186,7 +186,7 @@ bool MapperPEColorSpace::mapReads(
         //
         // XXX LAZY evaluate this as well!
         //
-        matchCandidatesPointers_t::iterator low, high, it;
+        MatchCandidatesPointers_t::iterator low, high, it;
         if (matchCandidate.genomeMatchPosition > mapperOptions.genomePositionFilterWidth)
             compareHelper.genomeMatchPosition = matchCandidate.genomeMatchPosition - mapperOptions.genomePositionFilterWidth;
         else

@@ -84,7 +84,7 @@ protected:
             exit(1);
         }
 
-        MapperUserOptions mapperOptions;
+        MapperUserOption mapperOptions;
         mapperOptions.showReferenceBases=true;
 
         peMapperA = new MapperPEColorSpace;

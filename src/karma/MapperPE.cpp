@@ -23,8 +23,8 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "MapperBase.h"
 #include "MapperPE.h"
+#include "MatchedReadPE.h"
 #include "MappingStats.h"
 #include "ReadsProcessor.h"
 #include "Error.h"
@@ -35,46 +35,6 @@
 #include <algorithm>
 #include <stdexcept>
 #include <vector>
-
-//
-//
-void MatchedReadPE::constructorClear()
-{
-    MatchedReadBase::constructorClear();
-
-    pairCumulativePosteriorProbabilities = 0.0;
-
-    pairQuality = UNSET_QUALITY;
-}
-
-double MatchedReadPE::getQualityScore()
-{
-    return MatchedReadBase::getQualityScore(pairQuality, pairCumulativePosteriorProbabilities);
-}
-
-
-void MatchedReadPE::printOptionalTags(std::ostream &file, bool isPairAligned, const std::string &sampleGroupID, const std::string &alignmentPathTag)
-{
-    MatchedReadBase::printOptionalTags(file, isPairAligned, sampleGroupID, alignmentPathTag);
-    if (isPairAligned && pairQuality) file << "\tPQ:i:" <<  pairQuality;
-}
-
-///
-/// @param betterMatch a MatchedReadPE value used to update this class
-/// Update our bestMatch object with the newer information.
-/// Called while we are iterating over all possible matches,
-/// and we discover what we think is a better one.
-///
-/// We could in thoery copy over nearly all the information,
-/// but most is not used - just the pairQuality, genome match
-/// position and soon a few others if we do posterior quality
-/// checks.
-///
-void MatchedReadPE::updateMatch(MatchedReadPE & betterMatch)
-{
-    MatchedReadBase::updateMatch(betterMatch);
-    pairQuality = betterMatch.pairQuality;
-}
 
 MapperPE::MapperPE()
 {
@@ -120,7 +80,7 @@ void  MapperPE::init(std::string & readFragment, std::string &dataQuality, std::
 
 void MapperPE::printMatchCandidates()
 {
-    matchCandidates_t::iterator it;
+    MatchCandidates_t::iterator it;
 
     //
     //
@@ -143,9 +103,9 @@ void MapperPE::testMatchCandidates()
     return;
 }
 
-void MapperPE::testMatchCandidates(matchCandidatesIndex_t::iterator i1)
+void MapperPE::testMatchCandidates(MatchCandidatesIndex_t::iterator i1)
 {
-    matchCandidatesPointers_t::iterator it;
+    MatchCandidatesPointers_t::iterator it;
 
     fprintf(stderr, "Checking matchCandidatePointers (%d elements):\n",
             (int)((*i1).second - (*i1).first));
@@ -169,9 +129,9 @@ void MapperPE::testMatchCandidates(matchCandidatesIndex_t::iterator i1)
     }
 }
 
-void MapperPE::printMatchCandidates(matchCandidatesIndex_t::iterator i1)
+void MapperPE::printMatchCandidates(MatchCandidatesIndex_t::iterator i1)
 {
-    matchCandidatesPointers_t::iterator it;
+    MatchCandidatesPointers_t::iterator it;
 
     FILE *out;
 
@@ -199,10 +159,10 @@ void MapperPE::printMatchCandidates(matchCandidatesIndex_t::iterator i1)
 // The expected result is that the range from i1.first to i2.second
 // is merged (i1.first inclusive, i2.second EXCLUSIVE).
 //
-MapperPE::matchCandidatesIndex_t::iterator
+MapperPE::MatchCandidatesIndex_t::iterator
 MapperPE::mergeSortedMatchCandidates(
-    matchCandidatesIndex_t::iterator i1,
-    matchCandidatesIndex_t::iterator i2)
+    MatchCandidatesIndex_t::iterator i1,
+    MatchCandidatesIndex_t::iterator i2)
 {
 // STL algorithm ordered list merge references:
 //
@@ -264,7 +224,7 @@ MapperPE::mergeSortedMatchCandidates(
     // here we use recursion to simplify the task.
     // some optimizations may be possible, but get it right first.
     //
-    matchCandidatesIndex_t::iterator middle, final;
+    MatchCandidatesIndex_t::iterator middle, final;
     if (i2<i1)
     {
         throw std::logic_error("MapperPE::mergeSortedMatchCandidates");
@@ -665,15 +625,15 @@ bool MapperPE::populateMatchCandidates(bool isColorSpace)
     else
         evalColorSpaceReads(NULL, evalTrampoline);
 
-    matchCandidatesIndex_t::iterator finalIndex;
+    MatchCandidatesIndex_t::iterator finalIndex;
     //
     // Merge from start to end inclusive.  Check for an empty
     // list before we try to merge it!
     //
     if (matchCandidatesIndex.begin() != matchCandidatesIndex.end())
     {
-        matchCandidatesIndex_t::iterator begin = matchCandidatesIndex.begin();
-        matchCandidatesIndex_t::iterator end = matchCandidatesIndex.end() - 1;
+        MatchCandidatesIndex_t::iterator begin = matchCandidatesIndex.begin();
+        MatchCandidatesIndex_t::iterator end = matchCandidatesIndex.end() - 1;
 
 #if 0
         printMatchCandidates(begin);
@@ -697,7 +657,7 @@ bool MapperPE::populateMatchCandidates(
     genomeIndex_t       *candidates
 )
 {
-    std::pair<matchCandidatesPointers_t::iterator, matchCandidatesPointers_t::iterator> indexValue;
+    std::pair<MatchCandidatesPointers_t::iterator, MatchCandidatesPointers_t::iterator> indexValue;
     MatchedReadPE matchCandidate;
 
     //

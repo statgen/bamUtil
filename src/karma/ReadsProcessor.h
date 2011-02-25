@@ -30,7 +30,8 @@
 #include "WordIndex.h"
 #include "GenomeSequence.h"
 #include "SamHeader.h"
-#include "UserOptions.h"        // for MapperUserOptions
+#include "UserOptions.h"
+#include "MapperUserOption.h" 
 
 #include <vector>
 
@@ -47,59 +48,33 @@ using std::vector;
 
 class ReadsProcessor
 {
+private:
+    // IO related params
+    bool isColorSpace;
     GenomeSequence *gs;
     GenomeSequence *csgs;
     WordIndex *wi;
     WordHash  *wordHashLeft;
     WordHash  *wordHashRight;
-
     std::string outputBaseFilename;
-    bool isColorSpace;
+
+    // mapping related params
+    SamHeader header;
+    MapperUserOption    mapperOptions;    // gets passed onto the mappers it uses
+    uint64_t maxBases;
+    uint64_t maxReads;
 public:
     ReadsProcessor();
     ~ReadsProcessor();
-
-    MapperUserOptions    mapperOptions;    // gets passed onto the mappers it uses
-    uint64_t maxBases;
-    uint64_t maxReads;
-    uint64_t maxTotalReads;
-
-    void setGenomeSequence(GenomeSequence *g)
-    {
-        gs = g;
-    }
-    void setColorSpaceGenomeSequence(GenomeSequence *g)
-    {
-        csgs = g;
-    }
-    void setWordIndex(WordIndex *w)
-    {
-        wi = w;
-    }
-    void setWordHashLeft(WordHash *w)
-    {
-        wordHashLeft = w;
-    }
-    void setWordHashRight(WordHash *w)
-    {
-        wordHashRight = w;
-    }
-    void setOutputBaseFilename(const char *s)
-    {
-        outputBaseFilename = s;
-    }
-    void setColorSpace(bool t)
-    {
-        isColorSpace = t;
-    }
-
-private:
-    ///
-    /// called by createSEMapper and createPEMapper to
-    /// do common asserts on necessary word index, and
-    /// left and right hashes.
-    //
-    void verifyHashesExist();
+    
+    void setHeader(SamHeader& h);  
+    void parseMapArguments(const MapArguments& args);
+    int openReference(std::string& referenceName, 
+                      int wordSize, 
+                      int occurrenceCutoff,
+                      bool quietMode = false, 
+                      bool debug = false);// open reference, wordindex ...
+    void closeReference();
 public:
     ///
     /// using the word index, left and righ hashes, etc,
@@ -128,7 +103,13 @@ public:
         std::string filename2
     );
 
-    SamHeader header;
+private:
+    ///
+    /// called by createSEMapper and createPEMapper to
+    /// do common asserts on necessary word index, and
+    /// left and right hashes.
+    //
+    void verifyHashesExist();
 
 };
 

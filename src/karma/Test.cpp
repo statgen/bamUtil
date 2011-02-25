@@ -36,7 +36,7 @@
 
 int Test::testSEBaseSpaceReads()
 {
-    MapperUserOptions mapperOptions;
+    MapperUserOption mapperOptions;
 
     MapperSEBaseSpace se;
     std::string readFrag;
@@ -319,7 +319,7 @@ int Test::testSEBaseSpaceReads()
 
 int Test::testSEColorSpaceReads()
 {
-    MapperUserOptions mapperOptions;
+    MapperUserOption mapperOptions;
 
     MapperSEColorSpace se;
     std::string readFrag;
@@ -377,7 +377,7 @@ int Test::testSEColorSpaceReads()
 
 int Test::testPEBaseSpaceReads()
 {
-    MapperUserOptions mapperOptions;
+    MapperUserOption mapperOptions;
 
     MapperPEBaseSpace pe1, pe2;
     std::string readFrag;
@@ -480,7 +480,7 @@ int Test::testRemapReference(std::string &outputFile, std::string &whichChromoso
     std::ofstream   outFile;
 
     MapperSEBaseSpace se;
-    MapperUserOptions mapperOptions;
+    MapperUserOption mapperOptions;
 
     mapperOptions.mismatchCutoff = 4;
     mapperOptions.debug = false;

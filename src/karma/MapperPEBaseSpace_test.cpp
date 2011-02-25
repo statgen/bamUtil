@@ -77,7 +77,7 @@ protected:
             std::cerr << "failed to open right word hash " << gs.getBaseFilename() + ".umwhl"  << ".\n";
             exit(1);
         }
-        MapperUserOptions mapperOptions;
+        MapperUserOption mapperOptions;
         mapperOptions.showReferenceBases=true;
 
         peMapperA = new MapperPEBaseSpace;

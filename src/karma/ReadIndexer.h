@@ -33,7 +33,7 @@
 #include <string>
 #include <vector>
 #include "GenomeSequence.h"
-#include "UserOptions.h"
+#include "MapperUserOption.h"
 #include "SmithWaterman.h"
 #include "WordIndex.h"  // for wordInteger_t
 //#include "MapperBase.h" // for using MatchedReadBase::UNSET_QUALITY
@@ -63,7 +63,7 @@ public:
     WordIndex       *wordIndex;
     bool    isForward;
     int readLength;     // this helps us compute the reverse wordPositions
-    ReadIndexer(MapperUserOptions &m);
+    ReadIndexer(MapperUserOption &m);
 
     //
     // Q: What is this enum structure for?
@@ -121,7 +121,7 @@ public:
                 mismatchCount ++ ;
         return mismatchCount;
     };
-    MapperUserOptions   &mapperOptions;
+    MapperUserOption   &mapperOptions;
 
     bool checkEdits;
     bool useGapped;     // true->use gapped checking in ::getSumQ()

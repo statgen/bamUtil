@@ -27,21 +27,13 @@
 #define _MAPPERSE_H
 
 #include "GenomeSequence.h"
+#include "MatchedReadSE.h"
 #include "MapperBase.h"
 #include "MemoryMapArray.h"
 #include "WordIndex.h"
 
 #include <iostream>
 #include <vector>
-
-class MatchedReadSE : public MatchedReadBase
-{
-public:
-    // overloaded methods - see base class for descriptions:
-    // char *getSequence(String &sequence, genomeIndex_t genomeMatchPosition);
-    void updateMatch(MatchedReadSE& betterMatch);
-
-};
 
 //
 // Mapper algorithms for Single End reads (SE)

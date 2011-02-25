@@ -57,3 +57,24 @@ void SamHeader::set(std::string &k1, std::string &k2, std::string &val)
     // gotta bomb here:
     header[k1][k2] = val;
 }
+
+// check if the header conforms to SAM specification
+// detail:
+//   if @HD exists, VN must exist
+//   if @SQ exists, SN, LN must exist
+//   if @RG exists, ID must exist
+//   if @PG exists, ID must exit
+bool SamHeader::conformSpecification() {
+    if (header.find("HD") != header.end() && header["HD"].find("VN") == header["HD"].end()) 
+        return false;
+    if (header.find("SQ") != header.end() && header["SQ"].find("SN") == header["SQ"].end()) 
+        return false;
+    if (header.find("SQ") != header.end() && header["SQ"].find("LN") == header["SQ"].end()) 
+        return false;
+    if (header.find("RG") != header.end() && header["RG"].find("ID") == header["RG"].end()) 
+        return false;
+    if (header.find("PG") != header.end() && header["PG"].find("ID") == header["PG"].end()) 
+        return false;
+
+    return true;
+}

@@ -73,7 +73,7 @@ int ReadIndexer::Word2Integer(const char *read, int offset, int &wordNLocation)
     return wordinteger;
 }
 
-ReadIndexer::ReadIndexer(MapperUserOptions &m) : mapperOptions(m)
+ReadIndexer::ReadIndexer(MapperUserOption &m) : mapperOptions(m)
 {
     readLength = -1;
     isForward = true;
