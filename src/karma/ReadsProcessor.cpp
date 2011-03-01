@@ -23,10 +23,10 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include "omp.h"
 #include "Generic.h"
 #include "MappingStats.h"
 #include "ReadsProcessor.h"
-#include "Error.h"
 #include "MathConstant.h"
 #include "MemoryMapArray.h"
 #include "MapperSE.h"
@@ -37,6 +37,7 @@
 #include "MapperPEColorSpace.h"
 #include "Performance.h"
 #include "SimpleStats.h"
+#include "Error.h"
 #include "Util.h"
 
 #include <algorithm>
@@ -46,6 +47,45 @@
 #include <vector>
 
 using std::sort;
+
+struct Fastq {
+    String tag;
+    String read;
+    String tag2;
+    String qual;
+};
+
+static int ReadFastqFile(IFILE f, Fastq* buffer, int nReads) {
+    int retCode = 0;
+    int processedRead = 0;
+    while (nReads) {
+        if (ifeof(f)) {
+            return processedRead;
+        }
+        retCode = buffer[processedRead].tag.ReadLine(f);
+        if (retCode < 0 || ifeof(f) ){
+            error("Wrong tag in fastq file ");
+        }
+
+        retCode = buffer[processedRead].read.ReadLine(f);
+        if (retCode < 0 || ifeof(f) ){
+            error("Wrong read in fastq file ");
+        }
+
+        retCode = buffer[processedRead].tag2.ReadLine(f);
+        if (retCode < 0 || ifeof(f) ){
+            error("Wrong tag2 in fastq file ");
+        }
+
+        retCode = buffer[processedRead].qual.ReadLine(f);
+        if (retCode < 0 ){
+            error("Wrong quality in fastq file ");
+        }
+        processedRead++;
+        if (processedRead == nReads) break;
+    }
+    return processedRead;
+}
 
 void ReadsProcessor::setHeader(SamHeader& h) 
 {
@@ -945,6 +985,235 @@ void ReadsProcessor::MapSEReadsFromFile(
     seStatsOutfile.close();
     seRStatsOutfile.close();
     delete mapper;
+
+    if (outputFilePtr!=&std::cout) std::cout << std::endl;
+
+    ifclose(f);
+}
+
+// Read single end reads and align them
+void ReadsProcessor::MapSEReadsFromFileMT(
+    std::string filename,
+    std::string outputFilename
+    )
+{
+    signalPoll userPoll;
+
+    SingleEndStats seStats;
+
+    std::ofstream   seStatsOutfile;
+    std::ofstream   seRStatsOutfile;
+    std::ofstream   outputFile;
+
+    std::ostream    *outputFilePtr;
+
+    if (outputFilename=="-")
+    {
+        outputFilePtr = &std::cout;
+    }
+    else
+    {
+        outputFile.open(outputFilename.c_str(), std::ios_base::out | std::ios_base::trunc);
+        outputFilePtr = &outputFile;
+        seStatsOutfile.open((outputFilename + ".stats").c_str(), std::ios_base::out | std::ios_base::trunc);
+
+        seRStatsOutfile.open((outputFilename + ".R").c_str(), std::ios_base::out | std::ios_base::trunc);
+    }
+
+
+    IFILE f = ifopen(filename.c_str(), "rb");
+
+    if (f == NULL)
+        error("Reads file [%s] can not be opened\n", filename.c_str());
+
+    if (outputFilePtr!=&std::cout)
+        std::cout << std::endl << "Processing short reads file [" << filename << "] ..." << std::endl;
+
+    userPoll.enableQuit();
+    seStats.runTime.start();
+
+    header.dump(*outputFilePtr);
+    gs->dumpSequenceSAMDictionary(*outputFilePtr);
+
+    // prepare mapper
+    int num_thread = omp_get_num_threads();
+    omp_set_num_threads(2);
+    num_thread = 0x1000;
+    std::cerr<<"Num threads = " << omp_get_num_threads() << std::endl;
+    MapperSE** mapperArray = new MapperSE*[num_thread];
+    for (int i = 0 ; i < num_thread; i++) 
+        mapperArray[i] = createSEMapper(); 
+
+    // read 1k fastq reads
+    const int batchSize = 0x1000;
+    Fastq buffer[0x1000];
+    while (!ifeof(f)) {
+        int nReads = ReadFastqFile(f, buffer, batchSize);
+        std::cerr << "processing " << nReads << " reads" << std::endl;
+        // start multithread alignment
+#pragma omp parallel for
+        for (int i = 0; i < nReads; i++) {
+            MapperSE* mapper = mapperArray[ i % num_thread];
+            std::string tag = buffer[i].tag.c_str();
+            std::string readFragment = buffer[i].read.c_str();
+            std::string dataQuality = buffer[i].qual.c_str();
+            mapper->processReadAndQuality(tag, readFragment, dataQuality);
+            mapper->MapSingleRead();
+
+            //
+            // catch all method to fill in the cigarRoller
+            // and bestMatch.genomeMatchPosition.
+            //
+            // When the read was done with either gapped alignment
+            // (typically Smith Waterman) or with local alignment
+            // (typically also gapped, but not necessarily SW), we
+            // need to set the cigar roller, and also potentially
+            // update the genome match position depending on the
+            // location of indels with respect to the index word
+            // used to locate the read.
+            //
+            mapper->populateCigarRollerAndGenomeMatchPosition();
+        } // end parallel for
+#pragma omp parallel for ordered
+        for (int i = 0; i < nReads; i++) {
+            MapperSE* mapper = mapperArray[ i % num_thread];
+            MatchedReadSE &match = (MatchedReadSE &)(mapper->getBestMatch());
+            match.print(*outputFilePtr,
+                        NULL,
+                        mapper->fragmentTag,
+                        mapperOptions.showReferenceBases,
+                        mapper->cigarRoller,
+                        mapper->isProperAligned,
+                        mapper->samMateFlag,
+                        mapperOptions.readGroupID,
+                        mapper->alignmentPathTag
+                );
+        } // end parallel
+        std::cerr << "finished processing " << nReads << " reads" << std::endl;
+    }
+
+#if 0    
+    MapperSE* mapper = createSEMapper();
+
+    while (!ifeof(f))
+    {
+        if (userPoll.userSaidQuit())
+        {
+            std::cerr << "\nUser Interrupt - processing stopped\n";
+            break;
+        }
+
+        int rc = mapper->getReadAndQuality(f);
+
+        if (rc==EOF)
+        {
+            break;        // reached EOF on file
+        }
+        else if (rc)
+        {
+            // 1 -> read is too short
+            // 2 -> read and quality lengths are unequal
+            // 3 -> read has too few valid index words (<2)
+            seStats.updateBadInputStats(rc);
+            mapper->bestMatch.indexer = &mapper->forward;
+        }
+        else
+        {
+            mapper->MapSingleRead();
+        }
+
+        if ((maxBases && !seStats.isTotalBasesMappedAndWrittenLessThan(maxBases))
+            || (maxReads && !seStats.isTotalMatchesLessThan(maxReads)))
+            break;
+
+        // print "%d pairs read" every once in awhile
+        if (outputFilePtr!=&std::cout) seStats.updateConsole();
+
+        seStats.addTotalReadsByOne();
+
+        bool qualityIsValid = mapper->getBestMatch().qualityIsValid();
+
+        if (qualityIsValid)
+        {
+            seStats.addTotalBasesMappedBy(mapper->getReadLength());
+        }
+
+        // before we filter, record quality score histogram:
+        seStats.recordQualityInfo((MatchedReadSE &) mapper->getBestMatch());
+
+        //
+        // we always want to keep track of how many we wrote.
+        //
+        seStats.addTotalMatchesByOne();
+
+        if (!isColorSpace)
+        {
+            MatchedReadSE &match = (MatchedReadSE &)(mapper->getBestMatch());
+
+            //
+            // catch all method to fill in the cigarRoller
+            // and bestMatch.genomeMatchPosition.
+            //
+            // When the read was done with either gapped alignment
+            // (typically Smith Waterman) or with local alignment
+            // (typically also gapped, but not necessarily SW), we
+            // need to set the cigar roller, and also potentially
+            // update the genome match position depending on the
+            // location of indels with respect to the index word
+            // used to locate the read.
+            //
+            mapper->populateCigarRollerAndGenomeMatchPosition();
+
+            match.print(*outputFilePtr,
+                        NULL,
+                        mapper->fragmentTag,
+                        mapperOptions.showReferenceBases,
+                        mapper->cigarRoller,
+                        mapper->isProperAligned,
+                        mapper->samMateFlag,
+                        mapperOptions.readGroupID,
+                        mapper->alignmentPathTag
+                );
+        }
+        else
+        {
+            //
+            // XXX revisit this for color space gapped alignment
+            //
+            // NB: getCigarString is not implemented for color space
+            //
+            mapper->populateCigarRollerAndGenomeMatchPosition();
+
+            ((MatchedReadSE &)(mapper->getBestMatch())).printColorSpace(*outputFilePtr,
+                                                                        gs,
+                                                                        csgs,
+                                                                        NULL,
+                                                                        ((MapperBase*) mapper)->originalCSRead,
+                                                                        ((MapperBase*) mapper)->originalCSQual,
+                                                                        mapper->fragmentTag,
+                                                                        mapperOptions.showReferenceBases,
+                                                                        mapper->cigarRoller,
+                                                                        mapper->isProperAligned,
+                                                                        mapper->samMateFlag,
+                                                                        mapperOptions.readGroupID,
+                                                                        mapper->alignmentPathTag
+                );
+        }
+    } // end of while ifeof(f)
+
+    if (outputFilePtr!=&std::cout) seStats.updateConsole(true);
+
+    seStats.runTime.end();
+
+    seRStatsOutfile << "list(";
+    seStats.printStats(seStatsOutfile, seRStatsOutfile);
+    seRStatsOutfile << "endOfValues=\"all done!\")" << std::endl;
+
+    seStatsOutfile.close();
+    seRStatsOutfile.close();
+    delete mapper;
+#endif
+
 
     if (outputFilePtr!=&std::cout) std::cout << std::endl;
 

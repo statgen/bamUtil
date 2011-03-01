@@ -26,7 +26,6 @@
 #include <assert.h>
 #include <math.h>
 #include <string.h>
-#include "Error.h"
 #include "IntHash.h"
 #include "Util.h"
 

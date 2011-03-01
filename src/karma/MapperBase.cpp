@@ -30,10 +30,10 @@
 #include "MapperBase.h"
 #include "MapperSEColorSpace.h"
 #include "ReadsProcessor.h"
-#include "Error.h"
 #include "MathConstant.h"
 #include "Performance.h"
 #include "SmithWaterman.h"
+#include "Error.h"
 #include "Util.h"
 
 #include "../bam/SamFlag.h"
@@ -361,7 +361,6 @@ bool MapperBase::setReadAndQuality(const char *r, int len, const char *q)
     }
     return false;
 }
-
 
 //
 // Given the short read input file in FASTQ format, populate the read fragment,

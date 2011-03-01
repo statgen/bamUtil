@@ -321,54 +321,6 @@ inline int ReadIndexer::getSumQ(
     return quality;
 }
 
-#if 0
-//
-// this is a non-optimized version of getSumQ - I'd like to leave it here
-// awhile longer for testing purposes in the future.
-//
-inline int ReadIndexer::getSumQOrig(
-    genomeIndex_t matchPosition,
-    int &mismatchCount,
-    int bestMatchSumQ,
-    int whichWord   // unused here
-)
-{
-    // insert fast checking here.
-    // XXX this is the slower old code... replace ASAP
-    int quality = 0;
-    mismatchCount = 0;
-
-//    if(bestMatchSumQ == MatchedReadBase::UNSET_QUALITY) bestMatchSumQ = 9999999;
-    if (bestMatchSumQ == -1) bestMatchSumQ = 9999999;
-
-    for (int readIndexPosition=0; readIndexPosition<read.Length(); readIndexPosition++, matchPosition++)
-    {
-        if (read[readIndexPosition] != (*gs)[ matchPosition])
-        {
-            quality += binaryQuality[readIndexPosition];
-#if 0
-            if (quality > mapperOptions.qValueCutoff) return -1;
-            if (readIndexPosition < (int) mapperOptions.readIndexCutoff)
-            {
-                mismatchCount++;
-                if (mismatchCount > mismatchCutoff) return -1;
-            }
-#endif
-            if (readIndexPosition < mapperOptions.readIndexCutoff)
-            {
-                mismatchCount++;
-                if (mismatchCount > mismatchCutoff) return -1;
-
-            }
-
-            CHECK_QUALITY_MARGIN;
-        }
-    }
-
-    return quality;
-}
-#endif
-
 /*
  * return the sum of the quality at the mismatched sites for color space reads
  * NOTE: for base '5', the unknown read, its quality will not be counted
@@ -523,5 +475,48 @@ inline bool ReadIndexer::checkColorSpaceSNP(const char& reference1,
         return true;
     return false;
 }
+
+
+
+#ifdef COMPILE_OBSOLETE_METHOD
+// WARNING: this is an obsolete method
+// this is a non-optimized version of getSumQ - I'd like to leave it here
+// awhile longer for testing purposes in the future.
+//
+inline int ReadIndexer::getSumQOrig(
+    genomeIndex_t matchPosition,
+    int &mismatchCount,
+    int bestMatchSumQ,
+    int whichWord   // unused here
+)
+{
+
+    // insert fast checking here.
+    // XXX this is the slower old code... replace ASAP
+    int quality = 0;
+    mismatchCount = 0;
+
+//    if(bestMatchSumQ == MatchedReadBase::UNSET_QUALITY) bestMatchSumQ = 9999999;
+    if (bestMatchSumQ == -1) bestMatchSumQ = 9999999;
+
+    for (int readIndexPosition=0; readIndexPosition<read.Length(); readIndexPosition++, matchPosition++)
+    {
+        if (read[readIndexPosition] != (*gs)[ matchPosition])
+        {
+            quality += binaryQuality[readIndexPosition];
+            if (readIndexPosition < mapperOptions.readIndexCutoff)
+            {
+                mismatchCount++;
+                if (mismatchCount > mismatchCutoff) return -1;
+
+            }
+
+            CHECK_QUALITY_MARGIN;
+        }
+    }
+
+    return quality;
+}
+#endif
 
 #endif

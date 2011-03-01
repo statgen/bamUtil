@@ -26,7 +26,6 @@
 #include "MapperPE.h"
 #include "MappingStats.h"
 #include "ReadsProcessor.h"
-#include "Error.h"
 #include "MathConstant.h"
 #include "Performance.h"
 #include "Util.h"
@@ -372,7 +371,7 @@ bool MapperPEBaseSpace::mapReads(
             //
             if (matchCandidate.quality == MatchedReadBase::UNSET_QUALITY)
             {
-                matchCandidate.quality = indexer.getColorSpaceSumQ(
+                matchCandidate.quality = indexer.getSumQ(
                                              matchCandidate.genomeMatchPosition,
                                              matchCandidate.mismatchCount,
                                              bestMatch.quality,
@@ -434,7 +433,7 @@ bool MapperPEBaseSpace::mapReads(
             //
             if (matchCandidateB.quality == MatchedReadBase::UNSET_QUALITY)
             {
-                matchCandidateB.quality = matchCandidateB.indexer->getColorSpaceSumQ(
+                matchCandidateB.quality = matchCandidateB.indexer->getSumQ(
                                               matchCandidateB.genomeMatchPosition,
                                               matchCandidateB.mismatchCount,
                                               MAX_Q2P,        // XXX FIX THIS -

@@ -24,10 +24,7 @@
  */
 
 #include "DumpInfo.h"
-#include "Error.h"
 #include "GenomeSequence.h"
-#include "MapperPE.h"
-#include "MapperPEBaseSpace.h"
 #include "ReadsProcessor.h"
 #include "Test.h"
 #include "Random.h"
@@ -60,8 +57,8 @@ static std::string getReferenceNameWithArgs(
     GenomeSequence &referenceTmp = colorSpaceReference ? *colorSpaceReference : *baseSpaceReference;
 
     buf << referenceTmp.getBaseFilename()
-    << "-" << (referenceTmp.isColorSpace() ? "cs" : "bs") << "."
-    << wordSize << "." << occurrenceCutoff;
+        << "-" << (referenceTmp.isColorSpace() ? "cs" : "bs") << "."
+        << wordSize << "." << occurrenceCutoff;
     return buf.str();
 }
 
@@ -188,13 +185,16 @@ void mainMap(const char *program, int argc, const char **argv)
     // we expect one or two sequence files
     if (optind >= argc || optind < argc - 2)
     {
+        std::cerr << "Must specify one sequence for mapping in single end mode, or specify two sequences for mapping in paired end mode " << std::endl;
         args.usage();   // no return
+        exit(1);
     }
 
     if (args.outputFilename=="")
     {
         std::cerr << "Must specify an output filename using -o." << std::endl;
         args.usage();
+        exit(1);
     }
 
     // only allow user to specify one reference name, since we now have unified way to open base/color space ref. genome.
@@ -213,9 +213,11 @@ void mainMap(const char *program, int argc, const char **argv)
         commandLine += " ";
         commandLine+=argv[i];
     }
-    SamHeader header; 
-    if ( parseHeader(header, args, commandLine) ) { 
+    // deal with SAM header related params
+    SamHeader header;
+    if ( parseHeader(header, args, commandLine) ) {
         std::cerr << "Cannot set SAM header." << std::endl;
+        exit(1);
     }
     engine.setHeader(header);
 
@@ -229,28 +231,31 @@ void mainMap(const char *program, int argc, const char **argv)
     }
 
     std::string sequenceFilename1 = argv[optind];
-    std::string sequenceFilename2;
+    std::string sequenceFilename2 ;
 
-    if (optind == argc - 2)
+    if (optind != argc - 2)
     {
-        sequenceFilename2 = argv[optind+1];
-    }
-
-    if (sequenceFilename2!="")
-    {
-        // paired end mapping
-        engine.MapPEReadsFromFiles(
-            sequenceFilename1,
-            sequenceFilename2,
-            args.outputFilename);
-    }
-    else
-    {
+#if 0
         // single end mapping
         engine.MapSEReadsFromFile(
             sequenceFilename1,
             args.outputFilename);
-    }
+#else
+        // single end mapping
+        engine.MapSEReadsFromFileMT(
+            sequenceFilename1,
+            args.outputFilename);
+#endif
+    } else
+    {
+        sequenceFilename2 = argv[optind+1];
+                // paired end mapping
+        engine.MapPEReadsFromFiles(
+            sequenceFilename1,
+            sequenceFilename2,
+            args.outputFilename);
+    } 
+
     engine.closeReference();
 }
 
@@ -293,19 +298,6 @@ void mainCreate(const char *program, int argc, const char **argv)
         std::cerr << "failed to create the reference file " << fileName << "." << std::endl;
         exit(1);
     }
-
-#if 0
-    //
-    // XXX A LOT OF THINGS NEED TO BE FILLED IN HERE:
-    //
-    // the header now exists, and is read/write, so we set
-    // these up here (putting them before ::create() above,
-    // these initializations will fail).
-    //
-    reference.setAssemblyID(args.assemblyID);
-    reference.setSpecies(args.species);
-    reference.setURI(args.uri);
-#endif
 
     if (args.createIndex)
     {

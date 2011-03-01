@@ -28,7 +28,6 @@
 #include "MapperSEBaseSpace.h"
 #include "MappingStats.h"
 #include "ReadsProcessor.h"
-#include "Error.h"
 #include "MathConstant.h"
 #include "Performance.h"
 #include "Util.h"

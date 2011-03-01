@@ -97,6 +97,10 @@ public:
         std::string filename,
         std::string of
     );
+    void MapSEReadsFromFileMT(
+        std::string filename,
+        std::string outputFilename
+    );
 
     void CalibratePairedReadsFiles(
         std::string filename1,

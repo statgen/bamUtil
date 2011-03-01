@@ -23,10 +23,10 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "Error.h"
 #include "InplaceMerge.h"
 #include "Performance.h"
 #include "WordIndex.h"
+#include "Error.h"
 #include "Util.h"
 
 #include <ctype.h>

@@ -27,7 +27,6 @@
 #include "MatchedReadPE.h"
 #include "MappingStats.h"
 #include "ReadsProcessor.h"
-#include "Error.h"
 #include "MathConstant.h"
 #include "Performance.h"
 #include "Util.h"
@@ -525,7 +524,7 @@ bool MapperPE::updateBestMatch(MatchedReadPE& matchCandidateB)
     // check on pairQuality.
     //
     if (bestMatch.cumulativePosteriorProbabilities > Q_CUTOFF &&
-            otherEndMapper->bestMatch.cumulativePosteriorProbabilities > Q_CUTOFF)
+        otherEndMapper->bestMatch.cumulativePosteriorProbabilities > Q_CUTOFF)
     {
 
         //
