@@ -61,9 +61,9 @@ public:
     double sumQualityToProb[MAX_Q2P];
 
     uint16_t    samMateFlag;
-    std::string alignmentPathTag;
-protected:
+    std::string alignmentPathTag; // e.g. Set its value to "ABC" will result a SAM optional tag: XA:Z:alignmentPathTag
 
+protected:
     GenomeSequence  *gs;
     Random *rand;
     MapperUserOption    mapperOptions;

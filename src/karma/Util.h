@@ -29,6 +29,9 @@
 #include "StringBasics.h"
 #include <signal.h>
 
+
+// input /path/to/abc.txt
+// @return String "abc"
 extern String getBaseName(String pathName);
 
 //

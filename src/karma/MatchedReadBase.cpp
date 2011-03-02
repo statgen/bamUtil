@@ -121,7 +121,7 @@ double MatchedReadBase::getQualityScore()
 
 void MatchedReadBase::constructorClear()
 {
-    genomeMatchPosition = 0;
+    genomeMatchPosition = INVALID_GENOME_INDEX;
     quality = UNSET_QUALITY;
     mismatchCount = 0;
     cumulativePosteriorProbabilities = 0.0;
@@ -130,6 +130,7 @@ void MatchedReadBase::constructorClear()
     whichWord = 0;
     gappedAlignment = false;
     indexer = NULL;
+
 }
 
 /**

@@ -26,8 +26,8 @@
 #ifndef _MAPPING_STATS
 #define _MAPPING_STATS
 
-#include "MapperPE.h"
-#include "MapperSE.h"
+#include "MatchedReadSE.h"
+#include "MatchedReadPE.h"
 #include "Performance.h"
 
 #ifndef __STDC_LIMIT_MACROS
@@ -123,8 +123,8 @@ private:
     uint64_t    noneMappable;
     uint64_t    oneMappable;
 
-    static const int shortDistanceRange = 1000;    // choose a reasonable short distanace for histgrams
-    static const int longDistanceBucketCount = 1000;    // choose a reasonable bucket count for whole range
+    static const int shortDistanceRange = 100;    // choose a reasonable short distanace for histgrams
+    static const int longDistanceBucketCount = 100;    // choose a reasonable bucket count for whole range
     static const uint32_t bucketSize = (uint32_t)(((uint64_t) 1<<(sizeof(uint32_t)*8)) / longDistanceBucketCount);     // values per bucket
 
     struct

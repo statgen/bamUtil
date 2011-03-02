@@ -109,6 +109,7 @@ struct wordsCompareClass {
 //  this needs to be driven by how we choose to assemble and
 //  iterate over the candidates.
 //
+// @return bool true: failed to set index strategy; false: succeed
 bool ReadIndexer::setIndexStrategy()
 {
     checkedPositions.Clear();       // clear hash of genome positions we have already checked.

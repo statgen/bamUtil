@@ -23,7 +23,6 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "omp.h"
 #include "Generic.h"
 #include "MappingStats.h"
 #include "ReadsProcessor.h"
@@ -45,6 +44,7 @@
 #include <fstream>
 #include <iostream>
 #include <vector>
+#include <omp.h>
 
 using std::sort;
 
@@ -992,6 +992,7 @@ void ReadsProcessor::MapSEReadsFromFile(
 }
 
 // Read single end reads and align them
+// MT: mutlithread version
 void ReadsProcessor::MapSEReadsFromFileMT(
     std::string filename,
     std::string outputFilename
@@ -1015,9 +1016,6 @@ void ReadsProcessor::MapSEReadsFromFileMT(
     {
         outputFile.open(outputFilename.c_str(), std::ios_base::out | std::ios_base::trunc);
         outputFilePtr = &outputFile;
-        seStatsOutfile.open((outputFilename + ".stats").c_str(), std::ios_base::out | std::ios_base::trunc);
-
-        seRStatsOutfile.open((outputFilename + ".R").c_str(), std::ios_base::out | std::ios_base::trunc);
     }
 
 
@@ -1048,6 +1046,12 @@ void ReadsProcessor::MapSEReadsFromFileMT(
     const int batchSize = 0x1000;
     Fastq buffer[0x1000];
     while (!ifeof(f)) {
+        if (userPoll.userSaidQuit())
+        {
+            std::cerr << "\nUser Interrupt - processing stopped\n";
+            break;
+        }
+
         int nReads = ReadFastqFile(f, buffer, batchSize);
         std::cerr << "processing " << nReads << " reads" << std::endl;
         // start multithread alignment
@@ -1074,7 +1078,9 @@ void ReadsProcessor::MapSEReadsFromFileMT(
             //
             mapper->populateCigarRollerAndGenomeMatchPosition();
         } // end parallel for
-#pragma omp parallel for ordered
+// it seems the following line will crash the output. 
+// and there is no need to parallize the output part. 
+//#pragma omp parallel for ordered
         for (int i = 0; i < nReads; i++) {
             MapperSE* mapper = mapperArray[ i % num_thread];
             MatchedReadSE &match = (MatchedReadSE &)(mapper->getBestMatch());
@@ -1092,7 +1098,7 @@ void ReadsProcessor::MapSEReadsFromFileMT(
         std::cerr << "finished processing " << nReads << " reads" << std::endl;
     }
 
-#if 0    
+#if 0
     MapperSE* mapper = createSEMapper();
 
     while (!ifeof(f))
@@ -1204,6 +1210,10 @@ void ReadsProcessor::MapSEReadsFromFileMT(
     if (outputFilePtr!=&std::cout) seStats.updateConsole(true);
 
     seStats.runTime.end();
+
+        seStatsOutfile.open((outputFilename + ".stats").c_str(), std::ios_base::out | std::ios_base::trunc);
+
+        seRStatsOutfile.open((outputFilename + ".R").c_str(), std::ios_base::out | std::ios_base::trunc);
 
     seRStatsOutfile << "list(";
     seStats.printStats(seStatsOutfile, seRStatsOutfile);

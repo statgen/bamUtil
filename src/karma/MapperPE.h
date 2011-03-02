@@ -133,17 +133,13 @@ public:
 
     void clearBestMatch()
     {
-        bestMatch.constructorClear();
-        bestMatch.indexer = &forward;   // needs to point to something sane
-        bestMatch.quality = MatchedReadBase::UNSET_QUALITY;
-        bestMatch.pairQuality = MatchedReadBase::UNSET_QUALITY;
-        bestMatch.genomeMatchPosition = INVALID_GENOME_INDEX;
+        this->bestMatch.constructorClear();
+        this->bestMatch.indexer = &forward;   // needs to point to something sane
 
         mapperSE->bestMatch.constructorClear();
         mapperSE->bestMatch.indexer = &forward;   // needs to point to something sane
-        mapperSE->bestMatch.quality = MatchedReadBase::UNSET_QUALITY;
-        mapperSE->bestMatch.genomeMatchPosition = INVALID_GENOME_INDEX;
     }
+
     void checkHighMismatchMapping(MapperPE* otherMapper);
     bool clearHighMismatchMapping();
     void remapSingle(void);
@@ -152,6 +148,7 @@ public:
     void setMappingMethodToSE(void);
     void setMappingMethodToLocal(void);
 
+    // according to this->mappingMethod, return MatchedRead aligned in SE mode or PE mode
     MatchedReadBase* chooseBestMatch();
 
 #if 0
