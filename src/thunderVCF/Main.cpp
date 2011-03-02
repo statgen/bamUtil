@@ -157,7 +157,7 @@ void OutputVCFConsensus(const String& inVcf, Pedigree & ped, ConsensusBuilder & 
 	pMarker->asSampleValues.InsertAt(nFormats*i + DSidx, sDose);
       }
       //fprintf(stderr,"foo4\n");
-      pMarker->printVCFMarker(outVCF); // print marker to output file
+      pMarker->printVCFMarker(outVCF,false); // print marker to output file
     }
     delete pVcf;
     //delete pMarker;
