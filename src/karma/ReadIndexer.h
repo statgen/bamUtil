@@ -476,10 +476,9 @@ inline bool ReadIndexer::checkColorSpaceSNP(const char& reference1,
     return false;
 }
 
-
-
-#ifdef COMPILE_OBSOLETE_METHOD
+////////////////////////////////////////////////////////////
 // WARNING: this is an obsolete method
+#ifdef COMPILE_OBSOLETE_METHOD
 // this is a non-optimized version of getSumQ - I'd like to leave it here
 // awhile longer for testing purposes in the future.
 //

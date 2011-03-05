@@ -46,8 +46,8 @@
 class MappingStatsBase
 {
 protected:
-    uint64_t    totalReads;
-    uint64_t    totalMatches;
+    uint64_t    totalReads;          // number of Fastq reads that are from input
+    uint64_t    totalMatches;        // number of Fastq reads that are mapped
     uint64_t    badShortData;        // too short a read
     uint64_t    badUnequalData;      // read length!=quality length
     uint64_t    badIndexWords;       // too few index words (<2)
@@ -58,50 +58,35 @@ protected:
     uint64_t    lowQualityDrops;
     uint64_t    invalidQualityDrops;
     uint64_t    totalBasesMapped;
-    uint64_t    totalBasesMappedAndWritten;
+
+    void recordQualityInfo(MatchedReadBase &match);
 
 public:
-    MappingStatsBase();
     Timing  runTime;
+    MappingStatsBase();
+
     void    updateConsole(bool force = false);
 
-    void    recordQualityInfo(MatchedReadBase &match);
     void    printStats(std::ostream &file, std::ostream &fileR);
 
     // simple functions for comparisons
-    bool isTotalBasesMappedAndWrittenLessThan(const uint64_t& i)
+    uint64_t getTotalBasesMapped() 
     {
-        return (totalBasesMappedAndWritten < i);
+        return (totalBasesMapped);
+    }
+    uint64_t getTotalMatches() 
+    {
+        return (totalMatches );
     };
-    bool isTotalMatchesLessThan(const uint64_t& i)
+    uint64_t getTotalReads()
     {
-        return (totalMatches < i);
-    };
-    bool isTotalReadsLessThan(const uint64_t& i)
-    {
-        return (totalReads < i);
+        return (totalReads );
     }
     void updateBadInputStats(const int& rc)
     {
         badShortData += (rc==1);
         badUnequalData += (rc==2);
         badIndexWords += (rc==3);
-    }
-    void addTotalReadsByOne()
-    {
-        totalReads++;
-    }
-    void addTotalBasesMappedBy(const int& i)
-    {
-        totalBasesMapped += i;
-    }
-    void addTotalMatchesByOne()
-    {
-        totalMatches ++;
-    }
-    void addTotalBasesMappedAndWritten(const int& i)
-    {
-        totalBasesMappedAndWritten += i;
     }
 };
 
@@ -111,10 +96,14 @@ private:
     static const int qualityScoreBucketCount = 100;
     static const int qualityScoreBucketRange = 100 / qualityScoreBucketCount;
     uint64_t    qualityScoreHistogram[qualityScoreBucketCount];
+
+protected:
+    void recordQualityInfo(MatchedReadSE &match);
+
 public:
     SingleEndStats();
-    void recordQualityInfo(MatchedReadSE &match);
     void printStats(std::ostream &file, std::ostream &fileR);
+    void recordMatchedRead(MatchedReadBase& matchedRead);
 };
 
 class PairedEndStats: public MappingStatsBase
@@ -133,8 +122,16 @@ private:
         uint64_t    probesInOrder;
     } matchDirection[2][2];
 
+    // record probeA and probeB status in the 8 dimension below:
+    // probeA:  [probeA.qualityIsValid()]
+    //          [probeA.quality==MatchedReadBase::UNSET_QUALITY]
+    //          [probeA.quality==MatchedReadBase::EARLYSTOP_QUALITY]
+    //          [probeA.quality==MatchedReadBase::REPEAT_QUALITY]
+    //          [probeB.qualityIsValid()]
+    // probeB:  [probeB.quality==MatchedReadBase::UNSET_QUALITY]
+    //          [probeB.quality==MatchedReadBase::EARLYSTOP_QUALITY]
+    //          [probeB.quality==MatchedReadBase::REPEAT_QUALITY]
     uint64_t    qValueBuckets[2][2][2][2][2][2][2][2];
-    uint64_t    qValueBucketsDrop[2][2][2][2][2][2][2][2];
     uint64_t    qValueBucketsA[2][2][2][2];
     uint64_t    qValueBucketsB[2][2][2][2];
 
@@ -145,12 +142,22 @@ public:
     PairedEndStats();
     void printHistograms(std::ostream &file, std::ostream &fileR);
 
-    void addStats(MatchedReadPE &probeA, MatchedReadPE &probeB, int readLength);
-    void addQValueBuckets(MatchedReadPE &probeA, MatchedReadPE &probeB);
-    void addQValueBucketsDrop(MatchedReadPE &probeA, MatchedReadPE &probeB);
+    // record the match directions and outer distance distribution between two reads
+    void addStats(MatchedReadBase &probeA, MatchedReadBase &probeB, int readLength);
+
+    // record invalid quality (invalid, unset, early_stop, repeat) for each probe.
+    void addQValueBuckets(MatchedReadBase &probeA, MatchedReadBase &probeB);
+
     void printQValueBuckets(std::ostream &file, std::ostream &fileR);
+
     void printStats(std::ostream &file, std::ostream &fileR);
 
+    void recordMatchedRead(MatchedReadBase& matchedRead1, MatchedReadBase& matchedRead2);
+
+#ifdef COMPILE_OBSOLETE_CODE
+    uint64_t    qValueBucketsDrop[2][2][2][2][2][2][2][2];
+    void addQValueBucketsDrop(MatchedReadPE &probeA, MatchedReadPE &probeB);
+#endif
 };
 
 #endif

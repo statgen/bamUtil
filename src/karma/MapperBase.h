@@ -78,7 +78,6 @@ public:
     MapperBase();
     virtual ~MapperBase();
 
-    int Word2Integer(std::string & word, unsigned int index, int &countNbases);
     std::string Integer2Word(wordInteger_t n, unsigned int wordsize);
 
     std::string fragmentTag;
@@ -251,6 +250,11 @@ public:
             }
         }
     }
+
+#ifdef COMPILE_OBSOLETE_CODE
+public:
+    int Word2Integer(std::string & word, unsigned int index, int &countNbases);
+#endif
 };
 
 

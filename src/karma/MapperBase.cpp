@@ -240,7 +240,7 @@ MapperBase::MapperBase() :  forward(mapperOptions), backward(mapperOptions)
     backward.isForward = false;
 
     localGappedAlignment = false;
-    isProperAligned = false;
+    //isProperAligned = false;
 
     samMateFlag = 0;        // for paired end, mark which is mate 1 versus mate 2
 }
@@ -248,54 +248,6 @@ MapperBase::MapperBase() :  forward(mapperOptions), backward(mapperOptions)
 MapperBase::~MapperBase()
 {
     // we don't own gs or wordIndex, so we don't close them here.
-}
-
-int MapperBase::Word2Integer(std::string & word, unsigned int index, int &countNbases)
-{
-    assert(word.size() + index >= wordIndex->wordSize && index >= 0);
-
-    int crtbaseinteger;
-    int wordinteger = 0;
-
-    //
-    // XXX this is classic indication of a need to subclass, but I don't
-    // know how practical it is for karma.
-    //
-    if (gs->isColorSpace())
-    {
-        //
-        // NB: the + 1 is because the first character of the
-        // color space read is a base pair key which we ignore here.
-        // This is not a clean solution ... find something better.
-        //
-        for (unsigned int i = index + 1; i < index + wordIndex->wordSize + 1; i++)
-        {
-            wordinteger <<= 2;
-            if (!isdigit(word[i])) return INVALID_WORDINDEX;
-            crtbaseinteger = word[i] & 0xf; // works for ASCII and EBCDIC! whoo!
-            wordinteger |= crtbaseinteger;
-        }
-    }
-    else
-    {
-        for (unsigned int i = index; i < index + wordIndex->wordSize; i++)
-        {
-            wordinteger <<= 2;
-            crtbaseinteger = GenomeSequence::base2int[(int) word[i]];
-
-            switch (crtbaseinteger)
-            {
-                case GenomeSequence::baseXIndex:
-                    return INVALID_WORDINDEX;   // policy issue - should a read with a single invalid base be tossed?
-                case GenomeSequence::baseNIndex:
-                    crtbaseinteger = 0;         // knowing this is 0, we'll visit all edits of this base later
-                default:
-                    wordinteger |= crtbaseinteger;
-            }
-        }
-    }
-
-    return wordinteger;
 }
 
 std::string MapperBase::Integer2Word(wordInteger_t n, unsigned int wordsize)
@@ -377,6 +329,8 @@ bool MapperBase::setReadAndQuality(const char *r, int len, const char *q)
 //
 int MapperBase::getReadAndQuality(IFILE f)
 {
+    std::cerr << "obsolete method, use FastqReader class" << std::endl;
+
     std::string ignore;
     std::string dataQuality;
     std::string readFragment;
@@ -413,6 +367,18 @@ int MapperBase::getReadAndQuality(IFILE f)
     if (dataQuality.size() == 0)
         error("unexpected empty DNA quality line %lu\n", line);
 
+
+    return processReadAndQuality(fragmentTag, readFragment, dataQuality);
+}
+
+// 
+// Given a fastq record, we will trim it from left and/or right, then call setReadAndQuality() function;
+// store original data and quality for color space reads
+// @param fragmentTag, readFragment, dataQuality: a Fastq read.
+// @return int 0: if setReadAndQuality() succeed; or 1 if failed
+//
+int MapperBase::processReadAndQuality(std::string& fragmentTag, std::string& readFragment, std::string& dataQuality)
+{
 #if 0
     // debug_by_tag
     // for debug a certain read
@@ -424,15 +390,6 @@ int MapperBase::getReadAndQuality(IFILE f)
     }
 #endif
 
-    return processReadAndQuality(fragmentTag, readFragment, dataQuality);
-}
-
-//
-// Given string representations of the read, set up all internal data structures
-// neccesary to perform mapping.
-//
-int MapperBase::processReadAndQuality(std::string& fragmentTag, std::string& readFragment, std::string& dataQuality)
-{
     this->fragmentTag=fragmentTag;
     //
     // left and right truncate if requested
@@ -481,26 +438,6 @@ int MapperBase::processReadAndQuality(std::string& fragmentTag, std::string& rea
         return 1;
 
     return 0;
-}
-
-void MapperBase::debugPrint(MatchedReadBase &matchedRead)
-{
-    std::string dataQuality;
-
-    for (vector<uint8_t>::iterator it = forward.binaryQuality.begin() ; it < forward.binaryQuality.end(); it++)
-        dataQuality.push_back(*it);
-
-    if (!matchedRead.isForward())
-        reverse(dataQuality.begin(), dataQuality.end());
-
-    gs->debugPrintReadValidation(
-        matchedRead.indexer->read,
-        dataQuality,
-        matchedRead.isForward() ? 'F' : 'R',
-        matchedRead.genomeMatchPosition,
-        matchedRead.quality,
-        matchedRead.mismatchCount,
-        false);
 }
 
 //
@@ -825,3 +762,80 @@ inline bool MapperBase::evalAllCandidatePositions(
     }
     return false;
 }
+
+//////////////////////////////////////////////////////////////////////
+// Debug code
+//////////////////////////////////////////////////////////////////////
+
+void MapperBase::debugPrint(MatchedReadBase &matchedRead)
+{
+    std::string dataQuality;
+
+    for (vector<uint8_t>::iterator it = forward.binaryQuality.begin() ; it < forward.binaryQuality.end(); it++)
+        dataQuality.push_back(*it);
+
+    if (!matchedRead.isForward())
+        reverse(dataQuality.begin(), dataQuality.end());
+
+    gs->debugPrintReadValidation(
+        matchedRead.indexer->read,
+        dataQuality,
+        matchedRead.isForward() ? 'F' : 'R',
+        matchedRead.genomeMatchPosition,
+        matchedRead.quality,
+        matchedRead.mismatchCount,
+        false);
+}
+
+//////////////////////////////////////////////////////////////////////
+// Obsolete code
+//////////////////////////////////////////////////////////////////////
+#ifdef COMPILE_OBSOLETE_CODE
+int MapperBase::Word2Integer(std::string & word, unsigned int index, int &countNbases)
+{
+    assert(word.size() + index >= wordIndex->wordSize && index >= 0);
+
+    int crtbaseinteger;
+    int wordinteger = 0;
+
+    //
+    // XXX this is classic indication of a need to subclass, but I don't
+    // know how practical it is for karma.
+    //
+    if (gs->isColorSpace())
+    {
+        //
+        // NB: the + 1 is because the first character of the
+        // color space read is a base pair key which we ignore here.
+        // This is not a clean solution ... find something better.
+        //
+        for (unsigned int i = index + 1; i < index + wordIndex->wordSize + 1; i++)
+        {
+            wordinteger <<= 2;
+            if (!isdigit(word[i])) return INVALID_WORDINDEX;
+            crtbaseinteger = word[i] & 0xf; // works for ASCII and EBCDIC! whoo!
+            wordinteger |= crtbaseinteger;
+        }
+    }
+    else
+    {
+        for (unsigned int i = index; i < index + wordIndex->wordSize; i++)
+        {
+            wordinteger <<= 2;
+            crtbaseinteger = GenomeSequence::base2int[(int) word[i]];
+
+            switch (crtbaseinteger)
+            {
+                case GenomeSequence::baseXIndex:
+                    return INVALID_WORDINDEX;   // policy issue - should a read with a single invalid base be tossed?
+                case GenomeSequence::baseNIndex:
+                    crtbaseinteger = 0;         // knowing this is 0, we'll visit all edits of this base later
+                default:
+                    wordinteger |= crtbaseinteger;
+            }
+        }
+    }
+
+    return wordinteger;
+}
+#endif 

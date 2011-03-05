@@ -47,7 +47,6 @@ MappingStatsBase::MappingStatsBase()
     lowQualityDrops = 0;
     invalidQualityDrops = 0;
     totalBasesMapped = 0;
-    totalBasesMappedAndWritten = 0;
 }
 
 void MappingStatsBase::updateConsole(bool force)
@@ -55,7 +54,7 @@ void MappingStatsBase::updateConsole(bool force)
     double pct = 100.0;
 
     if (totalReads) pct = 100.0 * totalMatches / totalReads;
-
+    
     // 0x03ff = 1023,  (totalReads & 0x03ff) == 0 when totalReads is 0, 1024, 2048, .....
     if ((force || ((totalReads & 0x03ff) == 0)) && isatty(fileno(stdout)))
     {
@@ -121,7 +120,6 @@ void MappingStatsBase::printStats(std::ostream &file, std::ostream &fileR)
     fileR << "writerTotalInput=" << totalReads - badData << ", ";
     fileR << "writerInvalidQualityDrops=" << invalidQualityDrops << ", ";
     fileR << "writerQualityDrops=" << lowQualityDrops << ", ";
-    fileR << "writerTotalBasesMappedAndWritten=" << totalBasesMappedAndWritten << ", ";
     fileR << "writerTotalOutput=" << totalMatches << ", ";
 
 
@@ -307,17 +305,33 @@ void SingleEndStats::printStats(std::ostream &file, std::ostream &fileR)
     fileR << ")" << std::endl;
 }
 
+void SingleEndStats::recordMatchedRead(MatchedReadBase& m) {
+    totalReads++;
+    if (m.qualityIsValid())
+    {
+        totalBasesMapped += (m.indexer->readLength);
+        totalMatches++;
+    }
+
+    // before we filter, record quality score histogram:
+    this->recordQualityInfo((MatchedReadSE &) m);
+}
+
 PairedEndStats::PairedEndStats()
 {
     memset(matchDirection, 0, sizeof(matchDirection));
     memset(shortDistanceHistogram, 0, sizeof(shortDistanceHistogram));
     memset(longDistanceHistogram, 0, sizeof(longDistanceHistogram));
     memset(qValueBuckets, 0, sizeof(qValueBuckets));
-    memset(qValueBucketsDrop, 0, sizeof(qValueBucketsDrop));
     memset(qValueBucketsA, 0, sizeof(qValueBucketsA));
     memset(qValueBucketsB, 0, sizeof(qValueBucketsB));
     oneMappable = 0;
     noneMappable = 0;
+
+#ifdef COMPILE_OBSOLETE_CODE
+    memset(qValueBucketsDrop, 0, sizeof(qValueBucketsDrop));
+#endif
+
 }
 
 //
@@ -328,7 +342,7 @@ PairedEndStats::PairedEndStats()
 //     (leftEndMatch2 - rightEndMatch1) = geneMatchPos2 - (geneMatchPos1 + READSIZE)
 //
 //
-void PairedEndStats::addStats(MatchedReadPE &probeA, MatchedReadPE &probeB, int readLength)
+void PairedEndStats::addStats(MatchedReadBase &probeA, MatchedReadBase &probeB, int readLength)
 {
     int64_t    widthRead, limitRead1, limitRead2 = 0;
 
@@ -484,23 +498,8 @@ void PairedEndStats::printHistograms(std::ostream &file, std::ostream &fileR)
     }
 }
 
-// dropped cases:
-void  PairedEndStats::addQValueBucketsDrop(MatchedReadPE &probeA, MatchedReadPE &probeB)
-{
-    qValueBucketsDrop
-    [probeA.qualityIsValid()]
-    [probeA.quality==MatchedReadBase::UNSET_QUALITY]
-    [probeA.quality==MatchedReadBase::EARLYSTOP_QUALITY]
-    [probeA.quality==MatchedReadBase::REPEAT_QUALITY]
-    [probeB.qualityIsValid()]
-    [probeB.quality==MatchedReadBase::UNSET_QUALITY]
-    [probeB.quality==MatchedReadBase::EARLYSTOP_QUALITY]
-    [probeB.quality==MatchedReadBase::REPEAT_QUALITY]
-    ++;
-}
-
 // all cases before processing:
-void  PairedEndStats::addQValueBuckets(MatchedReadPE &probeA, MatchedReadPE &probeB)
+void  PairedEndStats::addQValueBuckets(MatchedReadBase &probeA, MatchedReadBase &probeB)
 {
     qValueBuckets
     [probeA.qualityIsValid()]
@@ -576,6 +575,8 @@ void  PairedEndStats::printQValueBuckets(std::ostream &file, std::ostream &fileR
                                 }
                 }
     file << std::endl << std::endl;
+
+#if COMPILE_OBSOLETE_CODE
     file << "PROBE STATES FOR DROPPED PAIRS:" << std::endl << std::endl;
     file << "\t\t\tPROBE A\t\t\tPROBE B\tCOUNT" << std::endl << std::endl;
     for (i=0; i<2; i++) for (j=0; j<2; j++) for (k=0; k<2; k++) for (l=0; l<2; l++)
@@ -597,4 +598,50 @@ void  PairedEndStats::printQValueBuckets(std::ostream &file, std::ostream &fileR
                                     << std::endl;
                                 }
                 }
+#endif
 }
+
+void PairedEndStats::recordMatchedRead(MatchedReadBase& m1, MatchedReadBase& m2) {
+    totalReads += 2; // paired end, so 2 reads are processed.
+
+    if (m1.qualityIsValid())
+    {
+        totalBasesMapped+=(m1.indexer->readLength);
+        totalMatches++;
+    }
+
+    if (m2.qualityIsValid())
+    {
+        totalBasesMapped+=(m2.indexer->readLength);
+        totalMatches++;
+    }
+
+
+    this->addQValueBuckets(m1, m2);
+
+    // before we filter, record quality score histogram:
+    // this->recordQualityInfo((MatchedReadSE &) m);
+    // count unfiltered reasons for invalid qualities (unset/earlystop/repeat):
+    this->recordQualityInfo(m1);
+    this->recordQualityInfo(m2);
+
+    this->addStats( m1, m2, (m1.indexer->readLength)) ;
+}
+
+#ifdef COMPILE_OBSOLETE_CODE
+// dropped cases:
+void  PairedEndStats::addQValueBucketsDrop(MatchedReadPE &probeA, MatchedReadPE &probeB)
+{
+    qValueBucketsDrop
+    [probeA.qualityIsValid()]
+    [probeA.quality==MatchedReadBase::UNSET_QUALITY]
+    [probeA.quality==MatchedReadBase::EARLYSTOP_QUALITY]
+    [probeA.quality==MatchedReadBase::REPEAT_QUALITY]
+    [probeB.qualityIsValid()]
+    [probeB.quality==MatchedReadBase::UNSET_QUALITY]
+    [probeB.quality==MatchedReadBase::EARLYSTOP_QUALITY]
+    [probeB.quality==MatchedReadBase::REPEAT_QUALITY]
+    ++;
+}
+
+#endif
