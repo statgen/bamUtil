@@ -35,7 +35,8 @@
 #endif
 #include <stdint.h>
 #include <iostream>
-
+#include <fstream>
+#include <string>
 //
 // keep and display genome matching statistics.
 // this separates a bunch of nitpicking detail from the core loops,
@@ -59,7 +60,8 @@ protected:
     uint64_t    invalidQualityDrops;
     uint64_t    totalBasesMapped;
 
-    void recordQualityInfo(MatchedReadBase &match);
+    void    recordQualityInfo(MatchedReadBase &match);
+    void    printStats(std::ostream &file, std::ostream &fileR);
 
 public:
     Timing  runTime;
@@ -67,9 +69,15 @@ public:
 
     void    updateConsole(bool force = false);
 
-    void    printStats(std::ostream &file, std::ostream &fileR);
+    // update bad data stats, this is called after we prepared the mapper and before the alignment begin
+    void updateBadInputStats(const int& rc)
+    {
+        badShortData += (rc==1);
+        badUnequalData += (rc==2);
+        badIndexWords += (rc==3);
+    }
 
-    // simple functions for comparisons
+    // simple getter functions for comparisons
     uint64_t getTotalBasesMapped() 
     {
         return (totalBasesMapped);
@@ -82,12 +90,6 @@ public:
     {
         return (totalReads );
     }
-    void updateBadInputStats(const int& rc)
-    {
-        badShortData += (rc==1);
-        badUnequalData += (rc==2);
-        badIndexWords += (rc==3);
-    }
 };
 
 class SingleEndStats: public MappingStatsBase
@@ -99,11 +101,14 @@ private:
 
 protected:
     void recordQualityInfo(MatchedReadSE &match);
+    void printStats(std::ostream &file, std::ostream &fileR);
 
 public:
     SingleEndStats();
-    void printStats(std::ostream &file, std::ostream &fileR);
     void recordMatchedRead(MatchedReadBase& matchedRead);
+
+    // output to baseFileName.stat and baseFileName.R files including mapping related statistics
+    void outputStatFile(std::string& baseFileName);
 };
 
 class PairedEndStats: public MappingStatsBase
@@ -138,8 +143,7 @@ private:
     uint64_t    shortDistanceHistogram[2*shortDistanceRange];
     uint64_t    longDistanceHistogram[2*longDistanceBucketCount];
 
-public:
-    PairedEndStats();
+protected:
     void printHistograms(std::ostream &file, std::ostream &fileR);
 
     // record the match directions and outer distance distribution between two reads
@@ -152,8 +156,15 @@ public:
 
     void printStats(std::ostream &file, std::ostream &fileR);
 
+public:
+    PairedEndStats();
+    
+    // record statistics from MatchedRead from the bestMatch of each aligner after alignment finished
     void recordMatchedRead(MatchedReadBase& matchedRead1, MatchedReadBase& matchedRead2);
 
+    // output to baseFileName.stat and baseFileName.R files including mapping related statistics
+    void outputStatFile(std::string& baseFileName);
+    
 #ifdef COMPILE_OBSOLETE_CODE
     uint64_t    qValueBucketsDrop[2][2][2][2][2][2][2][2];
     void addQValueBucketsDrop(MatchedReadPE &probeA, MatchedReadPE &probeB);

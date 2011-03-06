@@ -445,7 +445,11 @@ void MapperPE::debugDump(std::ostream &out)
 
 MatchedReadBase &MapperPE::getBestMatch()
 {
-    return bestMatch;
+    assert(mapperSE) ;
+    if ( mappingMethod == PE_MODE)
+        return bestMatch;
+    else
+        return mapperSE->bestMatch;
 }
 
 bool MapperPE::updateBestMatch(MatchedReadPE& matchCandidateB)

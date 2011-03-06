@@ -804,29 +804,11 @@ void ReadsProcessor::MapPEReadsFromFiles(
     if (outputFilePtr != &std::cout) peStats.updateConsole(true);
 
     peStats.runTime.end();
+    peStats.outputStatFile(outputFilename);
 
-
-    if (outputFilePtr != &std::cout) std::cout << std::endl;
-    peStatsOutfile << "Files mapped: '"
-                   << filenameA.c_str()
-                   << "' and '"
-                   << filenameB.c_str()
-                   << "'." << std::endl;
-
-    // Q score tabulation is statically shared among all mappers:
-    peRStatsOutfile << "list(";
-
-    peStats.printStats(peStatsOutfile, peRStatsOutfile);
-    peRStatsOutfile << "endOfValues=\"all done!\")" << std::endl;
-
-    peStatsOutfile.close();
-    peRStatsOutfile.close();
-
+    // free resourcs
     delete mapperA;
     delete mapperB;
-    //
-    // any open files get closed here...
-    //
 }
 
 // Read single end reads and align them
@@ -1000,20 +982,17 @@ void ReadsProcessor::MapSEReadsFromFile(
         }
     } // end of while ifeof(f)
 
+    // update console after alignment finished
     if (outputFilePtr!=&std::cout) seStats.updateConsole(true);
 
+    // stop timing
     seStats.runTime.end();
 
-    seRStatsOutfile << "list(";
-    seStats.printStats(seStatsOutfile, seRStatsOutfile);
-    seRStatsOutfile << "endOfValues=\"all done!\")" << std::endl;
-
-    seStatsOutfile.close();
-    seRStatsOutfile.close();
+    // output statistics and R files
+    seStats.outputStatFile(outputFilename);
+    
+    // free resources
     delete mapper;
-
-    if (outputFilePtr!=&std::cout) std::cout << std::endl;
-
     ifclose(f);
 }
 
@@ -1143,11 +1122,12 @@ void ReadsProcessor::MapSEReadsFromFileMT(
 
     // clean up
     reader.Close();
+    seStats.runTime.end();
+
     std::cerr << "finished processing " << totalRead << " reads" << std::endl;
 
-    if (outputFilePtr!=&std::cout) std::cout << std::endl;
-
-    // ifclose(f);
+    // output statistics and R summaries
+    seStats.outputStatFile(outputFilename);
 }
 
 //

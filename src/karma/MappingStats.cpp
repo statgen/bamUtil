@@ -27,6 +27,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include <string>
 
 using std::setw;
 using std::endl;
@@ -257,6 +258,10 @@ void MappingStatsBase::printStats(std::ostream &file, std::ostream &fileR)
     file << std::endl;
 }
 
+//////////////////////////////////////////////////////////////////////
+// SingleEndStats class
+//////////////////////////////////////////////////////////////////////
+
 SingleEndStats::SingleEndStats()
 {
     memset(qualityScoreHistogram, 0, sizeof(qualityScoreHistogram));
@@ -317,6 +322,31 @@ void SingleEndStats::recordMatchedRead(MatchedReadBase& m) {
     this->recordQualityInfo((MatchedReadSE &) m);
 }
 
+
+// output to baseFileName.stat and baseFileName.R files including mapping related statistics
+void SingleEndStats::outputStatFile(std::string& baseFileName) {
+    std::ofstream   statsOutfile;
+    std::ofstream   rOutfile;
+    std::string     outputBaseFilename = baseFileName;
+
+    // open output files
+    statsOutfile.open((outputBaseFilename + ".stats").c_str(), std::ios_base::out | std::ios_base::trunc);
+    rOutfile.open((outputBaseFilename + ".R").c_str(), std::ios_base::out | std::ios_base::trunc);
+    
+    // write to files
+    rOutfile << "list(";
+    printStats(statsOutfile, rOutfile);
+    rOutfile << "endOfValues=\"all done!\")" << std::endl;
+
+    // close files
+    statsOutfile.close();
+    rOutfile.close();
+
+}
+
+//////////////////////////////////////////////////////////////////////
+// PairedEndStats class
+//////////////////////////////////////////////////////////////////////
 PairedEndStats::PairedEndStats()
 {
     memset(matchDirection, 0, sizeof(matchDirection));
@@ -627,6 +657,32 @@ void PairedEndStats::recordMatchedRead(MatchedReadBase& m1, MatchedReadBase& m2)
 
     this->addStats( m1, m2, (m1.indexer->readLength)) ;
 }
+
+// output to baseFileName.stat and baseFileName.R files including mapping related statistics
+void PairedEndStats::outputStatFile(std::string& baseFileName) {
+    std::ofstream   statsOutfile;
+    std::ofstream   rOutfile;
+    std::string     outputBaseFilename = baseFileName;
+
+    // open output files
+    statsOutfile.open((outputBaseFilename + ".stats").c_str(), std::ios_base::out | std::ios_base::trunc);
+    rOutfile.open((outputBaseFilename + ".R").c_str(), std::ios_base::out | std::ios_base::trunc);
+    
+    // write to files
+    rOutfile << "list(";
+    printStats(statsOutfile, rOutfile);
+    rOutfile << "endOfValues=\"all done!\")" << std::endl;
+
+    // close files
+    statsOutfile.close();
+    rOutfile.close();
+
+}
+
+
+//////////////////////////////////////////////////////////////////////
+// OBSOLETE CODE
+//////////////////////////////////////////////////////////////////////
 
 #ifdef COMPILE_OBSOLETE_CODE
 // dropped cases:
