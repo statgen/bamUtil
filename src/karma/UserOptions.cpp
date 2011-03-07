@@ -95,6 +95,7 @@ void MapArguments::usage()
     std::cerr  << "   -Q           -> quiet mode (no output except errors)" << std::endl;
     std::cerr  << "   -r [name]    -> required genome reference" << std::endl;
     std::cerr  << "   -R [int]     -> max number of reads" << std::endl;
+    std::cerr  << "   -t [int]     -> number of threads (default 1)" << std::endl;
     std::cerr  << "   -w [int]     -> index word size (default 15)" << std::endl;
     std::cerr  << std::endl;
     std::cerr  << "-O and -w modify which reference index gets opened." << std::endl;
@@ -140,6 +141,9 @@ void MapArguments::getoptH()
             return;
         case 'r':
             references.push_back(optarg);
+            return;
+        case 't':
+            numThread = atoi(optarg);
             return;
         case 'R':
             maxReads = atoi(optarg);

@@ -62,6 +62,9 @@ private:
     MapperUserOption    mapperOptions;    // gets passed onto the mappers it uses
     uint64_t maxBases;
     uint64_t maxReads;
+    
+    // multithread param
+    int numThread;
 public:
     ReadsProcessor();
     ~ReadsProcessor();
@@ -102,10 +105,6 @@ public:
         std::string outputFilename
     );
 
-    void MapSEReadsFromFile(
-        std::string filename,
-        std::string outputFilename
-    );
     void MapSEReadsFromFileMT(
         std::string filename,
         std::string outputFilename
@@ -123,6 +122,15 @@ private:
     /// left and right hashes.
     //
     void verifyHashesExist();
+
+
+#ifdef COMPILE_OBSOLETE_CODE
+public:
+    void MapSEReadsFromFile(
+        std::string filename,
+        std::string outputFilename
+    );
+#endif
 
 };
 

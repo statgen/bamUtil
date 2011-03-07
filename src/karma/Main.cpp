@@ -235,17 +235,10 @@ void mainMap(const char *program, int argc, const char **argv)
 
     if (optind != argc - 2)
     {
-#if 0
-        // single end mapping
-        engine.MapSEReadsFromFile(
-            sequenceFilename1,
-            args.outputFilename);
-#else
         // single end mapping
         engine.MapSEReadsFromFileMT(
             sequenceFilename1,
             args.outputFilename);
-#endif
     } else
     {
         sequenceFilename2 = argv[optind+1];

@@ -85,16 +85,16 @@ public:
 class MapArguments : public BaseArguments
 {
 public:
-    int mapInColorSpace;
-    int insertSize;
+    int      mapInColorSpace;
+    int      insertSize;
     uint64_t maxBases;
     uint64_t maxReads;
-    int occurrenceCutoff;
-    int qualityTrim;
-    bool showReferenceBases;// show all reference bases in the sam file
-    bool quietMode;           // quiet mode
-    int wordSize;
-
+    int      occurrenceCutoff;
+    int      qualityTrim;
+    bool     showReferenceBases;// show all reference bases in the sam file
+    bool     quietMode;           // quiet mode
+    int      wordSize;
+    int      numThread;
     std::string                 outputFilename;
     std::vector<std::string>    references;
     std::vector<std::string>    SAMHeaderOptions;
@@ -107,9 +107,10 @@ public:
             qualityTrim(0),
             showReferenceBases(false),
             quietMode(false),
-            wordSize(15)
+            wordSize(15),
+            numThread(1)    
     {
-        optionString += "a:B:cEH:m:o:O:r:R:q:Qw:";
+        optionString += "a:B:cEH:m:o:O:q:r:R:t:Qw:";
     }
     ~MapArguments()
     {
@@ -128,6 +129,7 @@ public:
         out << "maxBases " << maxBases << " (default 0)" << std::endl;
         out << "maxReads " << maxReads << " (default 0)" << std::endl;
         out << "occurrenceCutoff " << occurrenceCutoff << " (default 5000)" << std::endl;
+        out << "numThread " << numThread << " (default 1)" << std::endl;
         out << "quiet mode " << quietMode << " (default off)" << std::endl;;
         out << "show reference bases " << showReferenceBases << " (default off)" << std::endl;;
         out << "reference(s) (no default):";

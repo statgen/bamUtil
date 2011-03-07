@@ -150,6 +150,8 @@ void ReadsProcessor::parseMapArguments(const MapArguments& args)
     this->mapperOptions.showReferenceBases = args.showReferenceBases;
     this->mapperOptions.qualityTrim = args.qualityTrim;
     this->isColorSpace = args.mapInColorSpace;
+    this->numThread = args.numThread;
+    assert(this->numThread >= 0);
 };
 
 int ReadsProcessor::openReference(std::string& referenceName, int wordSize, int occurrenceCutoff, bool quietMode, bool debug)
@@ -805,6 +807,239 @@ void ReadsProcessor::MapPEReadsFromFiles(
 }
 
 // Read single end reads and align them
+// MT: mutlithread version
+void ReadsProcessor::MapSEReadsFromFileMT(
+    std::string filename,
+    std::string outputFilename
+    )
+{
+    signalPoll userPoll;
+
+    SingleEndStats seStats;
+
+    std::ofstream   seStatsOutfile;
+    std::ofstream   seRStatsOutfile;
+    std::ofstream   outputFile;
+
+    std::ostream    *outputFilePtr;
+
+    if (outputFilename=="-")
+    {
+        outputFilePtr = &std::cout;
+    }
+    else
+    {
+        outputFile.open(outputFilename.c_str(), std::ios_base::out | std::ios_base::trunc);
+        outputFilePtr = &outputFile;
+    }
+
+    FastqReader reader(filename.c_str());
+
+    if (outputFilePtr!=&std::cout)
+        std::cout << std::endl << "Processing short reads file [" << filename << "] ..." << std::endl;
+
+    userPoll.enableQuit();
+    seStats.runTime.start();
+
+    header.dump(*outputFilePtr);
+    gs->dumpSequenceSAMDictionary(*outputFilePtr);
+
+    // set OpenMP parameters
+    omp_set_num_threads(this->numThread);
+
+    // preapre Mapper and Fastq buffer
+    const int BatchSize = 0x0100;
+    MapperSE** mapperArray = new MapperSE*[BatchSize];
+    for (int i = 0 ; i < BatchSize; i++)
+        mapperArray[i] = createSEMapper();
+    Fastq buffer[BatchSize];
+    int preMappingCheck[BatchSize];
+
+    // main loop
+    int batchRead = 0;
+    int totalRead = 0;
+    while (!reader.Eof()) // (!ifeof(f))
+    {
+        if (userPoll.userSaidQuit())
+        {
+            std::cerr << "\nUser Interrupt - processing stopped\n";
+            break;
+        }
+        // read 1k fastq reads
+        batchRead = reader.ReadFastqFile(buffer, BatchSize);
+        if (batchRead<=0) break;
+        totalRead += batchRead;
+
+        // start multithread alignment
+#pragma omp parallel for
+        for (int i = 0; i < batchRead; i++) {
+            int index = i % BatchSize;
+            MapperSE* mapper = mapperArray[ index ];
+            std::string tag = buffer[index  ].tag.c_str();
+            std::string readFragment = buffer[index].read.c_str();
+            std::string dataQuality = buffer[index].qual.c_str();
+            preMappingCheck[i] = mapper->processReadAndQuality(tag, readFragment, dataQuality);
+            if (!preMappingCheck[i])
+                mapper->MapSingleRead();
+
+            //
+            // catch all method to fill in the cigarRoller
+            // and bestMatch.genomeMatchPosition.
+            //
+            // When the read was done with either gapped alignment
+            // (typically Smith Waterman) or with local alignment
+            // (typically also gapped, but not necessarily SW), we
+            // need to set the cigar roller, and also potentially
+            // update the genome match position depending on the
+            // location of indels with respect to the index word
+            // used to locate the read.
+            //
+            mapper->populateCigarRollerAndGenomeMatchPosition();
+        } // end parallel for
+// it seems the following line will crash the output.
+// and there is no need to parallize the output part.
+//#pragma omp parallel for ordered
+        for (int i = 0; i < batchRead; i++) {
+            MapperSE* mapper = mapperArray[ i % BatchSize];
+            MatchedReadSE &match = (MatchedReadSE &)(mapper->getBestMatch());
+            match.print(*outputFilePtr,
+                        NULL,
+                        mapper->fragmentTag,
+                        mapperOptions.showReferenceBases,
+                        mapper->cigarRoller,
+                        mapper->isProperAligned,
+                        mapper->samMateFlag,
+                        mapperOptions.readGroupID,
+                        mapper->alignmentPathTag
+                );
+            if (preMappingCheck[i]) // we cannot process the read
+                seStats.updateBadInputStats(preMappingCheck[i]);
+            else // we processed teh read, so record how it is aligned
+                seStats.recordMatchedRead(match);
+        } // end parallel
+
+        if ((maxBases && !seStats.getTotalBasesMapped()<(maxBases))
+            || (maxReads && !seStats.getTotalMatches()<(maxReads)))
+            break;
+
+        // print "%d pairs read" every once in awhile
+        if (outputFilePtr!=&std::cout) seStats.updateConsole();
+
+    } // end reading fiel
+
+    // clean up
+    reader.Close();
+    seStats.runTime.end();
+
+    std::cerr << "finished processing " << totalRead << " reads" << std::endl;
+
+    // output statistics and R summaries
+    seStats.outputStatFile(outputFilename);
+}
+
+//
+// experiment to get the mean and std dev of the distance
+// between the mapped reads
+//
+void ReadsProcessor::CalibratePairedReadsFiles(
+    std::string filenameA,
+    std::string filenameB
+    )
+{
+    SingleEndStats seStats;
+    RunningStat     rs;
+
+    // PROBE A:
+    IFILE fileA = ifopen(filenameA.c_str(), "rb");
+
+    // PROBE B:
+    IFILE fileB = ifopen(filenameB.c_str(), "rb");
+
+    MapperSE* mapperA = createSEMapper();
+    MapperSE* mapperB = createSEMapper();
+
+    if (fileA == NULL)
+        error("Reads file [%s] can not be opened\n", filenameA.c_str());
+
+    if (fileB == NULL)
+        error("Reads file [%s] can not be opened\n", filenameB.c_str());
+
+    printf("\nCalibrating paired short reads file [%s, %s] ... \n", filenameA.c_str(), filenameB.c_str());
+    //
+
+    seStats.runTime.start();
+
+    while (!ifeof(fileA))
+    {
+
+        //
+        // first read the data from both probes
+        //
+        int rc1, rc2;
+        rc1 = mapperA->getReadAndQuality(fileA);
+        if (rc1==EOF)
+        {
+            break;        // reached EOF on file
+        }
+
+        rc2 = mapperB->getReadAndQuality(fileB);
+        if (rc2==EOF)
+        {
+            break;        // reached EOF on file
+        }
+
+        if (rc1 || rc2)
+        {
+            // 1 -> read is too short
+            // 2 -> read and quality lengths are unequal
+            // 3 -> read has too few valid index words (<2)
+            seStats.updateBadInputStats(rc1);
+            seStats.updateBadInputStats(rc2);
+            continue;
+        }
+
+        if (!seStats.getTotalMatches()<(1000)) break; // xiaowei: why 1000??
+
+        seStats.updateConsole();    // "%d pairs read" every once in awhile
+
+        mapperA->MapSingleRead();
+        mapperB->MapSingleRead();
+
+        if (mapperA->getBestMatch().getQualityScore()>99.99 &&
+            mapperB->getBestMatch().getQualityScore()>99.99)
+        {
+            int64_t distance = mapperA->getBestMatch().genomeMatchPosition;
+            distance -= mapperB->getBestMatch().genomeMatchPosition;
+            distance = abs(distance);
+            if (distance > 15000)
+                continue;
+            if (mapperA->getBestMatch().isForward() == mapperB->getBestMatch().isForward()) continue;
+            rs.Push(distance);
+
+        }
+        // TODO
+        // add quality recording codes here
+
+    } // end of while ifeof(f)
+
+    seStats.updateConsole(true);
+
+    seStats.runTime.end();
+
+
+    printf("\nmean = %.2f\n", rs.Mean());
+    printf("stddev = %.2f\n", rs.StandardDeviation());
+    printf("variance = %.2f\n", rs.Variance());
+
+    ifclose(fileA);
+    ifclose(fileB);
+}
+
+//////////////////////////////////////////////////////////////////////
+// OBSOLETE CODE
+//////////////////////////////////////////////////////////////////////
+#ifdef COMPILE_OBSOLETE_CODE
+// Read single end reads and align them
 void ReadsProcessor::MapSEReadsFromFile(
     std::string filename,
     std::string outputFilename
@@ -989,236 +1224,4 @@ void ReadsProcessor::MapSEReadsFromFile(
     ifclose(f);
 }
 
-// Read single end reads and align them
-// MT: mutlithread version
-void ReadsProcessor::MapSEReadsFromFileMT(
-    std::string filename,
-    std::string outputFilename
-    )
-{
-    signalPoll userPoll;
-
-    SingleEndStats seStats;
-
-    std::ofstream   seStatsOutfile;
-    std::ofstream   seRStatsOutfile;
-    std::ofstream   outputFile;
-
-    std::ostream    *outputFilePtr;
-
-    if (outputFilename=="-")
-    {
-        outputFilePtr = &std::cout;
-    }
-    else
-    {
-        outputFile.open(outputFilename.c_str(), std::ios_base::out | std::ios_base::trunc);
-        outputFilePtr = &outputFile;
-    }
-
-    FastqReader reader(filename.c_str());
-
-    if (outputFilePtr!=&std::cout)
-        std::cout << std::endl << "Processing short reads file [" << filename << "] ..." << std::endl;
-
-    userPoll.enableQuit();
-    seStats.runTime.start();
-
-    header.dump(*outputFilePtr);
-    gs->dumpSequenceSAMDictionary(*outputFilePtr);
-
-    // determine thread number
-    //int num_thread = omp_get_num_threads();
-    omp_set_num_threads(2);
-    std::cerr<<"Num threads = " << omp_get_num_threads() << std::endl;
-
-    // preapre Mapper and Fastq buffer
-    const int BatchSize = 0x0100;
-    MapperSE** mapperArray = new MapperSE*[BatchSize];
-    for (int i = 0 ; i < BatchSize; i++)
-        mapperArray[i] = createSEMapper();
-    Fastq buffer[BatchSize];
-    int preMappingCheck[BatchSize];
-
-    // main loop
-    int batchRead = 0;
-    int totalRead = 0;
-    while (!reader.Eof()) // (!ifeof(f))
-    {
-        if (userPoll.userSaidQuit())
-        {
-            std::cerr << "\nUser Interrupt - processing stopped\n";
-            break;
-        }
-        // read 1k fastq reads
-        batchRead = reader.ReadFastqFile(buffer, BatchSize);
-        if (batchRead<=0) break;
-        totalRead += batchRead;
-
-        // std::cerr << "processing " << nReads << " reads" << std::endl;
-        // start multithread alignment
-//#pragma omp parallel for
-        for (int i = 0; i < batchRead; i++) {
-            int index = i % BatchSize;
-            MapperSE* mapper = mapperArray[ index ];
-            std::string tag = buffer[index  ].tag.c_str();
-            std::string readFragment = buffer[index].read.c_str();
-            std::string dataQuality = buffer[index].qual.c_str();
-            preMappingCheck[i] = mapper->processReadAndQuality(tag, readFragment, dataQuality);
-            if (!preMappingCheck[i])
-                mapper->MapSingleRead();
-
-            //
-            // catch all method to fill in the cigarRoller
-            // and bestMatch.genomeMatchPosition.
-            //
-            // When the read was done with either gapped alignment
-            // (typically Smith Waterman) or with local alignment
-            // (typically also gapped, but not necessarily SW), we
-            // need to set the cigar roller, and also potentially
-            // update the genome match position depending on the
-            // location of indels with respect to the index word
-            // used to locate the read.
-            //
-            mapper->populateCigarRollerAndGenomeMatchPosition();
-        } // end parallel for
-// it seems the following line will crash the output.
-// and there is no need to parallize the output part.
-//#pragma omp parallel for ordered
-        for (int i = 0; i < batchRead; i++) {
-            MapperSE* mapper = mapperArray[ i % BatchSize];
-            MatchedReadSE &match = (MatchedReadSE &)(mapper->getBestMatch());
-            match.print(*outputFilePtr,
-                        NULL,
-                        mapper->fragmentTag,
-                        mapperOptions.showReferenceBases,
-                        mapper->cigarRoller,
-                        mapper->isProperAligned,
-                        mapper->samMateFlag,
-                        mapperOptions.readGroupID,
-                        mapper->alignmentPathTag
-                );
-            if (preMappingCheck[i]) // we cannot process the read
-                seStats.updateBadInputStats(preMappingCheck[i]);
-            else // we processed teh read, so record how it is aligned
-                seStats.recordMatchedRead(match);
-        } // end parallel
-
-        if ((maxBases && !seStats.getTotalBasesMapped()<(maxBases))
-            || (maxReads && !seStats.getTotalMatches()<(maxReads)))
-            break;
-
-        // print "%d pairs read" every once in awhile
-        if (outputFilePtr!=&std::cout) seStats.updateConsole();
-
-    } // end reading fiel
-
-    // clean up
-    reader.Close();
-    seStats.runTime.end();
-
-    std::cerr << "finished processing " << totalRead << " reads" << std::endl;
-
-    // output statistics and R summaries
-    seStats.outputStatFile(outputFilename);
-}
-
-//
-// experiment to get the mean and std dev of the distance
-// between the mapped reads
-//
-void ReadsProcessor::CalibratePairedReadsFiles(
-    std::string filenameA,
-    std::string filenameB
-    )
-{
-    SingleEndStats seStats;
-    RunningStat     rs;
-
-    // PROBE A:
-    IFILE fileA = ifopen(filenameA.c_str(), "rb");
-
-    // PROBE B:
-    IFILE fileB = ifopen(filenameB.c_str(), "rb");
-
-    MapperSE* mapperA = createSEMapper();
-    MapperSE* mapperB = createSEMapper();
-
-    if (fileA == NULL)
-        error("Reads file [%s] can not be opened\n", filenameA.c_str());
-
-    if (fileB == NULL)
-        error("Reads file [%s] can not be opened\n", filenameB.c_str());
-
-    printf("\nCalibrating paired short reads file [%s, %s] ... \n", filenameA.c_str(), filenameB.c_str());
-    //
-
-    seStats.runTime.start();
-
-    while (!ifeof(fileA))
-    {
-
-        //
-        // first read the data from both probes
-        //
-        int rc1, rc2;
-        rc1 = mapperA->getReadAndQuality(fileA);
-        if (rc1==EOF)
-        {
-            break;        // reached EOF on file
-        }
-
-        rc2 = mapperB->getReadAndQuality(fileB);
-        if (rc2==EOF)
-        {
-            break;        // reached EOF on file
-        }
-
-        if (rc1 || rc2)
-        {
-            // 1 -> read is too short
-            // 2 -> read and quality lengths are unequal
-            // 3 -> read has too few valid index words (<2)
-            seStats.updateBadInputStats(rc1);
-            seStats.updateBadInputStats(rc2);
-            continue;
-        }
-
-        if (!seStats.getTotalMatches()<(1000)) break; // xiaowei: why 1000??
-
-        seStats.updateConsole();    // "%d pairs read" every once in awhile
-
-        mapperA->MapSingleRead();
-        mapperB->MapSingleRead();
-
-        if (mapperA->getBestMatch().getQualityScore()>99.99 &&
-            mapperB->getBestMatch().getQualityScore()>99.99)
-        {
-            int64_t distance = mapperA->getBestMatch().genomeMatchPosition;
-            distance -= mapperB->getBestMatch().genomeMatchPosition;
-            distance = abs(distance);
-            if (distance > 15000)
-                continue;
-            if (mapperA->getBestMatch().isForward() == mapperB->getBestMatch().isForward()) continue;
-            rs.Push(distance);
-
-        }
-        // TODO
-        // add quality recording codes here
-
-    } // end of while ifeof(f)
-
-    seStats.updateConsole(true);
-
-    seStats.runTime.end();
-
-
-    printf("\nmean = %.2f\n", rs.Mean());
-    printf("stddev = %.2f\n", rs.StandardDeviation());
-    printf("variance = %.2f\n", rs.Variance());
-
-    ifclose(fileA);
-    ifclose(fileB);
-}
-
-
+#endif
