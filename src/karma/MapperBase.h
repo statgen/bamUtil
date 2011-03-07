@@ -34,6 +34,7 @@
 #include "SmithWaterman.h"  // for CigarRoller
 #include "WordIndex.h"
 #include "MatchedReadBase.h"
+#include "FastqReader.h"
 
 #include <iostream>
 #include <vector>
@@ -87,6 +88,7 @@ public:
     int numberReads;
 
     int getReadAndQuality(IFILE f);
+    int processReadAndQuality(Fastq& fq);
     int processReadAndQuality(std::string& fragmentTag, std::string& readFragment, std::string& dataQuality);  // 0->success
     bool setReadAndQuality(const char *read, int len, const char *quality); // true -> failed
 

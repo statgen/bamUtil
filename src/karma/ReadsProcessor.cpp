@@ -38,6 +38,7 @@
 #include "SimpleStats.h"
 #include "Error.h"
 #include "Util.h"
+#include "FastqReader.h"
 
 #include <algorithm>
 #include <stdexcept>
@@ -47,92 +48,6 @@
 #include <omp.h>
 
 using std::sort;
-
-struct Fastq {
-    String tag;
-    String read;
-    String tag2;
-    String qual;
-};
-
-class FastqReader{
-private:
-    IFILE fHandle;
-public:
-    FastqReader(const char* fileName) {
-        this->fHandle = ifopen(fileName, "rb");
-        if (!this->fHandle)
-            error("Cannot open file: %s", fileName);
-    };
-    void Close() {
-        ifclose(this->fHandle);
-    };
-    bool Eof() {
-        return ifeof(this->fHandle);
-    }
-
-public:
-    bool isValidFastqRecord(Fastq& f) {
-        if (f.tag.Length() <= 1 || f.tag[0] != '@')
-            error("Tag line must start with [@]"); //. check line %lu\n", this->lineNo);
-        if (f.read.Length() == 0)
-            error("unexpected empty short read DNA strand");// line %lu\n", this->lineNo);
-        if (f.qual.Length() == 0)
-            error("unexpected empty DNA quality");// line %lu\n", this->lineNo);
-        return true;
-    };
-    // Read from f atmost nReads fastq reads into buffer
-    // @param IFILE f: an openned IFILE handle
-    // @param buffer Fastq* buffer: non-null memory buffer
-    // @param int nReads: at most this number of reads will be read into memory
-    // @return int: how many Fastq reads are actully read, 0: readed end; minus values: error!
-    int ReadFastqFile(Fastq* buffer, int nReads) {
-        int retCode = 0;
-        int processedRead = 0;
-        int lineNumber = 0;
-
-        while (nReads) {
-            if (ifeof(this->fHandle)) {
-                return processedRead;
-            }
-
-            // read tag line in fastq file
-            retCode = buffer[processedRead].tag.ReadLine(this->fHandle);
-            if (retCode < 0 || ifeof(this->fHandle) ){
-                error("Wrong tag in fastq file ");
-            }
-            lineNumber ++ ;
-
-            // read 'read' line in fastq file
-            retCode = buffer[processedRead].read.ReadLine(this->fHandle);
-            if (retCode < 0 || ifeof(this->fHandle) ){
-                error("Wrong read in fastq file ");
-            }
-            lineNumber ++ ;
-
-            // read the 3rd line in fastq line
-            retCode = buffer[processedRead].tag2.ReadLine(this->fHandle);
-            if (retCode < 0 || ifeof(this->fHandle) ){
-                error("Wrong tag2 in fastq file ");
-            }
-            lineNumber ++ ;
-
-            // read the quality line in fastq line
-            retCode = buffer[processedRead].qual.ReadLine(this->fHandle);
-            if (retCode < 0 ){
-                error("Wrong quality in fastq file ");
-            }
-            lineNumber ++ ;
-
-            if (!isValidFastqRecord(buffer[processedRead]))
-                error("Invalid Fastq record between line %lu and line %lu", lineNumber-3, lineNumber);
-
-            processedRead++;
-            if (processedRead == nReads) break;
-        }
-        return processedRead;
-    }
-};
 
 void ReadsProcessor::setHeader(SamHeader& h)
 {
@@ -422,6 +337,8 @@ void ReadsProcessor::MapPEReadsFromFilesMT(
 {
     signalPoll userPoll;
 
+    PairedEndStats peStats;
+
     std::ofstream   outputFile;
     std::ostream    *outputFilePtr;
 
@@ -435,7 +352,10 @@ void ReadsProcessor::MapPEReadsFromFilesMT(
         outputFilePtr = &outputFile;
     }
 
+    FastqReader readerA(filenameA.c_str());
+    FastqReader readerB(filenameB.c_str());
 
+#if 0
 // lots of duplicate - see if we can refactor - may be time
 // to put most of the this run state into a new class that
 // gets passed around.
@@ -467,6 +387,8 @@ void ReadsProcessor::MapPEReadsFromFilesMT(
     if (fileB == NULL)
         error("Reads file [%s] can not be opened\n", filenameB.c_str());
 
+#endif 
+
     if (outputFilePtr!=&std::cout) printf("\nProcessing paired short reads file [%s, %s] ... \n", filenameA.c_str(), filenameB.c_str());
     //
 
@@ -477,6 +399,68 @@ void ReadsProcessor::MapPEReadsFromFilesMT(
     header.dump(*outputFilePtr);
     gs->dumpSequenceSAMDictionary(*outputFilePtr);
 
+    // set OpenMP parameters
+    omp_set_num_threads(this->numThread);
+
+    // preapre Mapper and Fastq buffer
+    const int BatchSize = 0x0100;
+    MapperPE** mapperArrayA = new MapperPE*[BatchSize];
+    MapperPE** mapperArrayB = new MapperPE*[BatchSize];
+    for (int i = 0 ; i < BatchSize; i++) 
+    {
+        mapperArrayA[i] = createPEMapper();
+        mapperArrayB[i] = createPEMapper();
+        mapperArrayA[i]->samMateFlag = 0x0040;
+        mapperArrayB[i]->samMateFlag = 0x0080;
+        mapperArrayA[i]->mapperSE->samMateFlag = 0x0040;
+        mapperArrayB[i]->mapperSE->samMateFlag = 0x0080;
+    }
+    Fastq bufferA[BatchSize];
+    Fastq bufferB[BatchSize];
+    int preMappingCheckA[BatchSize];
+    int preMappingCheckB[BatchSize];
+
+    // main loop
+    int batchReadA = 0;
+    int batchReadB = 0;
+    int totalRead = 0;
+    while (!readerA.Eof() && !readerB.Eof())
+    {
+        if (userPoll.userSaidQuit())
+        {
+            std::cerr << "\nUser Interrupt - processing stopped\n";
+            break;
+        }
+
+        // read 1k fastq reads
+        batchReadA = readerA.ReadFastqFile(bufferA, BatchSize);
+        batchReadB = readerB.ReadFastqFile(bufferB, BatchSize);
+        if (batchReadA<=0 || batchReadB<=0 || batchReadA != batchReadB) break;
+        totalRead += batchReadA;
+        totalRead += batchReadB;
+
+        // start multithread alignment
+
+// #pragma omp parallel for
+        for (int i = 0; i < batchReadA; i++) {
+            int index = i % BatchSize;
+            MapperPE* mapperA = mapperArrayA[ index ];
+            MapperPE* mapperB = mapperArrayB[ index ];
+            preMappingCheckA[i] = mapperA->processReadAndQuality(bufferA[index]);
+            preMappingCheckB[i] = mapperB->processReadAndQuality(bufferB[index]);
+
+#if 0 
+            if (!preMappingCheckA[i]) 
+            {
+
+                mapper->MapSingleRead();
+
+            }
+#endif
+
+        }
+    }  
+#if 0 
     while (!ifeof(fileA)
            && (maxBases==0 || peStats.getTotalBasesMapped() < maxBases)
            && (maxReads==0 || peStats.getTotalMatches() < maxReads))
@@ -793,15 +777,26 @@ void ReadsProcessor::MapPEReadsFromFilesMT(
             mapperA->printCSBestReads(*outputFilePtr, gs, csgs, mapperB);
 
     } // end of while ifeof(f)
+#endif 
 
-    if (outputFilePtr != &std::cout) peStats.updateConsole(true);
-
+    // clean up resources
     peStats.runTime.end();
+    readerA.Close();
+    readerB.Close();
+
+    // free memory
+    for (int i = 0 ; i < BatchSize; i++){
+        delete mapperArrayA[i];
+        delete mapperArrayB[i];
+    }
+    delete mapperArrayA;
+    delete mapperArrayB;
+
+    // output statistics and R summaries
     peStats.outputStatFile(outputFilename);
 
-    // free resourcs
-    delete mapperA;
-    delete mapperB;
+    // update console
+    std::cerr << "finished processing " << totalRead << " reads" << std::endl;
 }
 
 // Read single end reads and align them
@@ -815,8 +810,6 @@ void ReadsProcessor::MapSEReadsFromFileMT(
 
     SingleEndStats seStats;
 
-    std::ofstream   seStatsOutfile;
-    std::ofstream   seRStatsOutfile;
     std::ofstream   outputFile;
 
     std::ostream    *outputFilePtr;
@@ -873,10 +866,7 @@ void ReadsProcessor::MapSEReadsFromFileMT(
         for (int i = 0; i < batchRead; i++) {
             int index = i % BatchSize;
             MapperSE* mapper = mapperArray[ index ];
-            std::string tag = buffer[index  ].tag.c_str();
-            std::string readFragment = buffer[index].read.c_str();
-            std::string dataQuality = buffer[index].qual.c_str();
-            preMappingCheck[i] = mapper->processReadAndQuality(tag, readFragment, dataQuality);
+            preMappingCheck[i] = mapper->processReadAndQuality(buffer[index]);
             if (!preMappingCheck[i])
                 mapper->MapSingleRead();
 
@@ -925,14 +915,23 @@ void ReadsProcessor::MapSEReadsFromFileMT(
 
     } // end reading fiel
 
-    // clean up
-    reader.Close();
+    // clean up resources
     seStats.runTime.end();
-
-    std::cerr << "finished processing " << totalRead << " reads" << std::endl;
+    reader.Close();
+    
+    // free memory
+    for (int i = 0 ; i < BatchSize; i++)
+        delete mapperArray[i];
+    delete mapperArray;
 
     // output statistics and R summaries
     seStats.outputStatFile(outputFilename);
+
+    // update conosle
+    std::cerr << "finished processing " << totalRead << " reads" << std::endl;
+
+
+    
 }
 
 //

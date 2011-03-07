@@ -1,5 +1,5 @@
 EXE=karma
-TOOLBASE = DumpInfo MapperBase MapperPEBaseSpace MapperPEColorSpace MapperPE MapperSEBaseSpace MapperSEColorSpace MapperSE MappingStats ReadIndexer ReadsProcessor SamHeader Test UserOptions Util WordHash WordIndex MatchedReadBase ColorSpace MatchedReadSE MatchedReadPE Main
+TOOLBASE = DumpInfo MapperBase MapperPEBaseSpace MapperPEColorSpace MapperPE MapperSEBaseSpace MapperSEColorSpace MapperSE MappingStats ReadIndexer ReadsProcessor SamHeader Test UserOptions Util WordHash WordIndex MatchedReadBase ColorSpace MatchedReadSE MatchedReadPE Main FastqReader
 SRCONLY = 
 
 DATE=$(shell date)

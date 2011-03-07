@@ -52,21 +52,13 @@ public:
     );
     bool tryLocalAlign(MapperPE* anchor);
 
-    /* private: */
-    /*     bool mapPairedReads( */
-    /*         MapperPE        *, */
-    /*         ReadIndexer &indexer, */
-    /*         int     whichWord, */
-    /*         int     wordXORMask, */
-    /*         int     wordMutationPosition */
-    /*         ); */
-public:
-
+protected:
     void testMatchCandidates();
     void testMatchCandidates(MatchCandidatesIndex_t::iterator);
     void printMatchCandidates(MatchCandidatesIndex_t::iterator);
-
     void printMatchCandidates();
+
+public:
     int test(
         int testNum,
         MapperPE    *otherMapper,

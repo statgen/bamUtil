@@ -329,7 +329,7 @@ bool MapperBase::setReadAndQuality(const char *r, int len, const char *q)
 //
 int MapperBase::getReadAndQuality(IFILE f)
 {
-    #pragma warning "obsolete method, use FastqReader class" 
+    #pragma warning obsolete method, use FastqReader class 
 
     std::string ignore;
     std::string dataQuality;
@@ -369,6 +369,15 @@ int MapperBase::getReadAndQuality(IFILE f)
 
 
     return processReadAndQuality(fragmentTag, readFragment, dataQuality);
+}
+
+
+int MapperBase::processReadAndQuality(Fastq& fq)
+{
+    std::string tag = fq.tag.c_str();
+    std::string read = fq.read.c_str();
+    std::string qual = fq.qual.c_str();
+    return processReadAndQuality(tag, read, qual);
 }
 
 // 
