@@ -1,7 +1,6 @@
 #include "BamQC.h"
 #include <cmath>
 #include "InputFile.h"
-#include <omp.h>
 
 #define INIT_LEN 1000
 
