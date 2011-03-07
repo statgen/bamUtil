@@ -83,12 +83,8 @@ void MapperSEBaseSpace::MapSingleRead()
         )
         {
             //
-            // bleh... gotta clean up some stuff in this mapper
-            // so that we can re-run against the same read:
+            // clean-up work is included in MapSingleReadGapped()
             //
-            bestMatch.constructorClear();
-            forward.checkedPositions.Clear();
-            backward.checkedPositions.Clear();
 
             // now rerun, but do gapped alignment (slow)
             MapSingleReadGapped();
@@ -105,6 +101,8 @@ void MapperSEBaseSpace::MapSingleRead()
 //
 void MapperSEBaseSpace::MapSingleReadGapped()
 {
+    this->resetMapper();
+
     forward.useGapped = true;
     backward.useGapped = true;
     MapSingleReadUnGapped();    // ugly -- now MapSingleReadUnGapped acts like a gapped mapper
@@ -128,13 +126,16 @@ static bool evalTrampoline(
 
 void MapperSEBaseSpace::MapSingleReadUnGapped()
 {
+    this->resetMapper();
+
 #if 0
     if (mapperOptions.minimumMapQuality>0)
 //        cumulativePosteriorProbabilitiesCutoff = 1.0 - pow(10.0, -mapperOptions.minimumMapQuality/10.0);
         cumulativePosteriorProbabilitiesCutoff = 1.0 / (1 - pow(10.0, -mapperOptions.minimumMapQuality/10.0));
     else
-#endif
         cumulativePosteriorProbabilitiesCutoff = 100000;
+#endif
+    cumulativePosteriorProbabilitiesCutoff = 100000;
 
     clearBestMatch();
 

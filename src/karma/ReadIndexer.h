@@ -33,8 +33,8 @@
 #include <string>
 #include <vector>
 #include "GenomeSequence.h"
+#include "CigarRoller.h"
 #include "MapperUserOption.h"
-#include "SmithWaterman.h"
 #include "WordIndex.h"  // for wordInteger_t
 //#include "MapperBase.h" // for using MatchedReadBase::UNSET_QUALITY
 

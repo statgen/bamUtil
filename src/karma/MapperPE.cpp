@@ -782,7 +782,7 @@ bool MapperPE::clearHighMismatchMapping()
 
 void MapperPE::remapSingle(void)
 {
-    this->mapperSE->clearBestMatch();
+    this->mapperSE->resetMapper();
     this->mapperSE->localGappedAlignment = false;
     if (forward.read.size()!=0 && mapperSE->processReadAndQuality(fragmentTag, originalRead, originalQuality)==0)
     {
@@ -820,7 +820,7 @@ bool MapperPE::tryLocalAlign(MapperPE* anchor)
     // so check here:
     if (forward.read.size()==0) return false;
 
-    this->mapperSE->clearBestMatch();
+    this->mapperSE->resetMapper();
     this->mapperSE->localGappedAlignment = false;
 
     // here mapperSE serves as localMapper

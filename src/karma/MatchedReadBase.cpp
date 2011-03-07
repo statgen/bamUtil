@@ -1217,14 +1217,14 @@ void MatchedReadBase::printOptionalTags(std::ostream &file, bool isPairAligned, 
 
 void MatchedReadBase::debugPrint()
 {
-    cout << (isForward() ? 'F' : 'R')
-         << "\t"
-         << whichWord
-         << "\t"
-         << quality
-         << "\t"
-         << mismatchCount
-         << "\t"
-         << genomeMatchPosition
-         << std::endl;
+    std::cout << (isForward() ? 'F' : 'R')
+              << "\t"
+              << whichWord
+              << "\t"
+              << quality
+              << "\t"
+              << mismatchCount
+              << "\t"
+              << genomeMatchPosition
+              << std::endl;
 }

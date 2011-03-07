@@ -242,11 +242,18 @@ void mainMap(const char *program, int argc, const char **argv)
     } else
     {
         sequenceFilename2 = argv[optind+1];
-                // paired end mapping
+        // paired end mapping
+#if 0
         engine.MapPEReadsFromFiles(
             sequenceFilename1,
             sequenceFilename2,
             args.outputFilename);
+#else
+        engine.MapPEReadsFromFilesMT(
+            sequenceFilename1,
+            sequenceFilename2,
+            args.outputFilename);
+#endif
     } 
 
     engine.closeReference();

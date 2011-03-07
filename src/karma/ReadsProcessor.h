@@ -105,6 +105,12 @@ public:
         std::string outputFilename
     );
 
+    void MapPEReadsFromFilesMT(
+        std::string filename1,
+        std::string filename2,
+        std::string outputFilename
+    );
+
     void MapSEReadsFromFileMT(
         std::string filename,
         std::string outputFilename

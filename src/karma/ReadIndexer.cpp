@@ -26,6 +26,7 @@
 #include "ReadIndexer.h"
 #include "GreedyTupleAligner.h"
 #include "TrimSequence.h"
+#include "SmithWaterman.h"
 #include <algorithm>    // for sort
 #include <iostream>
 

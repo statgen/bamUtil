@@ -329,7 +329,7 @@ bool MapperBase::setReadAndQuality(const char *r, int len, const char *q)
 //
 int MapperBase::getReadAndQuality(IFILE f)
 {
-    std::cerr << "obsolete method, use FastqReader class" << std::endl;
+    #pragma warning "obsolete method, use FastqReader class" 
 
     std::string ignore;
     std::string dataQuality;
