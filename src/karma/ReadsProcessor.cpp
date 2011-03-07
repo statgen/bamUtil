@@ -149,7 +149,6 @@ void ReadsProcessor::parseMapArguments(const MapArguments& args)
     this->mapperOptions.genomePositionFilterWidth = args.insertSize*2;
     this->mapperOptions.showReferenceBases = args.showReferenceBases;
     this->mapperOptions.qualityTrim = args.qualityTrim;
-
     this->isColorSpace = args.mapInColorSpace;
 };
 
@@ -423,10 +422,7 @@ void ReadsProcessor::MapPEReadsFromFiles(
 
 //    CalibratePairedReadsFiles(filenameA, filenameB);
 
-    std::ofstream   peStatsOutfile;
-    std::ofstream   peRStatsOutfile;
     std::ofstream   outputFile;
-
     std::ostream    *outputFilePtr;
 
     if (outputFilename=="-")
@@ -437,9 +433,6 @@ void ReadsProcessor::MapPEReadsFromFiles(
     {
         outputFile.open(outputFilename.c_str(), std::ios_base::out | std::ios_base::trunc);
         outputFilePtr = &outputFile;
-        peStatsOutfile.open((outputFilename + ".stats").c_str(), std::ios_base::out | std::ios_base::trunc);
-
-        peRStatsOutfile.open((outputFilename + ".R").c_str(), std::ios_base::out | std::ios_base::trunc);
     }
 
 

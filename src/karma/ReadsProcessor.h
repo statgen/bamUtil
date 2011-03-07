@@ -56,7 +56,6 @@ private:
     WordIndex *wi;
     WordHash  *wordHashLeft;
     WordHash  *wordHashRight;
-    std::string outputBaseFilename;
 
     // mapping related params
     SamHeader header;
@@ -66,14 +65,23 @@ private:
 public:
     ReadsProcessor();
     ~ReadsProcessor();
-    
+
+    // assign h to this->header
     void setHeader(SamHeader& h);  
+
+    // assign Mapping related argument
+    // idealy, we should use args to init Mapper, 
+    // however, this is top-priority task.
     void parseMapArguments(const MapArguments& args);
+
+    // open GenomeSequence, WordIndex and WordHash classes
     int openReference(std::string& referenceName, 
                       int wordSize, 
                       int occurrenceCutoff,
                       bool quietMode = false, 
-                      bool debug = false);// open reference, wordindex ...
+                      bool debug = false);
+
+    // close GenomeSequence, WordIndex and WordHash classes
     void closeReference();
 public:
     ///
@@ -87,15 +95,16 @@ public:
     /// @return a usable pointer to MapperPE class
     ///
     MapperPE* createPEMapper();
+
     void MapPEReadsFromFiles(
         std::string filename1,
         std::string filename2,
-        std::string of
+        std::string outputFilename
     );
 
     void MapSEReadsFromFile(
         std::string filename,
-        std::string of
+        std::string outputFilename
     );
     void MapSEReadsFromFileMT(
         std::string filename,
