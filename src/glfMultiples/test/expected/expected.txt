@@ -43,6 +43,5 @@ Processing section 20 with 63025520 entries
     Other Polymorphisms =         0 bases (0.000%)
                 No call =  62095777 bases (98.525%)
 
-
 Analysis completed on Fri Mar  4 09:51:18 2011
 
