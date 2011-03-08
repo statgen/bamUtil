@@ -1,4 +1,5 @@
 #include <math.h>
+#include <limits.h>
 
 #include "VcfFile.h"
 
@@ -111,6 +112,8 @@ VcfFile::VcfFile() {
   bParseValues = true;
   bUpgrade = false;
   bEOF = false;
+  nMinGD = 0;
+  nMinGQ = 0;
 }
 
 VcfFile::~VcfFile() {
@@ -196,10 +199,10 @@ void VcfFile::parseMetaLine() {
 // copied from Matthew Flickenger/Snyder
 void VcfFile::verifyMetaLines() {
   if ( asMetaKeys.Length() < 1 ) {
-    throw VcfFileException("No meta ## lines found. ##format is required");
+    //throw VcfFileException("No meta ## lines found. ##format is required");
   }
   if ( asMetaKeys.Find("format") == -1 && asMetaKeys.Find("fileformat") == -1 ) {
-    throw VcfFileException("Required ##format line not found");
+    //throw VcfFileException("Required ##format line not found");
   }
 }
 
@@ -341,7 +344,7 @@ BedFile::BedFile() {
   iFile = NULL;
   iBimFile = NULL;
   iFamFile = NULL;
-  bAllowFlip = false;
+  bAllowFlip = true; // allow flip
   bRefIsAllele1 = true;
   pBedBuffer = NULL;
   nBytes = 0;
@@ -476,6 +479,8 @@ bool VcfFile::iterateMarker() {
     ++nNumMarkers;
   }
 
+  //Logger::gLogger->writeLog("foo, %s:%s",lineTokens[0].c_str(),lineTokens[1].c_str());
+
   try {
     pMarker->setChrom(lineTokens[0]);
     pMarker->setPos(lineTokens[1]);
@@ -495,13 +500,10 @@ bool VcfFile::iterateMarker() {
 
       pMarker->setSampleSize(lineTokens.Length()-offset, bParseGenotypes, bParseDosages, bParseValues);
       for(int i=offset; i < lineTokens.Length(); ++i) {
-	pMarker->setSample(i-offset, lineTokens[i], bParseGenotypes, bParseDosages, bParseValues);
+	pMarker->setSample(i-offset, lineTokens[i], bParseGenotypes, bParseDosages, bParseValues, nMinGD, nMinGQ);
       }
     }
     pMarker->setInfo(lineTokens[7], bUpgrade);
-
-    //Logger::gLogger->writeLog("goo, %s:%d nNumMarkers = %d, nHead = %d, nBuffers = %d", getLastMarker()->sChrom.c_str(), getLastMarker()->nPos, nNumMarkers, nHead, nBuffers);
-
   }
   catch (VcfFileException exc) {
     // add the line number to the error message
@@ -640,6 +642,8 @@ void VcfMarker::setInfo(const String& s, bool upgrade) {
       vnPLs.resize(n * 3);
       vnDPs.resize(n);
 
+      bool multiAlt = (asAlts.Length() > 1) ? true : false;
+
       for(int i=0; i < n; ++i) {
 	int g1 = asSampleValues[i*m][0] - '0';
 	int g2 = asSampleValues[i*m][2] - '0';
@@ -647,14 +651,43 @@ void VcfMarker::setInfo(const String& s, bool upgrade) {
 	vnDPs[i] = dp;
 
 	const char* s = asSampleValues[i*m+3].c_str();
-	for(int j=0, k=3*i; s[j] != '\0'; ++j) {
+
+	// read the GL fields to assign vnPL values for calculating allele balanace
+	int pl = 0;
+	int k = 0;
+	for(int j=0; s[j] != '\0'; ++j) {
 	  if ( s[j] == ',' ) {
+	    if ( multiAlt ) {
+	      if ( k == 2 ) { vnPLs[3*i+0] = pl; }
+	      else if ( k == 4 ) { vnPLs[3*i+1] = pl; }
+	      //else { fprintf(stderr,"%s\n",s); abort(); }
+	    }
+	    else {
+	      vnPLs[3*i+k] = pl;
+	    }
 	    ++k;
+	    pl = 0;
 	  }
 	  else {
-	    vnPLs[k] = vnPLs[k] * 10 + (s[j]-'0');
+	    pl = pl * 10 + (s[j]-'0');
 	  }
 	}
+	if ( multiAlt ) {
+	  if ( k == 5 ) { vnPLs[3*i+2] = pl; }
+	  else { fprintf(stderr,"%s, k=%d\n",s,k); abort(); }
+	}
+	else {
+	  vnPLs[3*i+k] = pl;
+	}	
+
+	//for(int j=0, k=3*i; s[j] != '\0'; ++j) {
+	//  if ( s[j] == ',' ) {
+        //    ++k;
+	//  }
+	//  else {
+	//    vnPLs[k] = vnPLs[k] * 10 + (s[j]-'0');
+	//  }
+	//}
 
 	/*
 	asPLs.ReplaceColumns(asSampleValues[i*m+3],',');
@@ -754,11 +787,19 @@ void VcfMarker::setFormat(const String& s, bool upgrade) {
     asFormatKeys.Add("DP");
     asFormatKeys.Add("GQ");
     asFormatKeys.Add("PL");
+    GTindex = 0;
+    GDindex = 1;
+    GQindex = 2;
+    DSindex = -1;
   }
   else {
     asFormatKeys.ReplaceColumns(s,':');
     GTindex = asFormatKeys.Find("GT");
     DSindex = asFormatKeys.Find("DS");
+    GDindex = asFormatKeys.Find("DP");
+    if ( GDindex < 0 ) 
+      GDindex = asFormatKeys.Find("GD");
+    GQindex = asFormatKeys.Find("GQ");
   }
 }
 
@@ -785,16 +826,23 @@ void VcfMarker::setGenotype(int sampleIndex, unsigned short genotype) {
   vnSampleGenotypes[sampleIndex] = genotype;
 }
 
-void VcfMarker::setSample(int sampleIndex, const String& sampleValue, bool parseGenotypes, bool parseDosages, bool parseValues) {
+void VcfMarker::setSample(int sampleIndex, const String& sampleValue, bool parseGenotypes, bool parseDosages, bool parseValues, int minGD, int minGQ) {
   if ( !( parseValues || parseDosages || parseGenotypes ) ) {
     return;
   }
   //Logger::gLogger->error("VcfMarker::setSample(%d, %s, %d, %d, %d)",sampleIndex,sampleValue.c_str(),parseGenotypes,parseDosages,parseValues);
 
-  if ( sampleValue.Compare(".") == 0 ) { 
-    // some VCF files have zero values with no data
+  if ( (sampleValue.Compare("./.") == 0) || ( sampleValue.Compare(".") == 0 ) ) {
     if ( parseValues ) {
-      // do nothing?
+      for(int i=0; i < asFormatKeys.Length(); ++i) {
+	asSampleValues[i + asFormatKeys.Length() * sampleIndex] = ".";
+      }
+    }
+    if ( parseGenotypes ) {
+      vnSampleGenotypes[sampleIndex] = 0xffff;
+    }
+    if ( parseDosages ) {
+      vfSampleDosages[sampleIndex] = -1; // missing
     }
   }
   else {
@@ -802,7 +850,7 @@ void VcfMarker::setSample(int sampleIndex, const String& sampleValue, bool parse
     if ( tmpTokens.Length() != asFormatKeys.Length() ) {
       throw VcfFileException("# values = %s do not match with # fields in FORMAT field = %d at sampleIndex = %d",sampleValue.c_str(),asFormatKeys.Length(),sampleIndex);
     }
-
+    
     if ( parseValues ) {
       for(int i=0; i < tmpTokens.Length(); ++i) {
 	asSampleValues[i + tmpTokens.Length() * sampleIndex] = tmpTokens[i];
@@ -814,35 +862,52 @@ void VcfMarker::setSample(int sampleIndex, const String& sampleValue, bool parse
 	vnSampleGenotypes[sampleIndex] = 0xffff;
       }
       else {
-	int sepPos = tmpTokens[GTindex].Find('|');
-	bool phased = false;
-	
-	if ( sepPos >= 0 ) {
-	  phased = true;
+	int GD = INT_MAX;
+	if ( ( minGD > 0 ) && ( GDindex >= 0 ) ) {
+	  GD = tmpTokens[GDindex].AsInteger();
+	}
+
+	int GQ = INT_MAX;
+	if ( ( minGQ > 0 ) && ( GQindex >= 0 ) ) {
+	  GQ = tmpTokens[GQindex].AsInteger();
+	}
+
+	//fprintf(stderr,"GD=%d,GQ=%d,GDindex=%d,GQindex=%d,minGD=%d,minGQ=%d\n",GD,GQ,GDindex,GQindex,minGD,minGQ);
+
+	if ( ( GD < minGD ) || ( GQ < minGQ ) ) {
+	  vnSampleGenotypes[sampleIndex] = 0xffff;
 	}
 	else {
-	  sepPos = tmpTokens[GTindex].Find('/');
-	  phased = false;
-	  if ( sepPos < 0 ) {
-	    throw VcfFileException("Cannot parse the genotype field " + tmpTokens[GTindex]);
+	  int sepPos = tmpTokens[GTindex].Find('|');
+	  bool phased = false;
+	  
+	  if ( sepPos >= 0 ) {
+	    phased = true;
 	  }
+	  else {
+	    sepPos = tmpTokens[GTindex].Find('/');
+	    phased = false;
+	    if ( sepPos < 0 ) {
+	      throw VcfFileException("Cannot parse the genotype field " + tmpTokens[GTindex]);
+	    }
+	  }
+	  
+	  tmpTokens[GTindex][sepPos] = '\0';
+	  //Logger::gLogger->writeLog("GTindex = %d, %s, %s",GTindex, tmpTokens[GTindex].c_str(), tmpTokens[GTindex].c_str()+sepPos+1);
+	  
+	  int n1 = atoi(tmpTokens[GTindex].c_str());
+	  int n2 = atoi(tmpTokens[GTindex].c_str() + sepPos+1);
+	  
+	  if ( ( !phased ) && ( n1 > n2 ) ) {
+	    int tmp = n1;
+	    n1 = n2;
+	    n2 = tmp;
+	  }
+	  
+	  unsigned short g = (unsigned short)( ((n1 & 0x00ff) << 8) | (n2 & 0x00ff) | ((phased & 0x0001) << 15) );
+	  
+	  vnSampleGenotypes[sampleIndex] = g;
 	}
-
-	tmpTokens[GTindex][sepPos] = '\0';
-	//Logger::gLogger->writeLog("GTindex = %d, %s, %s",GTindex, tmpTokens[GTindex].c_str(), tmpTokens[GTindex].c_str()+sepPos+1);
-	
-	int n1 = atoi(tmpTokens[GTindex].c_str());
-	int n2 = atoi(tmpTokens[GTindex].c_str() + sepPos+1);
-
-	if ( ( !phased ) && ( n1 > n2 ) ) {
-	  int tmp = n1;
-	  n1 = n2;
-	  n2 = tmp;
-	}
-
-	unsigned short g = (unsigned short)( ((n1 & 0x00ff) << 8) | (n2 & 0x00ff) | ((phased & 0x0001) << 15) );
-	
-	vnSampleGenotypes[sampleIndex] = g;
       }
     }
     if ( parseDosages ) {
@@ -1064,7 +1129,7 @@ char BedFile::determineAltBase(char refBase, char a1, char a2) {
 	  return f1;
 	}
       }
-      throw VcfFileException("The ref/alt allele does not match to reference genome");
+      //throw VcfFileException("The ref/alt allele does not match to reference genome");
       return '.';
     }
 }
@@ -1079,6 +1144,20 @@ void VcfFile::printVCFHeader(IFILE oFile) {
     for(int i=0; i < getSampleCount(); ++i) {
       ifprintf(oFile,"\t%s",vpVcfInds[i]->sIndID.c_str());
     }
+  }
+  ifprintf(oFile,"\n");
+}
+
+void VcfFile::printVCFHeaderSubset(IFILE oFile, std::vector<int>& subsetIndices) {
+  //fprintf(stderr,"foo\n");
+  for(int i=0; i < getMetaCount(); ++i) {
+    ifprintf(oFile,"##%s=%s\n",getMetaKey(i).c_str(), getMetaValue(i, "<na>").c_str());
+  }
+  ifprintf(oFile,"#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO");
+  ifprintf(oFile,"\tFORMAT");
+  for(int j=0; j < (int)subsetIndices.size(); ++j) {
+    int i = subsetIndices[j];
+    ifprintf(oFile,"\t%s",vpVcfInds[i]->sIndID.c_str());
   }
   ifprintf(oFile,"\n");
 }
@@ -1231,28 +1310,131 @@ void VcfMarker::printVCFMarker(IFILE oFile, bool siteOnly) {
   ifprintf(oFile,"\n");
 }
 
+void VcfMarker::printVCFMarkerSubset(IFILE oFile, std::vector<int>& subsetIndices) {
+  String line;
+
+  int ACindex = -1;
+  int ANindex = -1;
+
+  ACindex = asInfoKeys.Find("AC");
+  ANindex = asInfoKeys.Find("AN");
+
+  int AN = 0; 
+  int ACs[3] = {0,0,0};
+  for(int j=0; j < (int)subsetIndices.size(); ++j) {
+    int i = subsetIndices[j];
+    if ( vnSampleGenotypes[i] != 0xffff ) {
+      ++AN;
+      ++ACs[(vnSampleGenotypes[i] & 0xff00) >> 8];
+      ++ACs[(vnSampleGenotypes[i] & 0xff)];
+    }
+  }
+
+  if ( ( ACs[1] == 0 ) && ( ACs[2] == 0 ) ) {
+    return;
+  }
+
+  if ( ( ACindex >= 0 ) || ( ANindex >= 0 ) ) {
+    if ( ANindex >= 0 ) {
+      asInfoValues[ANindex].printf("%d",AN);
+    }
+    if ( ACindex >= 0 ) {
+      if ( ACs[2] == 0 ) {
+	asInfoValues[ACindex].printf("%d",ACs[1]);
+      }
+      else {
+	asInfoValues[ACindex].printf("%d,%d",ACs[1],ACs[2]);
+      }
+    }
+  }
+
+  ifprintf(oFile,"%s",sChrom.c_str());
+  ifprintf(oFile,"\t%d",nPos);
+  ifprintf(oFile,"\t%s",sID.c_str());
+  ifprintf(oFile,"\t%s",sRef.c_str());
+
+  if ( asAlts.Length() == 1 ) {
+    ifprintf(oFile,"\t%s",asAlts[0].c_str());
+  }
+  else {
+    ifprintf(oFile,"\t");
+    VcfHelper::printArrayJoin(oFile, asAlts, ",", ".");
+  }
+
+  if ( fQual < 0 ) {
+    ifprintf(oFile,"\t.");
+  }
+  else {
+    ifprintf(oFile,"\t%.0f",fQual);
+  }
+
+  if ( asFilters.Length() == 1 ) {
+    ifprintf(oFile,"\t%s",asFilters[0].c_str());
+  }
+  else {
+    ifprintf(oFile,"\t");
+    VcfHelper::printArrayJoin(oFile, asFilters, ";", "PASS");
+  }
+
+  ifprintf(oFile,"\t");
+  VcfHelper::printArrayDoubleJoin(oFile, asInfoKeys, asInfoValues, ";", "=", ".");
+
+  if ( asSampleValues.Length() > 0 ) {
+    ifprintf(oFile,"\t");
+    VcfHelper::printArrayJoin(oFile, asFormatKeys, ":", ".");
+    
+    for(int j=0; j < (int)subsetIndices.size(); ++j) {
+      int i = subsetIndices[j];
+      ifprintf(oFile,"\t");
+      VcfHelper::printArrayJoin(oFile, asSampleValues, ":", ".", i*asFormatKeys.Length(), (i+1)*asFormatKeys.Length());
+    }
+  }
+  else if ( vnSampleGenotypes.size() > 0 ) {
+    ifprintf(oFile,"\tGT",line.c_str());
+    for(int j=0; j < (int)subsetIndices.size(); ++j) {
+      int i = subsetIndices[j];
+      if ( vnSampleGenotypes[i] == 0xffff ) {
+	ifprintf(oFile,"\t./.");
+      }
+      else {
+	ifprintf(oFile,"\t%d/%d",((vnSampleGenotypes[i] & 0xff00) >> 8),(vnSampleGenotypes[i] & 0xff));
+      }
+    }
+  }
+  ifprintf(oFile,"\n");
+}
+
 void VcfMarker::printBEDMarker(IFILE oBedFile, IFILE oBimFile, bool siteOnly) {
-  ifprintf(oBimFile,"%s\t%s\t0\t%d\t%s\t%s\n",sChrom.c_str(),sID.c_str(),nPos,sRef.c_str(),asAlts[0].c_str());
+  if ( sID.Compare(".") == 0 ) {
+    ifprintf(oBimFile,"%s\t%s:%d\t0\t%d\t%s\t%s\n",sChrom.c_str(),sChrom.c_str(),nPos,nPos,sRef.c_str(),asAlts[0].c_str());
+  }
+  else {
+    ifprintf(oBimFile,"%s\t%s\t0\t%d\t%s\t%s\n",sChrom.c_str(),sID.c_str(),nPos,sRef.c_str(),asAlts[0].c_str());
+  }
+
   int nBytes = (getSampleSize()+3)/4;
   char* genos = new char[nBytes]();
+  int g1, g2;
+
   for(int i=0; i < getSampleSize(); ++i) {
-    if ( vnSampleGenotypes[i] == 0x0000 ) {
-      genos[i/4] |= (0x00 << ((i%4)*2));
-    }
-    else if ( vnSampleGenotypes[i] == 0x0001 ) {
-      genos[i/4] |= (0x10 << ((i%4)*2));
-    }
-    else if ( vnSampleGenotypes[i] == 0x0100 ) {
-      genos[i/4] |= (0x10 << ((i%4)*2));
-    }
-    else if ( vnSampleGenotypes[i] == 0x0101 ) {
-      genos[i/4] |= (0x11 << ((i%4)*2));
-    }
-    else {
-      genos[i/4] |= (0x01 << ((i%4)*2));
+    g1 = (vnSampleGenotypes[i] & 0x007f);
+    g2 = ((vnSampleGenotypes[i] & 0x7f00) >> 8);
+
+    switch( g1 + g2 ) {
+    case 0:
+      genos[i/4] |= (0x0 << ((i%4)*2));
+      break;
+    case 1:
+      genos[i/4] |= (0x2 << ((i%4)*2));
+      break;
+    case 2:
+      genos[i/4] |= (0x3 << ((i%4)*2));
+      break;
+    default:
+      genos[i/4] |= (0x1 << ((i%4)*2));
+      break;
     }
   }
   oBedFile->ifwrite(genos,nBytes);
   delete [] genos;
 }
-

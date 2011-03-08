@@ -22,6 +22,7 @@
 #include "VcfFile.h"
 #include "Error.h"
 #include <math.h>
+#include <limits.h>
 
 ShotgunHaplotyper::ShotgunHaplotyper()
    {
@@ -35,6 +36,9 @@ ShotgunHaplotyper::ShotgunHaplotyper()
    
    refalleles = NULL;
    freq1s = NULL;
+   //weightByMismatch = false;
+   weightByLikelihood = false;
+   weightByLongestMatch = false;
    }
 
 ShotgunHaplotyper::~ShotgunHaplotyper()
@@ -66,28 +70,168 @@ void ShotgunHaplotyper::CalculatePhred2Prob()
   
 }
 
+void ShotgunHaplotyper::WeightByLikelihood()
+{
+  // Calculate \logPr(Data|h1,h2), weight by Pr(Data|)
+  AllocateWeights();
+  int minPhred = INT_MAX;
+  int* phreds = new int[individuals-1];
+  for(int i=0; i < individuals-1; ++i) {
+    int phred = 0;
+    for(int l=0; l < markers; ++l) {
+      char* h1 = haplotypes[2*i];
+      char* h2 = haplotypes[2*i+1];
+      phred += genotypes[i][ 3*l + h1[l] + h2[l] ];
+    }
+    phreds[i] = phred;
+    if ( minPhred > phred ) minPhred = phred;
+  }
+  for(int i=0; i < individuals-1; ++i) {
+    int phredDiff = phreds[i]-minPhred;
+    weights[i] = 1./phredDiff;
+    //weights[i] = (phredDiff > 60) ? 0.000001 : phred2prob[phredDiff];
+  }
+  delete [] phreds;  
+}
 
-void ShotgunHaplotyper::CalculateWeights()
-   {
-   /*AllocateWeights();
+void ShotgunHaplotyper::ChooseByLongestMatch(int* array) {
+  int* sumDiff = new int[markers]();
+  int* longestMatches = new int[individuals-1];
+  int nDiff2, nMaxDiff2, nPrev, nLongestMatch;
+  int min = INT_MAX, max = 0, sum = 0, sumsq = 0, minIdx = -1;
 
-   // Calculate weights ...
-   float sum = 0.0;
-   for (int i = 0; i < individuals - phased; i++)
-      {
-      weights[i] = 0.0;
-
-      for (int j = 0; j < markers; j++)
-         weights[i] += (genotypes[i][j] % 16) + (genotypes[i][j] / 16);
-
-      sum += weights[i];
+  for(int i=0; i < individuals-1; ++i) {
+    // find longest match
+    array[i] = 0; // initial do not deselect it
+    nLongestMatch = 0;
+    for(int j=0; j < 2; ++j) {
+      char* ha  = haplotypes[2*(individuals-1)+j];
+      for(int k=0; k < 2; ++k) {
+	char* hb  = haplotypes[ 2*i + k ];
+	for(int l=0; l < markers; ++l) {
+	  sumDiff[l] = ( l == 0 ? (ha[l] ^ hb[l]) : sumDiff[l-1] + ha[l] ^ hb[l]);
+	}
+	nPrev = 0;
+	nDiff2 = 0;
+	nMaxDiff2 = 0;
+	for(int l=1; l < markers; ++l) {
+	  if (sumDiff[l] != sumDiff[l-1] ) {
+	    if ( l - nPrev > nMaxDiff2 ) {
+	      nMaxDiff2 = l-nPrev;
+	    }
+	    nPrev = l;
+	  }
+	}
+	if ( nLongestMatch < nMaxDiff2 ) 
+	  nLongestMatch = nMaxDiff2;
       }
+    }
+    if ( min > nLongestMatch ) min = nLongestMatch;
+    if ( max < nLongestMatch ) max = nLongestMatch;
+    sum += nLongestMatch;
+    sumsq += (nLongestMatch*nLongestMatch);
 
-   // Give up if there are no genotyped individuals
-   if (sum == 0.0)
-      FreeWeights();
-   */
-   }
+    longestMatches[i] = nLongestMatch;
+    if ( i < states / 2 ) {
+      array[i] = 1;
+    }
+    else { // using n^2 algorithm for selection -- could be better, but should be fine
+      int minVal = INT_MAX;
+      int minIdx = -1;
+      for(int j=0; j <= i; ++j) {
+	if ( array[j] == 1 ) {
+	  if ( minVal > longestMatches[j] ) {
+	    minVal = longestMatches[j];
+	    minIdx = j;
+	  }
+	}
+      }
+      if ( minIdx < 0 )
+	error("Cannot find minimum longest match");
+
+      if ( minIdx != i ) {
+	array[minIdx] = 0;
+	array[i] = 1;
+      }
+    }
+  }
+  //fprintf(stderr,"%d\t%d\t%.2lf\t%.2lf\n",min,max,(double)sum/(individuals-1),sqrt((double)sumsq/(individuals-1.)-(double)sum*sum/(individuals-1.)/(individuals-1.)));
+  //for(int i=0; i < individuals-1; ++i) {
+  //  fprintf(stderr,"%d\t%d\t%d\n",i,array[i],longestMatches[i]);
+  //}
+  delete [] sumDiff;  
+  delete [] longestMatches;
+}
+
+void ShotgunHaplotyper::WeightByLongestMatch() 
+{
+  AllocateWeights();
+  int* sumDiff = new int[markers]();
+  int nDiff2, nMaxDiff2, nPrev, nLongestMatch;
+  int min = INT_MAX, max = 0, sum = 0, sumsq = 0;
+
+  for(int i=0; i < individuals-1; ++i) {
+    // find longest match
+    nLongestMatch = 0;
+    for(int j=0; j < 2; ++j) {
+      char* ha  = haplotypes[2*(individuals-1)+j];
+      for(int k=0; k < 2; ++k) {
+	char* hb  = haplotypes[ 2*i + k ];
+	for(int l=0; l < markers; ++l) {
+	  sumDiff[l] = ( l == 0 ? (ha[l] ^ hb[l]) : sumDiff[l-1] + ha[l] ^ hb[l]);
+	}
+	nPrev = 0;
+	nDiff2 = 0;
+	nMaxDiff2 = 0;
+	for(int l=1; l < markers; ++l) {
+	  if (sumDiff[l] != sumDiff[l-1] ) {
+	    if ( l - nPrev > nMaxDiff2 ) {
+	      nMaxDiff2 = l-nPrev;
+	    }
+	    nPrev = l;
+	  }
+	}
+	if ( nLongestMatch < nMaxDiff2 ) 
+	  nLongestMatch = nMaxDiff2;
+      }
+    }
+    if ( min > nLongestMatch ) min = nLongestMatch;
+    if ( max < nLongestMatch ) max = nLongestMatch;
+    sum += nLongestMatch;
+    sumsq += (nLongestMatch*nLongestMatch);
+    weights[i] = (float)nLongestMatch;
+  }
+  fprintf(stderr,"%d\t%d\t%.2lf\t%.2lf\n",min,max,(double)sum/(individuals-1),sqrt((double)sumsq/(individuals-1.)-(double)sum*sum/(individuals-1.)/(individuals-1.)));
+  delete [] sumDiff;
+}
+
+void ShotgunHaplotyper::WeightByMismatch()
+{
+  // assume that the individual to 
+  AllocateWeights();
+
+  float sum = 0.0;
+  for (int i = 0; i < individuals-1; ++i) {
+    // Calculate the mismatch between the haplotypes
+    int minMismatches = INT_MAX;
+    int mismatches = 1;
+    for(int j=0; j < 2; ++j) {
+      char* ha  = haplotypes[2*(individuals-1)+j];
+      for(int k=0; k < 2; ++k) {
+	char* hb  = haplotypes[ 2*i + k ];
+	for(int l=0; l < markers; ++l) {
+	  mismatches += (ha[l] ^ hb[l]);
+	}
+      }
+    }
+    if ( mismatches < minMismatches ) 
+      minMismatches = mismatches;
+    weights[i] = 1.0/minMismatches;
+    sum += weights[i];
+  }
+  weights[individuals-1] = 0.0;
+  //fprintf(stderr,"Weighting by mismatch count, sum = %f\n",sum);
+}
 
 void ShotgunHaplotyper::LoadHaplotypesFromVCF(String& fileName)
 {
@@ -217,6 +361,82 @@ void ShotgunHaplotyper::RandomSetup(Random * rand)
 
             haplotypes[i * 2][j] = bit;
             haplotypes[i * 2 + 1][j] = bit ^ 1;
+            }
+         else
+            {
+            haplotypes[i * 2][j] = 1;
+            haplotypes[i * 2 + 1][j] = 1;
+            }
+
+         }
+      }
+   }
+
+
+void ShotgunHaplotyper::PhaseByReferenceSetup(Random * rand)
+   {
+   if (rand == NULL)
+      rand = &globalRandom;
+
+   CalculatePhred2Prob();
+   
+   for (int j = 0; j < markers; j++)
+      {
+      double mac = 0;
+      int markerindex = 3*j;
+      
+      double hyperprior11 = freq1s[j] * freq1s[j];
+      double hyperprior12 = 2.0 * freq1s[j] * (1.0 - freq1s[j]);
+      double hyperprior22 = (1.0 - freq1s[j]) * (1.0 - freq1s[j]);
+      
+      for (int i = 0; i < individuals; i++)
+         {
+         double post11 = hyperprior11 * phred2prob[genotypes[i][markerindex]];
+         double post12 = hyperprior12 * phred2prob[genotypes[i][markerindex+1]];
+         double post22 = hyperprior22 * phred2prob[genotypes[i][markerindex+2]];
+         double sumpost = post11 + post12 + post22;
+         post11 /= sumpost;
+         post12 /= sumpost;
+         post22 /= sumpost;
+
+         // estimated counts of AL2
+         mac += post12+ 2*post22;
+         }
+
+      //here, each person contributes two alleles
+      double freq = 0.5 * mac / (double) individuals;
+      
+      double prior_11 = (1.0 - freq) * (1.0 - freq);
+      double prior_12 = 2.0 * freq * (1.0 - freq);
+      double prior_22 = freq * freq;
+
+      for (int i = 0; i < individuals; i++)
+         {
+         int observed = (unsigned char) (genotypes[i][j]);
+
+         double posterior_11 = prior_11 * phred2prob[genotypes[i][markerindex]];
+         double posterior_12 = prior_12 * phred2prob[genotypes[i][markerindex+1]];
+         double posterior_22 = prior_22 * phred2prob[genotypes[i][markerindex+2]];
+         double sum = posterior_11 + posterior_12 + posterior_22;
+
+         if (sum == 0)
+            printf("Problem!\n");
+
+         posterior_11 /= sum;
+         posterior_12 /= sum;
+
+         double r = rand->Next();
+         if (r < posterior_11)
+            {
+            haplotypes[i * 2][j] = 0;
+            haplotypes[i * 2 + 1][j] = 0;
+            }
+         else if (r < posterior_11 + posterior_12)
+            {
+	      //bool bit = rand->Binary();
+
+	      haplotypes[i * 2][j] = 0;
+	      haplotypes[i * 2 + 1][j] = 1;
             }
          else
             {
@@ -754,3 +974,54 @@ bool ShotgunHaplotyper::ForceMemoryAllocation()
    return true;
    }
 
+
+void ShotgunHaplotyper::SelectReferenceSet(int * array, int forWhom) {
+  //fprintf(stderr,"ShotgunHaplotyper::SelectReferenceSet() called\n");
+  /*
+  if ( weightByMismatch ) {
+    WeightByMismatch();
+    globalRandom.Choose(array, weights, individuals - 1, states / 2);
+    }*/
+  if ( weightByLikelihood ) {
+    //fprintf(stderr,"Weighting by likelihood for %d\n",forWhom);
+    WeightByLikelihood();
+    globalRandom.Choose(array, weights, individuals - 1, states / 2);
+  }
+  else if ( weightByLongestMatch ) {
+    ChooseByLongestMatch(array);
+    //fprintf(stderr,"Weighting by longest match for %d\n",forWhom);
+    //WeightByLongestMatch();
+    //globalRandom.Choose(array, weights, individuals - 1, states / 2);
+  }
+  else {
+    if (greedy)
+      {
+	// Sanity check
+	assert(states == phased * 2);
+	
+	// We exclude inferred haplotypes from the reference set
+	for (int i = 0; i < individuals - phased; i++)
+	  array[i] = 0;
+	
+	// We include phased haplotypes as our reference set
+	for (int i = individuals - phased; i < individuals - 1; i++)
+	  array[i] = 1;
+	
+	// For the last entry in the reference set, we may need to pick
+	// a pair of inferred haplotypes
+	if (forWhom < individuals - phased)
+	  array[forWhom] = 1;
+	else
+	  array[globalRandom.NextInt() % (individuals - phased)] = 1;
+      }
+    else if (weights != NULL)
+      globalRandom.Choose(array, weights, individuals - 1, states / 2);
+    else
+      globalRandom.Choose(array, individuals - 1, states / 2);
+  }
+  
+  // Swap reference set into position
+  for (int j = 0, out = 0; j < individuals; j++)
+    if (array[j])
+      SwapIndividuals(j, out++);
+}

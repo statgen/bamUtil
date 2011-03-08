@@ -58,7 +58,7 @@ void DumpDetails(glfHandler * glf, int n, int position, int refBase)
         firstGlf++;
 
     printf("Dump for section %s, position %d [%c]\n",
-           (const char *) glf[firstGlf].label, position, alleles[refBase]);
+           (const char *) glf[firstGlf].label, position, alleles[(int)refBase]);
 
     printf("Depth");
     for (int i = 0; i < n; i++)
@@ -458,7 +458,7 @@ int main(int argc, char ** argv)
             if (position >= glf[firstGlf].maxPosition)
                 break;
 
-            baseCounts[refBase]++;
+            baseCounts[(int)refBase]++;
 
             // These lines can be uncommented for debugging purposes
             // for (int i = 0; i < n; i++)

@@ -1921,6 +1921,7 @@ void Haplotyper::ScaleWeights()
 
 void Haplotyper::SelectReferenceSet(int * array, int forWhom)
    {
+     //fprintf(stderr,"Haplotyper::SelectReferenceSet() called\n");
    if (greedy)
       {
       // Sanity check

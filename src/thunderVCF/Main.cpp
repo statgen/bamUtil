@@ -157,7 +157,7 @@ void OutputVCFConsensus(const String& inVcf, Pedigree & ped, ConsensusBuilder & 
 	pMarker->asSampleValues.InsertAt(nFormats*i + DSidx, sDose);
       }
       //fprintf(stderr,"foo4\n");
-      pMarker->printVCFMarker(outVCF); // print marker to output file
+      pMarker->printVCFMarker(outVCF,false); // print marker to output file
     }
     delete pVcf;
     //delete pMarker;
@@ -382,6 +382,11 @@ int main(int argc, char ** argv)
    bool weighted = false, compact = false;
    bool mle = false, mledetails = false, uncompressed = false;
    bool inputPhased = false;
+   bool phaseByRef = false;
+   bool randomPhase = true;
+   bool noWeight = true;
+   bool likeWeight = false;
+   bool matchWeight = false;
 
    SetupCrashHandlers();
    SetCrashExplanation("reading command line options");
@@ -407,7 +412,14 @@ BEGIN_LONG_PARAMETERS(longParameters)
       LONG_DOUBLEPARAMETER("errorRate", &errorRate)
       LONG_PARAMETER("weighted", &weighted)
       LONG_PARAMETER("compact", &compact)
-      LONG_PARAMETER("inputPhased", &inputPhased)
+  LONG_PARAMETER_GROUP("Phasing")
+      EXCLUSIVE_PARAMETER("randomPhase", &randomPhase)
+      EXCLUSIVE_PARAMETER("inputPhased", &inputPhased)
+      EXCLUSIVE_PARAMETER("refPhased",  &phaseByRef)
+  LONG_PARAMETER_GROUP("Weighting")
+      EXCLUSIVE_PARAMETER("noWeight", &noWeight)
+      EXCLUSIVE_PARAMETER("likeWeight", &likeWeight)
+      EXCLUSIVE_PARAMETER("matchWeight",  &matchWeight)
    LONG_PARAMETER_GROUP("Imputation")
       LONG_PARAMETER("geno", &OutputManager::outputGenotypes)
       LONG_PARAMETER("quality", &OutputManager::outputQuality)
@@ -542,8 +554,18 @@ END_LONG_PARAMETERS();
    if (doses.readyForUse == false)
       return MemoryAllocationFailure();
 
-   if (weighted)
-      engine.CalculateWeights();
+   /*
+   if (weighted) {
+     engine.weightByMismatch = true;
+     printf("Using weighting approach\n\n");
+     }*/
+   if ( likeWeight ) {
+     engine.weightByLikelihood = true;
+   }
+   else if ( matchWeight ) {
+     engine.weightByLongestMatch = true;
+   }
+   //   engine.CalculateWeights();
 
    printf("Memory allocated successfully\n\n");
 
@@ -560,6 +582,10 @@ END_LONG_PARAMETERS();
    if ( inputPhased ) {
      printf("Loading phased information from the input VCF file\n\n");
      engine.LoadHaplotypesFromVCF(shotgunfile);
+   }
+   else if ( phaseByRef ) {
+     printf("Assigning haplotypes based on reference genome\n\n");
+     engine.PhaseByReferenceSetup();
    }
    else {
      printf("Assigning random set of haplotypes\n\n");

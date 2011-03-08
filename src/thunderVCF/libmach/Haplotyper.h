@@ -271,14 +271,14 @@ class Haplotyper
    
       float * penetrances;
 
-   private:
+   protected:
       void Swap(char * & array1, char * & array2)
          { char * temp = array1; array1 = array2; array2 = temp; }
 
       void Swap(float * & array1, float * & array2)
          { float * temp = array1; array1 = array2; array2 = temp; }
 
-      void SelectReferenceSet(int * choices, int forWhom);
+      virtual void SelectReferenceSet(int * choices, int forWhom);
       virtual void SwapIndividuals(int a, int b);
       void SwapHaplotypes(int a, int b);
 

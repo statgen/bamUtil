@@ -1,6 +1,6 @@
 include ../Makefile.src
 
-LIB_DIR=libvcf
+LIB_DIR=../vcfCooker/libvcf
 
 clean: myclean
 

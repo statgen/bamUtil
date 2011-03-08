@@ -73,7 +73,7 @@ class VcfInd {
   String sMotID;
   enum {UNKNOWN, MALE, FEMALE} gender;
 
- VcfInd(const String& indID) : sIndID(indID) {};
+ VcfInd(const String& indID) : sIndID(indID) { gender = UNKNOWN; };
   VcfInd(const String& indID, const String& famID, const String& fatID, const String& motID, const String& gender);
 };
 
@@ -128,7 +128,7 @@ class VcfMarker {
   ////////////////////////////////////////////////////////////////////////////////////////
   // core member functions (will stay as public)
   ////////////////////////////////////////////////////////////////////////////////////////
- VcfMarker() : GTindex(-1), DSindex(-1), nSampleSize(0), bPreserved(true) {}
+ VcfMarker() : GTindex(-1), DSindex(-1), GDindex(-1), GQindex(-1), nSampleSize(0), bPreserved(true) {}
 
   int getSampleSize() { return nSampleSize; }
   void setChrom(const String& s);
@@ -140,13 +140,14 @@ class VcfMarker {
   void setFilters(const String& s);
   void setInfo(const String& s, bool upgrade);
   void setFormat(const String& s, bool upgrade);
-  void setSampleSize(int newsize, bool parseGenotypes, bool parseDosages, bool parseValues);
+  void setSampleSize(int newsize, bool parseGenotypes, bool parseDosages, bool parseValue);
   void setDosage(int sampleIndex, float dosage);
   void setGenotype(int sampleIndex, unsigned short genotype);
-  void setSample(int sampleIndex, const String& sampleValue, bool parseGenotypes, bool parseDosages, bool parseValues);
+  void setSample(int sampleIndex, const String& sampleValue, bool parseGenotypes, bool parseDosages, bool parseValues, int minGD, int minGQ);
   // print the marker info in VCF or BED format
-  void printVCFMarker(IFILE oFile, bool siteOnly = false);
-  void printBEDMarker(IFILE oBedFile, IFILE oBimFile, bool siteOnly = false);
+  void printVCFMarker(IFILE oFile, bool siteOnly);
+  void printVCFMarkerSubset(IFILE oFile, std::vector<int>& subsetIndices);
+  void printBEDMarker(IFILE oBedFile, IFILE oBimFile, bool siteOnly);
 
   ////////////////////////////////////////////////////////////////////////////////////////
   // internal member variables
@@ -154,6 +155,8 @@ class VcfMarker {
   StringArray tmpTokens;  // temporary tokens for additional tokenization
   int GTindex;            // index of GT field
   int DSindex;            // index of DS field
+  int GDindex;            // index of GD or DP field
+  int GQindex;            // index of GQ field
   int nSampleSize;
   int bPreserved;         // indicate whether the INFO/FORMAT fields are preserved
 };
@@ -173,6 +176,8 @@ class VcfFile {
   bool bParseValues;    // parse all sample values as string
   bool bUpgrade;        // upgrade marker info
   bool bEOF;            // EOF marker flag
+  int nMinGD;
+  int nMinGQ;
 
   int nHead;                // internal variable to keep track of end of buffer
   String line;  // buffer line to store input line
@@ -240,6 +245,7 @@ class VcfFile {
   String getSampleID(int offset);
 
   void printVCFHeader(IFILE oFile);  // print headers in VCF format
+  void printVCFHeaderSubset(IFILE oFile, std::vector<int>& subsetIndices);
   void printBEDHeader(IFILE oBedFile, IFILE oFamFile); // print headers in BED format
 };
 

@@ -906,9 +906,99 @@ int main(int argc, char** argv) {
 	//  fSMSumEHetDepth[nSMRefCnt+nSMAltCnt] += (2.*alleleFreq*(1.-alleleFreq));
 	//}
 
+	for(uint32_t j=0; j < numIBDs; ++j) {
+	  double alpha = vfIBDs[j];
+	  // lks[i*3+j] = Pr(b|e,g1=i,g2=j)
+	  for(uint32_t i=0; i < 9; ++i) {
+	    fSMMixMarkerLLKs[i] = (bPrecise ? 0. : 1.);
+	  }
+	  for(uint32_t i=0; i < 9*nRGs; ++i) {
+	    fRGMixMarkerLLKs[i] = (bPrecise ? 0. : 1.);
+	  }
+	  double lks[9];
+	  for(uint32_t i=0; i < nRGIndices.size(); ++i) {
+	    double baseError = fPhred2Err[cQuals[i]-33];
+	    double baseMatch = 1.-baseError;
+	    if ( cBases[i] == a1 ) {
+	      lks[0*3+0] = baseMatch;
+	      lks[0*3+1] = (0.5+0.5*alpha)*baseMatch + ((1.-alpha)/6.)*baseError;
+	      lks[0*3+2] = alpha*baseMatch + ((1.-alpha)/3.)*baseError;
+	      lks[1*3+0] = (1.-0.5*alpha)*baseMatch + (alpha/6.)*baseError;
+	      lks[1*3+1] = 0.5*baseMatch + 1./6.*baseError;
+	      lks[1*3+2] = (0.5*alpha)*baseMatch + (1./3.-alpha/6.)*baseError;
+	      lks[2*3+0] = (1.-alpha)*baseMatch + (alpha/3.)*baseError;
+	      lks[2*3+1] = (0.5*(1.-alpha))*baseMatch + (1./6.+alpha/6.)*baseError;
+	      lks[2*3+2] = baseError/3.;
+	    }
+	    else if ( cBases[i] == a2 ) {
+	      lks[2*3+2] = baseMatch;
+	      lks[2*3+1] = (0.5+0.5*alpha)*baseMatch + ((1.-alpha)/6.)*baseError;
+	      lks[2*3+0] = alpha*baseMatch + ((1.-alpha)/3.)*baseError;
+	      lks[1*3+2] = (1.-0.5*alpha)*baseMatch + (alpha/6.)*baseError;
+	      lks[1*3+1] = 0.5*baseMatch + 1./6.*baseError;
+	      lks[1*3+0] = (0.5*alpha)*baseMatch + (1./3.-alpha/6.)*baseError;
+	      lks[0*3+2] = (1.-alpha)*baseMatch + (alpha/3.)*baseError;
+	      lks[0*3+1] = (0.5*(1.-alpha))*baseMatch + (1./6.+alpha/6.)*baseError;
+	      lks[0*3+0] = baseError/3.;
+	    }
+	    else {
+	      lks[0*3+0] = baseError/3.;
+	      lks[0*3+1] = baseError/3.;
+	      lks[0*3+2] = baseError/3.;
+	      lks[1*3+0] = baseError/3.;
+	      lks[1*3+1] = baseError/3.;
+	      lks[1*3+2] = baseError/3.;
+	      lks[2*3+0] = baseError/3.;
+	      lks[2*3+1] = baseError/3.;
+	      lks[2*3+2] = baseError/3.;
+	    }
+	    
+	    for(uint32_t k=0; k < 9; ++k) {
+	      if ( bPrecise ) {
+		fSMMixMarkerLLKs[k] += log(lks[k]);
+		fRGMixMarkerLLKs[nRGIndices[i] * 9 + k] += log(lks[k]);
+	      }
+	      else {
+		fSMMixMarkerLLKs[k] *= lks[k];
+		fRGMixMarkerLLKs[nRGIndices[i] * 9 + k] *= lks[k];
+	      }
+	    }
+	  }
+	  // fSMMixMarkerLLKs[g1*3+g2] = Pr(b|e,g1,g2,alpha)
+	  // Pr(g1,G1)Pr(g2,p1)
+	  double pg2[3] = { (1.-alleleFreq)*(1.-alleleFreq), 2.*alleleFreq*(1.-alleleFreq), alleleFreq*alleleFreq };
+	  double pg1[3];
+	  for(uint32_t i=0; i < nCompInds; ++i) {
+	    if ( bedGenos[i] == 0 ) {
+	      pg1[0] = (1.-alleleFreq)*(1.-alleleFreq);
+	      pg1[1] = 2.*alleleFreq*(1.-alleleFreq);
+	      pg1[2] = alleleFreq*alleleFreq;
+	    }
+	    else {
+	      pg1[0] = pg1[1] = pg1[2] = 0.5*genoError;
+	      pg1[bedGenos[i]-1] = 1.-genoError;
+	    }
+	    for(uint32_t k=0; k < nRGs; ++k) {
+	      double llk = 0;
+	      for(uint32_t l=0; l < 9; ++l) {
+		llk += fRGMixMarkerLLKs[k*9 + l] * pg1[l/3] * pg2[l%3];
+	      }
+	      fSumRGIndLLKs[k*nCompInds*numIBDs + i*numIBDs + j] += log(llk);
+	    }
+	    double llk = 0;
+	    for(uint32_t l=0; l < 9; ++l) {
+	      llk += fSMMixMarkerLLKs[l] * pg1[l/3] * pg2[l%3];
+	    }
+	    fSumSMIndLLKs[i*numIBDs + j] += log(llk);
+	  }
+	}
+      
+	  /*
 	// calculating per-RG LLK
 	for(uint32_t i=0; i < nRGs; ++i) {
 	  double fRGNonIBDLLK; // likelihood of reads given non-IBDs 
+
+
 	  if ( bPrecise ) {
 	    uint32_t maxIdx = 0;
 	    for(uint32_t j=1; j < 3; ++j) {
@@ -972,6 +1062,8 @@ int main(int argc, char** argv) {
 	    }
 	  }
 	}
+	  */
+
 
 	// Accounting for library complexity
 	// alpha - % MIX - excessive heterozygosity
@@ -1007,6 +1099,7 @@ int main(int argc, char** argv) {
 	    fRGMixMarkerLLKs[i] = (bPrecise ? 0. : 1.);
 	  }
 	  //double valuesToMultiply[9] = {1.,1.,1.,1.,1.,1.,1.,1.,1.};
+
 	  double lks[9];
 	  for(uint32_t i=0; i < nRGIndices.size(); ++i) {
 	    double baseError = fPhred2Err[cQuals[i]-33];
