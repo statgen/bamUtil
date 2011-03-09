@@ -87,6 +87,8 @@ OBJECTS=$(patsubst %,$(OBJDIR)/%,$(OBJECT_FILES))
 
 all: $(addprefix $(INCLUDE_PATH)/, $(HEADERS)) $(STAT_GEN_LIB)
 
+install help:
+
 $(STAT_GEN_LIB) : $(OBJECTS)
 	$(AR) cr $@ $(OBJECTS)
 	$(RANLIB) $@
