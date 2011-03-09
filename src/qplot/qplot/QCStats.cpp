@@ -415,7 +415,7 @@ void QCStats::UpdateStats(SamRecord & sam, QSamFlag &filter, double minMapQualit
   cigarcol.GetClipLength_begin(sam.data.cigar);
   cigarcol.GetClipLength_end(sam.data.cigar);
 #endif
-  CigarRoller cigar(sam.getCigar());
+  Cigar* cigar = sam.getCigarInfo();
 
   //CigarRoller cigarRoller;
   //cigarRoller.Set(sam.data.cigar);
@@ -483,9 +483,9 @@ void QCStats::UpdateStats(SamRecord & sam, QSamFlag &filter, double minMapQualit
   }
 
   String aligTypes="";
-  for (int i = 0; i < cigar.size(); i++)
-    for (unsigned int j = 0; j < cigar[i].count; j++)
-      aligTypes += cigar[i].getChar();
+  for (int i = 0; i < cigar->size(); i++)
+      for (unsigned int j = 0; j < cigar->getOperator(i).count; j++)
+          aligTypes += cigar->getOperator(i).getChar();
 
   int offset = 0; //to adjust position in ref genome due to insertion 'I' and 'S'
   int offset2 = 0;  //to adjust position in a read due to deletion 'D'
