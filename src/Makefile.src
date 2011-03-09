@@ -7,10 +7,6 @@ VERSION = 0.0.1
 PATH_TO_BASE=../..
 BIN_DIR=$(PATH_TO_BASE)/src/bin
 
-# default installation directory
-INSTALLDIR=/usr/local/bin
-
-
 # Makefile.tool needs to define:
 #   EXE - the executable name
 #   TOOLBASE - the base filename for files with .h & .cpp versions

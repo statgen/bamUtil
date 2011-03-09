@@ -14,13 +14,13 @@ OPTFLAG?=-O4
 VERSION=0.1.4
 RELEASE_FILE=statGen.$(VERSION).tgz
 
-.PHONY: all test clean release
+.PHONY: all test clean release help install
 
 #
 # see http://www.gnu.org/software/make/manual/make.html#Phony-Targets
 # for a way of improving the following:
 #
-all test:
+all test install:
 	@for i in "$(SUBDIRS)"; do \
 		if [ "XXX$$i" = XXX ] ;\
 		then \
@@ -38,6 +38,21 @@ all test:
 		    break ; \
 		fi \
 	done
+
+help : 
+	@echo "Generic Source Distribution"
+	@echo " "
+	@echo "This Makefile will compile and install" $(TOOL) "on your system"
+	@echo " "
+	@echo "Type...           To..."
+	@echo "make              Compile everything "
+	@echo "make help         Display this help screen"
+	@echo "make all          Compile everything "
+	@echo "make install      Install binaries in $(INSTALLDIR)"
+	@echo "make install INSTALLDIR=directory_for_binaries"
+	@echo "                  Install binaries in directory_for_binaries"
+	@echo "make clean        Delete temporary files"
+	@echo "make test         Execute tests (if there are any)"
 
 release:
 	(make clean)

@@ -189,7 +189,7 @@ int main(int argc, char** argv) {
 	} else {
 	    int position = record.get0BasedPosition();
 	    // We're assuming the BAM file is sorted.  Otherwise, there is trouble.
-	    if (position < lastPosition ) {
+            if ( ( position >= 0 ) && (position < lastPosition ) ) {
 		Logger::gLogger->error("The BAM file is not sorted in the readName %s, reference sequence %s, position %d", 
 				       record.getReadName(), 
 				       header.getReferenceLabel(record.getReferenceID()).c_str(), 
