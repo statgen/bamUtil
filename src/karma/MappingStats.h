@@ -46,7 +46,7 @@
 //
 class MappingStatsBase
 {
-protected:
+ protected:
     uint64_t    totalReads;          // number of Fastq reads that are from input
     uint64_t    totalMatches;        // number of Fastq reads that are mapped
     uint64_t    badShortData;        // too short a read
@@ -63,7 +63,7 @@ protected:
     void    recordQualityInfo(MatchedReadBase &match);
     void    printStats(std::ostream &file, std::ostream &fileR);
 
-public:
+ public:
     Timing  runTime;
     MappingStatsBase();
 
@@ -94,16 +94,16 @@ public:
 
 class SingleEndStats: public MappingStatsBase
 {
-private:
+ private:
     static const int qualityScoreBucketCount = 100;
     static const int qualityScoreBucketRange = 100 / qualityScoreBucketCount;
     uint64_t    qualityScoreHistogram[qualityScoreBucketCount];
 
-protected:
+ protected:
     void recordQualityInfo(MatchedReadSE &match);
     void printStats(std::ostream &file, std::ostream &fileR);
 
-public:
+ public:
     SingleEndStats();
     void recordMatchedRead(MatchedReadBase& matchedRead);
 
@@ -113,7 +113,7 @@ public:
 
 class PairedEndStats: public MappingStatsBase
 {
-private:
+ private:
     uint64_t    noneMappable;
     uint64_t    oneMappable;
 
@@ -143,7 +143,7 @@ private:
     uint64_t    shortDistanceHistogram[2*shortDistanceRange];
     uint64_t    longDistanceHistogram[2*longDistanceBucketCount];
 
-protected:
+ protected:
     void printHistograms(std::ostream &file, std::ostream &fileR);
 
     // record the match directions and outer distance distribution between two reads
@@ -156,7 +156,7 @@ protected:
 
     void printStats(std::ostream &file, std::ostream &fileR);
 
-public:
+ public:
     PairedEndStats();
     
     // record statistics from MatchedRead from the bestMatch of each aligner after alignment finished

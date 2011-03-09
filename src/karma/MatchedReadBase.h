@@ -14,7 +14,7 @@ class MapperBase;
 //
 class MatchedReadBase
 {
-public:
+ public:
     MatchedReadBase()
     {
         constructorClear();
@@ -124,42 +124,42 @@ public:
     /// SAM flag bit 0x0002 and ISIZE fields.
     ///
     void print(
-        std::ostream &outputStream,
-        MatchedReadBase *mate,
-        std::string &fragmentTag,
-        bool showReferenceBases,
-        CigarRoller  &cigarRoller,
-        bool    isProperAligned,
-        uint16_t    samMateFlag,
-        const std::string &sampleGroupID,
-        const std::string &alignmentPathTag
-    );
+               std::ostream &outputStream,
+               MatchedReadBase *mate,
+               std::string &fragmentTag,
+               bool showReferenceBases,
+               CigarRoller  &cigarRoller,
+               bool    isProperAligned,
+               uint16_t    samMateFlag,
+               const std::string &sampleGroupID,
+               const std::string &alignmentPathTag
+               );
 
     ///
     /// It is a similar procedure to print(), however, we implicitly translate
     /// color space reads to base space.
     ///
     void printColorSpace(
-        std::ostream &file,
-        GenomeSequence* gs,
-        GenomeSequence* csgs,
-        MatchedReadBase *mate,
-        std::string &cs_read_fragment,
-        std::string &cs_data_quality,
-        std::string &fragmentTag,
-        bool showReferenceBases,
-        CigarRoller  &cigarRoller,
-        bool    isProperAligned,
-        uint16_t    samMateFlag,
-        const std::string &sampleGroupID,
-        const std::string &alignmentPathTag
-    );
+                         std::ostream &file,
+                         GenomeSequence* gs,
+                         GenomeSequence* csgs,
+                         MatchedReadBase *mate,
+                         std::string &cs_read_fragment,
+                         std::string &cs_data_quality,
+                         std::string &fragmentTag,
+                         bool showReferenceBases,
+                         CigarRoller  &cigarRoller,
+                         bool    isProperAligned,
+                         uint16_t    samMateFlag,
+                         const std::string &sampleGroupID,
+                         const std::string &alignmentPathTag
+                         );
 
     virtual void printOptionalTags(
-        std::ostream &, 
-        bool isProperAligned,
-        const std::string &readGroupID,
-        const std::string &alignmentPathTag);
+                                   std::ostream &, 
+                                   bool isProperAligned,
+                                   const std::string &readGroupID,
+                                   const std::string &alignmentPathTag);
 
 
     // MapperBase has debugPrint also, but it does more validation.  This
@@ -182,9 +182,9 @@ public:
                            bool isForwardStrand);
 
 
-//////////////////////////////////////////////////
-// Obselete code goes here
-//////////////////////////////////////////////////
+    //////////////////////////////////////////////////
+    // Obselete code goes here
+    //////////////////////////////////////////////////
 #if 0
     // not ever used funcitons
     // Xiaowei use #if to comment them out.

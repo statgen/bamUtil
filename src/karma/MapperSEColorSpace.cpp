@@ -84,7 +84,7 @@ void MapperSEColorSpace::MapSingleRead()
             mapperOptions.allowSmithWaterman &&
             (bestMatch.quality == MatchedReadBase::REPEAT_QUALITY ||
              bestMatch.quality == MatchedReadBase::REPEAT_QUALITY)
-        )
+            )
         {
             MapSingleReadGapped();
         }
@@ -109,10 +109,10 @@ void MapperSEColorSpace::MapSingleReadGapped()
 }
 
 static bool evalTrampoline(
-    MapperBase *mapper,
-    ReadIndexer &indexer,
-    genomeIndex_t genomeMatchPosition,
-    int whichWord)
+                           MapperBase *mapper,
+                           ReadIndexer &indexer,
+                           genomeIndex_t genomeMatchPosition,
+                           int whichWord)
 {
     return ((MapperSEColorSpace*)mapper)->evalSEColorSpace(indexer, genomeMatchPosition, whichWord);
 }
@@ -147,9 +147,9 @@ void MapperSEColorSpace::MapSingleReadUnGapped()
 }
 
 inline bool MapperSEColorSpace::evalSEColorSpace(
-    ReadIndexer &indexer,
-    genomeIndex_t genomeMatchPosition,
-    unsigned int whichWord)
+                                                 ReadIndexer &indexer,
+                                                 genomeIndex_t genomeMatchPosition,
+                                                 unsigned int whichWord)
 {
 
 
@@ -161,7 +161,7 @@ inline bool MapperSEColorSpace::evalSEColorSpace(
     if (genomePositionFilter)
     {
         if (genomeMatchPosition < genomePositionFilter - mapperOptions.genomePositionFilterWidth ||
-                genomeMatchPosition > genomePositionFilter + mapperOptions.genomePositionFilterWidth)
+            genomeMatchPosition > genomePositionFilter + mapperOptions.genomePositionFilterWidth)
             return false;
 
     }
@@ -182,26 +182,26 @@ inline bool MapperSEColorSpace::evalSEColorSpace(
     // even for exact match only, non-gapped alignments.
     //
     quality = indexer.getColorSpaceSumQ(
-                  genomeMatchPosition,
-                  mismatchCount,
-                  bestMatch.quality,
-                  whichWord
-              );
+                                        genomeMatchPosition,
+                                        mismatchCount,
+                                        bestMatch.quality,
+                                        whichWord
+                                        );
 #else
     matchCandidate.quality = indexer.getColorSpaceSumQOrig(
-                                 matchCandidate.genomeMatchPosition,
-                                 matchCandidate.mismatchCount,
-                                 bestMatch.quality,
-                                 whichWord
-                             );
+                                                           matchCandidate.genomeMatchPosition,
+                                                           matchCandidate.mismatchCount,
+                                                           bestMatch.quality,
+                                                           whichWord
+                                                           );
 
     int checkMismatch;
     int checkQuality = indexer.getSumQ(
-                           matchCandidate.genomeMatchPosition,
-                           checkMismatch,
-                           bestMatch.quality,
-                           whichWord
-                       );
+                                       matchCandidate.genomeMatchPosition,
+                                       checkMismatch,
+                                       bestMatch.quality,
+                                       whichWord
+                                       );
 
     assert(matchCandidate.quality == checkQuality);
     if (checkQuality!=-1) assert(matchCandidate.mismatchCount == checkMismatch);

@@ -115,7 +115,7 @@ int ReadsProcessor::openReference(std::string& referenceName, int wordSize, int 
     std::string baseName = buf.str();
 
     // Now open word index and left/right word hash
-    wi = new WordIndex ;
+    wi = new WordIndex;
     wi->setFilenames(baseName.c_str());
     if (!quietMode) std::cout << "open and prefetch the reference genome word index: " << std::flush;
 
@@ -182,7 +182,7 @@ int ReadsProcessor::openReference(std::string& referenceName, int wordSize, int 
 
 void ReadsProcessor::closeReference()
 {
-    // TODO
+    // TODO(zhanxw)
     // add codes...
     if (wordHashLeft) {
         wordHashLeft->close();
@@ -193,9 +193,9 @@ void ReadsProcessor::closeReference()
         delete wordHashRight;
     }
 
-    if(wi) delete wi;
-    if(gs) delete gs;
-    if(csgs) delete csgs;
+    if (wi) delete wi;
+    if (gs) delete gs;
+    if (csgs) delete csgs;
 };
 
 //
@@ -282,6 +282,7 @@ void ReadsProcessor::verifyHashesExist()
 
 ///
 /// return a usable pointer to MapperSE class
+/// client should delete the pointer afterwards.
 ///
 MapperSE* ReadsProcessor::createSEMapper(void)
 {
@@ -325,15 +326,15 @@ MapperPE* ReadsProcessor::createPEMapper(void)
         mapper->initMapper(csgs, wi, wordHashLeft, wordHashRight, mapperOptions);
     }
     mapper->mapperSE = createSEMapper();
-    assert(mapper!=NULL);
+    assert(mapper != NULL);
     return mapper;
 };
 
 void ReadsProcessor::MapPEReadsFromFilesMT(
-    std::string filenameA,
-    std::string filenameB,
-    std::string outputFilename
-    )
+                                           std::string filenameA,
+                                           std::string filenameB,
+                                           std::string outputFilename
+                                           )
 {
     signalPoll userPoll;
 
@@ -355,40 +356,6 @@ void ReadsProcessor::MapPEReadsFromFilesMT(
     FastqReader readerA(filenameA.c_str());
     FastqReader readerB(filenameB.c_str());
 
-#if 0
-// lots of duplicate - see if we can refactor - may be time
-// to put most of the this run state into a new class that
-// gets passed around.
-    // PROBE A:
-    IFILE fileA = ifopen(filenameA.c_str(), "rb");
-
-    // PROBE B:
-    IFILE fileB = ifopen(filenameB.c_str(), "rb");
-
-    PairedEndStats peStats;
-
-    MapperPE* mapperA;
-    MapperPE* mapperB;
-
-    MapperPE *shorterMapper;
-    MapperPE *longerMapper;
-
-    mapperA = createPEMapper();
-    mapperB = createPEMapper();
-
-    mapperA->samMateFlag = 0x0040;
-    mapperB->samMateFlag = 0x0080;
-    mapperA->mapperSE->samMateFlag = 0x0040;
-    mapperB->mapperSE->samMateFlag = 0x0080;
-
-    if (fileA == NULL)
-        error("Reads file [%s] can not be opened\n", filenameA.c_str());
-
-    if (fileB == NULL)
-        error("Reads file [%s] can not be opened\n", filenameB.c_str());
-
-#endif 
-
     if (outputFilePtr!=&std::cout) printf("\nProcessing paired short reads file [%s, %s] ... \n", filenameA.c_str(), filenameB.c_str());
     //
 
@@ -403,10 +370,11 @@ void ReadsProcessor::MapPEReadsFromFilesMT(
     omp_set_num_threads(this->numThread);
 
     // preapre Mapper and Fastq buffer
-    const int BatchSize = 0x0100;
+    // const int BatchSize = 0x0100;
+    const int BatchSize = 0x0001;
     MapperPE** mapperArrayA = new MapperPE*[BatchSize];
     MapperPE** mapperArrayB = new MapperPE*[BatchSize];
-    for (int i = 0 ; i < BatchSize; i++) 
+    for (int i = 0 ; i < BatchSize; i++)
     {
         mapperArrayA[i] = createPEMapper();
         mapperArrayB[i] = createPEMapper();
@@ -441,349 +409,323 @@ void ReadsProcessor::MapPEReadsFromFilesMT(
 
         // start multithread alignment
 
-// #pragma omp parallel for
+        // #pragma omp parallel for
         for (int i = 0; i < batchReadA; i++) {
             int index = i % BatchSize;
             MapperPE* mapperA = mapperArrayA[ index ];
             MapperPE* mapperB = mapperArrayB[ index ];
+            mapperA->resetMapper();
+            mapperB->resetMapper();
+
+#if 1
+            if (bufferA[index].tag.Find("unknown_0001:8:1:1155:15777") >= 0)
+                printf("b");
+#endif
             preMappingCheckA[i] = mapperA->processReadAndQuality(bufferA[index]);
             preMappingCheckB[i] = mapperB->processReadAndQuality(bufferB[index]);
 
-#if 0 
-            if (!preMappingCheckA[i]) 
+
+            MapperPE *shorterMapper;
+            MapperPE *longerMapper;
+
+            if (!preMappingCheckA[i] && !preMappingCheckB[i])
             {
+                mapperB->getMatchCountWithMutations();
+                if (mapperA->forwardCount + mapperA->backwardCount <
+                    mapperB->forwardCount + mapperB->backwardCount)
+                {
+                    shorterMapper = mapperA;
+                    longerMapper = mapperB;
+                }
+                else
+                {
+                    shorterMapper = mapperB;
+                    longerMapper = mapperA;
+                }
 
-                mapper->MapSingleRead();
-
-            }
-#endif
-
-        }
-    }  
-#if 0 
-    while (!ifeof(fileA)
-           && (maxBases==0 || peStats.getTotalBasesMapped() < maxBases)
-           && (maxReads==0 || peStats.getTotalMatches() < maxReads))
-    {
-        if (userPoll.userSaidQuit())
-        {
-            std::cerr << "\nUser Interrupt - processing stopped\n";
-            break;
-        }
-
-        //
-        // Reset best match to known state... problem was
-        // there are too many code paths to reliably clear
-        // otherwise.
-        //
-        mapperA->clearBestMatch();
-        mapperB->clearBestMatch();
-        // defer clearing         mapperA.mapperSE->clearBestMatch(); and mapperB.mapperSE->clearBestMatch(); until needed
-
-        //
-        // first read the data from both probes and initialize the mappers
-        //
-        int rc1, rc2;
-        rc1 = mapperA->getReadAndQuality(fileA);
-        if (rc1==EOF)
-        {
-            //
-            // XXX we should check for EOF on fileB and
-            // issue an error for short data if not set.
-            //
-            break;        // reached EOF on file
-        }
-
-        mapperA->getMatchCountWithMutations();
-
-        rc2 = mapperB->getReadAndQuality(fileB);
-        if (rc2==EOF)
-        {
-            //
-            // XXX we should check for EOF on fileA and
-            // issue an error for short data if not set.
-            //
-            break;        // reached EOF on file
-        }
-
-        //
-        // if not EOF, rc1 or rc2 being non zero means
-        // the read has a problem - either too short or
-        // the read data is different from the quality length.
-        //
-        if (rc1 || rc2)
-        {
-            // 1 -> read is too short
-            // 2 -> read and quality lengths are unequal
-            // 3 -> read has too few valid index words (<2)
-            peStats.updateBadInputStats(rc1);
-            peStats.updateBadInputStats(rc2);
-            //
-            // XXX we used to terminate here for various error
-            // conditions.  Since we potentially still have one
-            // good read, we're going to attempt to map it.
-            //
-        }
-
-        mapperB->getMatchCountWithMutations();
-
-        if (outputFilePtr != &std::cout) peStats.updateConsole();   // "%d pairs read" every once in awhile
-
-        //
-        // This is heuristic, and it isn't clear to me that it is buying us anything:
-        //
-        if (mapperA->forwardCount + mapperA->backwardCount <
-            mapperB->forwardCount + mapperB->backwardCount)
-        {
-            shorterMapper = mapperA;
-            longerMapper = mapperB;
-        }
-        else
-        {
-            shorterMapper = mapperB;
-            longerMapper = mapperA;
-        }
-
-//    define DEBUG_LOCAL_ALIGNMENT to watch what happens during a read realignment:
-//    XXX might need to rename this test macro
-//
-//    NB: if this macro is not set, the optimizer will remove all if(printDebug)
-//    code for us - no need to put it into a surrounding ifdef macro.
-//
-// #define DEBUG_LOCAL_ALIGNMENT
+                //    define DEBUG_LOCAL_ALIGNMENT to watch what happens during a read realignment:
+                //    XXX might need to rename this test macro
+                //
+                //    NB: if this macro is not set, the optimizer will remove all if(printDebug)
+                //    code for us - no need to put it into a surrounding ifdef macro.
+                //
+                // #define DEBUG_LOCAL_ALIGNMENT
 
 #if defined(DEBUG_LOCAL_ALIGNMENT)
-        // set this string to a particular read tag to see
-        // detail about just this read:
-        std::string debugReadTag = "del_middle";
-        bool printDebug = debugReadTag=="" ||
-            mapperA->fragmentTag.find(debugReadTag)!=std::string::npos ||
-            mapperB->fragmentTag.find(debugReadTag)!=std::string::npos;
-        // the following is just for set up a break point
-        if (printDebug == true)
-        {
-            int i = 0;
-            i = i + 1;
-        }
+                // set this string to a particular read tag to see
+                // detail about just this read:
+                std::string debugReadTag = "del_middle";
+                bool printDebug = debugReadTag=="" ||
+                    mapperA->fragmentTag.find(debugReadTag)!=std::string::npos ||
+                    mapperB->fragmentTag.find(debugReadTag)!=std::string::npos;
+                // the following is just for set up a break point
+                if (printDebug == true)
+                {
+                    int i = 0;
+                    i = i + 1;
+                }
 #else
-        bool printDebug = false;
+                bool printDebug = false;
 #endif
 #define DEBUG_PRINT(x) {if (printDebug == true) { x } }
-        //
-        // now search the longer set of matches spatially limited to those in the short list.
-        //
-        // The purpose of mapReads is to use the word index and available hashes to
-        // rapidly visit all the practical match locations given the bases in the two
-        // reads.
-        //
-        // If we know that one read failed for whatever reason, we won't
-        // attempt to map them both here, but rather let the method
-        // considerAlternateMaps() deal with it, since it has the logic
-        // there anyway.
-        //
-        if (rc1 == 0 && rc2 == 0)
-            longerMapper->mapReads(shorterMapper);
-        else
-        {
-            //
-            // these lines are initialization tidbits that
-            // considerAlternateMaps debug code expects to see set correctly.
-            //
-            mapperA->bestMatch.indexer = &mapperA->forward;
-            mapperB->bestMatch.indexer = &mapperB->forward;
-        }
-
-        //
-        // given the quickly mapped reads above, consider various slower
-        // mapping options depending on the relative qualities of the maps.
-        //
-        // mapperSE is simply passed in so that we don't have to reconstruct
-        // it every time we need a single end mapper around to do single end
-        // mapping with.
-        //
-
-        mapperA->setMappingMethodToPE();
-        mapperB->setMappingMethodToPE();
-
-        DEBUG_PRINT(std::cerr << "Aligning reads " << mapperA->fragmentTag << " and " << mapperB->fragmentTag << "\n";);
-
-        // From validity of the quality, 4 scenarios to discuss
-        // mapperA     mapperB    Action
-        // valid       valid
-        // valid       invalid
-        // invalid     valid
-        // invalid     invalid
-        if (mapperA->bestMatch.qualityIsValid() && mapperB->bestMatch.qualityIsValid())
-        {
-            //
-            // we get here if the index aligner found something, otherwise,
-            // both quality scores get reset to invalid.
-            //
-            DEBUG_PRINT(std::cerr << " - both have valid qualities\n";) ;
-            // According to quality (H: high mapQ, L: low mapQ) of mapperA mapperB, 4 scenarios to discuss
-            // mapperA     mapperB     Action
-            // H           H           just print them out
-            // H           L           try do local align on the other end.
-            // L           H           try do local align on the other end.
-            // L           L           try two single end mapping, and compare if it is better.
-            if (mapperA->bestMatch.mismatchCount < mapperA->forward.mismatchCutoff &&
-                mapperB->bestMatch.mismatchCount < mapperB->forward.mismatchCutoff)
-            {
-                DEBUG_PRINT(std::cerr << " - both have high quality maps and are below mismatch cutoffs\n";) ;
-
-                // XXX if the paired map score is low, we could do two single end
-                // alignments here, and see if the single ends align better... tricky
-                // because often low map scores are simply due to repeats, and this
-                // won't get any better with SE mapping.
                 //
-                // For now... just pass them along as good enough.
+                // now search the longer set of matches spatially limited to those in the short list.
                 //
-                if (mapperA->bestMatch.getQualityScore() < 20)
+                // The purpose of mapReads is to use the word index and available hashes to
+                // rapidly visit all the practical match locations given the bases in the two
+                // reads.
+                //
+                // If we know that one read failed for whatever reason, we won't
+                // attempt to map them both here, but rather let the method
+                // considerAlternateMaps() deal with it, since it has the logic
+                // there anyway.
+                //
+                longerMapper->mapReads(shorterMapper);
+                //
+                // given the quickly mapped reads above, consider various slower
+                // mapping options depending on the relative qualities of the maps.
+                //
+                // mapperSE is simply passed in so that we don't have to reconstruct
+                // it every time we need a single end mapper around to do single end
+                // mapping with.
+                //
+
+                mapperA->setMappingMethodToPE();
+                mapperB->setMappingMethodToPE();
+
+                DEBUG_PRINT(std::cerr << "Aligning reads " << mapperA->fragmentTag << " and " << mapperB->fragmentTag << "\n";);
+
+                // From validity of the quality, 4 scenarios to discuss
+                // mapperA     mapperB    Action
+                // valid       valid
+                // valid       invalid
+                // invalid     valid
+                // invalid     invalid
+                //
+                // However, the complex point is that we also need to consider mismatchCutoff
+                // if there are too many mismatches and good quality, we will try local alignment
+                // 
+                if (mapperA->bestMatch.qualityIsValid() && mapperB->bestMatch.qualityIsValid())
                 {
-                    DEBUG_PRINT(std::cerr << " - map score is " << mapperA->bestMatch.getQualityScore() << " so attempting single end alignment\n";) ;
-                    // see if we can do better mapping as single ends
+                    //
+                    // we get here if the index aligner found something, otherwise,
+                    // both quality scores get reset to invalid.
+                    //
+                    DEBUG_PRINT(std::cerr << " - both have valid qualities\n";) ;
+                    // According to number of mismatches:
+                    //   H: mismatchCount>=mismatchCutoff
+                    //   L: mismatchCount<mismatchCutoff
+                    // 
+                    // There are 4 scenarios to discuss:
+                    // mapperA     mapperB     Action
+                    // L           L           try single end aligner for both mapper
+                    //                         if significantly better, print both single end mapping
+                    //                         or just print paired end out
+                    // H           L           try do local align on the other end.
+                    // L           H           try do local align on the other end.
+                    // L           L           try two single end mapping, and compare if it is better.
+
+                    // deal with 
+                    if (mapperA->bestMatch.mismatchCount < mapperA->forward.mismatchCutoff &&
+                        mapperB->bestMatch.mismatchCount < mapperB->forward.mismatchCutoff)
+                    {
+                        DEBUG_PRINT(std::cerr << " - both have high quality maps and are below mismatch cutoffs\n";) ;
+
+                        // XXX if the paired map score is low, we could do two single end
+                        // alignments here, and see if the single ends align better... tricky
+                        // because often low map scores are simply due to repeats, and this
+                        // won't get any better with SE mapping.
+                        //
+                        // For now... just pass them along as good enough.
+                        //
+                        if (mapperA->bestMatch.getQualityScore() < 20)
+                        {
+                            DEBUG_PRINT(std::cerr << " - map score is " << mapperA->bestMatch.getQualityScore() << " so attempting single end alignment\n";) ;
+                            // see if we can do better mapping as single ends
+                            mapperA->remapSingle();
+                            mapperB->remapSingle();
+
+                            // the constant 20 here means we favor the original
+                            // paired map by a factor of 100
+                            if (20 +
+                                mapperA->mapperSE->bestMatch.quality +
+                                mapperB->mapperSE->bestMatch.quality >
+                                mapperA->bestMatch.quality +
+                                mapperB->bestMatch.quality)
+                            {
+
+                                DEBUG_PRINT(std::cerr << " - single end scores were better, using them!\n";) ;
+                                mapperA->setMappingMethodToSE();
+                                mapperB->setMappingMethodToSE();
+                            }
+                            else
+                            {
+                                DEBUG_PRINT(std::cerr << " - single end scores were no better, discarding\n";) ;
+                            }
+                        }
+                    }
+                    else if ((mapperA->bestMatch.mismatchCount < mapperA->forward.mismatchCutoff) && /* mapperA aligned at a good position*/
+                             mapperB->bestMatch.mismatchCount > mapperB->forward.mismatchCutoff * 2)
+                    {
+                        DEBUG_PRINT(std::cerr << " - " << mapperB->fragmentTag << " exceeds mismatch cutoff - realigning\n";) ;
+
+                        if (mapperB->tryLocalAlign(mapperA))
+                        {
+                            DEBUG_PRINT(std::cerr << " - locally realigning did better!\n";) ;
+                            mapperB->setMappingMethodToLocal();
+                        }
+                        else
+                        {
+                            DEBUG_PRINT(std::cerr << " - locally realigning failed to do better\n";) ;
+                        }
+
+                    }
+                    else if (mapperB->bestMatch.mismatchCount < mapperB->forward.mismatchCutoff && /* mapperB aligned at a good position*/
+                             mapperA->bestMatch.mismatchCount > mapperA->forward.mismatchCutoff * 2)
+                    {
+                        DEBUG_PRINT(std::cerr << " - " << mapperA->fragmentTag << " exceeds mismatch cutoff - realigning\n";) ;
+                        if (mapperA->tryLocalAlign(mapperB))
+                        {
+                            DEBUG_PRINT(std::cerr << " - locally realigning did better!\n";) ;
+                            mapperA->setMappingMethodToLocal();
+                        }
+                        else
+                        {
+                            DEBUG_PRINT(std::cerr << " - locally realigning failed to do better\n";) ;
+                        }
+                    }
+                    // till here the mapping of location step is finished
+                    // we now have to handle flag of proper paired read
+                    // if any mapper has high mismatches and valid mapping quality,
+                    // we need to clear the mapping and the proper pair flag
+                    mapperA->checkHighMismatchMapping(mapperB);
+                }
+                else
+                {
+                    DEBUG_PRINT(std::cerr << " - remapping both single end\n";) ;
+                    //
+                    // quality score for both is invalid - we didn't find a
+                    // candidate position, so fall back to single end alignment
+                    // and do the best we can from there.
+                    //
                     mapperA->remapSingle();
                     mapperB->remapSingle();
 
-                    // the constant 20 here means we favor the original
-                    // paired map by a factor of 100
-                    if (20 +
-                        mapperA->mapperSE->bestMatch.quality +
-                        mapperB->mapperSE->bestMatch.quality >
-                        mapperA->bestMatch.quality +
-                        mapperB->bestMatch.quality)
+                    //
+                    // our goal here is to see if we picked up a pair or if we can pick up
+                    // a pair - do this by picking the better end and using it for anchored
+                    // local alignment on the other end to see if we find a gapped alignment.
+                    //
+
+                    if (mapperA->mapperSE->bestMatch.qualityIsValid() &&
+                        mapperA->mapperSE->bestMatch.mismatchCount < mapperA->mapperSE->forward.mismatchCutoff)
                     {
 
-                        DEBUG_PRINT(std::cerr << " - single end scores were better, using them!\n";) ;
                         mapperA->setMappingMethodToSE();
+
+                        // if B is not aligned, go ahead and realign locally
+                        if (!(mapperB->mapperSE->bestMatch.qualityIsValid() &&
+                              mapperB->mapperSE->bestMatch.mismatchCount < mapperB->mapperSE->forward.mismatchCutoff))
+                        {
+
+                            DEBUG_PRINT(std::cerr << " - read B did not align, attempting local alignment\n";) ;
+
+                            if (mapperB->tryLocalAlign(mapperA->mapperSE))
+                            {
+                                mapperB->setMappingMethodToLocal();
+                                DEBUG_PRINT(std::cerr << " - local alignment succeeded!\n";) ;
+                            }
+                        }
+
+                    }
+
+                    if (mapperB->mapperSE->bestMatch.qualityIsValid() &&
+                        mapperB->mapperSE->bestMatch.mismatchCount < mapperB->mapperSE->forward.mismatchCutoff)
+                    {
+
                         mapperB->setMappingMethodToSE();
-                    }
-                    else
-                    {
-                        DEBUG_PRINT(std::cerr << " - single end scores were no better, discarding\n";) ;
-                    }
-                }
-            }
-            else if ((mapperA->bestMatch.mismatchCount < mapperA->forward.mismatchCutoff) && /* mapperA aligned at a good position*/
-                     mapperB->bestMatch.mismatchCount > mapperB->forward.mismatchCutoff * 2)
-            {
-                DEBUG_PRINT(std::cerr << " - " << mapperB->fragmentTag << " exceeds mismatch cutoff - realigning\n";) ;
 
-                if (mapperB->tryLocalAlign(mapperA))
-                {
-                    DEBUG_PRINT(std::cerr << " - locally realigning did better!\n";) ;
-                    mapperB->setMappingMethodToLocal();
-                }
-                else
-                {
-                    DEBUG_PRINT(std::cerr << " - locally realigning failed to do better\n";) ;
-                }
+                        // if A is not aligned, go ahead and realign locally
+                        if (!(mapperA->mapperSE->bestMatch.qualityIsValid() &&
+                              mapperA->mapperSE->bestMatch.mismatchCount < mapperA->mapperSE->forward.mismatchCutoff))
+                        {
 
-            }
-            else if (mapperB->bestMatch.mismatchCount < mapperB->forward.mismatchCutoff && /* mapperB aligned at a good position*/
-                     mapperA->bestMatch.mismatchCount > mapperA->forward.mismatchCutoff * 2)
-            {
-                DEBUG_PRINT(std::cerr << " - " << mapperA->fragmentTag << " exceeds mismatch cutoff - realigning\n";) ;
-                if (mapperA->tryLocalAlign(mapperB))
-                {
-                    DEBUG_PRINT(std::cerr << " - locally realigning did better!\n";) ;
-                    mapperA->setMappingMethodToLocal();
-                }
-                else
-                {
-                    DEBUG_PRINT(std::cerr << " - locally realigning failed to do better\n";) ;
-                }
-            }
-            // till here the mapping of location step is finished
-            // we now have to handle flag of proper paired read
-            // if any mapper has high mismatches and valid mapping quality, we need to clear the mapping and the proper pair flag
-            mapperA->checkHighMismatchMapping(mapperB);
-        }
-        else
-        {
-            DEBUG_PRINT(std::cerr << " - remapping both single end\n";) ;
-            //
-            // quality score for both is invalid - we didn't find a
-            // candidate position, so fall back to single end alignment
-            // and do the best we can from there.
-            //
-            mapperA->remapSingle();
-            mapperB->remapSingle();
+                            DEBUG_PRINT(std::cerr << " - read A did not align, attempting local alignment\n";) ;
 
-            //
-            // our goal here is to see if we picked up a pair or if we can pick up
-            // a pair - do this by picking the better end and using it for anchored
-            // local alignment on the other end to see if we find a gapped alignment.
-            //
+                            if (mapperA->tryLocalAlign(mapperB->mapperSE))
+                            {
+                                mapperA->setMappingMethodToLocal();
+                                DEBUG_PRINT(std::cerr << " - local alignment succeeded!\n";) ;
+                            }
+                        }
 
-            if (mapperA->mapperSE->bestMatch.qualityIsValid() &&
-                mapperA->mapperSE->bestMatch.mismatchCount < mapperA->mapperSE->forward.mismatchCutoff)
-            {
-
-                mapperA->setMappingMethodToSE();
-
-                // if B is not aligned, go ahead and realign locally
-                if (!(mapperB->mapperSE->bestMatch.qualityIsValid() &&
-                      mapperB->mapperSE->bestMatch.mismatchCount < mapperB->mapperSE->forward.mismatchCutoff))
-                {
-
-                    DEBUG_PRINT(std::cerr << " - read B did not align, attempting local alignment\n";) ;
-
-                    if (mapperB->tryLocalAlign(mapperA))
-                    {
-                        mapperB->setMappingMethodToSE();
-                        DEBUG_PRINT(std::cerr << " - local alignment succeeded!\n";) ;
                     }
                 }
 
             }
-
-            if (mapperB->mapperSE->bestMatch.qualityIsValid() &&
-                mapperB->mapperSE->bestMatch.mismatchCount < mapperB->mapperSE->forward.mismatchCutoff)
+            else // at least one Mapper cannot deal with input Fastq read
             {
-
-                mapperB->setMappingMethodToSE();
-
-                // if A is not aligned, go ahead and realign locally
-                if (!(mapperA->mapperSE->bestMatch.qualityIsValid() &&
-                      mapperA->mapperSE->bestMatch.mismatchCount < mapperA->mapperSE->forward.mismatchCutoff))
+#if 0
+                // will add suitable code here
+                if (!preMappingCheckA[i] )
                 {
+                    // mapperB setting SE mapping mode
+                    mapperB->setMappingMethodToSE();
 
-                    DEBUG_PRINT(std::cerr << " - read A did not align, attempting local alignment\n";) ;
+                    // old code to handle this situation
+                    //
+                    // these lines are initialization tidbits that
+                    // considerAlternateMaps debug code expects to see set correctly.
+                    //
+                    mapperA->bestMatch.indexer = &mapperA->forward;
+                    mapperB->bestMatch.indexer = &mapperB->forward;
 
-                    if (mapperA->tryLocalAlign(mapperB))
-                    {
-                        mapperA->setMappingMethodToSE();
-                        DEBUG_PRINT(std::cerr << " - local alignment succeeded!\n";) ;
-                    }
+
+
+                    // mapperB->mapping();
                 }
+#endif
+            }
+            // TODO the same for mapperB
+        } // end openmp parallel
 
+        // output results
+        for (int i = 0; i < batchReadA; i++) {
+            int index = i % BatchSize;
+            MapperPE* mapperA = mapperArrayA[ index ];
+            MapperPE* mapperB = mapperArrayB[ index ];
+
+            // XXX remember to work on getting mates in the correct output order
+            //
+            // print the reads.  mapperA is the first read, mapperB is the
+            // second.
+            //
+            // XXX make sure we tell matchedReadsBase::print to indicate
+            // flag 0x0040 for first mate, flag 0x0080 for second mate.
+            //
+            if (!isColorSpace)
+                mapperA->printBestReads(*outputFilePtr, mapperB);
+            else
+                mapperA->printCSBestReads(*outputFilePtr, gs, csgs, mapperB);
+
+
+            // record quality
+            if (preMappingCheckA[i] || preMappingCheckB[i]) {
+                peStats.updateBadInputStats(preMappingCheckA[i]);
+                peStats.updateBadInputStats(preMappingCheckB[i]);
+            }
+            else
+            {
+                peStats.recordMatchedRead(mapperA->getBestMatch(), mapperB->getBestMatch());
             }
         }
-
-        peStats.recordMatchedRead(mapperA->getBestMatch(), mapperB->getBestMatch());
-
-        // XXX remember to work on getting mates in the correct output order
-        //
-        // print the reads.  mapperA is the first read, mapperB is the
-        // second.
-        //
-        // XXX make sure we tell matchedReadsBase::print to indicate
-        // flag 0x0040 for first mate, flag 0x0080 for second mate.
-        //
-        if (!isColorSpace)
-            mapperA->printBestReads(*outputFilePtr, mapperB);
-        else
-            mapperA->printCSBestReads(*outputFilePtr, gs, csgs, mapperB);
-
-    } // end of while ifeof(f)
-#endif 
+    }
 
     // clean up resources
     peStats.runTime.end();
     readerA.Close();
     readerB.Close();
-
+    
     // free memory
     for (int i = 0 ; i < BatchSize; i++){
         delete mapperArrayA[i];
@@ -802,9 +744,9 @@ void ReadsProcessor::MapPEReadsFromFilesMT(
 // Read single end reads and align them
 // MT: mutlithread version
 void ReadsProcessor::MapSEReadsFromFileMT(
-    std::string filename,
-    std::string outputFilename
-    )
+                                          std::string filename,
+                                          std::string outputFilename
+                                          )
 {
     signalPoll userPoll;
 
@@ -884,9 +826,9 @@ void ReadsProcessor::MapSEReadsFromFileMT(
             //
             mapper->populateCigarRollerAndGenomeMatchPosition();
         } // end parallel for
-// it seems the following line will crash the output.
-// and there is no need to parallize the output part.
-//#pragma omp parallel for ordered
+        // it seems the following line will crash the output.
+        // and there is no need to parallize the output part.
+        //#pragma omp parallel for ordered
         for (int i = 0; i < batchRead; i++) {
             MapperSE* mapper = mapperArray[ i % BatchSize];
             MatchedReadSE &match = (MatchedReadSE &)(mapper->getBestMatch());
@@ -899,7 +841,7 @@ void ReadsProcessor::MapSEReadsFromFileMT(
                         mapper->samMateFlag,
                         mapperOptions.readGroupID,
                         mapper->alignmentPathTag
-                );
+                        );
             if (preMappingCheck[i]) // we cannot process the read
                 seStats.updateBadInputStats(preMappingCheck[i]);
             else // we processed teh read, so record how it is aligned
@@ -918,7 +860,7 @@ void ReadsProcessor::MapSEReadsFromFileMT(
     // clean up resources
     seStats.runTime.end();
     reader.Close();
-    
+
     // free memory
     for (int i = 0 ; i < BatchSize; i++)
         delete mapperArray[i];
@@ -931,7 +873,7 @@ void ReadsProcessor::MapSEReadsFromFileMT(
     std::cerr << "finished processing " << totalRead << " reads" << std::endl;
 
 
-    
+
 }
 
 //
@@ -939,9 +881,9 @@ void ReadsProcessor::MapSEReadsFromFileMT(
 // between the mapped reads
 //
 void ReadsProcessor::CalibratePairedReadsFiles(
-    std::string filenameA,
-    std::string filenameB
-    )
+                                               std::string filenameA,
+                                               std::string filenameB
+                                               )
 {
     SingleEndStats seStats;
     RunningStat     rs;
@@ -973,13 +915,15 @@ void ReadsProcessor::CalibratePairedReadsFiles(
         // first read the data from both probes
         //
         int rc1, rc2;
-        rc1 = mapperA->getReadAndQuality(fileA);
+#pragma message "will fix it"
+        //rc1 = mapperA->getReadAndQuality(fileA);
         if (rc1==EOF)
         {
             break;        // reached EOF on file
         }
 
-        rc2 = mapperB->getReadAndQuality(fileB);
+#pragma message "will fix it"
+        //rc2 = mapperB->getReadAndQuality(fileB);
         if (rc2==EOF)
         {
             break;        // reached EOF on file
@@ -1038,9 +982,9 @@ void ReadsProcessor::CalibratePairedReadsFiles(
 #ifdef COMPILE_OBSOLETE_CODE
 // Read single end reads and align them
 void ReadsProcessor::MapSEReadsFromFile(
-    std::string filename,
-    std::string outputFilename
-    )
+                                        std::string filename,
+                                        std::string outputFilename
+                                        )
 {
     signalPoll userPoll;
 
@@ -1179,7 +1123,7 @@ void ReadsProcessor::MapSEReadsFromFile(
                         mapper->samMateFlag,
                         mapperOptions.readGroupID,
                         mapper->alignmentPathTag
-                );
+                        );
         }
         else
         {
@@ -1203,7 +1147,7 @@ void ReadsProcessor::MapSEReadsFromFile(
                                                                         mapper->samMateFlag,
                                                                         mapperOptions.readGroupID,
                                                                         mapper->alignmentPathTag
-                );
+                                                                        );
         }
     } // end of while ifeof(f)
 
@@ -1215,21 +1159,21 @@ void ReadsProcessor::MapSEReadsFromFile(
 
     // output statistics and R files
     seStats.outputStatFile(outputFilename);
-    
+
     // free resources
     delete mapper;
     ifclose(f);
 }
 
 void ReadsProcessor::MapPEReadsFromFiles(
-    std::string filenameA,
-    std::string filenameB,
-    std::string outputFilename
-    )
+                                         std::string filenameA,
+                                         std::string filenameB,
+                                         std::string outputFilename
+                                         )
 {
     signalPoll userPoll;
 
-//    CalibratePairedReadsFiles(filenameA, filenameB);
+    //    CalibratePairedReadsFiles(filenameA, filenameB);
 
     std::ofstream   outputFile;
     std::ostream    *outputFilePtr;
@@ -1245,9 +1189,9 @@ void ReadsProcessor::MapPEReadsFromFiles(
     }
 
 
-// lots of duplicate - see if we can refactor - may be time
-// to put most of the this run state into a new class that
-// gets passed around.
+    // lots of duplicate - see if we can refactor - may be time
+    // to put most of the this run state into a new class that
+    // gets passed around.
     // PROBE A:
     IFILE fileA = ifopen(filenameA.c_str(), "rb");
 
@@ -1369,13 +1313,13 @@ void ReadsProcessor::MapPEReadsFromFiles(
             longerMapper = mapperA;
         }
 
-//    define DEBUG_LOCAL_ALIGNMENT to watch what happens during a read realignment:
-//    XXX might need to rename this test macro
-//
-//    NB: if this macro is not set, the optimizer will remove all if(printDebug)
-//    code for us - no need to put it into a surrounding ifdef macro.
-//
-// #define DEBUG_LOCAL_ALIGNMENT
+        //    define DEBUG_LOCAL_ALIGNMENT to watch what happens during a read realignment:
+        //    XXX might need to rename this test macro
+        //
+        //    NB: if this macro is not set, the optimizer will remove all if(printDebug)
+        //    code for us - no need to put it into a surrounding ifdef macro.
+        //
+        // #define DEBUG_LOCAL_ALIGNMENT
 
 #if defined(DEBUG_LOCAL_ALIGNMENT)
         // set this string to a particular read tag to see

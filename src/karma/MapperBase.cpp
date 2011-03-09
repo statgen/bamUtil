@@ -45,9 +45,9 @@
 #include <vector>
 
 unsigned int MapperBase::colorSpaceSNP[][3]={{ 5,10,15}, { 4,11,14}, { 7, 8,13}, { 6, 9,12},
-    { 1,11,14}, { 0,10,15}, { 3, 9,12}, { 2, 8,13},
-    { 2, 7,13}, { 3, 6,12}, { 0, 5,15}, { 1, 4,14},
-    { 3, 6, 9}, { 2, 7, 8}, { 1, 4,11}, { 0, 5,10}
+                                             { 1,11,14}, { 0,10,15}, { 3, 9,12}, { 2, 8,13},
+                                             { 2, 7,13}, { 3, 6,12}, { 0, 5,15}, { 1, 4,14},
+                                             { 3, 6, 9}, { 2, 7, 8}, { 1, 4,11}, { 0, 5,10}
 };
 
 #include "debug.h"
@@ -268,110 +268,6 @@ std::string MapperBase::Integer2Word(wordInteger_t n, unsigned int wordsize)
     return word;
 }
 
-bool MapperBase::setReadAndQuality(const char *r, int len, const char *q)
-{
-
-    originalRead = r;
-    originalQuality = q;
-
-    // for color space reads,
-    // we will convert char* r to base pair space
-    // notice, color space and base space are treated differently:
-    // base space:  forwardRead="ACGTA" backwardRead="ACGTA"
-    // color space: forwardRead="ACGTA" backwardRead="TGCAT"
-    // since if color space read is 01230, then reverse complement is 03210,
-    // after map 0->A, ..., 3->T, actually, we are mapping forward ACGTA, the reverse complement ATGCA,
-    // so we set the forward read to ACGTA, and set backward read to ATGCA.
-
-
-    if (gs->isColorSpace() && isalpha(r[0]))
-    {
-        // Clip the primer base - it is not useful in our mapping code.
-        // also clip the first color as it represents transition information
-        // between the primer base and the first real base.
-        forward.setReadAndQuality(r + 2, len - 2, q + 2);
-        backward.setReadAndQuality(r + 2, len - 2, q + 2);
-    }
-    else
-    {
-        // base space - no translations are necessary - setReadAndQuality takes
-        // care of converting the read to the backwards strand
-        forward.setReadAndQuality(r,len,q);
-        backward.setReadAndQuality(r,len,q);
-    }
-
-    //
-    // Here we check the return code - if true, it means
-    // we have too few valid index words for this read.
-    //
-    if (forward.setIndexStrategy() || backward.setIndexStrategy())
-    {
-        // when failing, make sure we clear out old data.
-        getBestMatch().constructorClear();
-        getBestMatch().indexer = &forward;
-        return true;
-    }
-    return false;
-}
-
-//
-// Given the short read input file in FASTQ format, populate the read fragment,
-// data quality, fragment title (header/tag/whatever), and update the line #
-// and # of reads.  Consider refactoring - a little messy looking.
-//
-// Returns:
-//   1->read too short (deprecated)
-//   2->read and quality lengths differ
-//   3->too few index words
-//
-// Aborts on mal-formed FASTQ file.  This is a bit harsh, but does at least
-// prevent ugly termination later when trying to read, e.g. a binary file.
-//
-int MapperBase::getReadAndQuality(IFILE f)
-{
-    #pragma warning obsolete method, use FastqReader class 
-
-    std::string ignore;
-    std::string dataQuality;
-    std::string readFragment;
-
-    while (!ifeof(f))
-    {
-        line ++;
-
-        // read line for readFragment name;
-        f >> fragmentTag;
-
-        // looking for first non-empty line
-        if (fragmentTag.size() > 0) break;
-    }
-
-    if (ifeof(f)) return EOF;
-
-    numberReads ++;
-
-    if (fragmentTag[0] != '@')
-        error("Tag line must start with [@]. check line %lu\n", line);
-
-    // read actual readFragment
-    line ++;
-    f >> readFragment;
-    if (readFragment.size() == 0)
-        error("unexpected empty short read DNA strand line %lu\n", line);
-
-    line++;
-    f >> ignore; // ignore - it's a repeat of first line
-
-    line++;
-    f >> dataQuality; // quality data
-    if (dataQuality.size() == 0)
-        error("unexpected empty DNA quality line %lu\n", line);
-
-
-    return processReadAndQuality(fragmentTag, readFragment, dataQuality);
-}
-
-
 int MapperBase::processReadAndQuality(Fastq& fq)
 {
     std::string tag = fq.tag.c_str();
@@ -379,6 +275,7 @@ int MapperBase::processReadAndQuality(Fastq& fq)
     std::string qual = fq.qual.c_str();
     return processReadAndQuality(tag, read, qual);
 }
+
 
 // 
 // Given a fastq record, we will trim it from left and/or right, then call setReadAndQuality() function;
@@ -449,6 +346,57 @@ int MapperBase::processReadAndQuality(std::string& fragmentTag, std::string& rea
     return 0;
 }
 
+
+bool MapperBase::setReadAndQuality(const char *r, int len, const char *q)
+{
+
+    originalRead = r;
+    originalQuality = q;
+
+    // for color space reads,
+    // we will convert char* r to base pair space
+    // notice, color space and base space are treated differently:
+    // base space:  forwardRead="ACGTA" backwardRead="ACGTA"
+    // color space: forwardRead="ACGTA" backwardRead="TGCAT"
+    // since if color space read is 01230, then reverse complement is 03210,
+    // after map 0->A, ..., 3->T, actually, we are mapping forward ACGTA, the reverse complement ATGCA,
+    // so we set the forward read to ACGTA, and set backward read to ATGCA.
+
+
+    if (gs->isColorSpace() && isalpha(r[0]))
+    {
+        // Clip the primer base - it is not useful in our mapping code.
+        // also clip the first color as it represents transition information
+        // between the primer base and the first real base.
+        forward.setReadAndQuality(r + 2, len - 2, q + 2);
+        backward.setReadAndQuality(r + 2, len - 2, q + 2);
+    }
+    else
+    {
+        // base space - no translations are necessary - setReadAndQuality takes
+        // care of converting the read to the backwards strand
+        forward.setReadAndQuality(r,len,q);
+        backward.setReadAndQuality(r,len,q);
+    }
+
+    //
+    // Here we check the return code - if true, it means
+    // we have too few valid index words for this read.
+    //
+    if (forward.setIndexStrategy() || backward.setIndexStrategy())
+    {
+        // TODO(zhanxw)
+        // will remove this code eventually,
+        // as we should call resetMapper() at begining of using Mapper.
+        // when failing, make sure we clear out old data.
+        getBestMatch().constructorClear();
+        getBestMatch().indexer = &forward;
+        return true;
+    }
+    return false;
+}
+
+
 //
 // XXX we need two distinct modes of operation.
 //
@@ -470,9 +418,9 @@ static int totalCandidateCount;
 // a wrapper function
 // for calling "evalBaseSpaceRead()" for forward & backward ReadIndex
 void MapperBase::evalBaseSpaceReads(
-    evalSinglePositionFunctionType onePositionMethod,
-    evalAllPositionsFunctionType allPositionsMethod
-)
+                                    evalSinglePositionFunctionType onePositionMethod,
+                                    evalAllPositionsFunctionType allPositionsMethod
+                                    )
 {
     assert((onePositionMethod==NULL) ^(allPositionsMethod==NULL));
 #if defined(CANDIDATE_LIMIT)
@@ -488,9 +436,9 @@ void MapperBase::evalBaseSpaceReads(
 // 2. every word stored (replace "N" with a letter) in ReadIndexer class
 // 3. (optional) mutated every word stored in ReadIndexer class
 bool MapperBase::evalBaseSpaceRead(
-    evalSinglePositionFunctionType onePositionMethod,
-    evalAllPositionsFunctionType allPositionsMethod,
-    ReadIndexer &indexer)
+                                   evalSinglePositionFunctionType onePositionMethod,
+                                   evalAllPositionsFunctionType allPositionsMethod,
+                                   ReadIndexer &indexer)
 {
     for (unsigned int whichWord=0; whichWord<indexer.wordInts.size(); whichWord++)
     {
@@ -538,9 +486,9 @@ bool MapperBase::evalBaseSpaceRead(
 // a wrapper function
 // for calling "evalBaseSpaceRead()" for forward & backward ReadIndex
 void MapperBase::evalColorSpaceReads(
-    evalSinglePositionFunctionType onePositionMethod,
-    evalAllPositionsFunctionType allPositionsMethod
-)
+                                     evalSinglePositionFunctionType onePositionMethod,
+                                     evalAllPositionsFunctionType allPositionsMethod
+                                     )
 {
     assert((onePositionMethod!=NULL) || (allPositionsMethod!=NULL));
     if (evalColorSpaceRead(onePositionMethod, allPositionsMethod, forward)) return;
@@ -553,9 +501,9 @@ void MapperBase::evalColorSpaceReads(
 // 2. every word stored (replace "N" with a letter) in ReadIndexer class
 // 3. (optional) mutated every word stored in ReadIndexer class
 bool MapperBase::evalColorSpaceRead(
-    evalSinglePositionFunctionType onePositionMethod,
-    evalAllPositionsFunctionType allPositionsMethod,
-    ReadIndexer &indexer)
+                                    evalSinglePositionFunctionType onePositionMethod,
+                                    evalAllPositionsFunctionType allPositionsMethod,
+                                    ReadIndexer &indexer)
 {
     for (unsigned int whichWord=0; whichWord<indexer.wordInts.size(); whichWord++)
     {
@@ -610,11 +558,11 @@ bool MapperBase::evalColorSpaceRead(
 // to call either "allPositionMethod" (a function pointer passed in as parameter)
 // or calling "evalAllCandidatePositions" function using parameter "onePositionMethod"
 bool MapperBase::evalAllCandidatesForWord(
-    evalSinglePositionFunctionType onePositionMethod,
-    evalAllPositionsFunctionType allPositionsMethod,
-    ReadIndexer &indexer,
-    unsigned int whichWord,
-    wordInteger_t xorMask)
+                                          evalSinglePositionFunctionType onePositionMethod,
+                                          evalAllPositionsFunctionType allPositionsMethod,
+                                          ReadIndexer &indexer,
+                                          unsigned int whichWord,
+                                          wordInteger_t xorMask)
 {
     int count = 0;
     genomeIndex_t *candidates = NULL;
@@ -650,22 +598,22 @@ bool MapperBase::evalAllCandidatesForWord(
     if (allPositionsMethod)
     {
         return (*allPositionsMethod)(
-                   this,
-                   indexer,
-                   count,
-                   candidates,
-                   whichWord
-               );
+                                     this,
+                                     indexer,
+                                     count,
+                                     candidates,
+                                     whichWord
+                                     );
     }
     else
     {
         return evalAllCandidatePositions(
-                   onePositionMethod,
-                   indexer,
-                   whichWord,
-                   count,
-                   candidates
-               );
+                                         onePositionMethod,
+                                         indexer,
+                                         whichWord,
+                                         count,
+                                         candidates
+                                         );
     }
 
     return false;
@@ -675,19 +623,19 @@ bool MapperBase::evalAllCandidatesForWord(
 // to call either "allPositionMethod" (a function pointer passed in as parameter)
 // or calling "evalAllCandidatePositions" function using parameter "onePositionMethod"
 bool MapperBase::evalAllCandidatesForColorSpaceWord(
-    evalSinglePositionFunctionType onePositionMethod,
-    evalAllPositionsFunctionType allPositionsMethod,
-    ReadIndexer &indexer,
-    unsigned int whichWord,
-    wordInteger_t shiftLocation,
-    wordInteger_t mutationIndex)
+                                                    evalSinglePositionFunctionType onePositionMethod,
+                                                    evalAllPositionsFunctionType allPositionsMethod,
+                                                    ReadIndexer &indexer,
+                                                    unsigned int whichWord,
+                                                    wordInteger_t shiftLocation,
+                                                    wordInteger_t mutationIndex)
 {
 
     wordInteger_t mask = 15;
     mask<<= shiftLocation;
     unsigned int adjacentColorCodes = (indexer.wordInts[whichWord] & mask) >>shiftLocation;
     wordInteger_t word = (indexer.wordInts[whichWord] & ~mask) |
-                         (colorSpaceSNP[adjacentColorCodes][mutationIndex] << shiftLocation);
+        (colorSpaceSNP[adjacentColorCodes][mutationIndex] << shiftLocation);
     word &= wordIndex-> wordsCountIndexMask; // cap "word" to its maximum legal value
 
     int count = 0;
@@ -713,33 +661,33 @@ bool MapperBase::evalAllCandidatesForColorSpaceWord(
     if (allPositionsMethod)
     {
         return (*allPositionsMethod)(
-                   this,
-                   indexer,
-                   count,
-                   candidates,
-                   whichWord
-               );
+                                     this,
+                                     indexer,
+                                     count,
+                                     candidates,
+                                     whichWord
+                                     );
     }
     else
     {
         return evalAllCandidatePositions(
-                   onePositionMethod,
-                   indexer,
-                   whichWord,
-                   count,
-                   candidates
-               );
+                                         onePositionMethod,
+                                         indexer,
+                                         whichWord,
+                                         count,
+                                         candidates
+                                         );
     }
 
     return false;
 }
 
 inline bool MapperBase::evalAllCandidatePositions(
-    evalSinglePositionFunctionType pmethod,
-    ReadIndexer &indexer,
-    int     whichWord,
-    int     candidateCount,
-    genomeIndex_t *candidates)
+                                                  evalSinglePositionFunctionType pmethod,
+                                                  ReadIndexer &indexer,
+                                                  int     whichWord,
+                                                  int     candidateCount,
+                                                  genomeIndex_t *candidates)
 {
     for (int i = 0; i < candidateCount; i ++)
     {
@@ -787,13 +735,13 @@ void MapperBase::debugPrint(MatchedReadBase &matchedRead)
         reverse(dataQuality.begin(), dataQuality.end());
 
     gs->debugPrintReadValidation(
-        matchedRead.indexer->read,
-        dataQuality,
-        matchedRead.isForward() ? 'F' : 'R',
-        matchedRead.genomeMatchPosition,
-        matchedRead.quality,
-        matchedRead.mismatchCount,
-        false);
+                                 matchedRead.indexer->read,
+                                 dataQuality,
+                                 matchedRead.isForward() ? 'F' : 'R',
+                                 matchedRead.genomeMatchPosition,
+                                 matchedRead.quality,
+                                 matchedRead.mismatchCount,
+                                 false);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -835,16 +783,75 @@ int MapperBase::Word2Integer(std::string & word, unsigned int index, int &countN
 
             switch (crtbaseinteger)
             {
-                case GenomeSequence::baseXIndex:
-                    return INVALID_WORDINDEX;   // policy issue - should a read with a single invalid base be tossed?
-                case GenomeSequence::baseNIndex:
-                    crtbaseinteger = 0;         // knowing this is 0, we'll visit all edits of this base later
-                default:
-                    wordinteger |= crtbaseinteger;
+            case GenomeSequence::baseXIndex:
+                return INVALID_WORDINDEX;   // policy issue - should a read with a single invalid base be tossed?
+            case GenomeSequence::baseNIndex:
+                crtbaseinteger = 0;         // knowing this is 0, we'll visit all edits of this base later
+            default:
+                wordinteger |= crtbaseinteger;
             }
         }
     }
 
     return wordinteger;
 }
+
+//
+// Given the short read input file in FASTQ format, populate the read fragment,
+// data quality, fragment title (header/tag/whatever), and update the line #
+// and # of reads.  Consider refactoring - a little messy looking.
+//
+// Returns:
+//   1->read too short (deprecated)
+//   2->read and quality lengths differ
+//   3->too few index words
+//
+// Aborts on mal-formed FASTQ file.  This is a bit harsh, but does at least
+// prevent ugly termination later when trying to read, e.g. a binary file.
+//
+int MapperBase::getReadAndQuality(IFILE f)
+{
+#pragma warning obsolete method, use FastqReader class 
+
+    std::string ignore;
+    std::string dataQuality;
+    std::string readFragment;
+
+    while (!ifeof(f))
+    {
+        line ++;
+
+        // read line for readFragment name;
+        f >> fragmentTag;
+
+        // looking for first non-empty line
+        if (fragmentTag.size() > 0) break;
+    }
+
+    if (ifeof(f)) return EOF;
+
+    numberReads ++;
+
+    if (fragmentTag[0] != '@')
+        error("Tag line must start with [@]. check line %lu\n", line);
+
+    // read actual readFragment
+    line ++;
+    f >> readFragment;
+    if (readFragment.size() == 0)
+        error("unexpected empty short read DNA strand line %lu\n", line);
+
+    line++;
+    f >> ignore; // ignore - it's a repeat of first line
+
+    line++;
+    f >> dataQuality; // quality data
+    if (dataQuality.size() == 0)
+        error("unexpected empty DNA quality line %lu\n", line);
+
+
+    return processReadAndQuality(fragmentTag, readFragment, dataQuality);
+}
+
+
 #endif 

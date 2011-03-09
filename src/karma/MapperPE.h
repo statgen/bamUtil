@@ -42,23 +42,30 @@
 //
 class MapperPE : public MapperBase
 {
-public:
+ public:
     // Define types
     typedef vector<MatchedReadPE>  MatchCandidates_t;
     typedef vector<MatchedReadPE *>  MatchCandidatesPointers_t;
     typedef MatchCandidatesPointers_t::iterator MatchCandidatesPointersIter_t;
     typedef vector< std::pair 
         <MatchCandidatesPointersIter_t, MatchCandidatesPointersIter_t> > MatchCandidatesIndex_t;
-public:
+ public:
 
     MapperPE    *otherEndMapper;
     MapperPE();
 
+    // reset method, it should be called before any alignment actually happen
+    // note, this just reset one Mapper, you need to do the same for the other Mapper.
+    void resetMapper() {
+        this->clearBestMatch();
+        this->matchCandidate.constructorClear();
+        this->forward.checkedPositions.Clear();
+        this->backward.checkedPositions.Clear();
+    };
+
     void init(std::string & readFragment, std::string &dataQuality, std::string &fragmentTag);
 
     void populateCigarRollerAndGenomeMatchPosition();
-
-    enum MappingMethod {PE_MODE, LOCAL_MODE, SE_MODE} mappingMethod;
     MapperSE* mapperSE;
 
     //
@@ -76,20 +83,49 @@ public:
     unsigned int backwardCount;
 
     virtual void mapReads(MapperPE *)=0;
+    void adjustMapping();
 
-public:
-    MatchedReadPE   bestMatch;
-    MatchedReadPE   matchCandidate;
     MatchedReadBase &getBestMatch();
     bool updateBestMatch(MatchedReadPE& matchCandidateB);
-    //
 
-    void debugDump(std::ostream &);
     void printBestReads(std::ostream &file, MapperPE *longerMapper);
     void printCSBestReads(std::ostream &file,
                           GenomeSequence* gs,
                           GenomeSequence* csgs,
                           MapperPE *longerMapper);
+
+    // reset bestMatch and assign its indexer to a valid ReadIndexer instance
+    void clearBestMatch()
+    {
+        this->bestMatch.constructorClear();
+        this->bestMatch.indexer = &forward;   // needs to point to something sane
+        
+        mapperSE->bestMatch.constructorClear();
+        mapperSE->bestMatch.indexer = &forward;   // needs to point to something sane
+    }
+
+    void checkHighMismatchMapping(MapperPE* otherMapper);
+    bool clearHighMismatchMapping();
+    void remapSingle(void);
+    virtual bool tryLocalAlign(MapperBase* anchor) = 0;
+    void setMappingMethodToPE(void);
+    void setMappingMethodToSE(void);
+    void setMappingMethodToLocal(void);
+
+    enum MappingMethod {PE_MODE, LOCAL_MODE, SE_MODE} mappingMethod;
+    MatchedReadPE   bestMatch;
+
+    bool populateMatchCandidates(bool isColorSpace);
+    bool populateMatchCandidates(
+                                 ReadIndexer &indexer,
+                                 int whichWord,
+                                 int candidateCount,
+                                 genomeIndex_t *candidates
+                                 );
+    MatchedReadPE   matchCandidate;
+ protected:
+
+    void debugDump(std::ostream &);
 
     // members and methods for managing and rapidly ordering a large
     // number of match candidates for a read.
@@ -101,12 +137,14 @@ public:
     // keeping track of mapped locations later (e.g. during printing).
     //
     MatchCandidates_t           matchCandidates;
+ public:
     //
     // matchCandidatesPointers is a vector containing pointers into
     // the above matchCandidates vector, and is used to make merge
     // sorting more efficient.
     //
     MatchCandidatesPointers_t   matchCandidatesPointers;
+ protected:
     //
     // matchCandidatesIndex is a vector (initially un-ordered) of
     // pointers to begin and end subsets (which themselves are sorted),
@@ -116,49 +154,25 @@ public:
     //
     MatchCandidatesIndex_t      matchCandidatesIndex;
 
-
-    bool populateMatchCandidates(bool isColorSpace);
-    bool populateMatchCandidates(
-        ReadIndexer &indexer,
-        int whichWord,
-        int candidateCount,
-        genomeIndex_t *candidates
-    );
-    MatchCandidatesIndex_t::iterator mergeSortedMatchCandidates(MatchCandidatesIndex_t::iterator, MatchCandidatesIndex_t::iterator);
+    // 
+    MatchCandidatesIndex_t::iterator mergeSortedMatchCandidates(MatchCandidatesIndex_t::iterator, 
+                                                                MatchCandidatesIndex_t::iterator);
 
     void testMatchCandidates();
     void testMatchCandidates(MatchCandidatesIndex_t::iterator);
     void printMatchCandidates(MatchCandidatesIndex_t::iterator);
     void printMatchCandidates();
 
-    void clearBestMatch()
-    {
-        this->bestMatch.constructorClear();
-        this->bestMatch.indexer = &forward;   // needs to point to something sane
-
-        mapperSE->bestMatch.constructorClear();
-        mapperSE->bestMatch.indexer = &forward;   // needs to point to something sane
-    }
-
-    void checkHighMismatchMapping(MapperPE* otherMapper);
-    bool clearHighMismatchMapping();
-    void remapSingle(void);
-    virtual bool tryLocalAlign(MapperPE* anchor) = 0;
-    void setMappingMethodToPE(void);
-    void setMappingMethodToSE(void);
-    void setMappingMethodToLocal(void);
-
+#ifdef COMPILE_OBSOLETE_CODE
     // according to this->mappingMethod, return MatchedRead aligned in SE mode or PE mode
     MatchedReadBase* chooseBestMatch();
-
-#if 0
-protected:
+ protected:
     virtual bool mapPairedReads(
-        ReadIndexer         &indexer,
-        int                 whichWord,
-        int                 candidateCount,
-        genomeIndex_t       *candidates
-    )=0;
+                                ReadIndexer         &indexer,
+                                int                 whichWord,
+                                int                 candidateCount,
+                                genomeIndex_t       *candidates
+                                )=0;
 #endif
 
 };

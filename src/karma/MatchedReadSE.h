@@ -5,7 +5,7 @@
 
 class MatchedReadSE : public MatchedReadBase
 {
-public:
+ public:
     // overloaded methods - see base class for descriptions:
     // char *getSequence(String &sequence, genomeIndex_t genomeMatchPosition);
     void updateMatch(MatchedReadSE& betterMatch);

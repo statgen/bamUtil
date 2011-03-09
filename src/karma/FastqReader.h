@@ -23,9 +23,9 @@ struct Fastq {
 };
 
 class FastqReader{
-private:
+ private:
     IFILE fHandle;
-public:
+ public:
     FastqReader(const char* fileName) {
         this->fHandle = ifopen(fileName, "rb");
         if (!this->fHandle)
@@ -38,13 +38,13 @@ public:
         return ifeof(this->fHandle);
     }
 
-public:
+ public:
     // Read from f atmost nReads fastq reads into buffer
     // @param IFILE f: an openned IFILE handle
     // @param buffer Fastq* buffer: non-null memory buffer
     // @param int nReads: at most this number of reads will be read into memory
     // @return int: how many Fastq reads are actully read, 0: readed end; minus values: error!
     int ReadFastqFile(Fastq* buffer, int nReads);
- };
+};
 
 #endif /* _FASTQREADER_H_ */

@@ -29,7 +29,7 @@
 
 class MapperSEColorSpace: public MapperSE
 {
-public:
+ public:
     MapperSEColorSpace();
     void MapSingleRead();
 

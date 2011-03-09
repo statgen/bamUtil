@@ -48,12 +48,12 @@
 class MapperBase
 {
 
-protected:
+ protected:
     WordIndex   *wordIndex;
     WordHash    *wordHashRight;
     WordHash    *wordHashLeft;
 
-public:
+ public:
     static const int MAX_Q2P = 1000;    // size of sumQualityToProb array
 
     double cumulativePosteriorProbabilitiesCutoff;
@@ -64,18 +64,18 @@ public:
     uint16_t    samMateFlag;
     std::string alignmentPathTag; // e.g. Set its value to "ABC" will result a SAM optional tag: XA:Z:alignmentPathTag
 
-protected:
+ protected:
     GenomeSequence  *gs;
     Random *rand;
     MapperUserOption    mapperOptions;
 
-// The following table is constructed to help detecting color space SNPs
-// e.g.
-// for index 0, we know its binary 0000, and possible SNPs are 0101, 1010, 1111, so we put 5, 10, 15
-// for index 1, we know its binary 0001, and possible SNPs are 0100, 1011, 1110, so we put 4, 11, 14
+    // The following table is constructed to help detecting color space SNPs
+    // e.g.
+    // for index 0, we know its binary 0000, and possible SNPs are 0101, 1010, 1111, so we put 5, 10, 15
+    // for index 1, we know its binary 0001, and possible SNPs are 0100, 1011, 1110, so we put 4, 11, 14
     static unsigned int colorSpaceSNP[][3];
 
-public:
+ public:
     MapperBase();
     virtual ~MapperBase();
 
@@ -87,12 +87,11 @@ public:
     int line;
     int numberReads;
 
-    int getReadAndQuality(IFILE f);
     int processReadAndQuality(Fastq& fq);
     int processReadAndQuality(std::string& fragmentTag, std::string& readFragment, std::string& dataQuality);  // 0->success
     bool setReadAndQuality(const char *read, int len, const char *quality); // true -> failed
 
-private:
+ private:
     void setGenomeSequence(GenomeSequence *g)
     {
         gs = g;
@@ -123,9 +122,10 @@ private:
         mapperOptions = m;      // copy values into here
     }
 
-public:
+ public:
     void initMapper(GenomeSequence *g, WordIndex *w, WordHash *wl, WordHash * wr, MapperUserOption &m)
     {
+        assert(g && w && wl && wr);
         this->setGenomeSequence(g);
         this->setWordIndex(w);
         this->setWordHashLeft(wl);
@@ -193,39 +193,39 @@ public:
     void evalBaseSpaceReads(evalSinglePositionFunctionType, evalAllPositionsFunctionType);
     void evalColorSpaceReads(evalSinglePositionFunctionType, evalAllPositionsFunctionType);
 
-private:
+ private:
     bool evalBaseSpaceRead(
-        evalSinglePositionFunctionType,
-        evalAllPositionsFunctionType,
-        ReadIndexer &indexer);
+                           evalSinglePositionFunctionType,
+                           evalAllPositionsFunctionType,
+                           ReadIndexer &indexer);
     bool evalColorSpaceRead(
-        evalSinglePositionFunctionType,
-        evalAllPositionsFunctionType,
-        ReadIndexer &indexer);
+                            evalSinglePositionFunctionType,
+                            evalAllPositionsFunctionType,
+                            ReadIndexer &indexer);
 
     bool evalAllCandidatesForWord(
-        evalSinglePositionFunctionType,
-        evalAllPositionsFunctionType,
-        ReadIndexer &indexer,
-        unsigned int whichWord,
-        wordInteger_t xorMask);
+                                  evalSinglePositionFunctionType,
+                                  evalAllPositionsFunctionType,
+                                  ReadIndexer &indexer,
+                                  unsigned int whichWord,
+                                  wordInteger_t xorMask);
 
     bool evalAllCandidatesForColorSpaceWord(
-        evalSinglePositionFunctionType,
-        evalAllPositionsFunctionType,
-        ReadIndexer &indexer,
-        unsigned int whichWord,
-        wordInteger_t shiftLocation,
-        wordInteger_t mutationIndex);
+                                            evalSinglePositionFunctionType,
+                                            evalAllPositionsFunctionType,
+                                            ReadIndexer &indexer,
+                                            unsigned int whichWord,
+                                            wordInteger_t shiftLocation,
+                                            wordInteger_t mutationIndex);
 
     bool evalAllCandidatePositions(
-        evalSinglePositionFunctionType,
-        ReadIndexer &indexer,
-        int     whichWord,
-        int     candidateCount,
-        genomeIndex_t *candidates
-    );
-public:
+                                   evalSinglePositionFunctionType,
+                                   ReadIndexer &indexer,
+                                   int     whichWord,
+                                   int     candidateCount,
+                                   genomeIndex_t *candidates
+                                   );
+ public:
     //
     // Debug aid.  We'll sprinkle the mapper with some checkpoints
     // of interest - specifically for each condition that arises of
@@ -242,7 +242,7 @@ public:
         if (enableMapperDebug)
         {
             if ((debugPosition - debugPositionWindow < pos) &&
-                    (pos < debugPosition + debugPositionWindow))
+                (pos < debugPosition + debugPositionWindow))
             {
                 std::string location;
 
@@ -254,8 +254,10 @@ public:
     }
 
 #ifdef COMPILE_OBSOLETE_CODE
-public:
+ public:
     int Word2Integer(std::string & word, unsigned int index, int &countNbases);
+    int getReadAndQuality(IFILE f);
+
 #endif
 };
 

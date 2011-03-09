@@ -78,18 +78,18 @@ void MappingStatsBase::recordQualityInfo(MatchedReadBase &match)
 {
     switch (match.quality)
     {
-        case MatchedReadBase::UNSET_QUALITY:
-            noValidMatch++;
-            break;
-        case MatchedReadBase::EARLYSTOP_QUALITY:
-            earlyDrops++;
-            break;
-        case MatchedReadBase::REPEAT_QUALITY:
-            repeatCountTooHigh++;
-            break;
-        default:
-            // currently nothing...
-            break;
+    case MatchedReadBase::UNSET_QUALITY:
+        noValidMatch++;
+        break;
+    case MatchedReadBase::EARLYSTOP_QUALITY:
+        earlyDrops++;
+        break;
+    case MatchedReadBase::REPEAT_QUALITY:
+        repeatCountTooHigh++;
+        break;
+    default:
+        // currently nothing...
+        break;
     }
 
 }
@@ -131,53 +131,53 @@ void MappingStatsBase::printStats(std::ostream &file, std::ostream &fileR)
     file << std::endl;
 
     file
-    << totalReads
-    << " total reads in "
-    << runTime.interval()/3600.0
-    << " hours at a rate of "
-    << 3600.0 * totalReads / runTime.interval()
-    << " probe reads per hour."
-    << std::endl << std::endl;
+        << totalReads
+        << " total reads in "
+        << runTime.interval()/3600.0
+        << " hours at a rate of "
+        << 3600.0 * totalReads / runTime.interval()
+        << " probe reads per hour."
+        << std::endl << std::endl;
 
     file
-    << badUnequalData
-    << " reads were ignored due to having unequal quality and data lengths."
-    << std::endl << std::endl;
+        << badUnequalData
+        << " reads were ignored due to having unequal quality and data lengths."
+        << std::endl << std::endl;
 
     file
-    << badShortData
-    << " reads were ignored due to being too short."
-    << std::endl << std::endl;
+        << badShortData
+        << " reads were ignored due to being too short."
+        << std::endl << std::endl;
 
     file
-    << badIndexWords
-    << " reads were ignored due to having too few valid index words."
-    << std::endl << std::endl;
+        << badIndexWords
+        << " reads were ignored due to having too few valid index words."
+        << std::endl << std::endl;
 
 
     file
-    << " "
-    << setw(8) << noValidMatch
-    << " ("
-    << setw(6) << 100.0 * noValidMatch / totalReads
-    << "%) probe reads had no valid match."
-    << std::endl;
+        << " "
+        << setw(8) << noValidMatch
+        << " ("
+        << setw(6) << 100.0 * noValidMatch / totalReads
+        << "%) probe reads had no valid match."
+        << std::endl;
 
     file
-    << "+"
-    << setw(8) << repeatCountTooHigh
-    << " ("
-    << setw(6) << 100.0 * repeatCountTooHigh / totalReads
-    << "%) probe reads hit high repeat regions."
-    << std::endl;
+        << "+"
+        << setw(8) << repeatCountTooHigh
+        << " ("
+        << setw(6) << 100.0 * repeatCountTooHigh / totalReads
+        << "%) probe reads hit high repeat regions."
+        << std::endl;
 
     file
-    << "+"
-    << setw(8) << earlyDrops
-    << " ("
-    << setw(6) <<  100.0 * earlyDrops / totalReads
-    << "%) probe reads were early stops."
-    << std::endl;
+        << "+"
+        << setw(8) << earlyDrops
+        << " ("
+        << setw(6) <<  100.0 * earlyDrops / totalReads
+        << "%) probe reads were early stops."
+        << std::endl;
 
     file << "---------" << std::endl;
 
@@ -185,50 +185,50 @@ void MappingStatsBase::printStats(std::ostream &file, std::ostream &fileR)
     // sum of above three should == next one
     //
     file
-    << "="
-    << setw(8) << noValidMatch+repeatCountTooHigh + earlyDrops
-    << " ("
-    << setw(6) << 100.0 *(noValidMatch+repeatCountTooHigh+earlyDrops) / totalReads
-    << "%) total probe reads that had an invalid quality."
-    << std::endl;
+        << "="
+        << setw(8) << noValidMatch+repeatCountTooHigh + earlyDrops
+        << " ("
+        << setw(6) << 100.0 *(noValidMatch+repeatCountTooHigh+earlyDrops) / totalReads
+        << "%) total probe reads that had an invalid quality."
+        << std::endl;
 
     file << std::endl;
     file << std::endl;
     file << std::endl;
 
     file
-    << " "
-    << setw(8) << invalidQualityDrops
-    << " ("
-    << setw(6) << 100.0 * invalidQualityDrops / totalReads
-    << "%) probe reads were dropped due to invalid quality (*)."
-    << std::endl;
+        << " "
+        << setw(8) << invalidQualityDrops
+        << " ("
+        << setw(6) << 100.0 * invalidQualityDrops / totalReads
+        << "%) probe reads were dropped due to invalid quality (*)."
+        << std::endl;
 
     file
-    << "+"
-    << setw(8) << lowQualityDrops
-    << " ("
-    << setw(6) << 100.0 * lowQualityDrops / totalReads
-    << "%) probe reads were dropped for low quality."
-    << std::endl;
+        << "+"
+        << setw(8) << lowQualityDrops
+        << " ("
+        << setw(6) << 100.0 * lowQualityDrops / totalReads
+        << "%) probe reads were dropped for low quality."
+        << std::endl;
 
     file
-    << "+"
-    << setw(8) << totalMatches
-    << " ("
-    << setw(6) << 100.0 * totalMatches / totalReads
-    << "%) probe reads were successfully mapped."
-    << std::endl;
+        << "+"
+        << setw(8) << totalMatches
+        << " ("
+        << setw(6) << 100.0 * totalMatches / totalReads
+        << "%) probe reads were successfully mapped."
+        << std::endl;
 
     file << "---------" << std::endl;
 
     file
-    << "="
-    << setw(8) << totalReads
-    << " ("
-    << setw(6) << 100.0
-    << "%) total probe reads were processed."
-    << std::endl;
+        << "="
+        << setw(8) << totalReads
+        << " ("
+        << setw(6) << 100.0
+        << "%) total probe reads were processed."
+        << std::endl;
 
     file << "(*) this count may include good reads that were paired with a bad read," << std::endl;
     file << "where the pair were dropped together." << std::endl;
@@ -237,22 +237,22 @@ void MappingStatsBase::printStats(std::ostream &file, std::ostream &fileR)
     file << setprecision(3);
 
     file
-    << totalBasesMapped
-    << " ("
-    << totalBasesMapped / 1000.0 / 1000.0 / 1000.0
-    << "G) total bases mapped in "
-    << runTime.interval()/3600.0
-    << " hours."
-    << std::endl
-    << "This is a rate of "
-    << 3600.0 * totalBasesMapped / 1000.0 / 1000.0 / 1000.0 / runTime.interval()
-    << "G bases per hour."
-    << std::endl
-    << "This is a rate of "
-    << 30*24*(3600.0 * totalBasesMapped / 1000.0 / 1000.0 / 1000.0 / runTime.interval())
-    << "G bases per month per core."
-    << std::endl
-    << std::endl;
+        << totalBasesMapped
+        << " ("
+        << totalBasesMapped / 1000.0 / 1000.0 / 1000.0
+        << "G) total bases mapped in "
+        << runTime.interval()/3600.0
+        << " hours."
+        << std::endl
+        << "This is a rate of "
+        << 3600.0 * totalBasesMapped / 1000.0 / 1000.0 / 1000.0 / runTime.interval()
+        << "G bases per hour."
+        << std::endl
+        << "This is a rate of "
+        << 30*24*(3600.0 * totalBasesMapped / 1000.0 / 1000.0 / 1000.0 / runTime.interval())
+        << "G bases per month per core."
+        << std::endl
+        << std::endl;
 
     file << std::endl;
     file << std::endl;
@@ -295,12 +295,12 @@ void SingleEndStats::printStats(std::ostream &file, std::ostream &fileR)
     for (int i=0; i<qualityScoreBucketCount; i++)
     {
         file
-        <<  i*qualityScoreBucketRange
-        << " to "
-        << (i+1)*qualityScoreBucketRange
-        << " = "
-        << qualityScoreHistogram[i]
-        << std::endl;
+            <<  i*qualityScoreBucketRange
+            << " to "
+            << (i+1)*qualityScoreBucketRange
+            << " = "
+            << qualityScoreHistogram[i]
+            << std::endl;
 
         fileR << qualityScoreHistogram[i];
         if (i<qualityScoreBucketCount - 1) fileR << ", ";
@@ -441,48 +441,48 @@ void PairedEndStats::printStats(std::ostream &file, std::ostream &fileR)
     MappingStatsBase::printStats(file, fileR);
 
     fileR
-    << "mapperPairedMatches = structure(.Dim = c(2,2), .Dimnames = list(c(\"Forward\", \"Reverse\"), c(\"Forward\", \"Reverse\")), c("
-    << matchDirection[0][0].count << ", "
-    << matchDirection[0][1].count << ", "
-    << matchDirection[1][0].count << ", "
-    << matchDirection[1][1].count
-    << ")), ";
+        << "mapperPairedMatches = structure(.Dim = c(2,2), .Dimnames = list(c(\"Forward\", \"Reverse\"), c(\"Forward\", \"Reverse\")), c("
+        << matchDirection[0][0].count << ", "
+        << matchDirection[0][1].count << ", "
+        << matchDirection[1][0].count << ", "
+        << matchDirection[1][1].count
+        << ")), ";
 
     fileR << "mapperOrderedPairedMatches = structure(.Dim = c(2,2), .Dimnames = list(c(\"Forward\", \"Reverse\"), c(\"Forward\", \"Reverse\")), c("
-    << matchDirection[0][0].probesInOrder << ", "
-    << matchDirection[0][1].probesInOrder << ", "
-    << matchDirection[1][0].probesInOrder << ", "
-    << matchDirection[1][1].probesInOrder
-    << ")), ";
+          << matchDirection[0][0].probesInOrder << ", "
+          << matchDirection[0][1].probesInOrder << ", "
+          << matchDirection[1][0].probesInOrder << ", "
+          << matchDirection[1][1].probesInOrder
+          << ")), ";
 
     file << fixed;
     file << setprecision(2);
 
     file
-    << "Matched "
-    << totalMatches
-    << " paired ends out of "
-    << totalReads
-    << " paired ends read for a match rate of "
-    << 100.0 * totalMatches/totalReads
-    << "%."
-    << std::endl << std::endl;
+        << "Matched "
+        << totalMatches
+        << " paired ends out of "
+        << totalReads
+        << " paired ends read for a match rate of "
+        << 100.0 * totalMatches/totalReads
+        << "%."
+        << std::endl << std::endl;
 
     file
-    << " "
-    << setw(8) << noneMappable
-    << " ("
-    << setw(6) << 100.0 * noneMappable/totalReads
-    << "%) paired end reads were counted where neither end was mappable."
-    << std::endl;
+        << " "
+        << setw(8) << noneMappable
+        << " ("
+        << setw(6) << 100.0 * noneMappable/totalReads
+        << "%) paired end reads were counted where neither end was mappable."
+        << std::endl;
 
     file
-    << " "
-    << setw(8) << oneMappable
-    << " ("
-    << setw(6) << 100.0 * oneMappable/totalReads
-    << "%) paired end reads were counted where only one end was mappable."
-    << std::endl;
+        << " "
+        << setw(8) << oneMappable
+        << " ("
+        << setw(6) << 100.0 * oneMappable/totalReads
+        << "%) paired end reads were counted where only one end was mappable."
+        << std::endl;
 
     file << std::endl << std::endl;
 
@@ -519,12 +519,12 @@ void PairedEndStats::printHistograms(std::ostream &file, std::ostream &fileR)
     for (int i=0; i<2*longDistanceBucketCount; i++)
     {
         file << setprecision(0)
-        << (1.0*i-longDistanceBucketCount-.5)*bucketSize
-        << "\t"
-        << (1.0*i-longDistanceBucketCount-.5)*bucketSize + bucketSize - 1
-        << "\t"
-        << longDistanceHistogram[i]
-        << std::endl;
+             << (1.0*i-longDistanceBucketCount-.5)*bucketSize
+             << "\t"
+             << (1.0*i-longDistanceBucketCount-.5)*bucketSize + bucketSize - 1
+             << "\t"
+             << longDistanceHistogram[i]
+             << std::endl;
     }
 }
 
@@ -532,27 +532,27 @@ void PairedEndStats::printHistograms(std::ostream &file, std::ostream &fileR)
 void  PairedEndStats::addQValueBuckets(MatchedReadBase &probeA, MatchedReadBase &probeB)
 {
     qValueBuckets
-    [probeA.qualityIsValid()]
-    [probeA.quality==MatchedReadBase::UNSET_QUALITY]
-    [probeA.quality==MatchedReadBase::EARLYSTOP_QUALITY]
-    [probeA.quality==MatchedReadBase::REPEAT_QUALITY]
-    [probeB.qualityIsValid()]
-    [probeB.quality==MatchedReadBase::UNSET_QUALITY]
-    [probeB.quality==MatchedReadBase::EARLYSTOP_QUALITY]
-    [probeB.quality==MatchedReadBase::REPEAT_QUALITY]
-    ++;
+        [probeA.qualityIsValid()]
+        [probeA.quality==MatchedReadBase::UNSET_QUALITY]
+        [probeA.quality==MatchedReadBase::EARLYSTOP_QUALITY]
+        [probeA.quality==MatchedReadBase::REPEAT_QUALITY]
+        [probeB.qualityIsValid()]
+        [probeB.quality==MatchedReadBase::UNSET_QUALITY]
+        [probeB.quality==MatchedReadBase::EARLYSTOP_QUALITY]
+        [probeB.quality==MatchedReadBase::REPEAT_QUALITY]
+        ++;
     qValueBucketsA
-    [probeA.qualityIsValid()]
-    [probeA.quality==MatchedReadBase::UNSET_QUALITY]
-    [probeA.quality==MatchedReadBase::EARLYSTOP_QUALITY]
-    [probeA.quality==MatchedReadBase::REPEAT_QUALITY]
-    ++;
+        [probeA.qualityIsValid()]
+        [probeA.quality==MatchedReadBase::UNSET_QUALITY]
+        [probeA.quality==MatchedReadBase::EARLYSTOP_QUALITY]
+        [probeA.quality==MatchedReadBase::REPEAT_QUALITY]
+        ++;
     qValueBucketsB
-    [probeB.qualityIsValid()]
-    [probeB.quality==MatchedReadBase::UNSET_QUALITY]
-    [probeB.quality==MatchedReadBase::EARLYSTOP_QUALITY]
-    [probeB.quality==MatchedReadBase::REPEAT_QUALITY]
-    ++;
+        [probeB.qualityIsValid()]
+        [probeB.quality==MatchedReadBase::UNSET_QUALITY]
+        [probeB.quality==MatchedReadBase::EARLYSTOP_QUALITY]
+        [probeB.quality==MatchedReadBase::REPEAT_QUALITY]
+        ++;
 }
 
 
@@ -569,65 +569,65 @@ void  PairedEndStats::printQValueBuckets(std::ostream &file, std::ostream &fileR
 
     file << "PROBE STATES PRIOR TO PROCESSING:" << std::endl << std::endl;
     for (i=0; i<2; i++) for (j=0; j<2; j++) for (k=0; k<2; k++) for (l=0; l<2; l++)
-                {
-                    if (qValueBucketsA[i][j][k][l] == 0 && qValueBucketsB[i][j][k][l]==0) continue;
-                    file
-                    << isValid[i] << "\t"
-                    << isValidQuality[j] << "\t"
-                    << isEarlyStopQuality[k] << "\t"
-                    << isRepeatQuality[l] << "\t"
-                    << qValueBucketsA[i][j][k][l] << "\t"
-                    << qValueBucketsB[i][j][k][l]
-                    << std::endl;
-                }
+                                                                {
+                                                                    if (qValueBucketsA[i][j][k][l] == 0 && qValueBucketsB[i][j][k][l]==0) continue;
+                                                                    file
+                                                                        << isValid[i] << "\t"
+                                                                        << isValidQuality[j] << "\t"
+                                                                        << isEarlyStopQuality[k] << "\t"
+                                                                        << isRepeatQuality[l] << "\t"
+                                                                        << qValueBucketsA[i][j][k][l] << "\t"
+                                                                        << qValueBucketsB[i][j][k][l]
+                                                                        << std::endl;
+                                                                }
     file << std::endl << std::endl;
 
     file << "\t\t\tPROBE A\t\t\tPROBE B\tCOUNT" << std::endl << std::endl;
 
     for (i=0; i<2; i++) for (j=0; j<2; j++) for (k=0; k<2; k++) for (l=0; l<2; l++)
-                {
+                                                                {
 
-                    for (i2=0; i2<2; i2++) for (j2=0; j2<2; j2++) for (k2=0; k2<2; k2++) for (l2=0; l2<2; l2++)
-                                {
-                                    if (qValueBuckets[i][j][k][l][i2][j2][k2][l2]==0) continue;
+                                                                    for (i2=0; i2<2; i2++) for (j2=0; j2<2; j2++) for (k2=0; k2<2; k2++) for (l2=0; l2<2; l2++)
+                                                                                                                                         {
+                                                                                                                                             if (qValueBuckets[i][j][k][l][i2][j2][k2][l2]==0) continue;
 
-                                    file
-                                    << isValid[i] << "\t"
-                                    << isValidQuality[j] << "\t"
-                                    << isEarlyStopQuality[k] << "\t"
-                                    << isRepeatQuality[l] << "\t"
-                                    << isValid[i2] << "\t"
-                                    << isValidQuality[j2] << "\t"
-                                    << isEarlyStopQuality[k2] << "\t"
-                                    << isRepeatQuality[l2] << "\t"
-                                    << qValueBuckets[i][j][k][l][i2][j2][k2][l2]
-                                    << std::endl;
-                                }
-                }
+                                                                                                                                             file
+                                                                                                                                                 << isValid[i] << "\t"
+                                                                                                                                                 << isValidQuality[j] << "\t"
+                                                                                                                                                 << isEarlyStopQuality[k] << "\t"
+                                                                                                                                                 << isRepeatQuality[l] << "\t"
+                                                                                                                                                 << isValid[i2] << "\t"
+                                                                                                                                                 << isValidQuality[j2] << "\t"
+                                                                                                                                                 << isEarlyStopQuality[k2] << "\t"
+                                                                                                                                                 << isRepeatQuality[l2] << "\t"
+                                                                                                                                                 << qValueBuckets[i][j][k][l][i2][j2][k2][l2]
+                                                                                                                                                 << std::endl;
+                                                                                                                                         }
+                                                                }
     file << std::endl << std::endl;
 
 #if COMPILE_OBSOLETE_CODE
     file << "PROBE STATES FOR DROPPED PAIRS:" << std::endl << std::endl;
     file << "\t\t\tPROBE A\t\t\tPROBE B\tCOUNT" << std::endl << std::endl;
     for (i=0; i<2; i++) for (j=0; j<2; j++) for (k=0; k<2; k++) for (l=0; l<2; l++)
-                {
+                                                                {
 
-                    for (i2=0; i2<2; i2++) for (j2=0; j2<2; j2++) for (k2=0; k2<2; k2++) for (l2=0; l2<2; l2++)
-                                {
-                                    if (qValueBucketsDrop[i][j][k][l][i2][j2][k2][l2]==0) continue;
-                                    file
-                                    << isValid[i] << "\t"
-                                    << isValidQuality[j] << "\t"
-                                    << isEarlyStopQuality[k] << "\t"
-                                    << isRepeatQuality[l] << "\t"
-                                    << isValid[i2] << "\t"
-                                    << isValidQuality[j2] << "\t"
-                                    << isEarlyStopQuality[k2] << "\t"
-                                    << isRepeatQuality[l2] << "\t"
-                                    << qValueBucketsDrop[i][j][k][l][i2][j2][k2][l2]
-                                    << std::endl;
-                                }
-                }
+                                                                    for (i2=0; i2<2; i2++) for (j2=0; j2<2; j2++) for (k2=0; k2<2; k2++) for (l2=0; l2<2; l2++)
+                                                                                                                                         {
+                                                                                                                                             if (qValueBucketsDrop[i][j][k][l][i2][j2][k2][l2]==0) continue;
+                                                                                                                                             file
+                                                                                                                                                 << isValid[i] << "\t"
+                                                                                                                                                 << isValidQuality[j] << "\t"
+                                                                                                                                                 << isEarlyStopQuality[k] << "\t"
+                                                                                                                                                 << isRepeatQuality[l] << "\t"
+                                                                                                                                                 << isValid[i2] << "\t"
+                                                                                                                                                 << isValidQuality[j2] << "\t"
+                                                                                                                                                 << isEarlyStopQuality[k2] << "\t"
+                                                                                                                                                 << isRepeatQuality[l2] << "\t"
+                                                                                                                                                 << qValueBucketsDrop[i][j][k][l][i2][j2][k2][l2]
+                                                                                                                                                 << std::endl;
+                                                                                                                                         }
+                                                                }
 #endif
 }
 
@@ -689,15 +689,15 @@ void PairedEndStats::outputStatFile(std::string& baseFileName) {
 void  PairedEndStats::addQValueBucketsDrop(MatchedReadPE &probeA, MatchedReadPE &probeB)
 {
     qValueBucketsDrop
-    [probeA.qualityIsValid()]
-    [probeA.quality==MatchedReadBase::UNSET_QUALITY]
-    [probeA.quality==MatchedReadBase::EARLYSTOP_QUALITY]
-    [probeA.quality==MatchedReadBase::REPEAT_QUALITY]
-    [probeB.qualityIsValid()]
-    [probeB.quality==MatchedReadBase::UNSET_QUALITY]
-    [probeB.quality==MatchedReadBase::EARLYSTOP_QUALITY]
-    [probeB.quality==MatchedReadBase::REPEAT_QUALITY]
-    ++;
+        [probeA.qualityIsValid()]
+        [probeA.quality==MatchedReadBase::UNSET_QUALITY]
+        [probeA.quality==MatchedReadBase::EARLYSTOP_QUALITY]
+        [probeA.quality==MatchedReadBase::REPEAT_QUALITY]
+        [probeB.qualityIsValid()]
+        [probeB.quality==MatchedReadBase::UNSET_QUALITY]
+        [probeB.quality==MatchedReadBase::EARLYSTOP_QUALITY]
+        [probeB.quality==MatchedReadBase::REPEAT_QUALITY]
+        ++;
 }
 
 #endif

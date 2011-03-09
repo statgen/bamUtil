@@ -33,14 +33,14 @@ void SamHeader::dump(std::ostream &f)
     for (h = header.begin(); h != header.end(); h++)
     {
         f << "@" << h->first;
-//        fprintf(f,"@%s", h->first);
+        //        fprintf(f,"@%s", h->first);
         for (val=h->second.begin(); val!=h->second.end(); val++)
         {
             f << "\t" << val->first << ":" <<  val->second;
-//            fprintf(f,"\t%s:%s", val->first.c_str(), val->second.c_str());
+            //            fprintf(f,"\t%s:%s", val->first.c_str(), val->second.c_str());
         }
         f << std::endl;
-//        fprintf(f,"\n");
+        //        fprintf(f,"\n");
     }
 }
 

@@ -52,7 +52,7 @@ class signalPoll
 {
     struct sigaction oldQuitAction;
     bool pollingForQuit;
-public:
+ public:
     signalPoll();
     ~signalPoll();
 

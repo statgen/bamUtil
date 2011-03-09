@@ -48,7 +48,7 @@ using std::vector;
 
 class ReadsProcessor
 {
-private:
+ private:
     // IO related params
     bool isColorSpace;
     GenomeSequence *gs;
@@ -65,7 +65,7 @@ private:
     
     // multithread param
     int numThread;
-public:
+ public:
     ReadsProcessor();
     ~ReadsProcessor();
 
@@ -86,7 +86,7 @@ public:
 
     // close GenomeSequence, WordIndex and WordHash classes
     void closeReference();
-public:
+ public:
     ///
     /// using the word index, left and righ hashes, etc,
     /// construct and return a single end mapper:
@@ -100,28 +100,28 @@ public:
     MapperPE* createPEMapper();
 
     void MapPEReadsFromFiles(
-        std::string filename1,
-        std::string filename2,
-        std::string outputFilename
-    );
+                             std::string filename1,
+                             std::string filename2,
+                             std::string outputFilename
+                             );
 
     void MapPEReadsFromFilesMT(
-        std::string filename1,
-        std::string filename2,
-        std::string outputFilename
-    );
+                               std::string filename1,
+                               std::string filename2,
+                               std::string outputFilename
+                               );
 
     void MapSEReadsFromFileMT(
-        std::string filename,
-        std::string outputFilename
-    );
+                              std::string filename,
+                              std::string outputFilename
+                              );
 
     void CalibratePairedReadsFiles(
-        std::string filename1,
-        std::string filename2
-    );
+                                   std::string filename1,
+                                   std::string filename2
+                                   );
 
-private:
+ private:
     ///
     /// called by createSEMapper and createPEMapper to
     /// do common asserts on necessary word index, and
@@ -131,11 +131,11 @@ private:
 
 
 #ifdef COMPILE_OBSOLETE_CODE
-public:
+ public:
     void MapSEReadsFromFile(
-        std::string filename,
-        std::string outputFilename
-    );
+                            std::string filename,
+                            std::string outputFilename
+                            );
 #endif
 
 };

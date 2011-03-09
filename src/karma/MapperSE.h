@@ -40,10 +40,10 @@
 //
 class MapperSE : public MapperBase
 {
-public:
+ public:
     MatchedReadSE bestMatch;
 
-public:
+ public:
     MapperSE();
     ~MapperSE();
 
@@ -56,7 +56,7 @@ public:
         this->backward.checkedPositions.Clear();
     };
 
-protected:
+ protected:
     // reset bestMatch variable, as well as
     // assign its member variables to default values
     void clearBestMatch();
@@ -67,11 +67,11 @@ protected:
     virtual void MapSingleReadUnGapped()=0;
 
     int evaluateAllCandidates(
-        ReadIndexer &indexer,
-        int     whichWord,
-        int     candidateCount,
-        genomeIndex_t *candidates
-    );
+                              ReadIndexer &indexer,
+                              int     whichWord,
+                              int     candidateCount,
+                              genomeIndex_t *candidates
+                              );
 
     //
     // for every single end match candidate, call
@@ -87,11 +87,11 @@ protected:
     // changes in the match).
     //
     bool updateBestMatch(
-        ReadIndexer& indexer,
-        int quality,
-        int mismatchCount,
-        int whichWord,
-        genomeIndex_t genomeMatchPosition);
+                         ReadIndexer& indexer,
+                         int quality,
+                         int mismatchCount,
+                         int whichWord,
+                         genomeIndex_t genomeMatchPosition);
 
 #ifdef COMPILE_OBSOLETE_CODE
     // 

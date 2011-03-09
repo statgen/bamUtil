@@ -185,8 +185,8 @@ bool MatchedReadBase::getBSSeq2print(std::string&    sequence2print,
                 char readBase = indexer->read[readPosition];
                 switch (cigarRoller[cigarIndex].operation)
                 {
-                    case CigarRoller::match:
-                    case CigarRoller::mismatch:
+                case CigarRoller::match:
+                case CigarRoller::mismatch:
                     {
                         if (readBase == (*(indexer->gs))[referencePosition])
                             sequence2print.push_back(showReferenceBases ? readBase : '=');
@@ -199,32 +199,32 @@ bool MatchedReadBase::getBSSeq2print(std::string&    sequence2print,
                         referencePosition++;
                         break;
                     }
-                    case CigarRoller::insert:
-                        // for an insert, we print the base
-                        sequence2print.push_back(readBase);
-                        // the bases in the read are extra, so we skip over
-                        // them but not the reference
-                        readPosition++;
-                        break;
-                    case CigarRoller::del:
-                        // for delete, there is nothing to print, but we skip reference bases
-                        referencePosition++;
-                        break;
-                    case CigarRoller::softClip:
-                        // for a soft clip, we always print the base
-                        sequence2print.push_back(readBase);
-                        readPosition++;
-                        referencePosition++;
-                        break;
-                    case CigarRoller::hardClip:
-                    case CigarRoller::pad:
-                        // not implemented by CigarRoller class
-                        break;
-                    case CigarRoller::none:
-                    default:
-                        // programming error
-                        assert(false);
-                        break;
+                case CigarRoller::insert:
+                    // for an insert, we print the base
+                    sequence2print.push_back(readBase);
+                    // the bases in the read are extra, so we skip over
+                    // them but not the reference
+                    readPosition++;
+                    break;
+                case CigarRoller::del:
+                    // for delete, there is nothing to print, but we skip reference bases
+                    referencePosition++;
+                    break;
+                case CigarRoller::softClip:
+                    // for a soft clip, we always print the base
+                    sequence2print.push_back(readBase);
+                    readPosition++;
+                    referencePosition++;
+                    break;
+                case CigarRoller::hardClip:
+                case CigarRoller::pad:
+                    // not implemented by CigarRoller class
+                    break;
+                case CigarRoller::none:
+                default:
+                    // programming error
+                    assert(false);
+                    break;
                 }
             }
         }
@@ -242,13 +242,13 @@ bool MatchedReadBase::getBSSeq2print(std::string&    sequence2print,
 }
 
 bool MatchedReadBase::getCSSeqAndQual2print(std::string&    sequence2print,
-        std::string&    quality2print,
-        std::string&    cs_read_fragment,
-        std::string&    cs_data_quality,
-        GenomeSequence* gs,
-        GenomeSequence* csgs,
-        CigarRoller&    cigarRoller,
-        bool            showReferenceBases)
+                                            std::string&    quality2print,
+                                            std::string&    cs_read_fragment,
+                                            std::string&    cs_data_quality,
+                                            GenomeSequence* gs,
+                                            GenomeSequence* csgs,
+                                            CigarRoller&    cigarRoller,
+                                            bool            showReferenceBases)
 {
     // For compression purposes, read bases that match the reference
     // are shown as '='.
@@ -347,8 +347,8 @@ bool MatchedReadBase::getCSSeqAndQual2print(std::string&    sequence2print,
                 char readBase = indexer->read[readPosition];
                 switch (cigarRoller[cigarIndex].operation)
                 {
-                    case CigarRoller::match:
-                    case CigarRoller::mismatch:
+                case CigarRoller::match:
+                case CigarRoller::mismatch:
                     {
                         if (readBase == (*(indexer->gs))[referencePosition])
                             sequence2print.push_back(showReferenceBases ? readBase : '=');
@@ -361,32 +361,32 @@ bool MatchedReadBase::getCSSeqAndQual2print(std::string&    sequence2print,
                         referencePosition++;
                         break;
                     }
-                    case CigarRoller::insert:
-                        // for an insert, we print the base
-                        sequence2print.push_back(readBase);
-                        // the bases in the read are extra, so we skip over
-                        // them but not the reference
-                        readPosition++;
-                        break;
-                    case CigarRoller::del:
-                        // for delete, there is nothing to print, but we skip reference bases
-                        referencePosition++;
-                        break;
-                    case CigarRoller::softClip:
-                        // for a soft clip, we always print the base
-                        sequence2print.push_back(readBase);
-                        readPosition++;
-                        referencePosition++;
-                        break;
-                    case CigarRoller::hardClip:
-                    case CigarRoller::pad:
-                        // not implemented by CigarRoller class
-                        break;
-                    case CigarRoller::none:
-                    default:
-                        // programming error
-                        assert(false);
-                        break;
+                case CigarRoller::insert:
+                    // for an insert, we print the base
+                    sequence2print.push_back(readBase);
+                    // the bases in the read are extra, so we skip over
+                    // them but not the reference
+                    readPosition++;
+                    break;
+                case CigarRoller::del:
+                    // for delete, there is nothing to print, but we skip reference bases
+                    referencePosition++;
+                    break;
+                case CigarRoller::softClip:
+                    // for a soft clip, we always print the base
+                    sequence2print.push_back(readBase);
+                    readPosition++;
+                    referencePosition++;
+                    break;
+                case CigarRoller::hardClip:
+                case CigarRoller::pad:
+                    // not implemented by CigarRoller class
+                    break;
+                case CigarRoller::none:
+                default:
+                    // programming error
+                    assert(false);
+                    break;
                 }
             }
         }
@@ -412,8 +412,8 @@ bool MatchedReadBase::getCSSeqAndQual2print(std::string&    sequence2print,
  * @param mate                      the pointers to the other end, for paired end reads only; NULL for single end reads
  */
 void MatchedReadBase::calculateNAMEandPOS(const char* &chromosomeName, int& chromosomePosition,
-        const char* &mateChromosomeName, int& mateChromosomePosition,
-        const MatchedReadBase* mate)
+                                          const char* &mateChromosomeName, int& mateChromosomePosition,
+                                          const MatchedReadBase* mate)
 {
     // internal const variables that will be pointed to later
     static const char* defaultChromosomeName = "*";
@@ -509,21 +509,28 @@ void MatchedReadBase::calculateNAMEandPOS(const char* &chromosomeName, int& chro
 // and so on, to re-run the smith waterman gapped alignment, then call the cigar roller.
 //
 void MatchedReadBase::print(
-    std::ostream      &file,
-    MatchedReadBase   *mate,
-    std::string       &fragmentTag,
-    bool              showReferenceBases,
-    CigarRoller       &cigarRoller,
-    bool              isProperAligned,
-    uint16_t          samMateFlag,
-    const std::string &sampleGroupID,
-    const std::string &alignmentPathTag
-)
+                            std::ostream      &file,
+                            MatchedReadBase   *mate,
+                            std::string       &fragmentTag,
+                            bool              showReferenceBases,
+                            CigarRoller       &cigarRoller,
+                            bool              isProperAligned,
+                            uint16_t          samMateFlag,
+                            const std::string &sampleGroupID,
+                            const std::string &alignmentPathTag
+                            )
 {
     // check assumptions:
     assert(cigarRoller.size()>0);   // not 100% sure about this one
     assert(indexer!=NULL);
     assert(indexer->read.size() == indexer->phredQuality.size());
+#pragma message "debug code"
+    if (indexer->phredQuality.size() != 119)
+    {
+        if (fragmentTag.find("unknown_0001:8:1:1164:9261#0") != std::string::npos)
+            printf("a");
+    }
+
     if (mate)
     {
         assert(mate->indexer!=NULL);
@@ -554,20 +561,21 @@ void MatchedReadBase::print(
     // Here we are printing the SEQ field of the SAM file.
     std::string sequence2print;
     getBSSeq2print(sequence2print, cigarRoller, showReferenceBases);
+    if (indexer->phredQuality!="*") assert(sequence2print.size() == indexer->phredQuality.size());
 
     // for now, we set "proper aligned flag" when
     // 1. both reads have valid quality
     // 2. both reads mapped to the same chromosomes
     isProperAligned = mate &&
-                      qualityIsValid() && mate->qualityIsValid() &&
-                      mateChromosomeName[0] == '=';
-//
-// 5.  If the two reads in a pair are mapped to the same reference, ISIZE equals the difference between the coordinate of
-//     the 5ʼ-end of the mate and of the 5ʼ-end of the current read; otherwise ISIZE equals 0 (by the “5ʼ-end” we mean the
-//     5ʼ-end of the original read, so for Illumina short-insert paired end reads this calculates the difference in mapping
-//     coordinates of the outer edges of the original sequenced fragment). ISIZE is negative if the mate is mapped to a
-//     smaller coordinate than the current read.
-//
+        qualityIsValid() && mate->qualityIsValid() &&
+        mateChromosomeName[0] == '=';
+    //
+    // 5.  If the two reads in a pair are mapped to the same reference, ISIZE equals the difference between the coordinate of
+    //     the 5ʼ-end of the mate and of the 5ʼ-end of the current read; otherwise ISIZE equals 0 (by the “5ʼ-end” we mean the
+    //     5ʼ-end of the original read, so for Illumina short-insert paired end reads this calculates the difference in mapping
+    //     coordinates of the outer edges of the original sequenced fragment). ISIZE is negative if the mate is mapped to a
+    //     smaller coordinate than the current read.
+    //
 
     //
     // It is pretty much up to the caller to tell us if this is an
@@ -651,17 +659,17 @@ void MatchedReadBase::print(
     if (strcmp(cigarString, "*")!=0) assert(sequence2print.size() == (unsigned int) cigarRoller.getExpectedQueryBaseCount());
 
     file
-    << (fragmentTag.c_str() + 1)             // QNAME
-    << '\t' << flag                          // FLAG
-    << '\t' << chromosomeName                // RNAME
-    << '\t' << chromosomePosition + 1        // POS
-    << '\t' << (int)(mapQualityScore+.5)     // MAPQ (XXX needs to be %.0f)
-    << '\t' << cigarString                   // CIGAR
-    << '\t' << mateChromosomeName            // MRNM
-    << '\t' << mateChromosomePosition + 1    // MPOS
-    << '\t' << insertSize                    // ISIZE
-    << '\t' << sequence2print                // SEQ
-    << '\t' << indexer->phredQuality;        // QUAL
+        << (fragmentTag.c_str() + 1)             // QNAME
+        << '\t' << flag                          // FLAG
+        << '\t' << chromosomeName                // RNAME
+        << '\t' << chromosomePosition + 1        // POS
+        << '\t' << (int)(mapQualityScore+.5)     // MAPQ (XXX needs to be %.0f)
+        << '\t' << cigarString                   // CIGAR
+        << '\t' << mateChromosomeName            // MRNM
+        << '\t' << mateChromosomePosition + 1    // MPOS
+        << '\t' << insertSize                    // ISIZE
+        << '\t' << sequence2print                // SEQ
+        << '\t' << indexer->phredQuality;        // QUAL
 
     printOptionalTags(file, isProperAligned, sampleGroupID, alignmentPathTag);
 
@@ -705,156 +713,156 @@ void MatchedReadBase::fixBaseRange(int start, int end, /// inclusive boundaries
     {
         switch (nMismatch)
         {
-            case 1:
-                BaseAndColorToBase((*gs)[FWD_GENOME_POS(start-1)], cs_read_fragment[start], choice1);
-                BaseAndColorToBase((*gs)[BWD_GENOME_POS(end)], cs_read_fragment[end], choice2);
-                qual1 = data_quality[FWD_BSREAD_POS(start)];
-                qual2 = data_quality[FWD_BSREAD_POS(end+1)];
-                if (choice1 != choice2)
+        case 1:
+            BaseAndColorToBase((*gs)[FWD_GENOME_POS(start-1)], cs_read_fragment[start], choice1);
+            BaseAndColorToBase((*gs)[BWD_GENOME_POS(end)], cs_read_fragment[end], choice2);
+            qual1 = data_quality[FWD_BSREAD_POS(start)];
+            qual2 = data_quality[FWD_BSREAD_POS(end+1)];
+            if (choice1 != choice2)
+            {
+                if (qual1 > qual2)
                 {
-                    if (qual1 > qual2)
-                    {
-                        read_fragment[FWD_BSREAD_POS(start)] = choice1;
-                        data_quality[FWD_BSREAD_POS(start)] = qual1 - qual2 + 33;
-                    }
-                    else
-                    {
-                        read_fragment[FWD_BSREAD_POS(start)] = choice2;
-                        data_quality[FWD_BSREAD_POS(start)] = qual2 - qual1 + 33;
-                    }
+                    read_fragment[FWD_BSREAD_POS(start)] = choice1;
+                    data_quality[FWD_BSREAD_POS(start)] = qual1 - qual2 + 33;
                 }
                 else
                 {
-                    read_fragment[FWD_BSREAD_POS(start)] = choice1 ;
-                    if (qual1 > qual2)
-                        data_quality[FWD_BSREAD_POS(start)] =qual2;
-                    else
-                        data_quality[FWD_BSREAD_POS(start)] =qual1;
+                    read_fragment[FWD_BSREAD_POS(start)] = choice2;
+                    data_quality[FWD_BSREAD_POS(start)] = qual2 - qual1 + 33;
                 }
-                break;
-            case 2:
-                char color;
-                BaseAndColorToBase((*gs)[FWD_GENOME_POS(start-1)], cs_read_fragment[start], choice1);
-                BaseAndColorToBase((*gs)[FWD_GENOME_POS(end+1)], cs_read_fragment[end+1], choice2);
-                BaseAndBaseToColor(choice1, choice2, color);
-                if (color != cs_read_fragment[end])   // Not a SNP, so it likely there's one wrong color base.
+            }
+            else
+            {
+                read_fragment[FWD_BSREAD_POS(start)] = choice1 ;
+                if (qual1 > qual2)
+                    data_quality[FWD_BSREAD_POS(start)] =qual2;
+                else
+                    data_quality[FWD_BSREAD_POS(start)] =qual1;
+            }
+            break;
+        case 2:
+            char color;
+            BaseAndColorToBase((*gs)[FWD_GENOME_POS(start-1)], cs_read_fragment[start], choice1);
+            BaseAndColorToBase((*gs)[FWD_GENOME_POS(end+1)], cs_read_fragment[end+1], choice2);
+            BaseAndBaseToColor(choice1, choice2, color);
+            if (color != cs_read_fragment[end])   // Not a SNP, so it likely there's one wrong color base.
+            {
+                // we pick the two highest qualities surrounding 2 mismatch position
+                // the use these 2 colors to call bases
+                qual1 = data_quality[FWD_BSREAD_POS(start)];
+                qual2 = data_quality[FWD_BSREAD_POS(end)];
+                qual3 = data_quality[FWD_BSREAD_POS(end+1)];
+                if (qual1 >= qual3 && qual2 >= qual3)   //qual3 is the smallest
                 {
-                    // we pick the two highest qualities surrounding 2 mismatch position
-                    // the use these 2 colors to call bases
-                    qual1 = data_quality[FWD_BSREAD_POS(start)];
-                    qual2 = data_quality[FWD_BSREAD_POS(end)];
-                    qual3 = data_quality[FWD_BSREAD_POS(end+1)];
-                    if (qual1 >= qual3 && qual2 >= qual3)   //qual3 is the smallest
-                    {
-                        read_fragment[FWD_BSREAD_POS(start)] = choice1;
-                        BaseAndColorToBase(choice1, cs_read_fragment[end], read_fragment[FWD_BSREAD_POS(end)]);
-                        data_quality[start] = qual1 - qual3 +33;
-                        data_quality[end] = qual2 - qual3 +33;
-                    }
-                    else if (qual1 >= qual2 && qual3 >= qual2)   //qual2 is the smallest
-                    {
-                        read_fragment[FWD_BSREAD_POS(start)] = choice1;
-                        read_fragment[FWD_BSREAD_POS(end)] = choice2;
-                        data_quality[start] = qual1 - qual2 +33;
-                        data_quality[end] = qual3 - qual2 +33;
-                    }
-                    else   //qual1 is the smallest
-                    {
-                        read_fragment[FWD_BSREAD_POS(end)] = choice2;
-                        BaseAndColorToBase(choice2, cs_read_fragment[end], read_fragment[FWD_BSREAD_POS(start)]);
-                        data_quality[start] = qual2 - qual1 +33;
-                        data_quality[end] = qual3 - qual1 +33;
-                    }
+                    read_fragment[FWD_BSREAD_POS(start)] = choice1;
+                    BaseAndColorToBase(choice1, cs_read_fragment[end], read_fragment[FWD_BSREAD_POS(end)]);
+                    data_quality[start] = qual1 - qual3 +33;
+                    data_quality[end] = qual2 - qual3 +33;
                 }
-                else    // 2 consecutive msimatch color codes represents a SNP
+                else if (qual1 >= qual2 && qual3 >= qual2)   //qual2 is the smallest
                 {
                     read_fragment[FWD_BSREAD_POS(start)] = choice1;
                     read_fragment[FWD_BSREAD_POS(end)] = choice2;
-                    data_quality[FWD_BSREAD_POS(start)] = cs_data_quality[start];
-                    data_quality[FWD_BSREAD_POS(end)] = cs_data_quality[end];
+                    data_quality[start] = qual1 - qual2 +33;
+                    data_quality[end] = qual3 - qual2 +33;
                 }
-                break;
-            default:
-                return;
+                else   //qual1 is the smallest
+                {
+                    read_fragment[FWD_BSREAD_POS(end)] = choice2;
+                    BaseAndColorToBase(choice2, cs_read_fragment[end], read_fragment[FWD_BSREAD_POS(start)]);
+                    data_quality[start] = qual2 - qual1 +33;
+                    data_quality[end] = qual3 - qual1 +33;
+                }
+            }
+            else    // 2 consecutive msimatch color codes represents a SNP
+            {
+                read_fragment[FWD_BSREAD_POS(start)] = choice1;
+                read_fragment[FWD_BSREAD_POS(end)] = choice2;
+                data_quality[FWD_BSREAD_POS(start)] = cs_data_quality[start];
+                data_quality[FWD_BSREAD_POS(end)] = cs_data_quality[end];
+            }
+            break;
+        default:
+            return;
         }
     }
     else   // backwardStrand
     {
         switch (nMismatch)
         {
-            case 1:
-                BaseAndColorToBase((*gs)[BWD_GENOME_POS(start-1)], cs_read_fragment[start], choice1);
-                BaseAndColorToBase((*gs)[BWD_GENOME_POS(end)], cs_read_fragment[end], choice2);
-                qual1 = data_quality[BWD_BSREAD_POS(start)];
-                qual2 = data_quality[BWD_BSREAD_POS(end+1)];
-                if (choice1 != choice2)
+        case 1:
+            BaseAndColorToBase((*gs)[BWD_GENOME_POS(start-1)], cs_read_fragment[start], choice1);
+            BaseAndColorToBase((*gs)[BWD_GENOME_POS(end)], cs_read_fragment[end], choice2);
+            qual1 = data_quality[BWD_BSREAD_POS(start)];
+            qual2 = data_quality[BWD_BSREAD_POS(end+1)];
+            if (choice1 != choice2)
+            {
+                if (qual1 > qual2)
                 {
-                    if (qual1 > qual2)
-                    {
-                        read_fragment[BWD_BSREAD_POS(start)] = choice1;
-                        data_quality[BWD_BSREAD_POS(start)] = qual1 - qual2 + 33;
-                    }
-                    else
-                    {
-                        read_fragment[BWD_BSREAD_POS(start)] = choice2;
-                        data_quality[BWD_BSREAD_POS(start)] = qual2 - qual1 + 33;
-                    }
+                    read_fragment[BWD_BSREAD_POS(start)] = choice1;
+                    data_quality[BWD_BSREAD_POS(start)] = qual1 - qual2 + 33;
                 }
                 else
                 {
-                    read_fragment[BWD_BSREAD_POS(start)] = choice1 ;
-                    if (qual1 > qual2)
-                        data_quality[BWD_BSREAD_POS(start)] =qual2;
-                    else
-                        data_quality[BWD_BSREAD_POS(start)] =qual1;
+                    read_fragment[BWD_BSREAD_POS(start)] = choice2;
+                    data_quality[BWD_BSREAD_POS(start)] = qual2 - qual1 + 33;
                 }
-                break;
-            case 2:
-                char color;
-                BaseAndColorToBase((*gs)[BWD_GENOME_POS(start-1) + BACKWARD_CS2BS_REF_OFFSET],
-                                   cs_read_fragment[start], choice1);
-                BaseAndColorToBase((*gs)[BWD_GENOME_POS(end+1) +BACKWARD_CS2BS_REF_OFFSET],
-                                   cs_read_fragment[end+1], choice2);
-                BaseAndBaseToColor(choice1, choice2, color);
-                if (color != cs_read_fragment[end])
+            }
+            else
+            {
+                read_fragment[BWD_BSREAD_POS(start)] = choice1 ;
+                if (qual1 > qual2)
+                    data_quality[BWD_BSREAD_POS(start)] =qual2;
+                else
+                    data_quality[BWD_BSREAD_POS(start)] =qual1;
+            }
+            break;
+        case 2:
+            char color;
+            BaseAndColorToBase((*gs)[BWD_GENOME_POS(start-1) + BACKWARD_CS2BS_REF_OFFSET],
+                               cs_read_fragment[start], choice1);
+            BaseAndColorToBase((*gs)[BWD_GENOME_POS(end+1) +BACKWARD_CS2BS_REF_OFFSET],
+                               cs_read_fragment[end+1], choice2);
+            BaseAndBaseToColor(choice1, choice2, color);
+            if (color != cs_read_fragment[end])
+            {
+                // we pick the two highest qualities surrounding 2 mismatch position
+                // the use these 2 colors to call bases
+                qual1 = data_quality[BWD_BSREAD_POS(start)];
+                qual2 = data_quality[BWD_BSREAD_POS(end)];
+                qual3 = data_quality[BWD_BSREAD_POS(end+1)];
+                if (qual1 >= qual3 && qual2 >= qual3)   //qual3 is the smallest
                 {
-                    // we pick the two highest qualities surrounding 2 mismatch position
-                    // the use these 2 colors to call bases
-                    qual1 = data_quality[BWD_BSREAD_POS(start)];
-                    qual2 = data_quality[BWD_BSREAD_POS(end)];
-                    qual3 = data_quality[BWD_BSREAD_POS(end+1)];
-                    if (qual1 >= qual3 && qual2 >= qual3)   //qual3 is the smallest
-                    {
-                        read_fragment[BWD_BSREAD_POS(start)] = choice1;
-                        BaseAndColorToBase(choice1, cs_read_fragment[end], read_fragment[BWD_BSREAD_POS(end)]);
-                        data_quality[start] = qual1 - qual3 +33;
-                        data_quality[end] = qual2 - qual3 +33;
-                    }
-                    else if (qual1 >= qual2 && qual3 >= qual2)   //qual2 is the smallest
-                    {
-                        read_fragment[BWD_BSREAD_POS(start)] = choice1;
-                        read_fragment[BWD_BSREAD_POS(end)] = choice2;
-                        data_quality[start] = qual1 - qual2 +33;
-                        data_quality[end] = qual3 - qual2 +33;
-                    }
-                    else   //qual1 is the smallest
-                    {
-                        read_fragment[BWD_BSREAD_POS(end)] = choice2;
-                        BaseAndColorToBase(choice2, cs_read_fragment[end], read_fragment[BWD_BSREAD_POS(start)]);
-                        data_quality[start] = qual2 - qual1 +33;
-                        data_quality[end] = qual3 - qual1 +33;
-                    }
+                    read_fragment[BWD_BSREAD_POS(start)] = choice1;
+                    BaseAndColorToBase(choice1, cs_read_fragment[end], read_fragment[BWD_BSREAD_POS(end)]);
+                    data_quality[start] = qual1 - qual3 +33;
+                    data_quality[end] = qual2 - qual3 +33;
                 }
-                else    // 2 consecutive msimatch color codes represents a SNP
+                else if (qual1 >= qual2 && qual3 >= qual2)   //qual2 is the smallest
                 {
                     read_fragment[BWD_BSREAD_POS(start)] = choice1;
                     read_fragment[BWD_BSREAD_POS(end)] = choice2;
-                    data_quality[BWD_BSREAD_POS(start)] = cs_data_quality[start];
-                    data_quality[BWD_BSREAD_POS(end)] = cs_data_quality[end];
+                    data_quality[start] = qual1 - qual2 +33;
+                    data_quality[end] = qual3 - qual2 +33;
                 }
-                break;
-            default:
-                return;
+                else   //qual1 is the smallest
+                {
+                    read_fragment[BWD_BSREAD_POS(end)] = choice2;
+                    BaseAndColorToBase(choice2, cs_read_fragment[end], read_fragment[BWD_BSREAD_POS(start)]);
+                    data_quality[start] = qual2 - qual1 +33;
+                    data_quality[end] = qual3 - qual1 +33;
+                }
+            }
+            else    // 2 consecutive msimatch color codes represents a SNP
+            {
+                read_fragment[BWD_BSREAD_POS(start)] = choice1;
+                read_fragment[BWD_BSREAD_POS(end)] = choice2;
+                data_quality[BWD_BSREAD_POS(start)] = cs_data_quality[start];
+                data_quality[BWD_BSREAD_POS(end)] = cs_data_quality[end];
+            }
+            break;
+        default:
+            return;
         }
     }
 
@@ -886,20 +894,20 @@ void MatchedReadBase::calibrateSequence(std::string& read_fragment, std::string&
     int cumMismatchStart = 0;
     int cumMismatchEnd = 0;
 
-//    read_fragment = String('N',length-1);
-//    read_fragment = String('N',length-1).c_str();
+    //    read_fragment = String('N',length-1);
+    //    read_fragment = String('N',length-1).c_str();
     read_fragment.resize(length-1);
     data_quality.resize(length-1);
     fill(read_fragment.begin(), read_fragment.begin()+length-1, 'N');
     if (isForwardStrand)
         data_quality = cs_data_quality.substr(1);
-//        data_quality = cs_data_quality.Right(length-1);
+    //        data_quality = cs_data_quality.Right(length-1);
     else
     {
         std::string tmp = cs_data_quality.substr(1);
         reverse(tmp.begin(), tmp.end());
         data_quality = tmp;
-//        data_quality = cs_data_quality.Right(length-1).Invert();
+        //        data_quality = cs_data_quality.Right(length-1).Invert();
     }
 
     if (genomeMatchPosition == INVALID_GENOME_INDEX)
@@ -919,7 +927,7 @@ void MatchedReadBase::calibrateSequence(std::string& read_fragment, std::string&
     {
         BaseAndColorToBase(cs_read_fragment[0], cs_read_fragment[1], read_fragment[length-1-1]);
         read_fragment[length-1-1] = GenomeSequence::base2complement[
-                                        (int)(read_fragment[length-1-1])];
+                                                                    (int)(read_fragment[length-1-1])];
     }
     // Notice for clarification of indices:
     ////////////////////////////////////////////////////
@@ -1012,20 +1020,20 @@ void MatchedReadBase::calibrateSequence(std::string& read_fragment, std::string&
 
 
 void MatchedReadBase::printColorSpace(
-    std::ostream &file,
-    GenomeSequence* gs,
-    GenomeSequence* csgs,
-    MatchedReadBase *mate,
-    std::string &cs_read_fragment,
-    std::string &cs_data_quality,
-    std::string &fragmentTag,
-    bool showReferenceBases,
-    CigarRoller  &cigarRoller,
-    bool        isProperAligned,
-    uint16_t        samMateFlag,
-    const std::string     &sampleGroupID,
-    const std::string     &alignmentPathTag
-)
+                                      std::ostream &file,
+                                      GenomeSequence* gs,
+                                      GenomeSequence* csgs,
+                                      MatchedReadBase *mate,
+                                      std::string &cs_read_fragment,
+                                      std::string &cs_data_quality,
+                                      std::string &fragmentTag,
+                                      bool showReferenceBases,
+                                      CigarRoller  &cigarRoller,
+                                      bool        isProperAligned,
+                                      uint16_t        samMateFlag,
+                                      const std::string     &sampleGroupID,
+                                      const std::string     &alignmentPathTag
+                                      )
 {
     assert(!gs->isColorSpace());
     assert(csgs->isColorSpace());  // color space reads
@@ -1084,8 +1092,8 @@ void MatchedReadBase::printColorSpace(
     // 1. both reads have valid quality
     // 2. both reads mapped to the same chromosomes
     isProperAligned = mate &&
-                      qualityIsValid() && mate->qualityIsValid() &&
-                      mateChromosomeName[0] == '=';
+        qualityIsValid() && mate->qualityIsValid() &&
+        mateChromosomeName[0] == '=';
 
     int64_t insertSize = 0;
     if (isProperAligned)
@@ -1156,17 +1164,17 @@ void MatchedReadBase::printColorSpace(
     if (strcmp(cigarString, "*")!=0) assert(sequence2print.size() == 1 + (unsigned int) cigarRoller.getExpectedQueryBaseCount());
 
     file
-    << (fragmentTag.c_str() + 1)             // QNAME
-    << '\t' << flag                          // FLAG
-    << '\t' << chromosomeName                // RNAME
-    << '\t' << chromosomePosition /*+ 1 */   // POS ( here -1 is for adjust the difference between CS ref and BS ref
-    << '\t' << (int)(mapQualityScore+.5)     // MAPQ (XXX needs to be %.0f)
-    << '\t' << cigarString                   // CIGAR
-    << '\t' << mateChromosomeName            // MRNM
-    << '\t' << mateChromosomePosition + 1    // MPOS
-    << '\t' << insertSize                    // ISIZE
-    << '\t' << sequence2print                // SEQ
-    << '\t' << quality2print;                // QUAL
+        << (fragmentTag.c_str() + 1)             // QNAME
+        << '\t' << flag                          // FLAG
+        << '\t' << chromosomeName                // RNAME
+        << '\t' << chromosomePosition /*+ 1 */   // POS ( here -1 is for adjust the difference between CS ref and BS ref
+        << '\t' << (int)(mapQualityScore+.5)     // MAPQ (XXX needs to be %.0f)
+        << '\t' << cigarString                   // CIGAR
+        << '\t' << mateChromosomeName            // MRNM
+        << '\t' << mateChromosomePosition + 1    // MPOS
+        << '\t' << insertSize                    // ISIZE
+        << '\t' << sequence2print                // SEQ
+        << '\t' << quality2print;                // QUAL
 
     printOptionalTags(file, isProperAligned, sampleGroupID, alignmentPathTag);
 
@@ -1195,24 +1203,24 @@ void MatchedReadBase::printOptionalTags(std::ostream &file, bool isPairAligned, 
     {
         switch (quality)
         {
-            case UNSET_QUALITY:
-                file << "\tER:Z:no_match";
-                break;
-            case INVALID_DATA:
-                file << "\tER:Z:invalid_bases";
-                break;
-            case EARLYSTOP_DUPLICATES:
-                file << "\tER:Z:duplicates";
-                break;
-            case EARLYSTOP_QUALITY:
-                file << "\tER:Z:quality";
-                break;
-            case REPEAT_QUALITY:        // should never occur now
-                file << "\tER:Z:repeats";
-                break;
+        case UNSET_QUALITY:
+            file << "\tER:Z:no_match";
+            break;
+        case INVALID_DATA:
+            file << "\tER:Z:invalid_bases";
+            break;
+        case EARLYSTOP_DUPLICATES:
+            file << "\tER:Z:duplicates";
+            break;
+        case EARLYSTOP_QUALITY:
+            file << "\tER:Z:quality";
+            break;
+        case REPEAT_QUALITY:        // should never occur now
+            file << "\tER:Z:repeats";
+            break;
         }
     }
-//    fprintf(file, "\tGP:i:%u", genomeMatchPosition);        // for debugging
+    //    fprintf(file, "\tGP:i:%u", genomeMatchPosition);        // for debugging
 }
 
 void MatchedReadBase::debugPrint()

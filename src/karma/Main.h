@@ -9,9 +9,9 @@ void mainRemap(const char *program, int argc, const char **argv);
 void mainTest(const char *program, int argc, const char **argv);
 void commandList(std::ostream &out, int argc, const char **argv);
 static std::string getReferenceNameWithArgs(
-    int wordSize,
-    int occurrenceCutoff,
-    GenomeSequence *baseSpaceReference,
-    GenomeSequence *colorSpaceReference);
+                                            int wordSize,
+                                            int occurrenceCutoff,
+                                            GenomeSequence *baseSpaceReference,
+                                            GenomeSequence *colorSpaceReference);
 
 #endif /* _MAIN_H_ */
