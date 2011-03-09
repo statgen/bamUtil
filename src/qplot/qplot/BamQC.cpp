@@ -118,6 +118,7 @@ void BamQC::CalculateQCStats(QSamFlag &filter, double minMapQuality)
       stats[i].CalcMisMatchRateByQual();
       stats[i].CalcGenomeCoverage(genomePosCovered, refBaseNCount); 
       stats[i].CalcQ20Bases();
+      stats[i].CalcQ20BasesByCycle();
       stats[i].CalcBaseComposition();
       stats[i].CalcInsertSize_mode();
       stats[i].CalcInsertSize_medium();
@@ -440,6 +441,9 @@ void BamQC::Plot(String &plotFile, FILE *pf)
   if(!noGC) s += GenRscript_DepthVsGC_Plot();
   
   s += GenRscript_InsertSize_Plot();
+
+  // Plot Q20 base count per cycle
+  s += GenRscript_Q20vsCycle_Plot();
   
   // Depth distribution
   if(page>1 && !noDepth) s += GenRscript_DepthDist_Plot();
@@ -496,6 +500,20 @@ String BamQC::GenRscript_EPSvsCycle_Plot()
   s += "grid(10, 10, col=grid.col);\n";
   
   return(s);
+}
+
+String BamQC::GenRscript_Q20vsCycle_Plot()
+{
+ String s;
+ for(int i=0; i<bamFiles.Length(); i++)
+   s += GenRscript_Q20vsCycle_Data(i);
+  s += "MAX=0;MIN.Y=999999999; MAX.Z=0; \n for(i in 1:NFiles){\nif(length(which(!is.na(Y[[i]])))==0){m=NA; mm=NA;} else {m=max(Y[[i]][which(!is.na(Y[[i]]))]);mm=min(Y[[i]][which(!is.na(Y[[i]]))]);}; m.z=max(Z[[i]]); \n if(!is.na(m) & MAX<m) MAX=m; if(!is.na(mm) & MIN.Y>mm) MIN.Y=mm; if(MAX.Z<m.z) MAX.Z=m.z; \n}\n";
+  s = s + "plot(X[[1]],Y[[1]], xlim=range(1, length(X[[1]])*1.2), ylim=range(0,MAX*1.2), xlab='Cycle', ylab='Q20 base count', type='l',col=colvec[1], main='" + label + " Q20 base count by cycle');\n";
+  s += "if(NFiles>1)\n for(i in 2:NFiles) points(X[[i]], Y[[i]], col=colvec[i], type='l');\n";
+  s += "legend(\"topright\",legend=legend.txt, col=colvec, lty=lty.vec);\n";
+  s += "grid(10, 10, col=grid.col);\n";
+
+ return(s);      
 }
 
 String BamQC::GenRscript_DepthVsGC_Plot()
@@ -569,6 +587,7 @@ String BamQC::GenRscript_DepthCoverage_Plot()
   s = s + "barplot(x, names.arg="+names_arg+", ylim=range(0, max(x)), xlab='Bam file index', ylab='Mean depth', col='light blue', main='" + label + " Mean depth of sequencing');\n";
   return(s);
 }
+
 
 String BamQC::GenRscript_Q20_Plot()
 {
@@ -713,6 +732,29 @@ String BamQC::GenRscript_EPSvsCycle_Data(int idx)
 	y += MAXQ;
       else
 	y+=double(-10*log10(stats[idx].misMatchRateByCycle[i])); 
+      if(i<(size-1)) { x+=","; y+="," ;}
+    }
+  x+=");\n";
+  y+=");\n";
+
+  String s = x+y;
+  s = s+"X[["+Ridx+"]] = x;\n";
+  s = s+"Y[["+Ridx+"]] = y;\n";
+  
+  return(s);
+}
+
+String BamQC::GenRscript_Q20vsCycle_Data(int idx)
+{
+  int Ridx = idx+1;
+  String x = "x = c(";
+  String y = "y = c(";
+  for(int i=0; i<size; i++)
+    {
+      x += (i+1);
+      String sUInt64; 
+      sUInt64.printf("%llu", stats[idx].baseQ20CountByCycle[i]);
+      y += sUInt64;
       if(i<(size-1)) { x+=","; y+="," ;}
     }
   x+=");\n";
