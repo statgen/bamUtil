@@ -213,18 +213,13 @@ bool SamValidator::isValid(SamFileHeader& samHeader, SamRecord& samRecord,
     status &= isValid1BasedPos(samRecord.get1BasedPosition(),
                                validationErrors);
     
-    status &= isValidMapQuality(samRecord.getMapQuality(), 
-                                validationErrors);
+    status &= isValidMapQuality(samRecord.getMapQuality(), validationErrors);
 
-    const char* sequence = samRecord.getSequence();
+    status &= isValidSequence(samRecord, validationErrors);
 
-    status &= isValidCigar(samRecord.getCigar(), 
-                           sequence,
-                           validationErrors);
+    status &= isValidCigar(samRecord, validationErrors);
     
-    status &= isValidQuality(samRecord.getQuality(),
-                             sequence,
-                             validationErrors);
+    status &= isValidQuality(samRecord, validationErrors);
 
     return(status);
 }
@@ -534,8 +529,30 @@ bool SamValidator::isValidMapQuality(uint8_t mapQuality,
 }
 
 
+bool SamValidator::isValidSequence(SamRecord& samRecord,
+                                   SamValidationErrors& validationErrors)
+{
+    return(true);
+}
+
+
+bool SamValidator::isValidCigar(SamRecord& samRecord,
+                                SamValidationErrors& validationErrors)
+{
+    return(isValidCigar(samRecord.getCigar(), 
+                        samRecord.getReadLength(),
+                        validationErrors));
+}
+
 bool SamValidator::isValidCigar(const char* cigar,
                                 const char* sequence,
+                                SamValidationErrors& validationErrors)
+{
+    return(isValidCigar(cigar, strlen(sequence), validationErrors));
+}
+
+bool SamValidator::isValidCigar(const char* cigar,
+                                int seqLen,
                                 SamValidationErrors& validationErrors)
 {
     // Validation for CIGAR is:
@@ -569,7 +586,6 @@ bool SamValidator::isValidCigar(const char* cigar,
         // TODO
 
         //   d) is the same length as the sequence string.
-        int seqLen = strlen(sequence);
         int cigarSeqLen = cigarRoller.getExpectedQueryBaseCount();
         if(cigarSeqLen != seqLen)
         {
@@ -588,28 +604,52 @@ bool SamValidator::isValidCigar(const char* cigar,
 }
 
 
+bool SamValidator::isValidQuality(SamRecord& samRecord,
+                                  SamValidationErrors& validationErrors)
+{
+    return(isValidQuality(samRecord.getQuality(), 
+                          samRecord.getReadLength(),
+                          validationErrors));
+}
+
+
 bool SamValidator::isValidQuality(const char* quality,
                                   const char* sequence,
+                                  SamValidationErrors& validationErrors)
+{
+    // Determine the length of the sequence.
+    int seqLen = strlen(sequence);
+
+    // Check if the sequence is '*' since then the seqLength is 0.
+    if(strcmp(sequence, "*") == 0)
+    {
+        seqLen = 0;
+    }
+    return(isValidQuality(quality, seqLen, validationErrors));
+}
+
+
+bool SamValidator::isValidQuality(const char* quality,
+                                  int seqLength,
                                   SamValidationErrors& validationErrors)
 {
     bool status = true;
 
     // If the quality or the sequence are non-"*", validate that the quality
     // and sequence have the same length.
-    if((strcmp(sequence, "*") != 0) && (strcmp(quality, "*") != 0))
+    if((seqLength != 0) && (strcmp(quality, "*") != 0))
     {
-        int seqLen = strlen(sequence);
         int qualLen = strlen(quality);
         // Both the sequence and the quality are not "*", so validate
         // that they are the same length.
-        if(seqLen != qualLen)
+        if(seqLength != qualLen)
         {
             // Both fields are specified but are different lengths.
             
             String message = "QUAL is not the same length as SEQ, (";
             message += qualLen;
             message += " != ";
-            message += seqLen;
+            message += seqLength;
             message += ").";
             
             validationErrors.addError(SamValidationError::INVALID_QUAL,
@@ -620,3 +660,4 @@ bool SamValidator::isValidQuality(const char* quality,
     }
     return(status);
 }
+
