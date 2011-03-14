@@ -121,7 +121,7 @@ bool SamFile::OpenForRead(const char * filename, SamFileHeader* header)
             // -.bam is the filename, read compressed bam from stdin
             filename = "-";
             myFilePtr = ifopen(filename, "rb", InputFile::BGZF);
-            
+            myFilePtr->disableBuffering();
             myInterfacePtr = new BamInterface;
 
             // Read the magic string.
@@ -634,6 +634,9 @@ bool SamFile::SetReadSection(int32_t refID, int32_t start, int32_t end)
         return(false);
     }
 
+    // Indexed Bam open for read, so disable read buffering because iftell will be used.
+    myFilePtr->disableBuffering();
+
     myNewSection = true;
     myStartPos = start;
     myEndPos = end;
@@ -667,6 +670,9 @@ bool SamFile::SetReadSection(const char* refName, int32_t start, int32_t end)
                            "Canot set section since there is no bam file open");
         return(false);
     }
+
+    // Indexed Bam open for read, so disable read buffering because iftell will be used.
+    myFilePtr->disableBuffering();
 
     myNewSection = true;
     myStartPos = start;

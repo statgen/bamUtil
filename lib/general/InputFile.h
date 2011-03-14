@@ -43,16 +43,70 @@ public:
         myFileTypePtr = NULL;
         myBufferIndex = 0;
         myCurrentBufferSize = 0;
+        // Default to buffer.
+        myAllocatedBufferSize = DEFAULT_BUFFER_SIZE;
+        myFileBuffer = new char[myAllocatedBufferSize];
         myFileName.clear();
     }
 
     // Destructor
     ~InputFile();
 
-
     InputFile(const char * filename, const char * mode,
               InputFile::ifileCompression compressionMode = InputFile::DEFAULT);
 
+    /// Buffering reads disables the tell call for bgzf files.
+    /// Default buffer size is 1048576.
+    /// Any previous values in the buffer will be deleted.
+    /// Turn off read buffering by setting bufferSize = 1;
+    inline void bufferReads(unsigned int bufferSize = DEFAULT_BUFFER_SIZE)
+    {
+        // If the buffer size is the same, do nothing.
+        if(bufferSize == myAllocatedBufferSize)
+        {
+            return;
+        }
+        // Delete the previous buffer.
+        if(myFileBuffer != NULL)
+        {
+            delete[] myFileBuffer;
+        }
+        myBufferIndex = 0;
+        myCurrentBufferSize = 0;
+        // The buffer size must be at least 1 so one character can be
+        // read and ifgetc can just assume reading into the buffer.
+        if(bufferSize < 1)
+        {
+            bufferSize = 1;
+        }
+        myFileBuffer = new char[bufferSize];
+        myAllocatedBufferSize = bufferSize;
+
+        if(myFileTypePtr != NULL)
+        {
+            if(bufferSize == 1)
+            {
+                myFileTypePtr->setBuffered(false);
+            }
+            else
+            {
+                myFileTypePtr->setBuffered(true);
+            }
+        }
+    }
+
+
+    /// Disable read buffering.
+    inline void disableBuffering()
+    {
+        bufferReads(1);
+        if(myFileTypePtr != NULL)
+        {
+            myFileTypePtr->setBuffered(false);
+        }
+    }
+
+    
     // Close the file.
     inline int ifclose()
     {
@@ -69,44 +123,69 @@ public:
 
     inline int ifread(void * buffer, unsigned int size)
     {
-        // There are 3 cases:
-        //  1) There are no bytes available in buffer.
-        //  2) There are already size available bytes in buffer.
-        //  3) There are bytes in buffer, but less than size.
+        // There are 2 cases:
+        //  1) There are already size available bytes in buffer.
+        //  2) There are not size bytes in buffer.
 
         // Determine the number of available bytes in the buffer.
         unsigned int availableBytes = myCurrentBufferSize - myBufferIndex;
+        unsigned int returnSize = 0;
 
-        // Case 1: There are no bytes available in buffer.
-        if (availableBytes == 0)
-        {
-            // There are no bytes available, so just read directly from the
-            // file into the passed in buffer.
-            return(readFromFile(buffer, size));
-        }
-        // Case 2: There are already size available bytes in buffer.
-        else if (size <= availableBytes)
+        // Case 1: There are already size available bytes in buffer.
+        if (size <= availableBytes)
         {
             //   Just copy from the buffer, increment the index and return.
             memcpy(buffer, myFileBuffer+myBufferIndex, size);
             // Increment the buffer index.
             myBufferIndex += size;
-            return size;
+            returnSize = size;
         }
-        // Case 3: There are bytes in buffer, but less than size.
+        // Case 2: There are not size bytes in buffer.
         else
         {
-            // Size > availableBytes > 0
-            // Copy the available bytes into the buffer.
-            memcpy(buffer, myFileBuffer+myBufferIndex, availableBytes);
-            // Increment the buffer index.
-            myBufferIndex += availableBytes;
-            // Now read the rest of the bytes directly into the buffer.
-            int totalBytes = availableBytes;
-            totalBytes +=
-                readFromFile((char*)buffer+availableBytes, size - availableBytes);
-            return(totalBytes);
+            // Check to see if there are some bytes in the buffer.
+            if (availableBytes > 0)
+            {
+                // Size > availableBytes > 0
+                // Copy the available bytes into the buffer.
+                memcpy(buffer, myFileBuffer+myBufferIndex, availableBytes);
+            }
+            unsigned int remainingSize = size - availableBytes;
+
+            // Check if the remaining size is more or less than the
+            // max buffer size.
+            if(remainingSize < myAllocatedBufferSize)
+            {
+                // the remaining size is not the full buffer, but read
+                //  a full buffer worth of data anyway.
+                myCurrentBufferSize =
+                    readFromFile(myFileBuffer, myAllocatedBufferSize);
+                
+                // Check to see how much was copied.
+                unsigned int copySize = remainingSize;
+                if(copySize > myCurrentBufferSize)
+                {
+                    copySize = myCurrentBufferSize;
+                }
+
+                // Now copy the rest of the bytes into the buffer.
+                memcpy((char*)buffer+availableBytes, myFileBuffer, copySize);
+
+                // set the buffer index to the location after what we read.
+                myBufferIndex = copySize;
+                
+                returnSize = availableBytes + copySize;
+            }
+            else
+            {
+                // More remaining to be read than the max buffer size, so just
+                // read directly into the output buffer.
+                int readSize = readFromFile((char*)buffer + availableBytes,
+                                            remainingSize);
+                returnSize = readSize + availableBytes;
+            }
         }
+        return(returnSize);
     }
 
 
@@ -118,7 +197,7 @@ public:
         if (myBufferIndex >= myCurrentBufferSize)
         {
             // at the last index, read a new buffer.
-            myCurrentBufferSize = readFromFile(myFileBuffer, MAX_BUFFER_SIZE);
+            myCurrentBufferSize = readFromFile(myFileBuffer, myAllocatedBufferSize);
             myBufferIndex = 0;
         }
         // If the buffer index is still greater than or equal to the
@@ -218,6 +297,9 @@ public:
             // No myFileTypePtr, so return false - could not seek.
             return false;
         }
+        // Reset buffering since a seek is being done.
+        myBufferIndex = 0;
+        myCurrentBufferSize = 0;
         return myFileTypePtr->seek(offset, origin);
     }
 
@@ -256,23 +338,25 @@ protected:
 #endif
 
     // The size of the buffer used by this class.
-    static const int MAX_BUFFER_SIZE = 1048576;
+    static const unsigned int DEFAULT_BUFFER_SIZE = 1048576;
 
     // Pointer to a class that interfaces with different file types.
     FileType* myFileTypePtr;
 
+    unsigned int myAllocatedBufferSize;
+
     // Buffer used to do large reads rather than 1 by 1 character reads
     // from the file.  The class is then managed to iterate through the buffer.
-    char myFileBuffer[MAX_BUFFER_SIZE];
+    char* myFileBuffer;
 
     // Current index into the buffer.  Used to track where we are in reading the
     // file from the buffer.
-    int myBufferIndex;
+    unsigned int myBufferIndex;
 
     // Current number of entries in the buffer.  Used to ensure that
     // if a read did not fill the buffer, we stop before hitting the
     // end of what was read.
-    int myCurrentBufferSize;
+    unsigned int myCurrentBufferSize;
 
     std::string myFileName;
 };
