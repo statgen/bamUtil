@@ -95,10 +95,25 @@ public:
     /// \return number of references
     int32_t getNumRefs() const;
 
+    /// Get the number of mapped reads for this reference id.  Returns -1 for
+    /// out of range refIDs.
+    /// \param refID reference ID for which to extract the number of mapped reads.
+    /// \return number of mapped reads for the specified reference id.
+    int32_t getNumMappedReads(int32_t refID);
+
+    /// Get the number of unmapped reads for this reference id.  Returns -1 for
+    /// out of range refIDs.
+    /// \param refID reference ID for which to extract the number of unmapped reads.
+    /// \return number of unmapped reads for the specified reference id
+    int32_t getNumUnMappedReads(int32_t refID);
+
     /// Print the index information.
     /// \param refID reference ID for which to print info for.  -1 means print for all references.
     /// \param summary whether or not to just print a summary (defaults to false).  The summary just contains summary info for each reference and not every bin/chunk.
     void printIndex(int32_t refID, bool summary = false);
+
+    /// The number used for an unknown number of reads.
+    static const int32_t UNKNOWN_NUM_READS = -1;
 
     /// The number used for the reference id of unmapped reads.
     static const int32_t REF_ID_UNMAPPED = -1;
@@ -182,6 +197,8 @@ private:
     int32_t n_ref;
 
     uint64_t maxOverallOffset;
+
+    int32_t myUnMappedNumReads;
 
     // The references.
     std::vector<Reference> myRefs;

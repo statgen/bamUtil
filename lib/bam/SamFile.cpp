@@ -704,6 +704,81 @@ bool SamFile::SetReadSection(const char* refName, int32_t start, int32_t end)
 }
 
 
+
+// Get the number of mapped reads in the specified reference id.  
+// Returns -1 for out of range refIDs.
+int32_t SamFile::getNumMappedReadsFromIndex(int32_t refID)
+{
+    // The bam index must have already been read.
+    if(myBamIndex == NULL)
+    {
+        myStatus.setStatus(SamStatus::FAIL_ORDER, 
+                           "Canot get num mapped reads from the index until it has been read.");
+        return(false);
+    }
+    return(myBamIndex->getNumMappedReads(refID));
+}
+
+
+// Get the number of unmapped reads in the specified reference id.  
+// Returns -1 for out of range refIDs.
+int32_t SamFile::getNumUnMappedReadsFromIndex(int32_t refID)
+{
+    // The bam index must have already been read.
+    if(myBamIndex == NULL)
+    {
+        myStatus.setStatus(SamStatus::FAIL_ORDER, 
+                           "Canot get num unmapped reads from the index until it has been read.");
+        return(false);
+    }
+    return(myBamIndex->getNumUnMappedReads(refID));
+}
+
+
+// Get the number of mapped reads in the specified reference id.  
+// Returns -1 for out of range refIDs.
+int32_t SamFile::getNumMappedReadsFromIndex(const char* refName,
+                                            SamFileHeader& header)
+{
+    // The bam index must have already been read.
+    if(myBamIndex == NULL)
+    {
+        myStatus.setStatus(SamStatus::FAIL_ORDER, 
+                           "Canot get num mapped reads from the index until it has been read.");
+        return(false);
+    }
+    int32_t refID = BamIndex::REF_ID_UNMAPPED;
+    if((strcmp(refName, "") != 0) && (strcmp(refName, "*") != 0))
+    {
+        // Reference name specified, so read just the "-1" entries.
+        refID =  header.getReferenceID(refName);
+    }
+    return(myBamIndex->getNumMappedReads(refID));
+}
+
+
+// Get the number of unmapped reads in the specified reference id.  
+// Returns -1 for out of range refIDs.
+int32_t SamFile::getNumUnMappedReadsFromIndex(const char* refName,
+                                              SamFileHeader& header)
+{
+    // The bam index must have already been read.
+    if(myBamIndex == NULL)
+    {
+        myStatus.setStatus(SamStatus::FAIL_ORDER, 
+                           "Canot get num unmapped reads from the index until it has been read.");
+        return(false);
+    }
+    int32_t refID = BamIndex::REF_ID_UNMAPPED;
+    if((strcmp(refName, "") != 0) && (strcmp(refName, "*") != 0))
+    {
+        // Reference name specified, so read just the "-1" entries.
+        refID =  header.getReferenceID(refName);
+    }
+    return(myBamIndex->getNumUnMappedReads(refID));
+}
+
+
 // Returns the number of bases in the passed in read that overlap the
 // region that is currently set.
 uint32_t SamFile::GetNumOverlaps(SamRecord& samRecord)
