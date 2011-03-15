@@ -334,7 +334,7 @@ void IFILE_Test::test_ifread_ifgetc(const char* extension)
    assert(myFileTypePtr->isOpen());
 
    int numBytesRead = 0;
-   int totalBytesPreviouslyRead = 0;
+   unsigned int totalBytesPreviouslyRead = 0;
 
    ////////////////////////////////////
    // Test reading entire file at once.
@@ -390,7 +390,7 @@ void IFILE_Test::test_ifread_ifgetc(const char* extension)
    // Test reading entire file using getc.
    // Loop through reading the file.
    char readChar;
-   for(int index = 0; index < TEST_FILE_SIZE; index++)
+   for(unsigned int index = 0; index < (unsigned int)TEST_FILE_SIZE; index++)
    {
       // Read a character.
       readChar = ifgetc();
@@ -434,7 +434,7 @@ void IFILE_Test::test_ifread_ifgetc(const char* extension)
 
    // Test reading rest of file.
    numBytesRead = ifread(myTestBuffer, MAX_TEST_BUFFER_SIZE);
-   assert(numBytesRead == TEST_FILE_SIZE - totalBytesPreviouslyRead);
+   assert(numBytesRead == (TEST_FILE_SIZE - (int)totalBytesPreviouslyRead));
    // Verify contents of what read.   
     for(int i = 0; i < numBytesRead; i++)
     {
@@ -481,7 +481,7 @@ void IFILE_Test::test_ifread_ifgetc(const char* extension)
    // Test doing 2 getc.
    readChar = ifgetc();
    assert(readChar == TEST_FILE_CONTENTS[totalBytesPreviouslyRead]);
-   int bufferSize = TEST_FILE_SIZE;
+   unsigned int bufferSize = TEST_FILE_SIZE;
    assert(myCurrentBufferSize == bufferSize);
    assert(myBufferIndex == 5);
    totalBytesPreviouslyRead++;
@@ -494,7 +494,7 @@ void IFILE_Test::test_ifread_ifgetc(const char* extension)
 
    // Test reading rest of file.
    numBytesRead = ifread(myTestBuffer, MAX_TEST_BUFFER_SIZE);
-   assert(numBytesRead == TEST_FILE_SIZE - totalBytesPreviouslyRead);
+   assert(numBytesRead == (TEST_FILE_SIZE - (int)totalBytesPreviouslyRead));
    // Verify contents of what read.   
     for(int i = 0; i < numBytesRead; i++)
     {
@@ -569,7 +569,7 @@ void IFILE_Test::test_ifread_ifgetc(const char* extension)
 
    // Test reading rest of file.
    numBytesRead = ifread(myTestBuffer, MAX_TEST_BUFFER_SIZE);
-   assert(numBytesRead == TEST_FILE_SIZE - totalBytesPreviouslyRead);
+   assert(numBytesRead == (TEST_FILE_SIZE - (int)totalBytesPreviouslyRead));
    // Verify contents of what read.   
     for(int i = 0; i < numBytesRead; i++)
     {
@@ -632,7 +632,7 @@ void IFILE_Test::test_ifread_ifgetc(const char* extension)
    assert(numBytesRead == largeTestFileSize);
    
    // Validate all the 0s
-   for(int i = 0; i < DEFAULT_BUFFER_SIZE; i++)
+   for(unsigned int i = 0; i < DEFAULT_BUFFER_SIZE; i++)
    {
       assert(largeBuffer[i] == '0');
    }
@@ -760,7 +760,7 @@ void IFILE_Test::test_ifread_ifgetc(const char* extension)
 
    // Test reading rest of file.
    numBytesRead = ifread(largeBuffer, largeTestFileSize);
-   assert(numBytesRead == largeTestFileSize - totalBytesPreviouslyRead);
+   assert(numBytesRead == (largeTestFileSize - (int)totalBytesPreviouslyRead));
    // Verify contents of what read.   First check the 0's
    for(int i = 0; i < (numBytesRead-5); i++)
    {
@@ -824,7 +824,7 @@ void IFILE_Test::test_ifread_ifgetc(const char* extension)
 
    // Test reading rest of file.
    numBytesRead = ifread(largeBuffer, largeTestFileSize);
-   assert(numBytesRead == largeTestFileSize - totalBytesPreviouslyRead);
+   assert(numBytesRead == (largeTestFileSize - (int)totalBytesPreviouslyRead));
    // Verify contents of what read.   
    // All except the last 5 should be '0'
     for(int i = 0; i < numBytesRead - 5; i++)
@@ -903,7 +903,7 @@ void IFILE_Test::test_ifread_ifgetc(const char* extension)
 
    // Test reading rest of file.
    numBytesRead = ifread(largeBuffer, largeTestFileSize);
-   assert(numBytesRead == largeTestFileSize - totalBytesPreviouslyRead);
+   assert(numBytesRead == (largeTestFileSize - (int)totalBytesPreviouslyRead));
    // Verify contents of what read.   
    for(int i = 0; i < numBytesRead - 5; i++)
    {
