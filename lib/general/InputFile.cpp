@@ -30,7 +30,7 @@ InputFile::InputFile(const char * filename, const char * mode,
     myFileTypePtr = NULL;
     myBufferIndex = 0;
     myCurrentBufferSize = 0;
-    myAllocatedBufferSize = 1;
+    myAllocatedBufferSize = DEFAULT_BUFFER_SIZE;
     myFileBuffer = new char[myAllocatedBufferSize];
     myFileName.clear();
 
