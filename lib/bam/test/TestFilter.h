@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2010  Regents of the University of Michigan
+ *  Copyright (C) 2011  Regents of the University of Michigan
  *
  *   This program is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -15,23 +15,15 @@
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "FileType.h"
+#include "SamFile.h"
+void testFilter();
 
-FileType::FileType()
+class FilterTest
 {
+public:
+    enum FileType{SAM, BAM};
+    static void testFilter(FileType inputType);
+    
+private:
+
 };
-
-
-FileType::~FileType()
-{
-};
-
-
-// Set by the InputFile to inform this class if buffering
-// is used.  Maybe used by child clases (bgzf) to disable 
-// tell.  NOTE: this class does no buffering, the
-// buffering is handled by the calling class.
-void FileType::setBuffered(bool buffered)
-{
-    myUsingBuffer = buffered;
-}

@@ -10,6 +10,9 @@ clean: TARGET = clean
 install: TARGET = install
 all test clean install: $(SUBDIRS)
 
+# the following depend on libvcf which is currently found in vcfCooker
+mergeFilterStats mgpileup recab thunderVCF verifyBamID: vcfCooker
+
 help : 
 	@echo "Generic Source Distribution"
 	@echo " "

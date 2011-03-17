@@ -205,7 +205,19 @@ void IFILE_Test::test_ifeof_ifrewind(const char* extension)
    // is not just straight file offset.
    if((strcmp(extension, "bam") == 0) || (strcmp(extension, "glf") == 0))
    {
-      assert(iftell() == (BGZF_TEST_FILE_SIZE << 16));
+       bool caught = false;
+       try
+       {
+           assert(iftell() == (BGZF_TEST_FILE_SIZE << 16));
+       }
+       catch (std::exception& e)
+       {
+           caught = true;
+           assert(strcmp(e.what(), "IFILE: CANNOT use buffered reads and tell for BGZF files") == 0);
+       }
+       assert(caught);
+       disableBuffering();
+       assert(iftell() == (BGZF_TEST_FILE_SIZE << 16));
    }
    else
    {
@@ -219,6 +231,9 @@ void IFILE_Test::test_ifeof_ifrewind(const char* extension)
    assert(ifeof() == false);
    // Verify position in file.
    assert(iftell() == 0);
+   
+   // Buffer reads - may have been disabled for iftell to work for bgzf.
+   bufferReads();
 
    // Read a character from the file.
    numBytesRead = readFromFile(myTestBuffer, 1);
@@ -260,7 +275,19 @@ void IFILE_Test::test_ifeof_ifrewind(const char* extension)
    // is not just straight file offset.
    if((strcmp(extension, "bam") == 0) || (strcmp(extension, "glf") == 0))
    {
-      assert(iftell() == (BGZF_TEST_FILE_SIZE << 16));
+       bool caught = false;
+       try
+       {
+           assert(iftell() == (BGZF_TEST_FILE_SIZE << 16));
+       }
+       catch (std::exception& e)
+       {
+           caught = true;
+           assert(strcmp(e.what(), "IFILE: CANNOT use buffered reads and tell for BGZF files") == 0);
+       }
+       assert(caught);
+       disableBuffering();
+       assert(iftell() == (BGZF_TEST_FILE_SIZE << 16));
    }
    else
    {
@@ -285,6 +312,9 @@ void IFILE_Test::test_ifeof_ifrewind(const char* extension)
    // Verify position in file.
    assert(iftell() == 0);
 
+   // Buffer reads - may have been disabled for iftell to work for bgzf.
+   bufferReads();
+
    //////////////////////
    // Close the test file.
    ifclose();
@@ -304,7 +334,7 @@ void IFILE_Test::test_ifread_ifgetc(const char* extension)
    assert(myFileTypePtr->isOpen());
 
    int numBytesRead = 0;
-   int totalBytesPreviouslyRead = 0;
+   unsigned int totalBytesPreviouslyRead = 0;
 
    ////////////////////////////////////
    // Test reading entire file at once.
@@ -317,9 +347,9 @@ void IFILE_Test::test_ifread_ifgetc(const char* extension)
    }
    totalBytesPreviouslyRead += numBytesRead;
   
-   // Should not affect the IFILE buffer
-   assert(myCurrentBufferSize == 0);
-   assert(myBufferIndex == 0);
+   // Should affect the IFILE buffer
+   assert(myCurrentBufferSize == (unsigned int)TEST_FILE_SIZE);
+   assert(myBufferIndex == (unsigned int)TEST_FILE_SIZE);
    
    // Eof - slightly varies based on the type of file on whether or not the
    // next read is the one the current read or the next one shows eof.
@@ -338,7 +368,7 @@ void IFILE_Test::test_ifread_ifgetc(const char* extension)
    // Try reading at end of file twice.
    numBytesRead = ifread(myTestBuffer, MAX_TEST_BUFFER_SIZE);
    assert(numBytesRead == 0);
-   // Should not affect the IFILE buffer
+   // Should affect the IFILE buffer
    assert(myCurrentBufferSize == 0);
    assert(myBufferIndex == 0);
    assert(ifeof() == true);
@@ -346,7 +376,7 @@ void IFILE_Test::test_ifread_ifgetc(const char* extension)
    // 2nd read attempt at eof.   
    numBytesRead = ifread(myTestBuffer, MAX_TEST_BUFFER_SIZE);
    assert(numBytesRead == 0);
-   // Should not affect the IFILE buffer
+   // Should affect the IFILE buffer
    assert(myCurrentBufferSize == 0);
    assert(myBufferIndex == 0);
    assert(ifeof() == true);
@@ -360,13 +390,13 @@ void IFILE_Test::test_ifread_ifgetc(const char* extension)
    // Test reading entire file using getc.
    // Loop through reading the file.
    char readChar;
-   for(int index = 0; index < TEST_FILE_SIZE; index++)
+   for(unsigned int index = 0; index < (unsigned int)TEST_FILE_SIZE; index++)
    {
       // Read a character.
       readChar = ifgetc();
       assert(readChar == TEST_FILE_CONTENTS[index]);
       // Should affect the IFILE buffer
-      assert(myCurrentBufferSize == TEST_FILE_SIZE);
+      assert(myCurrentBufferSize == (unsigned int)TEST_FILE_SIZE);
       assert(myBufferIndex == index+1);
    }
    
@@ -396,15 +426,15 @@ void IFILE_Test::test_ifread_ifgetc(const char* extension)
    assert(myTestBuffer[3] == TEST_FILE_CONTENTS[3]);
    assert(numBytesRead == 4);
    totalBytesPreviouslyRead += numBytesRead;
-   // This read should not have affected the internal buffer.
-   assert(myCurrentBufferSize == 0);
-   assert(myBufferIndex == 0);
+   // This read should have affected the internal buffer.
+   assert(myCurrentBufferSize == (unsigned int)TEST_FILE_SIZE);
+   assert(myBufferIndex == 4);
    // Should not be at eof
    assert(ifeof() == false);
 
    // Test reading rest of file.
    numBytesRead = ifread(myTestBuffer, MAX_TEST_BUFFER_SIZE);
-   assert(numBytesRead == TEST_FILE_SIZE - totalBytesPreviouslyRead);
+   assert(numBytesRead == (TEST_FILE_SIZE - (int)totalBytesPreviouslyRead));
    // Verify contents of what read.   
     for(int i = 0; i < numBytesRead; i++)
     {
@@ -416,7 +446,7 @@ void IFILE_Test::test_ifread_ifgetc(const char* extension)
    // Try at end of file twice.
    numBytesRead = ifread(myTestBuffer, MAX_TEST_BUFFER_SIZE);
    assert(numBytesRead == 0);
-   // Should not affect the IFILE buffer
+   // Should affect the IFILE buffer
    assert(myCurrentBufferSize == 0);
    assert(myBufferIndex == 0);
    assert(ifeof() == true);
@@ -424,7 +454,7 @@ void IFILE_Test::test_ifread_ifgetc(const char* extension)
    // 2nd read attempt at eof.   
    numBytesRead = ifread(myTestBuffer, MAX_TEST_BUFFER_SIZE);
    assert(numBytesRead == 0);
-   // Should not affect the IFILE buffer
+   // Should affect the IFILE buffer
    assert(myCurrentBufferSize == 0);
    assert(myBufferIndex == 0);
    assert(ifeof() == true);
@@ -442,29 +472,29 @@ void IFILE_Test::test_ifread_ifgetc(const char* extension)
    assert(myTestBuffer[3] == TEST_FILE_CONTENTS[3]);
    assert(numBytesRead == 4);
    totalBytesPreviouslyRead += numBytesRead;
-   // This read should not have affected the internal buffer.
-   assert(myCurrentBufferSize == 0);
-   assert(myBufferIndex == 0);
+   // This read should have affected the internal buffer.
+   assert(myCurrentBufferSize == (unsigned int)TEST_FILE_SIZE);
+   assert(myBufferIndex == 4);
    // Should not be at eof
    assert(ifeof() == false);
 
    // Test doing 2 getc.
    readChar = ifgetc();
    assert(readChar == TEST_FILE_CONTENTS[totalBytesPreviouslyRead]);
-   int bufferSize = TEST_FILE_SIZE - totalBytesPreviouslyRead;
+   unsigned int bufferSize = TEST_FILE_SIZE;
    assert(myCurrentBufferSize == bufferSize);
-   assert(myBufferIndex == 1);
+   assert(myBufferIndex == 5);
    totalBytesPreviouslyRead++;
 
    readChar = ifgetc();
    assert(readChar == TEST_FILE_CONTENTS[totalBytesPreviouslyRead]);
    assert(myCurrentBufferSize == bufferSize);
-   assert(myBufferIndex == 2);
+   assert(myBufferIndex == 6);
    totalBytesPreviouslyRead++;
 
    // Test reading rest of file.
    numBytesRead = ifread(myTestBuffer, MAX_TEST_BUFFER_SIZE);
-   assert(numBytesRead == TEST_FILE_SIZE - totalBytesPreviouslyRead);
+   assert(numBytesRead == (TEST_FILE_SIZE - (int)totalBytesPreviouslyRead));
    // Verify contents of what read.   
     for(int i = 0; i < numBytesRead; i++)
     {
@@ -476,17 +506,17 @@ void IFILE_Test::test_ifread_ifgetc(const char* extension)
    // Try at end of file twice.
    numBytesRead = ifread(myTestBuffer, MAX_TEST_BUFFER_SIZE);
    assert(numBytesRead == 0);
-   // Should not affect the IFILE buffer
-   assert(myCurrentBufferSize == bufferSize);
-   assert(myBufferIndex == bufferSize);
+   // Should affect the IFILE buffer
+   assert(myCurrentBufferSize == 0);
+   assert(myBufferIndex == 0);
    assert(ifeof() == true);
 
    // 2nd read attempt at eof.   
    numBytesRead = ifread(myTestBuffer, MAX_TEST_BUFFER_SIZE);
    assert(numBytesRead == 0);
-   // Should not affect the IFILE buffer
-   assert(myCurrentBufferSize == bufferSize);
-   assert(myBufferIndex == bufferSize);
+   // Should affect the IFILE buffer
+   assert(myCurrentBufferSize == 0);
+   assert(myBufferIndex == 0);
    assert(ifeof() == true);
    
     // RESET
@@ -518,7 +548,7 @@ void IFILE_Test::test_ifread_ifgetc(const char* extension)
    assert(myTestBuffer[3] == TEST_FILE_CONTENTS[totalBytesPreviouslyRead + 3]);
    assert(numBytesRead == 4);
    totalBytesPreviouslyRead += numBytesRead;
-   // This read should not have affected the internal buffer.
+   // This read should have affected the internal buffer.
    assert(myCurrentBufferSize == bufferSize);
    assert(myBufferIndex == totalBytesPreviouslyRead);
    // Should not be at eof
@@ -539,7 +569,7 @@ void IFILE_Test::test_ifread_ifgetc(const char* extension)
 
    // Test reading rest of file.
    numBytesRead = ifread(myTestBuffer, MAX_TEST_BUFFER_SIZE);
-   assert(numBytesRead == TEST_FILE_SIZE - totalBytesPreviouslyRead);
+   assert(numBytesRead == (TEST_FILE_SIZE - (int)totalBytesPreviouslyRead));
    // Verify contents of what read.   
     for(int i = 0; i < numBytesRead; i++)
     {
@@ -547,23 +577,23 @@ void IFILE_Test::test_ifread_ifgetc(const char* extension)
 	      TEST_FILE_CONTENTS[i + totalBytesPreviouslyRead]);
     }
     totalBytesPreviouslyRead += numBytesRead;
-   assert(myBufferIndex == totalBytesPreviouslyRead);
-   assert(myCurrentBufferSize == bufferSize);
+   assert(myBufferIndex == 0);
+   assert(myCurrentBufferSize == 0);
 
    // Try at end of file twice.
    numBytesRead = ifread(myTestBuffer, MAX_TEST_BUFFER_SIZE);
    assert(numBytesRead == 0);
-   // Should not affect the IFILE buffer
-   assert(myCurrentBufferSize == bufferSize);
-   assert(myBufferIndex == bufferSize);
+   // Should affect the IFILE buffer
+   assert(myCurrentBufferSize == 0);
+   assert(myBufferIndex == 0);
    assert(ifeof() == true);
 
    // 2nd read attempt at eof.   
    numBytesRead = ifread(myTestBuffer, MAX_TEST_BUFFER_SIZE);
    assert(numBytesRead == 0);
-   // Should not affect the IFILE buffer
-   assert(myCurrentBufferSize == bufferSize);
-   assert(myBufferIndex == bufferSize);
+   // Should affect the IFILE buffer
+   assert(myCurrentBufferSize == 0);
+   assert(myBufferIndex == 0);
    assert(ifeof() == true);
    
     // RESET
@@ -583,9 +613,9 @@ void IFILE_Test::test_ifread_ifgetc(const char* extension)
    // First open the test file.
    openLargeFile(extension);
 
-   // This file contains MAX_BUFFER_SIZE of '0's followed by "12345"
-   // The size of the file is MAX_BUFFER_SIZE + 5.
-   int largeTestFileSize = MAX_BUFFER_SIZE + 5;
+   // This file contains DEFAULT_BUFFER_SIZE of '0's followed by "12345"
+   // The size of the file is DEFAULT_BUFFER_SIZE + 5.
+   int largeTestFileSize = DEFAULT_BUFFER_SIZE + 5;
    char largeBuffer[largeTestFileSize + 5];
 
    // Verify the file successfully opened.
@@ -602,20 +632,22 @@ void IFILE_Test::test_ifread_ifgetc(const char* extension)
    assert(numBytesRead == largeTestFileSize);
    
    // Validate all the 0s
-   for(int i = 0; i < MAX_BUFFER_SIZE; i++)
+   for(unsigned int i = 0; i < DEFAULT_BUFFER_SIZE; i++)
    {
       assert(largeBuffer[i] == '0');
    }
    // Now validate the "12345"
-   assert(largeBuffer[MAX_BUFFER_SIZE] == '1');
-   assert(largeBuffer[MAX_BUFFER_SIZE+1] == '2');
-   assert(largeBuffer[MAX_BUFFER_SIZE+2] == '3');
-   assert(largeBuffer[MAX_BUFFER_SIZE+3] == '4');
-   assert(largeBuffer[MAX_BUFFER_SIZE+4] == '5');
+   assert(largeBuffer[DEFAULT_BUFFER_SIZE] == '1');
+   assert(largeBuffer[DEFAULT_BUFFER_SIZE+1] == '2');
+   assert(largeBuffer[DEFAULT_BUFFER_SIZE+2] == '3');
+   assert(largeBuffer[DEFAULT_BUFFER_SIZE+3] == '4');
+   assert(largeBuffer[DEFAULT_BUFFER_SIZE+4] == '5');
 
    totalBytesPreviouslyRead += numBytesRead;
   
-   // Should not affect the IFILE buffer
+   // Should affect the IFILE buffer - 0 because read
+   // is bigger than the buffer, so just read directly
+   // into the largeBuffer.
    assert(myCurrentBufferSize == 0);
    assert(myBufferIndex == 0);
    
@@ -636,7 +668,7 @@ void IFILE_Test::test_ifread_ifgetc(const char* extension)
    // Try reading at end of file twice.
    numBytesRead = ifread(largeBuffer, largeTestFileSize);
    assert(numBytesRead == 0);
-   // Should not affect the IFILE buffer
+   // Should affect the IFILE buffer
    assert(myCurrentBufferSize == 0);
    assert(myBufferIndex == 0);
    assert(ifeof() == true);
@@ -644,7 +676,7 @@ void IFILE_Test::test_ifread_ifgetc(const char* extension)
    // 2nd read attempt at eof.   
    numBytesRead = ifread(largeBuffer, largeTestFileSize);
    assert(numBytesRead == 0);
-   // Should not affect the IFILE buffer
+   // Should affect the IFILE buffer
    assert(myCurrentBufferSize == 0);
    assert(myBufferIndex == 0);
    assert(ifeof() == true);
@@ -658,13 +690,13 @@ void IFILE_Test::test_ifread_ifgetc(const char* extension)
    // Test reading entire file using getc.
    // Loop through reading the file.
    // First loop through verifying the 0's
-   for(int index = 0; index < MAX_BUFFER_SIZE; index++)
+   for(unsigned int index = 0; index < DEFAULT_BUFFER_SIZE; index++)
    {
       // Read a character.
       readChar = ifgetc();
       assert(readChar == '0');
       // Should affect the IFILE buffer
-      assert(myCurrentBufferSize == MAX_BUFFER_SIZE);
+      assert(myCurrentBufferSize == DEFAULT_BUFFER_SIZE);
       assert(myBufferIndex == index+1);
    }
    // Now read the 12345.
@@ -720,15 +752,15 @@ void IFILE_Test::test_ifread_ifgetc(const char* extension)
    assert(largeBuffer[3] == '0');
    assert(numBytesRead == 4);
    totalBytesPreviouslyRead += numBytesRead;
-   // This read should not have affected the internal buffer.
-   assert(myCurrentBufferSize == 0);
-   assert(myBufferIndex == 0);
+   // This read should have affected the internal buffer.
+   assert(myCurrentBufferSize == DEFAULT_BUFFER_SIZE);
+   assert(myBufferIndex == 4);
    // Should not be at eof
    assert(ifeof() == false);
 
    // Test reading rest of file.
    numBytesRead = ifread(largeBuffer, largeTestFileSize);
-   assert(numBytesRead == largeTestFileSize - totalBytesPreviouslyRead);
+   assert(numBytesRead == (largeTestFileSize - (int)totalBytesPreviouslyRead));
    // Verify contents of what read.   First check the 0's
    for(int i = 0; i < (numBytesRead-5); i++)
    {
@@ -745,17 +777,18 @@ void IFILE_Test::test_ifread_ifgetc(const char* extension)
    // Try at end of file twice.
    numBytesRead = ifread(largeBuffer, largeTestFileSize);
    assert(numBytesRead == 0);
-   // Should not affect the IFILE buffer
-   assert(myCurrentBufferSize == 0);
-   assert(myBufferIndex == 0);
+   // Should affect the IFILE buffer - size if 5, the ammount
+   // that did not fit in the first read.
+   assert(myCurrentBufferSize == 5);
+   assert(myBufferIndex == 5);
    assert(ifeof() == true);
 
    // 2nd read attempt at eof.   
    numBytesRead = ifread(largeBuffer, largeTestFileSize);
    assert(numBytesRead == 0);
-   // Should not affect the IFILE buffer
-   assert(myCurrentBufferSize == 0);
-   assert(myBufferIndex == 0);
+   // Should affect the IFILE buffer
+   assert(myCurrentBufferSize == 5);
+   assert(myBufferIndex == 5);
    assert(ifeof() == true);
    
     // RESET
@@ -769,29 +802,29 @@ void IFILE_Test::test_ifread_ifgetc(const char* extension)
    assert(largeBuffer[1] == '0');
    assert(numBytesRead == 2);
    totalBytesPreviouslyRead += numBytesRead;
-   // This read should not have affected the internal buffer.
-   assert(myCurrentBufferSize == 0);
-   assert(myBufferIndex == 0);
+   // This read should have affected the internal buffer.
+   assert(myCurrentBufferSize == DEFAULT_BUFFER_SIZE);
+   assert(myBufferIndex == 2);
    // Should not be at eof
    assert(ifeof() == false);
 
    // Test doing 2 getc.
    readChar = ifgetc();
    assert(readChar == '0');
-   bufferSize = MAX_BUFFER_SIZE;
+   bufferSize = DEFAULT_BUFFER_SIZE;
    assert(myCurrentBufferSize == bufferSize);
-   assert(myBufferIndex == 1);
+   assert(myBufferIndex == 3);
    totalBytesPreviouslyRead++;
 
    readChar = ifgetc();
    assert(readChar == '0');
    assert(myCurrentBufferSize == bufferSize);
-   assert(myBufferIndex == 2);
+   assert(myBufferIndex == 4);
    totalBytesPreviouslyRead++;
 
    // Test reading rest of file.
    numBytesRead = ifread(largeBuffer, largeTestFileSize);
-   assert(numBytesRead == largeTestFileSize - totalBytesPreviouslyRead);
+   assert(numBytesRead == (largeTestFileSize - (int)totalBytesPreviouslyRead));
    // Verify contents of what read.   
    // All except the last 5 should be '0'
     for(int i = 0; i < numBytesRead - 5; i++)
@@ -810,16 +843,16 @@ void IFILE_Test::test_ifread_ifgetc(const char* extension)
    numBytesRead = ifread(largeBuffer, largeTestFileSize);
    assert(numBytesRead == 0);
    // Should not affect the IFILE buffer
-   assert(myCurrentBufferSize == bufferSize);
-   assert(myBufferIndex == bufferSize);
+   assert(myCurrentBufferSize == 5);
+   assert(myBufferIndex == 5);
    assert(ifeof() == true);
 
    // 2nd read attempt at eof.   
    numBytesRead = ifread(largeBuffer, largeTestFileSize);
    assert(numBytesRead == 0);
    // Should not affect the IFILE buffer
-   assert(myCurrentBufferSize == bufferSize);
-   assert(myBufferIndex == bufferSize);
+   assert(myCurrentBufferSize == 5);
+   assert(myBufferIndex == 5);
    assert(ifeof() == true);
    
     // RESET
@@ -832,7 +865,7 @@ void IFILE_Test::test_ifread_ifgetc(const char* extension)
    // Start with 2 getc.
    readChar = ifgetc();
    assert(readChar == '0');
-   bufferSize = MAX_BUFFER_SIZE;
+   bufferSize = DEFAULT_BUFFER_SIZE;
    assert(myCurrentBufferSize == bufferSize);
    assert(myBufferIndex == 1);
    totalBytesPreviouslyRead++;
@@ -849,7 +882,7 @@ void IFILE_Test::test_ifread_ifgetc(const char* extension)
    assert(myTestBuffer[1] == '0');
    assert(numBytesRead == 2);
    totalBytesPreviouslyRead += numBytesRead;
-   // This read should not have affected the internal buffer.
+   // This read should have affected the internal buffer.
    assert(myCurrentBufferSize == bufferSize);
    assert(myBufferIndex == totalBytesPreviouslyRead);
    // Should not be at eof
@@ -870,7 +903,7 @@ void IFILE_Test::test_ifread_ifgetc(const char* extension)
 
    // Test reading rest of file.
    numBytesRead = ifread(largeBuffer, largeTestFileSize);
-   assert(numBytesRead == largeTestFileSize - totalBytesPreviouslyRead);
+   assert(numBytesRead == (largeTestFileSize - (int)totalBytesPreviouslyRead));
    // Verify contents of what read.   
    for(int i = 0; i < numBytesRead - 5; i++)
    {
@@ -883,7 +916,8 @@ void IFILE_Test::test_ifread_ifgetc(const char* extension)
    assert(largeBuffer[numBytesRead - 5 + 3] == '4');
    assert(largeBuffer[numBytesRead - 5 + 4] == '5');
    totalBytesPreviouslyRead += numBytesRead;
-   assert(myBufferIndex == MAX_BUFFER_SIZE);
+   bufferSize = 5;
+   assert(myBufferIndex == bufferSize);
    assert(myCurrentBufferSize == bufferSize);
 
    // Try at end of file twice.
@@ -936,6 +970,7 @@ void IFILE_Test::test_ifclose(const char* extension)
 
 void IFILE_Test::test_ifseek(const char* extension)
 {
+    disableBuffering();
    // First open the test file.
    openFile(extension);
 
@@ -963,6 +998,9 @@ void IFILE_Test::test_ifseek(const char* extension)
 
    assert(myFileTypePtr == NULL);
    assert(isOpen() == false);
+
+   // Buffer reads - may have been disabled for iftell to work for bgzf.
+   bufferReads();
 
    std::cout << "  Passed test_ifseek" << std::endl;
 }

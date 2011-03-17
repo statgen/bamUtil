@@ -59,6 +59,17 @@ public:
     // Returns true on successful seek and false on a failed seek.
     virtual bool seek(long int offset, int origin) = 0;
 
+    // Set by the InputFile to inform this class if buffering
+    // is used.  Maybe used by child clases (bgzf) to disable 
+    // tell.  NOTE: this class does no buffering, the
+    // buffering is handled by the calling class.
+    void setBuffered(bool buffered);
+
+protected:
+    // Set by the InputFile to inform this class if buffering
+    // is used.  Maybe used by child clases (bgzf) to disable 
+    // tell.
+    bool myUsingBuffer;
 };
 
 #endif

@@ -130,6 +130,8 @@ void BamIndex::resetIndex()
 {
     n_ref = 0;
     maxOverallOffset = 0;
+    
+    myUnMappedNumReads = -1;
 
     // Clear the references.
     myRefs.clear();
@@ -192,6 +194,14 @@ SamStatus::Status BamIndex::readIndex(const char* filename)
             // Failed to read the number of bins.
             // Return failure.
             return(SamStatus::FAIL_PARSE);
+        }
+
+        // If there are no bins, then there are no
+        // mapped/unmapped reads.
+        if(ref->n_bin == 0)
+        {
+            ref->n_mapped = 0;
+            ref->n_unmapped = 0;
         }
 
         // Read each bin.
@@ -277,6 +287,12 @@ SamStatus::Status BamIndex::readIndex(const char* filename)
             // Return failure.
             return(SamStatus::FAIL_IO);
         }
+    }
+
+    int32_t numUnmapped = 0;
+    if(ifread(indexFile, &numUnmapped, sizeof(int32_t)) == sizeof(int32_t))
+    {
+        myUnMappedNumReads = numUnmapped;
     }
 
     // Successfully read teh bam index file.
@@ -418,6 +434,49 @@ int32_t BamIndex::getNumRefs() const
 {
     // Return the number of references.
     return(myRefs.size());
+}
+
+
+// Get the number of mapped reads for this reference id.
+int32_t BamIndex::getNumMappedReads(int32_t refID)
+{
+    // If it is the reference id of unmapped reads, return
+    // that there are no mapped reads.
+    if(refID == REF_ID_UNMAPPED)
+   {
+       // These are by definition all unmapped reads.
+       return(0);
+   }
+
+    if((refID < 0) || (refID >= (int32_t)myRefs.size()))
+    {
+        // Reference ID is out of range for this index file.
+        return(-1);
+    }
+
+    // Get this reference.
+    return(myRefs[refID].n_mapped);
+}
+
+
+// Get the number of unmapped reads for this reference id.
+int32_t BamIndex::getNumUnMappedReads(int32_t refID)
+{
+    // If it is the reference id of unmapped reads, return
+    // that value.
+    if(refID == REF_ID_UNMAPPED)
+    {
+        return(myUnMappedNumReads);
+    }
+
+    if((refID < 0) || (refID >= (int32_t)myRefs.size()))
+    {
+        // Reference ID is out of range for this index file.
+        return(-1);
+    }
+
+    // Get this reference.
+    return(myRefs[refID].n_unmapped);
 }
 
 

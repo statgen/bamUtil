@@ -155,16 +155,33 @@ public:
                                  SamValidationErrors& validationErrors);
     static bool isValidMapQuality(uint8_t mapQuality,
                                   SamValidationErrors& validationErrors);
-    // Cigar validation depends on sequence.
+
+    /// Validate the sequence, but not against the cigar or quality string.
+    /// Validation against cigar is done in isValidCigar.
+    /// Validation against the quality string is done in isValidQuality.
+    static bool isValidSequence(SamRecord& samRecord,
+                                SamValidationErrors& validationErrors);
+
+    /// Cigar validation depends on sequence.
+    static bool isValidCigar(SamRecord& samRecord,
+                             SamValidationErrors& validationErrors);
     static bool isValidCigar(const char* cigar, const char* sequence,
+                             SamValidationErrors& validationErrors);
+    static bool isValidCigar(const char* cigar,
+                             int seqLen,
                              SamValidationErrors& validationErrors);
     static bool isValidMrnm();
     static bool isValidMpos();
     static bool isValidIsize();
     static bool isValidSeq();
     // Quality validation depends on sequence.
+    static bool isValidQuality(SamRecord& samRecord,
+                        SamValidationErrors& validationErrors);
     static bool isValidQuality(const char* quality, const char* sequence,
                                   SamValidationErrors& validationErrors);
+    bool static isValidQuality(const char* quality,
+                               int seqLength,
+                               SamValidationErrors& validationErrors);
     static bool isValidTag();
     static bool isValidVtype();
     static bool isValidValue();

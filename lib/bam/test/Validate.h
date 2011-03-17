@@ -32,3 +32,37 @@ void validateRead10(SamRecord& samRecord);
 void validateHeader(SamFileHeader& samHeader);
 void validateHeaderFields(SamFileHeader& samHeader);
 void validateHeaderString(SamFileHeader& samHeader);
+
+class Validate
+{
+public:
+    static const int READ1_POS = 1010;
+    static const int READ1_ALIGN_END = 1016;
+    static const int READ1_UNCLIP_START = 1010;
+    static const int READ1_UNCLIP_END = 1016;
+    static const int READ1_ALIGN_LEN = 7;
+    static const std::string READ1_CIGAR;
+    static const std::string READ1_SEQ;
+    static const std::string READ1_QUAL;
+
+    static const int READ2_POS = 1011;
+
+    static const int READ6_POS = 1750;
+    static const int READ6_ALIGN_END = 1754;
+    static const int READ6_UNCLIP_START = 1745;
+    static const int READ6_UNCLIP_END = 1754;
+    static const int READ6_ALIGN_LEN = 5;
+    static const std::string READ6_CIGAR;
+    static const std::string READ6_SEQ;
+    static const std::string READ6_QUAL;
+
+    static const int READ7_POS = 1750;
+    static const int READ7_ALIGN_END = 1754;
+    static const int READ7_UNCLIP_START = 1747;
+    static const int READ7_UNCLIP_END = 1758;
+    static const int READ7_ALIGN_LEN = 5;
+    static const std::string READ7_CIGAR;
+    static const std::string READ7_SEQ;
+    static const std::string READ7_QUAL;
+
+};

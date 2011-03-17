@@ -23,6 +23,19 @@
 
 void testIndex(BamIndex& bamIndex)
 {
+    assert(bamIndex.getNumMappedReads(1) == 2);
+    assert(bamIndex.getNumUnMappedReads(1) == 0);
+    assert(bamIndex.getNumMappedReads(0) == 4);
+    assert(bamIndex.getNumUnMappedReads(0) == 1);
+    assert(bamIndex.getNumMappedReads(23) == -1);
+    assert(bamIndex.getNumUnMappedReads(23) == -1);
+    assert(bamIndex.getNumMappedReads(-1) == 0);
+    assert(bamIndex.getNumUnMappedReads(-1) == 2);
+    assert(bamIndex.getNumMappedReads(-2) == -1);
+    assert(bamIndex.getNumUnMappedReads(-2) == -1);
+    assert(bamIndex.getNumMappedReads(22) == 0);
+    assert(bamIndex.getNumUnMappedReads(22) == 0);
+
     // Get the chunks for reference id 1.
     Chunk testChunk;
     SortedChunkList chunkList;
@@ -64,6 +77,33 @@ void testIndex(BamIndex& bamIndex)
     SamFileHeader samHeader;
     assert(inFile.ReadHeader(samHeader));
     SamRecord samRecord;
+
+    // Test getting num mapped/unmapped reads.
+    assert(inFile.getNumMappedReadsFromIndex(1) == 2);
+    assert(inFile.getNumUnMappedReadsFromIndex(1) == 0);
+    assert(inFile.getNumMappedReadsFromIndex(0) == 4);
+    assert(inFile.getNumUnMappedReadsFromIndex(0) == 1);
+    assert(inFile.getNumMappedReadsFromIndex(23) == -1);
+    assert(inFile.getNumUnMappedReadsFromIndex(23) == -1);
+    assert(inFile.getNumMappedReadsFromIndex(-1) == 0);
+    assert(inFile.getNumUnMappedReadsFromIndex(-1) == 2);
+    assert(inFile.getNumMappedReadsFromIndex(-2) == -1);
+    assert(inFile.getNumUnMappedReadsFromIndex(-2) == -1);
+    assert(inFile.getNumMappedReadsFromIndex(22) == 0);
+    assert(inFile.getNumUnMappedReadsFromIndex(22) == 0);
+
+    assert(inFile.getNumMappedReadsFromIndex("2", samHeader) == 2);
+    assert(inFile.getNumUnMappedReadsFromIndex("2", samHeader) == 0);
+    assert(inFile.getNumMappedReadsFromIndex("1", samHeader) == 4);
+    assert(inFile.getNumUnMappedReadsFromIndex("1", samHeader) == 1);
+    assert(inFile.getNumMappedReadsFromIndex("22", samHeader) == 0);
+    assert(inFile.getNumUnMappedReadsFromIndex("22", samHeader) == 0);
+    assert(inFile.getNumMappedReadsFromIndex("", samHeader) == 0);
+    assert(inFile.getNumUnMappedReadsFromIndex("*", samHeader) == 2);
+    assert(inFile.getNumMappedReadsFromIndex("unknown", samHeader) == -1);
+    assert(inFile.getNumUnMappedReadsFromIndex("unknown", samHeader) == -1);
+    assert(inFile.getNumMappedReadsFromIndex("X", samHeader) == 0);
+    assert(inFile.getNumUnMappedReadsFromIndex("X", samHeader) == 0);
 
     // Section -1 = Ref *: 2 records (8 & 10 from testSam.sam that is reflected
     // in the validation.

@@ -213,7 +213,7 @@ int Validate::execute(int argc, char **argv)
                 // If the status is not yet set, set it.
                 if(status == SamStatus::SUCCESS)
                 {
-                    status = samIn.GetStatus();
+                    status = SamStatus::INVALID;
                 }
             }
             else

@@ -30,6 +30,8 @@ InputFile::InputFile(const char * filename, const char * mode,
     myFileTypePtr = NULL;
     myBufferIndex = 0;
     myCurrentBufferSize = 0;
+    myAllocatedBufferSize = DEFAULT_BUFFER_SIZE;
+    myFileBuffer = new char[myAllocatedBufferSize];
     myFileName.clear();
 
     openFile(filename, mode, compressionMode);
@@ -112,7 +114,7 @@ bool InputFile::openFile(const char * filename, const char * mode,
                     {
                         // Not BGZF, just a normal gzip.
                         myFileTypePtr = new GzipFileType(filename, mode);
-                    }
+                   }
                 }
                 else
                 {
@@ -123,7 +125,10 @@ bool InputFile::openFile(const char * filename, const char * mode,
             }
         }
     }
-
+    if(myFileTypePtr == NULL)
+    {
+        return(false);
+    }
     if (!myFileTypePtr->isOpen())
     {
         // The file was not opened, so delete the pointer and set to null.
@@ -132,6 +137,14 @@ bool InputFile::openFile(const char * filename, const char * mode,
         return false;
     }
 
+    if(myAllocatedBufferSize == 1)
+    {
+        myFileTypePtr->setBuffered(false);
+    }
+    else
+    {
+        myFileTypePtr->setBuffered(true);
+    }
     myFileName = filename;
     return true;
 }
@@ -176,6 +189,19 @@ void InputFile::openFileUsingMode(const char * filename, const char * mode,
             }
             break;
     }
+
+    if(myFileTypePtr == NULL)
+    {
+        return;
+    }
+    if(myAllocatedBufferSize == 1)
+    {
+        myFileTypePtr->setBuffered(false);
+    }
+    else
+    {
+        myFileTypePtr->setBuffered(true);
+    }
 }
 
 #else
@@ -188,12 +214,24 @@ bool InputFile::openFile(const char * filename, const char * mode)
     //  No zlib, so it is a uncompressed, uncompressed file.
     myFileTypePtr = new UncompressedFileType(filename, mode);
 
+    if(myFileTypePtr == NULL)
+    {
+        return(false);
+    }
     if (!myFileTypePtr->isOpen())
     {
         // The file was not opened, so delete the pointer and set to null.
         delete myFileTypePtr;
         myFileTypePtr = NULL;
         return false;
+    }
+    if(myAllocatedBufferSize == 1)
+    {
+        myFileTypePtr->setBuffered(false);
+    }
+    else
+    {
+        myFileTypePtr->setBuffered(true);
     }
     myFileName = filename;
     return true;
@@ -206,6 +244,12 @@ InputFile::~InputFile()
 {
     delete myFileTypePtr;
     myFileTypePtr = NULL;
+
+    if(myFileBuffer != NULL)
+    {
+        delete[] myFileBuffer;
+        myFileBuffer = NULL;
+    }
 }
 
 

@@ -237,6 +237,34 @@ public:
     /// \return true = success; false = failure.   
     bool SetReadSection(const char* refName, int32_t start, int32_t end);
 
+    /// Get the number of mapped reads in the specified reference id.  
+    /// Returns -1 for out of range refIDs.
+    /// \param refID reference ID for which to extract the number of mapped reads.
+    /// \return number of mapped reads for the specified reference id.
+    int32_t getNumMappedReadsFromIndex(int32_t refID);
+
+    /// Get the number of unmapped reads in the specified reference id.  
+    /// Returns -1 for out of range refIDs.
+    /// \param refID reference ID for which to extract the number of unmapped reads.
+    /// \return number of unmapped reads for the specified reference id.
+    int32_t getNumUnMappedReadsFromIndex(int32_t refID);
+
+    /// Get the number of mapped reads in the specified reference name.
+    /// Returns -1 for unknown reference names.
+    /// \param refName reference name for which to extract the number of mapped reads.
+    /// \param header header object containing the map from refName to refID
+    /// \return number of mapped reads for the specified reference name.
+    int32_t getNumMappedReadsFromIndex(const char* refName,
+                                       SamFileHeader& header);
+
+    /// Get the number of unmapped reads in the specified reference name.
+    /// Returns -1 for unknown reference names.
+    /// \param refName reference name for which to extract the number of unmapped reads.
+    /// \param header header object containing the map from refName to refID
+    /// \return number of unmapped reads for the specified reference name.
+    int32_t getNumUnMappedReadsFromIndex(const char* refName,
+                                         SamFileHeader& header);
+
     /// Returns the number of bases in the passed in read that overlap the
     /// region that is currently set.
     /// \param samRecord to check for overlapping bases.
