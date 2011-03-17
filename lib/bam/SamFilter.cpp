@@ -29,350 +29,393 @@ SamFilter::FilterStatus SamFilter::clipOnMismatchThreshold(SamRecord& record,
                                                            double mismatchThreshold)
 {
     // Read & clip from the left & right.    
-    SamQuerySeqWithRefIter iterFromStart(record, refSequence, true);
-    SamQuerySeqWithRefIter iterFromEnd(record, refSequence, false);
+    SamQuerySeqWithRefIter iterFromFront(record, refSequence, true);
+    SamQuerySeqWithRefIter iterFromBack(record, refSequence, false);
 
     SamSingleBaseMatchInfo baseMatchInfo;
 
     int32_t readLength = record.getReadLength();
-    // Init start clip to be prior to the start index (0).
-    const int32_t initialStartClipPos = -1;
-    int32_t startClipPos = initialStartClipPos;
-    // Init end clip to be past the last index (readLength).
-    int32_t endClipPos = readLength;
+    // Init last front clip to be prior to the lastFront index (0).
+    const int32_t initialLastFrontClipPos = -1;
+    int32_t lastFrontClipPos = initialLastFrontClipPos;
+    // Init first back clip to be past the last index (readLength).
+    int32_t firstBackClipPos = readLength;
 
-    bool fromStartComplete = false;
-    bool fromEndComplete = false;
-    int32_t numBasesFromStart = 0;
-    int32_t numBasesFromEnd = 0;
-    int32_t numMismatchFromStart = 0;
-    int32_t numMismatchFromEnd = 0;
-
-    FilterStatus status = NONE;
+    bool fromFrontComplete = false;
+    bool fromBackComplete = false;
+    int32_t numBasesFromFront = 0;
+    int32_t numBasesFromBack = 0;
+    int32_t numMismatchFromFront = 0;
+    int32_t numMismatchFromBack = 0;
 
     //////////////////////////////////////////////////////////
     // Determining the clip positions.
-    while(!fromStartComplete || !fromEndComplete)
+    while(!fromFrontComplete || !fromBackComplete)
     {
-        // Read from the start (left to right) on the read until
+        // Read from the front (left to right) of the read until
         // more have been read from that direction than the opposite direction.
-        while(!fromStartComplete && 
-              ((numBasesFromStart <= numBasesFromEnd) ||
-               (fromEndComplete)))
+        while(!fromFrontComplete && 
+              ((numBasesFromFront <= numBasesFromBack) ||
+               (fromBackComplete)))
         {
-            if(iterFromStart.getNextMatchMismatch(baseMatchInfo) == false)
+            if(iterFromFront.getNextMatchMismatch(baseMatchInfo) == false)
             {
                 // Nothing more to read in this direction.
-                fromStartComplete = true;
+                fromFrontComplete = true;
                 break;
             }
             // Got a read.  Check to see if it is to or past the last clip.
-            if(baseMatchInfo.getQueryIndex() >= endClipPos)
+            if(baseMatchInfo.getQueryIndex() >= firstBackClipPos)
             {
                 // This base is past where we are clipping, so we
                 // are done reading in this direction.
-                fromStartComplete = true;
+                fromFrontComplete = true;
                 break;
             }
             // This is an actual base read from the left to the
             // right, so up the counter and determine if it was a mismatch.
-            ++numBasesFromStart;
+            ++numBasesFromFront;
 
             if(baseMatchInfo.getType() == SamSingleBaseMatchInfo::MISMATCH)
             {
                 // Mismatch
-                ++numMismatchFromStart;
+                ++numMismatchFromFront;
                 // Check to see if it is over the threshold.
                 double mismatchPercent = 
-                    (double)numMismatchFromStart / numBasesFromStart;
+                    (double)numMismatchFromFront / numBasesFromFront;
                 if(mismatchPercent > mismatchThreshold)
                 {
                     // Need to clip.
-                    startClipPos = baseMatchInfo.getQueryIndex();
+                    lastFrontClipPos = baseMatchInfo.getQueryIndex();
                     // Reset the counters.
-                    numBasesFromStart = 0;
-                    numMismatchFromStart = 0;
+                    numBasesFromFront = 0;
+                    numMismatchFromFront = 0;
                 }
             }
         }
 
         // Now, read from right to left until more have been read
-        // from the end than from the start.
-        while(!fromEndComplete && 
-              ((numBasesFromEnd <= numBasesFromStart) ||
-               (fromStartComplete)))
+        // from the back than from the front.
+        while(!fromBackComplete && 
+              ((numBasesFromBack <= numBasesFromFront) ||
+               (fromFrontComplete)))
         {
-            if(iterFromEnd.getNextMatchMismatch(baseMatchInfo) == false)
+            if(iterFromBack.getNextMatchMismatch(baseMatchInfo) == false)
             {
                 // Nothing more to read in this direction.
-                fromEndComplete = true;
+                fromBackComplete = true;
                 break;
             }
             // Got a read.  Check to see if it is to or past the first clip.
-            if(baseMatchInfo.getQueryIndex() <= startClipPos)
+            if(baseMatchInfo.getQueryIndex() <= lastFrontClipPos)
             {
                 // This base is past where we are clipping, so we
                 // are done reading in this direction.
-                fromEndComplete = true;
+                fromBackComplete = true;
                 break;
             }
             // This is an actual base read from the right to the
             // left, so up the counter and determine if it was a mismatch.
-            ++numBasesFromEnd;
+            ++numBasesFromBack;
 
             if(baseMatchInfo.getType() == SamSingleBaseMatchInfo::MISMATCH)
             {
                 // Mismatch
-                ++numMismatchFromEnd;
+                ++numMismatchFromBack;
                 // Check to see if it is over the threshold.
                 double mismatchPercent = 
-                    (double)numMismatchFromEnd / numBasesFromEnd;
+                    (double)numMismatchFromBack / numBasesFromBack;
                 if(mismatchPercent > mismatchThreshold)
                 {
                     // Need to clip.
-                    endClipPos = baseMatchInfo.getQueryIndex();
+                    firstBackClipPos = baseMatchInfo.getQueryIndex();
                     // Reset the counters.
-                    numBasesFromEnd = 0;
-                    numMismatchFromEnd = 0;
+                    numBasesFromBack = 0;
+                    numMismatchFromBack = 0;
                 }
             }
         }
     }
 
     //////////////////////////////////////////////////////////
-    // Done determining the clip positions.
-    // Check to see if clipping needs to be done.
+    // Done determining the clip positions, so clip.
+    // To determine the number of clips from the front, add 1 to the
+    // lastFrontClipPos since the index starts at 0.
+    // To determine the number of clips from the back, subtract the
+    // firstBackClipPos from the readLength.
+    // Example:
+    // Pos:  012345
+    // Read: AAAAAA
+    // Read Length = 6.  If lastFrontClipPos = 2 and firstBackClipPos = 4, numFrontClips = 3 & numBack = 2.
+    return(softClip(record, lastFrontClipPos + 1, readLength - firstBackClipPos));
+}
+
+
+// Soft clip the record from the front and/or the back.
+SamFilter::FilterStatus SamFilter::softClip(SamRecord& record, 
+                                            int32_t numFrontClips,
+                                            int32_t numBackClips)
+{
+    //////////////////////////////////////////////////////////
     Cigar* cigar = record.getCigarInfo();
-    if((startClipPos != initialStartClipPos) || (endClipPos != readLength))
+    FilterStatus status = NONE;
+    int32_t startPos = record.get0BasedPosition();
+    CigarRoller updatedCigar;
+
+    status = softClip(*cigar, numFrontClips, numBackClips, 
+                      startPos, updatedCigar);
+
+    if(status == FILTERED)
     {
-        // Clipping from front and/or from the end.
+        /////////////////////////////
+        // The entire read is clipped, so rather than clipping it,
+        // filter it out.
+        filterRead(record);
+        return(FILTERED);
+    }
+    else if(status == CLIPPED)
+    {
+        // Part of the read was clipped, and now that we have
+        // an updated cigar, update the read.
+        record.setCigar(updatedCigar);
+
+        // Update the starting position.
+        record.set0BasedPosition(startPos);
+    }
+    return(status);
+}
+
+
+// Soft clip the cigar from the front and/or the back, writing the value
+// into the new cigar.
+SamFilter::FilterStatus SamFilter::softClip(Cigar& oldCigar, 
+                                            int32_t numFrontClips,
+                                            int32_t numBackClips,
+                                            int32_t& startPos,
+                                            CigarRoller& updatedCigar)
+{
+    int32_t readLength = oldCigar.getExpectedQueryBaseCount();
+    int32_t endClipPos = readLength - numBackClips;
+    FilterStatus status = NONE;
+
+    if((numFrontClips != 0) || (numBackClips != 0))
+    {
+        // Clipping from front and/or from the back.
+
         // Check to see if the entire read was clipped.
-        if((startClipPos + 1) >= endClipPos)
+        int32_t totalClips = numFrontClips + numBackClips;
+        if(totalClips >= readLength)
         {
             /////////////////////////////
-            // The entire read was clipped.
-            filterRead(record);
-            status = FILTERED;
+            // The entire read is clipped, so rather than clipping it,
+            // filter it out.
+            return(FILTERED);
         }
-        else
+         
+        // Part of the read was clipped.
+        status = CLIPPED;
+            
+        // Loop through, creating an updated cigar.
+        int origCigarOpIndex = 0;
+        
+        // Track how many read positions are covered up to this
+        // point by the cigar to determine up to up to what
+        // point in the cigar is affected by this clipping.
+        int32_t numPositions = 0;
+        
+        // Track if any non-clips are in the new cigar.
+        bool onlyClips = true;
+
+        const Cigar::CigarOperator* op = NULL;
+
+        //////////////////
+        // Clip from front
+        while((origCigarOpIndex < oldCigar.size()) &&
+              (numPositions < numFrontClips))
         {
-            // Part of the read was clipped.
-            status = CLIPPED;
-            
-            // Need to create a new cigar.
-            CigarRoller newCigar;
-            
-            // Loop through, creating an updated cigar.
-
-            int origCigarOpIndex = 0;
-            // Track how many read positions are covered up to this
-            // point by the cigar to determine up to up to what
-            // point in the cigar is affected by this clipping.
-            int32_t numPositions = 0;
-
-            // Add 1 to the startClipPos to determine the number of
-            // softclips since startClipPos starts at 0.
-            int32_t numSoftClips = startClipPos + 1;
-
-            // Track if any non-clips are in the new cigar.
-            bool onlyClips = true;
-
-            const Cigar::CigarOperator* op = NULL;
-
-            //////////////////
-            // Clip from front
-            // keep any hard clips that are prior to the soft clip that
-            // is being performed..
-            while((origCigarOpIndex < cigar->size()) &&
-                  (numPositions < numSoftClips))
+            op = &(oldCigar.getOperator(origCigarOpIndex));
+            switch(op->operation)
             {
-                op = &(cigar->getOperator(origCigarOpIndex));
-                switch(op->operation)
-                {
-                    case Cigar::hardClip:
-                        // Keep this operation as the new clips do not
-                        // affect other clips.
-                        newCigar += *op;
-                        break;
-                    case Cigar::del:
-                    case Cigar::skip:
-                        // Skip and delete are going to be dropped, and
-                        // are not in the read, so the read index doesn't
-                        // need to be updated
-                        break;
-                    case Cigar::insert:
-                    case Cigar::match:
-                    case Cigar::mismatch:
-                    case Cigar::softClip:
-                        // Update the read index as these types
-                        // are found in the read.
-                        numPositions += op->count;
-                        break;
-                    case Cigar::none:
-                    default:
-                        // Nothing to do for none.
-                        break;
-                };
-                ++origCigarOpIndex;
-            }
-             
-            if(numSoftClips != 0)
+                case Cigar::hardClip:
+                    // Keep this operation as the new clips do not
+                    // affect other clips.
+                    updatedCigar += *op;
+                    break;
+                case Cigar::del:
+                case Cigar::skip:
+                    // Skip and delete are going to be dropped, and
+                    // are not in the read, so the read index doesn't
+                    // need to be updated
+                    break;
+                case Cigar::insert:
+                case Cigar::match:
+                case Cigar::mismatch:
+                case Cigar::softClip:
+                    // Update the read index as these types
+                    // are found in the read.
+                    numPositions += op->count;
+                    break;
+                case Cigar::none:
+                default:
+                    // Nothing to do for none.
+                    break;
+            };
+            ++origCigarOpIndex;
+        }
+    
+        // If bases were clipped from the front, add the clip and
+        // any partial cigar operation as necessary.
+        if(numFrontClips != 0)
+        {
+            // Add the softclip to the front of the read.
+            updatedCigar.Add(Cigar::softClip, numFrontClips);
+        
+            // Add the rest of the last Cigar operation if
+            // it is not entirely clipped.
+            int32_t newCount = numPositions - numFrontClips;
+            if(newCount > 0)
             {
-                // Add the softclip from the front of the read.
-                newCigar.Add(Cigar::softClip, numSoftClips);
-
-                // Add the rest of the last Cigar operation if
-                // it is not entirely clipped.
-                if(numPositions > numSoftClips)
+                // Before adding it, check to see if the same
+                // operation is clipped from the end.
+                // numPositions greater than the endClipPos
+                // means that it is equal or past that position,
+                // so shorten the number of positions.
+                if(numPositions > endClipPos)
                 {
-                    // Before adding it, check to see if the same
-                    // operation is clipped from the end.
-                    // numPositions greater than the endClipPos
-                    // means that it is equal or past that position,
-                    // so shorten the number of positions.
-                    int32_t newCount = numPositions - numSoftClips;
-                    if(numPositions > endClipPos)
-                    {
-                        newCount -= (numPositions - endClipPos);
-                    }
-                    if(newCount > 0)
-                    {
-                        newCigar.Add(op->operation, newCount);
-                        if(!Cigar::isClip(op->operation))
-                        {
-                            onlyClips = false;
-                        }
-                    }
+                    newCount -= (numPositions - endClipPos);
                 }
-            }
-
-            // Add operations until the point of the end clip is reached.
-            // For example...
-            //   2M1D3M = MMDMMM  readLength = 5
-            // readIndex: 01 234
-            //   at cigarOpIndex 0 (2M), numPositions = 2.
-            //   at cigarOpIndex 1 (1D), numPositions = 2.
-            //   at cigarOpIndex 2 (3M), numPositions = 5.
-            // if endClipPos = 2, we still want to consume the 1D, so
-            // need to keep looping until numPositions > endClipPos
-            while((origCigarOpIndex < cigar->size()) &&
-                  (numPositions <= endClipPos))
-            {
-                op = &(cigar->getOperator(origCigarOpIndex));
-                
-                // Update the numPositions count if the operations indicates
-                // bases within the read.
-                if(!Cigar::foundInQuery(op->operation))
+                if(newCount > 0)
                 {
-                    // This operation is not in the query read sequence,
-                    // so it is not yet to the endClipPos, just add the
-                    // operation do not increment the number of positions.
-                    newCigar += *op;
+                    updatedCigar.Add(op->operation, newCount);
                     if(!Cigar::isClip(op->operation))
                     {
                         onlyClips = false;
                     }
                 }
-                else
+            }
+        }
+    
+        // Add operations until the point of the end clip is reached.
+        // For example...
+        //   2M1D3M = MMDMMM  readLength = 5
+        // readIndex: 01 234
+        //   at cigarOpIndex 0 (2M), numPositions = 2.
+        //   at cigarOpIndex 1 (1D), numPositions = 2.
+        //   at cigarOpIndex 2 (3M), numPositions = 5.
+        // if endClipPos = 2, we still want to consume the 1D, so
+        // need to keep looping until numPositions > endClipPos
+        while((origCigarOpIndex < oldCigar.size()) &&
+              (numPositions <= endClipPos))
+        {
+            op = &(oldCigar.getOperator(origCigarOpIndex));
+            
+            // Update the numPositions count if the operations indicates
+            // bases within the read.
+            if(!Cigar::foundInQuery(op->operation))
+            {
+                // This operation is not in the query read sequence,
+                // so it is not yet to the endClipPos, just add the
+                // operation do not increment the number of positions.
+                updatedCigar += *op;
+                if(!Cigar::isClip(op->operation))
                 {
-                    // This operation appears in the query sequence, so
-                    // check to see if the clip occurs in this operation.
-
-                    // endClipPos is 0 based & numPositions is a count.
-                    // If endClipPos is 4, then it is the 5th position.
-                    // If 4 positions are covered so far (numPositions = 4), 
-                    // then we are right at endCLipPos: 4-4 = 0, none of 
-                    // this operation should be kept. 
-                    // If only 3 positions were covered, then we are at offset
-                    // 3, so offset 3 should be added: 4-3 = 1.
-                    uint32_t numPosTilClip = endClipPos - numPositions;
-
-                    if(numPosTilClip < op->count)
+                    onlyClips = false;
+                }
+            }
+            else
+            {
+                // This operation appears in the query sequence, so
+                // check to see if the clip occurs in this operation.
+                
+                // endClipPos is 0 based & numPositions is a count.
+                // If endClipPos is 4, then it is the 5th position.
+                // If 4 positions are covered so far (numPositions = 4), 
+                // then we are right at endCLipPos: 4-4 = 0, none of 
+                // this operation should be kept. 
+                // If only 3 positions were covered, then we are at offset
+                // 3, so offset 3 should be added: 4-3 = 1.
+                uint32_t numPosTilClip = endClipPos - numPositions;
+                
+                if(numPosTilClip < op->count)
+                {
+                    // this operation is partially clipped, write the part
+                    // that was not clipped if it is not all clipped.
+                    if(numPosTilClip != 0)
                     {
-                        // this operation is partially clipped, write the part
-                        // that was not clipped if it is not all clipped.
-                        if(numPosTilClip != 0)
-                        {
-                            newCigar.Add(op->operation,
-                                         numPosTilClip);
-                            if(!Cigar::isClip(op->operation))
-                            {
-                                onlyClips = false;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        // This operation is not clipped, so add it
-                        newCigar += *op;
+                        updatedCigar.Add(op->operation,
+                                     numPosTilClip);
                         if(!Cigar::isClip(op->operation))
                         {
                             onlyClips = false;
                         }
                     }
-                    // This operation occurs in the query sequence, so 
-                    // increment the number of positions covered.
-                    numPositions += op->count;
                 }
-
-                // Move to the next cigar position.
-                ++origCigarOpIndex;
+                else
+                {
+                    // This operation is not clipped, so add it
+                    updatedCigar += *op;
+                    if(!Cigar::isClip(op->operation))
+                    {
+                        onlyClips = false;
+                    }
+                }
+                // This operation occurs in the query sequence, so 
+                // increment the number of positions covered.
+                numPositions += op->count;
             }
+
+            // Move to the next cigar position.
+            ++origCigarOpIndex;
+        }
             
-            //////////////////
-            // Add the softclip to the back.
-            numSoftClips = readLength - endClipPos;
-            if(numSoftClips != 0)
+        //////////////////
+        // Add the softclip to the back.
+        if(numBackClips != 0)
+        {
+            // Add the softclip to the end
+            updatedCigar.Add(Cigar::softClip, numBackClips);
+        }
+        
+        //////////////////
+        // Add any hardclips remaining in the original cigar to the back.
+        while(origCigarOpIndex < oldCigar.size())
+        {
+            op = &(oldCigar.getOperator(origCigarOpIndex));
+            if(op->operation == Cigar::hardClip)
             {
-                // Add the softclip to the end
-                newCigar.Add(Cigar::softClip, numSoftClips);
+                // Keep this operation as the new clips do not
+                // affect other clips.
+                updatedCigar += *op;
             }
-
-            //////////////////
-            // Add any hardclips remaining in the original cigar to the back.
-            while(origCigarOpIndex < cigar->size())
+            ++origCigarOpIndex;
+        }
+        
+        // Check to see if the new cigar is only clips.
+        if(onlyClips)
+        {
+            // Only clips in the new cigar, so mark the read as filtered
+            // instead of updating the cigar.
+            /////////////////////////////
+            // The entire read was clipped.
+            status = FILTERED;
+        }
+        else
+        {
+            // Part of the read was clipped.
+            // Update the starting position if a clip was added to
+            // the front.
+            if(numFrontClips > 0)
             {
-                op = &(cigar->getOperator(origCigarOpIndex));
-                if(op->operation == Cigar::hardClip)
-                {
-                    // Keep this operation as the new clips do not
-                    // affect other clips.
-                    newCigar += *op;
-                }
-                ++origCigarOpIndex;
-            }
-
-            // Check to see if the new cigar is only clips.
-            if(onlyClips)
-            {
-                // Only clips in the new cigar, so mark the read as filtered
-                // instead of updating the cigar.
-                /////////////////////////////
-                // The entire read was clipped.
-                filterRead(record);
-                status = FILTERED;
-            }
-            else
-            {
-                // Part of the read was filtered, and now that we have
-                // an updated cigar, update the read.
-                record.setCigar(newCigar);
-
-                // Update the starting position if a clip was added to
-                // the front.
-                if(startClipPos != initialStartClipPos)
-                {
-                    // Convert from query index to reference position (from the
-                    // old cigar)
-                    // Get the position for the start clipped position by
-                    // getting the position associated with the clipped base on
-                    // the reference.  Then add one to get to the first
-                    // non-clipped position.
-                    uint32_t newStartPos = 
-                        cigar->getRefPosition(startClipPos, 
-                                              record.get0BasedPosition()) + 1;
-                    record.set0BasedPosition(newStartPos);
-                }
+                // Convert from query index to reference position (from the
+                // old cigar)
+                // Get the position for the start clipped position by
+                // getting the position associated with the clipped base on
+                // the reference.  Then add one to get to the first
+                // non-clipped position.
+                int32_t lastFrontClipPos = numFrontClips - 1;
+                startPos = 
+                    oldCigar.getRefPosition(lastFrontClipPos, 
+                                            startPos) + 1;
             }
         }
     }
