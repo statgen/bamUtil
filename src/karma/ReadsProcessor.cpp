@@ -417,8 +417,9 @@ void ReadsProcessor::MapPEReadsFromFilesMT(
             mapperA->resetMapper();
             mapperB->resetMapper();
 
+#pragma message "debug code by tag"
 #if 1
-            if (bufferA[index].tag.Find("unknown_0001:8:1:1155:15777") >= 0)
+            if (bufferA[index].tag.Find("unknown_0001:8:1:1158:20857") >= 0)
                 printf("b");
 #endif
             preMappingCheckA[i] = mapperA->processReadAndQuality(bufferA[index]);
@@ -481,6 +482,11 @@ void ReadsProcessor::MapPEReadsFromFilesMT(
                 // there anyway.
                 //
                 longerMapper->mapReads(shorterMapper);
+                // TODO(zhanxw)
+                // #pragma warning "do this"
+                //  mapperA->alignmentPathTag = "2L";
+                //  mapperB->alignmentPathTag = "2L";
+
                 //
                 // given the quickly mapped reads above, consider various slower
                 // mapping options depending on the relative qualities of the maps.
@@ -600,7 +606,7 @@ void ReadsProcessor::MapPEReadsFromFilesMT(
                     // we need to clear the mapping and the proper pair flag
                     mapperA->checkHighMismatchMapping(mapperB);
                 }
-                else
+                else // one or more mapper does not have valid quality
                 {
                     DEBUG_PRINT(std::cerr << " - remapping both single end\n";) ;
                     //
@@ -620,7 +626,6 @@ void ReadsProcessor::MapPEReadsFromFilesMT(
                     if (mapperA->mapperSE->bestMatch.qualityIsValid() &&
                         mapperA->mapperSE->bestMatch.mismatchCount < mapperA->mapperSE->forward.mismatchCutoff)
                     {
-
                         mapperA->setMappingMethodToSE();
 
                         // if B is not aligned, go ahead and realign locally
@@ -639,8 +644,8 @@ void ReadsProcessor::MapPEReadsFromFilesMT(
 
                     }
 
-                    if (mapperB->mapperSE->bestMatch.qualityIsValid() &&
-                        mapperB->mapperSE->bestMatch.mismatchCount < mapperB->mapperSE->forward.mismatchCutoff)
+                    else if (mapperB->mapperSE->bestMatch.qualityIsValid() &&
+                         mapperB->mapperSE->bestMatch.mismatchCount < mapperB->mapperSE->forward.mismatchCutoff)
                     {
 
                         mapperB->setMappingMethodToSE();

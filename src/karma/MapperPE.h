@@ -65,7 +65,10 @@ class MapperPE : public MapperBase
 
     void init(std::string & readFragment, std::string &dataQuality, std::string &fragmentTag);
 
+    // calculate cigar for this PE mapper and (if SE mapper exists) the SE mapper.
     void populateCigarRollerAndGenomeMatchPosition();
+    
+    // for local align to single end alignment.
     MapperSE* mapperSE;
 
     //
@@ -83,7 +86,6 @@ class MapperPE : public MapperBase
     unsigned int backwardCount;
 
     virtual void mapReads(MapperPE *)=0;
-    void adjustMapping();
 
     MatchedReadBase &getBestMatch();
     bool updateBestMatch(MatchedReadPE& matchCandidateB);
@@ -104,10 +106,14 @@ class MapperPE : public MapperBase
         mapperSE->bestMatch.indexer = &forward;   // needs to point to something sane
     }
 
+    // calling clearHighMismatchMapping() and set proper flag for every aligner
     void checkHighMismatchMapping(MapperPE* otherMapper);
+    //clear bestMatch if the number of mismatches are higher than mismatch cutoff
     bool clearHighMismatchMapping();
+    // try single end alignment for the read
     void remapSingle(void);
     virtual bool tryLocalAlign(MapperBase* anchor) = 0;
+    // setter functions
     void setMappingMethodToPE(void);
     void setMappingMethodToSE(void);
     void setMappingMethodToLocal(void);

@@ -524,12 +524,6 @@ void MatchedReadBase::print(
     assert(cigarRoller.size()>0);   // not 100% sure about this one
     assert(indexer!=NULL);
     assert(indexer->read.size() == indexer->phredQuality.size());
-#pragma message "debug code"
-    if (indexer->phredQuality.size() != 119)
-    {
-        if (fragmentTag.find("unknown_0001:8:1:1164:9261#0") != std::string::npos)
-            printf("a");
-    }
 
     if (mate)
     {
