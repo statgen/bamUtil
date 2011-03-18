@@ -30,8 +30,10 @@ private:
     // Open and read the first record.
     void openAndRead1Rec();
 
+    void modifyTags();
+
     // Variables.
-    const char* myFilename;
+    std::string myFilename;
 
     // Rather than passing around all these variables, just store them in the class.
     SamFile samIn;
