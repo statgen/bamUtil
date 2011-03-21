@@ -51,7 +51,7 @@ MapperPEBaseSpace::~MapperPEBaseSpace()
 // this helper function is because getting pointer to method to work the way I want
 // it to is a big pain in the backside.
 //
-static bool evalTrampoline(
+static bool evalTrampolineMapReads(
                            MapperBase *mapper,
                            ReadIndexer &indexer,
                            int candidateCount,
@@ -81,6 +81,8 @@ static bool evalTrampoline(
 //
 void MapperPEBaseSpace::mapReads(MapperPE *pairedReadB)
 {
+    this->resetMapper();
+    pairedReadB->resetMapper();
     // XXX messy here and in single end, and worse, we handle it quite
     // differently in top level logic, but it should accomplish the same
     // thing...
@@ -89,9 +91,9 @@ void MapperPEBaseSpace::mapReads(MapperPE *pairedReadB)
     // first --- if we aren't forcing smith waterman, attempt
     // a non gapped alignment
     //
-    if (!mapperOptions.forceSmithWaterman)
+    if (!mapperOptions.forceSmithWaterman){
         mapReads2(pairedReadB);
-
+    }
     //
     // second --- if we either are forcing smith waterman or we
     // failed to get a match and we are allowing it, get set to run
@@ -144,19 +146,6 @@ void MapperPEBaseSpace::mapReads2(MapperPE *pairedReadB)
     pairedReadB->otherEndMapper = this;
     otherEndMapper = pairedReadB;
 
-
-#if 0
-    matchCandidate.constructorClear();
-    pairedReadB->matchCandidate.constructorClear();     // XXX should be unused here
-    bestMatch.constructorClear();
-    pairedReadB->bestMatch.constructorClear();
-
-    // assure that there is a default indexer hanging around in
-    // case there are no maps:
-    bestMatch.indexer = &forward;
-    pairedReadB->bestMatch.indexer = &pairedReadB->forward;
-#endif
-
     // Chain reaction here:
     // populateMatchCandidates()  in MapperPE                                                         =>
     // evalBaseSpaceReads(NULL, evalTrampoline)                                                       =>
@@ -165,6 +154,8 @@ void MapperPEBaseSpace::mapReads2(MapperPE *pairedReadB)
     // ((MapperPE*)mapper)->populateMatchCandidates(indexer, whichWord, candidateCount, candidates);  by evalTrampoline
     //
     // this actually no longer fails, but check here anyway
+    //
+    // store potential match positions of pairedReadB
     if (pairedReadB->populateMatchCandidates(false))
     {
         return;
@@ -185,14 +176,9 @@ void MapperPEBaseSpace::mapReads2(MapperPE *pairedReadB)
     // evalBaseSpaceRead(NULL, evalTrampoline, forward/backward) in MapperBase                                =>
     // evalAllCandidatesForWord(NULL, evalTrampoline, indexer, whichWord, masks) in Mapper Base               =>
     //     ((MapperPEBaseSpace*)mapper)->mapReads(indexer, whichWord, candidateCount, candidates) from evalTrampoline
-    evalBaseSpaceReads(NULL, evalTrampoline);
+    evalBaseSpaceReads(NULL, evalTrampolineMapReads);
+    return;
 }
-
-//
-// we don't want to keep calling the constructor for this,
-// so make it static here (used only in ::mapReads below).
-//
-static MatchedReadPE   compareHelper;
 
 //
 // examine a candidate in read A (*this), checking against the

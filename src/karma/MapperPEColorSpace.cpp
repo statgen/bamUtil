@@ -37,31 +37,8 @@
 
 MapperPEColorSpace::MapperPEColorSpace()
 {
-    //
-    // This set of three vectors allows us to merge sort the sets of
-    // words by shuffling pointers around to the match candidates
-    // rather than the who MatchedReadPE object.
-    //
-    // This turned out to be weak because matchCandidatesPointers
-    // will be invalidate if matchCandidates gets reallocated (grown), and
-    // likewise the interators in matchCandidatesIndex will be invalidated
-    // if matchCandidatesPointers is reallocated (grown).
-    //
-    matchCandidates.reserve(240*5000);
-    matchCandidatesPointers.reserve(240*5000);
-    matchCandidatesIndex.reserve(240);
-
-    //
-    // when we count the number of possible matches for a read, store
-    // them in these counters - this will give us an idea of the cost
-    // of doing the merge.
-    //
-    forwardCount = 0;
-    backwardCount = 0;
-
     mapperSE = new MapperSEColorSpace;
     assert(mapperSE != NULL);
-
 }
 
 MapperPEColorSpace::~MapperPEColorSpace()
@@ -74,12 +51,12 @@ MapperPEColorSpace::~MapperPEColorSpace()
 // this helper function is because getting pointer to method to work the way I want
 // it to is a big pain in the backside.
 //
-static bool evalTrampoline(
-                           MapperBase *mapper,
-                           ReadIndexer &indexer,
-                           int candidateCount,
-                           genomeIndex_t *candidates,
-                           int whichWord)
+bool evalTrampolineMapReads(
+    MapperBase *mapper,
+    ReadIndexer &indexer,
+    int candidateCount,
+    genomeIndex_t *candidates,
+    int whichWord)
 {
     return ((MapperPEColorSpace*)mapper)->mapReads(indexer, whichWord, candidateCount, candidates);
 }
@@ -103,14 +80,15 @@ static bool evalTrampoline(
 //
 void MapperPEColorSpace::mapReads(MapperPE *pairedReadB)
 {
-    this->mappingMethod = PE_MODE;
-    pairedReadB->mappingMethod = PE_MODE;
-
     // feh... do this better...
     // need this so eval code can search sorted match candidates
     pairedReadB->otherEndMapper = this;
     otherEndMapper = pairedReadB;
 
+    this->resetMapper();
+    pairedReadB->resetMapper();
+
+#if 0
     matchCandidate.constructorClear();
     pairedReadB->matchCandidate.constructorClear();
     bestMatch.constructorClear();
@@ -118,7 +96,12 @@ void MapperPEColorSpace::mapReads(MapperPE *pairedReadB)
 
     bestMatch.indexer = &forward;
     pairedReadB->bestMatch.indexer = &pairedReadB->forward;
+#endif
 
+    this->mappingMethod = PE_MODE;
+    pairedReadB->mappingMethod = PE_MODE;
+
+    // store potential match positions of pairedReadB
     if (pairedReadB->populateMatchCandidates(true))
         return;
 
@@ -132,12 +115,9 @@ void MapperPEColorSpace::mapReads(MapperPE *pairedReadB)
         pairedReadB->backward.mismatchCutoff =
         2.5 + 4 * pairedReadB->forward.read.size() * (mapperOptions.expectedErrorRate + mapperOptions.expectedSNPRate);
 
-    evalColorSpaceReads(NULL, evalTrampoline);
+    evalColorSpaceReads(NULL, evalTrampolineMapReads);
     return;
-
 }
-
-static MatchedReadPE   compareHelper;
 
 bool MapperPEColorSpace::mapReads(
                                   ReadIndexer         &indexer,

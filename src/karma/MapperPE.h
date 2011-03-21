@@ -55,7 +55,7 @@ class MapperPE : public MapperBase
     MapperPE();
 
     // reset method, it should be called before any alignment actually happen
-    // note, this just reset one Mapper, you need to do the same for the other Mapper.
+    // NOTE, this just reset one Mapper, you need to do the same for the other Mapper.
     void resetMapper() {
         this->clearBestMatch();
         this->matchCandidate.constructorClear();
@@ -143,7 +143,7 @@ class MapperPE : public MapperBase
     // keeping track of mapped locations later (e.g. during printing).
     //
     MatchCandidates_t           matchCandidates;
- public:
+  public:
     //
     // matchCandidatesPointers is a vector containing pointers into
     // the above matchCandidates vector, and is used to make merge

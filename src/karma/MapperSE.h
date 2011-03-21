@@ -51,6 +51,7 @@ class MapperSE : public MapperBase
     MatchedReadBase &getBestMatch();
     // reset method, it should be called before any alignment actually happen
     void resetMapper() {
+        localGappedAlignment = false; // mapperSE will be called inside MapperPE, so set this to false is important.
         this->clearBestMatch();
         this->forward.checkedPositions.Clear();
         this->backward.checkedPositions.Clear();

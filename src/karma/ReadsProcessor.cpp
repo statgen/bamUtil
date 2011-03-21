@@ -371,6 +371,10 @@ void ReadsProcessor::MapPEReadsFromFilesMT(
 
     // preapre Mapper and Fastq buffer
     // const int BatchSize = 0x0100;
+    // currently, each MapperPE pair took about 500M memory
+    // it's huge, but not inefficient since every mapper is likely to 
+    // store candidate positions.
+    //const int BatchSize = 0x004;
     const int BatchSize = 0x0001;
     MapperPE** mapperArrayA = new MapperPE*[BatchSize];
     MapperPE** mapperArrayB = new MapperPE*[BatchSize];
@@ -409,7 +413,7 @@ void ReadsProcessor::MapPEReadsFromFilesMT(
 
         // start multithread alignment
 
-        // #pragma omp parallel for
+#pragma omp parallel for
         for (int i = 0; i < batchReadA; i++) {
             int index = i % BatchSize;
             MapperPE* mapperA = mapperArrayA[ index ];
@@ -417,14 +421,14 @@ void ReadsProcessor::MapPEReadsFromFilesMT(
             mapperA->resetMapper();
             mapperB->resetMapper();
 
-#pragma message "debug code by tag"
-#if 1
-            if (bufferA[index].tag.Find("unknown_0001:8:1:1158:20857") >= 0)
-                printf("b");
-#endif
             preMappingCheckA[i] = mapperA->processReadAndQuality(bufferA[index]);
             preMappingCheckB[i] = mapperB->processReadAndQuality(bufferB[index]);
 
+#pragma message "debug code by tag"
+#if 1
+            if (bufferA[index].tag.Find("unknown_0001:8:1:1161:5231") >= 0)
+                printf("%d and %d\n", preMappingCheckA[i], preMappingCheckB[i]);
+#endif
 
             MapperPE *shorterMapper;
             MapperPE *longerMapper;
@@ -586,9 +590,10 @@ void ReadsProcessor::MapPEReadsFromFilesMT(
                         }
 
                     }
-                    else if (mapperB->bestMatch.mismatchCount < mapperB->forward.mismatchCutoff && /* mapperB aligned at a good position*/
+                    else if (mapperB->bestMatch.mismatchCount < mapperB->forward.mismatchCutoff && 
                              mapperA->bestMatch.mismatchCount > mapperA->forward.mismatchCutoff * 2)
                     {
+                        /* mapperB aligned at a good position*/
                         DEBUG_PRINT(std::cerr << " - " << mapperA->fragmentTag << " exceeds mismatch cutoff - realigning\n";) ;
                         if (mapperA->tryLocalAlign(mapperB))
                         {
@@ -670,28 +675,50 @@ void ReadsProcessor::MapPEReadsFromFilesMT(
             }
             else // at least one Mapper cannot deal with input Fastq read
             {
-#if 0
-                // will add suitable code here
-                if (!preMappingCheckA[i] )
+                if (!mapperA->mapperSE->processReadAndQuality(bufferA[index]))
+                    mapperA->mapperSE->MapSingleRead();
+                //mapperA->mapperSE->populateCigarRollerAndGenomeMatchPosition();
+                
+                if (!mapperB->mapperSE->processReadAndQuality(bufferB[index]))
+                    mapperB->mapperSE->MapSingleRead();
+                //mapperB->mapperSE->populateCigarRollerAndGenomeMatchPosition();
+
+                if ( (mapperA->mapperSE->bestMatch.qualityIsValid() &&
+                    mapperA->mapperSE->bestMatch.mismatchCount < mapperA->mapperSE->forward.mismatchCutoff) ||
+                     (mapperB->mapperSE->bestMatch.qualityIsValid() &&
+                      mapperB->mapperSE->bestMatch.mismatchCount < mapperB->mapperSE->forward.mismatchCutoff) )
                 {
-                    // mapperB setting SE mapping mode
+                    mapperA->setMappingMethodToSE();
                     mapperB->setMappingMethodToSE();
-
-                    // old code to handle this situation
-                    //
-                    // these lines are initialization tidbits that
-                    // considerAlternateMaps debug code expects to see set correctly.
-                    //
-                    mapperA->bestMatch.indexer = &mapperA->forward;
-                    mapperB->bestMatch.indexer = &mapperB->forward;
-
-
-
-                    // mapperB->mapping();
+                }
+#if 0
+                if (!preMappingCheckA[i] ) // mapperA can align well
+                {
+                    mapperA->mapperSE->processReadAndQuality(bufferA[index]);
+                    mapperA->mapperSE->MapSingleRead();
+                    mapperA->mapperSE->populateCigarRollerAndGenomeMatchPosition();
+                    if (mapperA->mapperSE->bestMatch.qualityIsValid() &&
+                        mapperA->mapperSE->bestMatch.mismatchCount < mapperA->mapperSE->forward.mismatchCutoff) 
+                    {
+                        mapperA->setMappingMethodToSE();
+                        mapperB->setMappingMethodToSE();
+                    }
+                }
+                if (!preMappingCheckB[i] )
+                {
+                    // cannot align mapperB, so try mapperA
+                    mapperB->mapperSE->processReadAndQuality(bufferA[index]);
+                    mapperB->mapperSE->MapSingleRead();
+                    mapperB->mapperSE->populateCigarRollerAndGenomeMatchPosition();
+                    if (mapperB->mapperSE->bestMatch.qualityIsValid() &&
+                        mapperB->mapperSE->bestMatch.mismatchCount < mapperB->mapperSE->forward.mismatchCutoff) 
+                    {
+                        mapperB->setMappingMethodToSE();
+                        mapperA->setMappingMethodToSE();
+                    }
                 }
 #endif
             }
-            // TODO the same for mapperB
         } // end openmp parallel
 
         // output results
@@ -876,8 +903,6 @@ void ReadsProcessor::MapSEReadsFromFileMT(
 
     // update conosle
     std::cerr << "finished processing " << totalRead << " reads" << std::endl;
-
-
 
 }
 

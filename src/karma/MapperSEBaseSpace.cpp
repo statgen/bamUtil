@@ -118,7 +118,7 @@ void MapperSEBaseSpace::MapSingleReadGapped()
 // this helper function is because getting pointer to method to work the way I want
 // it to is a big pain in the backside.
 //
-static bool evalTrampoline(
+bool evalTrampolineEvalBaseSpace(
                            MapperBase *mapper,
                            ReadIndexer &indexer,
                            genomeIndex_t genomeMatchPosition,
@@ -152,7 +152,7 @@ void MapperSEBaseSpace::MapSingleReadUnGapped()
     // evalAllCandidatesForWord(evalTrampoline, NULL, indxer, whichWord, 0)    =>
     // (MapperSEBaseSpace*)mapper->evalSEBaseSpace()   (from evalTrampoline)
     //
-    evalBaseSpaceReads(evalTrampoline, NULL);
+    evalBaseSpaceReads(evalTrampolineEvalBaseSpace, NULL);
 
 }
 
@@ -162,7 +162,6 @@ bool MapperSEBaseSpace::evalSEBaseSpace(
                                         genomeIndex_t genomeMatchPosition,
                                         int whichWord)
 {
-
     int quality;
     int mismatchCount;
 

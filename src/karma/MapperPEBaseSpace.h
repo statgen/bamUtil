@@ -59,6 +59,11 @@ class MapperPEBaseSpace : public MapperPE
     void printMatchCandidates(MatchCandidatesIndex_t::iterator);
 
     void printMatchCandidates();
+
+  private:
+    MatchedReadPE   compareHelper;
+
+
  public:
     int test(
              int testNum,

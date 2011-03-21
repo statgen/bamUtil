@@ -57,7 +57,8 @@ class MapperPEColorSpace : public MapperPE
     void testMatchCandidates(MatchCandidatesIndex_t::iterator);
     void printMatchCandidates(MatchCandidatesIndex_t::iterator);
     void printMatchCandidates();
-
+  private:
+    MatchedReadPE   compareHelper;
  public:
     int test(
              int testNum,

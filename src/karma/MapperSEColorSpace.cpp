@@ -100,6 +100,8 @@ void MapperSEColorSpace::MapSingleRead()
 //
 void MapperSEColorSpace::MapSingleReadGapped()
 {
+
+    this->resetMapper();
     forward.useGapped = true;
     backward.useGapped = true;
     MapSingleReadUnGapped();
@@ -108,7 +110,7 @@ void MapperSEColorSpace::MapSingleReadGapped()
     backward.useGapped = false;
 }
 
-static bool evalTrampoline(
+bool evalTrampolineEvalSEColorSpace(
                            MapperBase *mapper,
                            ReadIndexer &indexer,
                            genomeIndex_t genomeMatchPosition,
@@ -119,28 +121,16 @@ static bool evalTrampoline(
 
 void MapperSEColorSpace::MapSingleReadUnGapped()
 {
-#if 0
-    if (mapperOptions.minimumMapQuality>=0)
-        cumulativePosteriorProbabilitiesCutoff = 1.0 - pow(10.0, -mapperOptions.minimumMapQuality/10.0);
-    else
-#endif
-        cumulativePosteriorProbabilitiesCutoff = 100000;
+    this->resetMapper();
+    cumulativePosteriorProbabilitiesCutoff = 100000;
 
-    // re-init best match - we're starting over...
-    bestMatch.constructorClear();
-    // normally, mapper should only point to a map if we found one, but
-    // some information still needs to be printed even if no match
-    // positions were found.
-    bestMatch.indexer = &forward;
-    // only update the bestMatch if it has a better Q than this:
-    bestMatch.quality = MatchedReadBase::UNSET_QUALITY;
+    clearBestMatch();
 
-    //
     forward.setMismatchCutoff();
     backward.setMismatchCutoff();
 
     //evalBaseSpaceReads(evalTrampoline, NULL);
-    evalColorSpaceReads(evalTrampoline, NULL);
+    evalColorSpaceReads(evalTrampolineEvalSEColorSpace, NULL);
 
     return;
 
@@ -151,26 +141,9 @@ inline bool MapperSEColorSpace::evalSEColorSpace(
                                                  genomeIndex_t genomeMatchPosition,
                                                  unsigned int whichWord)
 {
-
-
-#if 0
-    // XXX unused now.
-    //
-    // XXX not correct at the limits, but we can ignore problems at the moment:
-    //
-    if (genomePositionFilter)
-    {
-        if (genomeMatchPosition < genomePositionFilter - mapperOptions.genomePositionFilterWidth ||
-            genomeMatchPosition > genomePositionFilter + mapperOptions.genomePositionFilterWidth)
-            return false;
-
-    }
-#endif
-
     int quality;
     int mismatchCount;
 
-#if 1
     //
     // whichWord is used only by the Smith Waterman gapped
     // code, which is only called when indexer.useGapped is true.
@@ -187,25 +160,6 @@ inline bool MapperSEColorSpace::evalSEColorSpace(
                                         bestMatch.quality,
                                         whichWord
                                         );
-#else
-    matchCandidate.quality = indexer.getColorSpaceSumQOrig(
-                                                           matchCandidate.genomeMatchPosition,
-                                                           matchCandidate.mismatchCount,
-                                                           bestMatch.quality,
-                                                           whichWord
-                                                           );
-
-    int checkMismatch;
-    int checkQuality = indexer.getSumQ(
-                                       matchCandidate.genomeMatchPosition,
-                                       checkMismatch,
-                                       bestMatch.quality,
-                                       whichWord
-                                       );
-
-    assert(matchCandidate.quality == checkQuality);
-    if (checkQuality!=-1) assert(matchCandidate.mismatchCount == checkMismatch);
-#endif
 
     updateBestMatch(indexer, quality, mismatchCount, whichWord, genomeMatchPosition);
 

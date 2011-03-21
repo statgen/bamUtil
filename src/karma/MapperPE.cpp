@@ -55,18 +55,15 @@ MapperPE::MapperPE()
     // from one vector into the other).
     //
 
-#pragma message "reserve() does not work..."
-
-#if 1
+    // 5000 is the default upper limit positions for a given word
+    // 4 is the base permutation (A, C, G, T)
+    // 240 is double the size of common read length (120 base pair)
+    // so the vector ensure there are enough capacity to 
+    // store enough positions.
+    // however, it does require much more memory for small genome (e.g. PhiX)
     matchCandidates.reserve(240*5000 * 4);
     matchCandidatesPointers.reserve(240*5000 * 4);
     matchCandidatesIndex.reserve(240 * 4);
-#else
-    matchCandidates.reserve(240*500 * 4);
-    matchCandidatesPointers.reserve(240*500 * 4);
-    matchCandidatesIndex.reserve(240 * 4);
-
-#endif
 
     //
     // when we count the number of possible matches for a read, store
@@ -591,7 +588,7 @@ bool MapperPE::updateBestMatch(MatchedReadPE& matchCandidateB)
 // this helper function is because getting pointer to method to work the way I want
 // it to is a big pain in the backside.
 //
-static bool evalTrampoline(
+ bool evalTrampolinePopulateMatchCandidates(
                            MapperBase *mapper,
                            ReadIndexer &indexer,
                            int candidateCount,
@@ -634,9 +631,9 @@ bool MapperPE::populateMatchCandidates(bool isColorSpace)
     matchCandidatesIndex.clear();
 
     if (!isColorSpace)
-        evalBaseSpaceReads(NULL, evalTrampoline);
+        evalBaseSpaceReads(NULL, evalTrampolinePopulateMatchCandidates);
     else
-        evalColorSpaceReads(NULL, evalTrampoline);
+        evalColorSpaceReads(NULL, evalTrampolinePopulateMatchCandidates);
 
     MatchCandidatesIndex_t::iterator finalIndex;
     //

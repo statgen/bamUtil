@@ -128,7 +128,8 @@ void MapperBase::restoreTrimming(CigarRoller&   cigarRoller,
 //
 void  MapperBase::populateCigarRollerAndGenomeMatchPosition()
 {
-    MatchedReadBase &bestMatch = getBestMatch();    // getBestMatch is virtual, remember
+    // getBestMatch is virtual, remember both MapperSE and MapperPE will call this funciton
+    MatchedReadBase &bestMatch = getBestMatch();    
 
     if (bestMatch.qualityIsValid() && bestMatch.gappedAlignment)
     {
