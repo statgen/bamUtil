@@ -62,8 +62,8 @@ private:
     bool myAddDelAsBase;
     std::string myRefAllele;
     GenomeSequence* myRefSeq;
-	InputFile* myVcfOutFile;
-	double*** myLogGLMatrix;
+    InputFile* myVcfOutFile;
+    double*** myLogGLMatrix;
 };
 
 #endif
