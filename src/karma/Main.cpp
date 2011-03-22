@@ -62,7 +62,8 @@ static std::string getReferenceNameWithArgs(
     return buf.str();
 }
 
-static bool isFileExistAndNonEmpty(const char* filename) {
+static bool isFileExistAndNonEmpty(const char* filename) 
+{
     std::ifstream ifs(filename);
     if (!ifs) return false;
 
@@ -253,7 +254,8 @@ void mainMap(const char *program, int argc, const char **argv)
         std::cout << "Error: " << sequenceFilename1 << " does not exist or is empty" << std::endl;
         exit(1);
     }
-    if (!isFileExistAndNonEmpty(sequenceFilename2.c_str()))
+    if (mappingMode == PAIRED_END_MAPPING &&
+        !isFileExistAndNonEmpty(sequenceFilename2.c_str()))
     {
         std::cout << "Error: " << sequenceFilename2 << " does not exist or is empty" << std::endl;
         exit(1);
