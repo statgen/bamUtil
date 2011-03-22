@@ -163,7 +163,7 @@ bool MapperSEBaseSpace::evalSEBaseSpace(
                                         int whichWord)
 {
     int quality;
-    int mismatchCount;
+    int mismatchCount=-1; // in getSumQ(), this value should be calculated to be non-negative
 
     //
     // whichWord is used only by the Smith Waterman gapped
