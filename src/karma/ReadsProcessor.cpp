@@ -426,7 +426,7 @@ void ReadsProcessor::MapPEReadsFromFilesMT(
 
 #pragma message "debug code by tag"
 #if 1
-            if (bufferA[index].tag.Find("unknown_0001:8:1:1161:5231") >= 0)
+            if (bufferA[index].tag.Find("unknown_0001:8:1:1173:1639") >= 0)
                 printf("%d and %d\n", preMappingCheckA[i], preMappingCheckB[i]);
 #endif
 
@@ -627,48 +627,38 @@ void ReadsProcessor::MapPEReadsFromFilesMT(
                     // a pair - do this by picking the better end and using it for anchored
                     // local alignment on the other end to see if we find a gapped alignment.
                     //
-
-                    if (mapperA->mapperSE->bestMatch.qualityIsValid() &&
-                        mapperA->mapperSE->bestMatch.mismatchCount < mapperA->mapperSE->forward.mismatchCutoff)
-                    {
+                    bool remapSuccessA = mapperA->mapperSE->bestMatch.qualityIsValid() &&
+                        mapperA->mapperSE->bestMatch.mismatchCount < mapperA->mapperSE->forward.mismatchCutoff;
+                    bool remapSuccessB = mapperB->mapperSE->bestMatch.qualityIsValid() &&
+                        mapperB->mapperSE->bestMatch.mismatchCount < mapperB->mapperSE->forward.mismatchCutoff;
+                    
+                    if (remapSuccessA && remapSuccessB) {
+                        // both remap succeed
+                        mapperA->setMappingMethodToSE();
+                        mapperB->setMappingMethodToSE();
+                    } else if (remapSuccessA) {
+                        // only remap of mapperA succeed, mapperB needs local realign
                         mapperA->setMappingMethodToSE();
 
-                        // if B is not aligned, go ahead and realign locally
-                        if (!(mapperB->mapperSE->bestMatch.qualityIsValid() &&
-                              mapperB->mapperSE->bestMatch.mismatchCount < mapperB->mapperSE->forward.mismatchCutoff))
+                        DEBUG_PRINT(std::cerr << " - read B did not align, attempting local alignment\n";) ;
+                        if (mapperB->tryLocalAlign(mapperA->mapperSE))
                         {
-
-                            DEBUG_PRINT(std::cerr << " - read B did not align, attempting local alignment\n";) ;
-
-                            if (mapperB->tryLocalAlign(mapperA->mapperSE))
-                            {
-                                mapperB->setMappingMethodToLocal();
-                                DEBUG_PRINT(std::cerr << " - local alignment succeeded!\n";) ;
-                            }
+                            mapperB->setMappingMethodToLocal();
+                            DEBUG_PRINT(std::cerr << " - local alignment succeeded!\n";) ;
                         }
-
-                    }
-
-                    else if (mapperB->mapperSE->bestMatch.qualityIsValid() &&
-                         mapperB->mapperSE->bestMatch.mismatchCount < mapperB->mapperSE->forward.mismatchCutoff)
-                    {
-
+                    } else if (remapSuccessB) {
+                        // only remap of mapperB succeed, mapperA needs local realign
                         mapperB->setMappingMethodToSE();
 
-                        // if A is not aligned, go ahead and realign locally
-                        if (!(mapperA->mapperSE->bestMatch.qualityIsValid() &&
-                              mapperA->mapperSE->bestMatch.mismatchCount < mapperA->mapperSE->forward.mismatchCutoff))
+                        DEBUG_PRINT(std::cerr << " - read A did not align, attempting local alignment\n";) ;
+                        if (mapperA->tryLocalAlign(mapperB->mapperSE))
                         {
-
-                            DEBUG_PRINT(std::cerr << " - read A did not align, attempting local alignment\n";) ;
-
-                            if (mapperA->tryLocalAlign(mapperB->mapperSE))
-                            {
-                                mapperA->setMappingMethodToLocal();
-                                DEBUG_PRINT(std::cerr << " - local alignment succeeded!\n";) ;
-                            }
+                            mapperA->setMappingMethodToLocal();
+                            DEBUG_PRINT(std::cerr << " - local alignment succeeded!\n";) ;
                         }
-
+                    } else {
+                        // none of the remap succeed
+                        // we will have to skip in this case
                     }
                 }
 
@@ -691,33 +681,6 @@ void ReadsProcessor::MapPEReadsFromFilesMT(
                     mapperA->setMappingMethodToSE();
                     mapperB->setMappingMethodToSE();
                 }
-#if 0
-                if (!preMappingCheckA[i] ) // mapperA can align well
-                {
-                    mapperA->mapperSE->processReadAndQuality(bufferA[index]);
-                    mapperA->mapperSE->MapSingleRead();
-                    mapperA->mapperSE->populateCigarRollerAndGenomeMatchPosition();
-                    if (mapperA->mapperSE->bestMatch.qualityIsValid() &&
-                        mapperA->mapperSE->bestMatch.mismatchCount < mapperA->mapperSE->forward.mismatchCutoff) 
-                    {
-                        mapperA->setMappingMethodToSE();
-                        mapperB->setMappingMethodToSE();
-                    }
-                }
-                if (!preMappingCheckB[i] )
-                {
-                    // cannot align mapperB, so try mapperA
-                    mapperB->mapperSE->processReadAndQuality(bufferA[index]);
-                    mapperB->mapperSE->MapSingleRead();
-                    mapperB->mapperSE->populateCigarRollerAndGenomeMatchPosition();
-                    if (mapperB->mapperSE->bestMatch.qualityIsValid() &&
-                        mapperB->mapperSE->bestMatch.mismatchCount < mapperB->mapperSE->forward.mismatchCutoff) 
-                    {
-                        mapperB->setMappingMethodToSE();
-                        mapperA->setMappingMethodToSE();
-                    }
-                }
-#endif
             }
         } // end openmp parallel
 
