@@ -739,9 +739,9 @@ void ReadsProcessor::MapPEReadsFromFilesMT(
 // Read single end reads and align them
 // MT: mutlithread version
 void ReadsProcessor::MapSEReadsFromFileMT(
-                                          std::string filename,
-                                          std::string outputFilename
-                                          )
+    std::string filename,
+    std::string outputFilename
+    )
 {
     signalPoll userPoll;
 
@@ -827,16 +827,32 @@ void ReadsProcessor::MapSEReadsFromFileMT(
         for (int i = 0; i < batchRead; i++) {
             MapperSE* mapper = mapperArray[ i % BatchSize];
             MatchedReadSE &match = (MatchedReadSE &)(mapper->getBestMatch());
-            match.print(*outputFilePtr,
-                        NULL,
-                        mapper->fragmentTag,
-                        mapperOptions.showReferenceBases,
-                        mapper->cigarRoller,
-                        mapper->isProperAligned,
-                        mapper->samMateFlag,
-                        mapperOptions.readGroupID,
-                        mapper->alignmentPathTag
-                        );
+            if (!isColorSpace)            
+                match.print(*outputFilePtr,
+                            NULL,
+                            mapper->fragmentTag,
+                            mapperOptions.showReferenceBases,
+                            mapper->cigarRoller,
+                            mapper->isProperAligned,
+                            mapper->samMateFlag,
+                            mapperOptions.readGroupID,
+                            mapper->alignmentPathTag
+                    );
+            else 
+                match.printColorSpace(*outputFilePtr,
+                                      gs,
+                                      csgs,
+                                      NULL,
+                                      ((MapperBase*) mapper)->originalCSRead,
+                                      ((MapperBase*) mapper)->originalCSQual,
+                                      mapper->fragmentTag,
+                                      mapperOptions.showReferenceBases,
+                                      mapper->cigarRoller,
+                                      mapper->isProperAligned,
+                                      mapper->samMateFlag,
+                                      mapperOptions.readGroupID,
+                                      mapper->alignmentPathTag
+                    );
             if (preMappingCheck[i]) // we cannot process the read
                 seStats.updateBadInputStats(preMappingCheck[i]);
             else // we processed teh read, so record how it is aligned

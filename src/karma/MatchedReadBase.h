@@ -136,8 +136,8 @@ class MatchedReadBase
                );
 
     ///
-    /// It is a similar procedure to print(), however, we implicitly translate
-    /// color space reads to base space.
+    /// It is a similar procedure to print(), internally, we translate
+    /// color space reads to base space, and color space qualities to base space qualities
     ///
     void printColorSpace(
                          std::ostream &file,
@@ -166,7 +166,7 @@ class MatchedReadBase
     // method just prints the data to cout:
     void debugPrint();
 
-    // 
+    // Fix a range of mismatches in color space
     void fixBaseRange(int start, int end, /// inclusive boundaries
                       std::string& read_fragment, std::string& data_quality,
                       const std::string& cs_read_fragment, const std::string& cs_data_quality,
@@ -174,12 +174,13 @@ class MatchedReadBase
                       genomeIndex_t genomeMatchPosition,
                       bool isForwardStrand);
 
-    //
+    // 
     void calibrateSequence(std::string& read_fragment, std::string& data_quality,
                            const std::string& cs_read_fragment, const std::string& cs_data_quality,
                            GenomeSequence* gs, GenomeSequence* csgs,
                            genomeIndex_t genomeMatchPosition,
                            bool isForwardStrand);
+
 
 
     //////////////////////////////////////////////////

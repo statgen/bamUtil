@@ -319,6 +319,8 @@ bool MatchedReadBase::getCSSeqAndQual2print(std::string&    sequence2print,
     }
 
     return true;
+
+#if 0
     if (qualityIsValid())
     {
 
@@ -401,6 +403,7 @@ bool MatchedReadBase::getCSSeqAndQual2print(std::string&    sequence2print,
         sequence2print = indexer->read;
     }
     return true;
+#endif
 }
 
 /**
@@ -671,10 +674,23 @@ void MatchedReadBase::print(
 }
 
 
+// Fix a range of mismatches in color space
+// and assign corresponding qualities for those mismatched bases
+// (that could happend when translating color space reads to base space)
 //
-// start = 1, end = 2
+// for 1 consecutive mismatch, we will translate that mismatched base to most likely one
+// for 2 consecutive mismatches, we may be able to translate it as a SNP or pick alternative bases according to qualities
+// for more consecutive mismatches, we skip here
+//
+// e.g. 
+// start = 1, end = 2 (inclusive for start and end) 
+// position:   0123....
 // color read:  00  (position 1, 2)
-// ref genome: AACC
+// ref genome: ATCC
+// ref genome: ?320 
+// translate1: AAAA (wrong, as it makes long mismatches in base space)
+// translate2: AACC (correct, as it uses the information at poisition 0 and 3)
+// 2 mismatches, at position 1 and 2, translate2 is preferred over translate1.
 void MatchedReadBase::fixBaseRange(int start, int end, /// inclusive boundaries
                                    std::string& read_fragment, std::string& data_quality,
                                    const std::string& cs_read_fragment, const std::string& cs_data_quality,
@@ -859,14 +875,12 @@ void MatchedReadBase::fixBaseRange(int start, int end, /// inclusive boundaries
             return;
         }
     }
-
 }
 
 
-/**
+/***
  * When translate color space reads to base space, it is possible we have long strands of mismatch
- * therefore, we will try to solve this problem here:
- * mark the start and end position for the consecutive mismatches,
+ * therefore, we will try to mark the start and end position for the consecutive mismatches,
  * then call fixBaseRange() function.
  * @param read_fragment         store translated read in base space
  * @param data_quality          store translated quality in base space
