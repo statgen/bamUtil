@@ -1,0 +1,219 @@
+July 2010
+=========
+
+Fix to output of heterogeneity statistics.
+
+June 2010
+=========
+
+Added I^2 heterogeneity statistic to output.
+
+April 2010
+==========
+
+Bug fix in counter of invalid effect sizes.
+
+Fix to improve handling of "NaN" an"Inf" (non-a-number and infinity 
+entries) in the effect size column.
+
+February 2010
+=============
+
+Minor fixes to ADDFILTER syntax, so as to avoid unnecessary warnings and error messages.
+
+October 2009
+============
+
+Added the COLUMNCOUNTING option. When this is set to STRICT (the default is LENIENT) Metal 
+will require that every line in an input file should have the exact same number of columns.
+This stricter checking can help catch defective files.
+
+When the new LOGPVALUE option is set to ON, Metal now reports log(p-value) instead of the
+raw p-value for meta-analysis and heterogeneity test results. This makes it easier to 
+process, browse and read results with very small p-values.
+
+Added support for custom variables. These are user specified columns whose contents are 
+tracked across multiple files. New variables are created with the CUSTOMVARIABLE command. 
+For example, the command:
+
+    CUSTOMVARIABLE MENDEL_ERRORS
+
+Creates a custom variable called MENDEL_ERRORS. This variable must next be linked to 
+specific columns in each input file with the LABEL command. For example:
+
+    LABEL MENDEL_ERRORS AS bad_transmissions
+    PROCESS input_file1.txt
+
+    LABEL MENDEL_ERRORS AS non_mendelian_events
+    PROCESS input_file2.txt
+
+In the example above, the column "bad_transmissions" in "input_file1.txt" and 
+"non_mendelian_events" in "input_file2.txt" would be linked to the MENDEL_ERRORS
+column. Metal would report the sum of these two columns in each row of output.
+
+Minor fixes to heterogeneity analysis to improve handling of p-values very close to zero and
+of odds ratios recorded in their natural (non-log) scale.
+
+February 2009
+=============
+
+Increased precision of p-value calculations so that p-values very close to zero can now be
+better distinguished. 
+
+Added ability to track additional user specified variables. This can be useful, for example, 
+to enable calculation of the total sample size in a standard error based meta-analysis.
+Custom variables are created with the CUSTOMVARIABLE command and their corresponding 
+column labels can be customized with the LABEL command.
+
+By default, METAL now requires that exactly the same number of tokens should be present
+in every row of each file. This option makes it harder for column misalignments to occur.
+The original behavior, which allowed for extra information to be appended to the end of 
+each line, can be requested with the COLUMNCOUNTING LENIENT command.
+
+Tweaks to screen output to facilitate readability and debugging.
+
+January 2009
+============
+
+When genomic control modeling is enabled, previous versions of METAL could
+discard all or part of the information in previously processed datasets
+when an empty result set was processed. METAL now handles empty result sets
+more gracefully.
+
+September 2008
+==============
+
+This version of Metal can carry out simple heterogeneity analyses. To do this,
+issue the command "ANALYZE HETEROGENEITY". Metal will then carry out a standard
+meta-analysis (using either effect sizes and standard errors or sample size, 
+direction of effect and p-value) and, once this is completed, evaluate evidence
+for heterogeneity in effect sizes.
+
+August 18, 2008
+===============
+
+This version includes enhancements to GENOMICCONTROL and FILTER commands and 
+a new VERBOSE option. Used together, the new VERBOSE option and improvements
+to the FILTER command can help retrieve details about interesting results in
+a meta-analysis.
+
+* The GENOMICCONTROL option now allows for a specific genomic control parameter
+as input. In this case, instead of automatically calculating the GENOMICCONTROL
+value based on available data, METAL will apply the correction according to a
+user-specified parameter. This option is convenient when full genome scan results
+are not available.
+
+Example:
+
+    GENOMICCONTROL 1.1
+
+The original GENOMICCONTROL ON and GENOMICCONTROL OFF commands are still supported.
+
+* The previous version of METAL allowed filters based on simple comparison operators,
+for example:
+
+    ADDFILTER FREQ > 0.01
+    ADDFILTER FREQ < 0.99
+    ADDFILTER MARKER = rs12345
+
+This new version allows filters that select a set of markers. For example:
+
+    ADDFILTER SNP IN (rs12345,rs98765,rs4567)
+
+* This new version of METAL includes a verbose option, enabled with "VERBOSE ON". When
+this option is enabled METAL will print details of each analyzed SNP for each input
+file. Unless you use an appropriate filter (see above), this option can easily generate
+an unmanageable amount of ouput.
+
+Details for each SNP will be output after aligning alleles and strands to the same strand,
+but before any genomic control correction is applied. In sample size based analysis, the
+sample size, z-score and p-value will be output. In standard error based analyses, effect
+sizes and standard errors output instead. In either case, allele frequency information
+will also be output if available.
+
+July 1, 2008
+============
+
+This version fixes a bug in the GENOMICCONTROL command. Starting with this version,
+a genomic control correction is only applied to studies where the genomic control
+parameter lambda > 1.0. In previous versions, if genomic control was enabled, a 
+correction was applied even when the lambda parameter was less than 1.0 (i.e. in
+studies where statistics appeared slightly deflated in comparison with null 
+expectations, Metal inflated these statistics.)
+
+Another change is that Metal now outputs additional digits when the standard error
+option is enabled.
+
+This version also introduces two minor feature, for convenience:
+
+* Effect sizes can be log transformed on the fly. This is convenient when 
+meta-analyzing odds ratios. In this case, two studies have the same direction
+of effect if their log(odds ratio) statistics are both positive or negative,
+corresponding to odds ratios that are both >1.0 or <1.0.
+
+This transformation is activated through the EFFECTLABEL command. For example,
+EFFECTLABEL log(ODDSRATIO) instructs metal to log-transform the ODDSRATIO column
+prior to analysis.
+
+* Script names can now be given as command line arguments. If multiple scripts 
+are named, Metal will proceed, left to right, executing each one.
+
+* The SOURCE command allows one script to include another script. This can be 
+convenient when you want to try multiple analyses that include similar filesets.
+For example, if the scripts PROCESS-FEMALES.txt and PROCESS-MALES.txt loaded
+sex specific result sets, you could use the following script to carry out
+three meta-analyses:
+
+          # Carry out a males only meta-analysis
+          SOURCE PROCESS-MALES.txt
+          ANALYZE
+          OUT META-MALES .TBL
+          CLEAR
+
+          # Carry out a females only meta-analysis
+          SOURCE PROCESS-FEMALES.txt
+          OUT META-FEMALES .TBL
+          ANALYZE
+          CLEAR
+
+          # Carry out a combined meta-analysis
+          SOURCE PROCESS-MALES.txt
+          SOURCE PROCESS-FEMALES.txt
+          OUT META-ALL .TBL
+          ANALYZE
+          CLEAR
+
+April 14, 2008
+==============
+
+This version introduces several new capabilities:
+
+* Meta-analysis weighted by standard error can now be carried out by issuing the 
+"SCHEME STDERR" command before analysis and then using the "STDERRLABEL [LABEL]"
+command to specify the appropriate heading for the column containing standard
+errors in each file. Effect sizes should be in the column specified with the
+"EFFECTLABEL" command.
+
+* Automatic genomic control correction of each scan can now be enabled with the
+"GENOMICCONTROL ON" command.
+
+* On the fly filtering of input files is now possible with the "ADDFILTER ..."
+and "REMOVEFILTERS" options. For example, you could use a filter such as
+"ADDFILTER MAF > .01" to exclude SNPs with a value of .01 or less in the 
+MAF column.
+
+* Use of explicit strand information for alignment of results at "G/C" and "A/T"
+SNPs is now possible, using the "STRANDLABEL [LABEL]" and "USESTRAND ON" commands.
+Previous versions assume that these SNPs have been pre-aligned to the correct 
+strand.
+
+* Tracking of allele frequencies can now be enabled using a combination of the 
+"FREQLABEL [LABEL]", "MINMAXFREQ ON" and "AVERAGEFREQ ON" commands. Allele
+frequencies will be averaged using the same weights used to combine test
+statistics or effect sizes.
+
+January 2, 2008
+===============
+
+First release of Metal, supporting basic meta-analysis of genome wide association
+scans, weighted by sample size.

@@ -1,0 +1,44 @@
+# Meta-analysis weighted by standard error does not work well
+# because different studies used very different transformations
+# SCHEME   STDERR
+
+# Not sure if genomic control is a good idea, given the large
+# number of true associations in these three regions ...
+# GENOMICCONTROL ON
+
+# To help identify allele flips, it can be useful to track
+# allele frequencies in the meta-analysis.
+# AVERAGEFREQ ON
+# MINMAXFREQ ON
+
+MARKER   SNP
+WEIGHT   N
+ALLELE   EFFECT_ALLELE NON_EFFECT_ALLELE
+FREQ     EFFECT_ALLELE_FREQ
+EFFECT   BETA
+STDERR   SE
+PVAL     P_VAL
+
+PROCESS DGI_three_regions.txt
+
+MARKER   SNP
+ALLELE   EFFECT_ALLELE NON_EFFECT_ALLELE
+FREQ     FREQ_EFFECT
+WEIGHT   N
+EFFECT   BETA
+STDERR   SE
+PVAL     PVALUE
+
+PROCESS MAGIC_FUSION_Results.txt.gz
+
+MARKER   SNP
+DEFAULT  4108
+ALLELE   AL1 AL2
+FREQ     FREQ1
+EFFECT   EFFECT
+STDERR   SE
+PVAL     PVALUE
+
+PROCESS magic_SARDINIA.tbl
+
+ANALYZE
