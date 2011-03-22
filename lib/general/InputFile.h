@@ -30,14 +30,23 @@
 
 #include "FileType.h"
 
+/// Class for easily reading/writing files without having to worry about
+/// file type (uncompressed, gzip, bgzf) when reading.
 class InputFile
 {
 public:
 
-    // DEFAULT means to use the default type to open a file for write.
-    // The default type is equivalent to UNCOMPRESSED.
-    enum ifileCompression {DEFAULT, UNCOMPRESSED, GZIP, BGZF};
+    /// Compression to use when writing a file & decompression used when
+    /// reading a file from stdin.  Any other read checks the file to determine
+    ///  how to uncompress it.
+    enum ifileCompression {
+        DEFAULT,  ///< Check the extension, if it is ".gz", treat as gzip, otherwise treat it as UNCOMPRESSED.
+        UNCOMPRESSED,  ///< uncompressed file.
+        GZIP,  ///< gzip file.
+        BGZF ///< bgzf file.
+    };
 
+    /// Default constructor
     InputFile()
     {
         myFileTypePtr = NULL;
@@ -49,16 +58,26 @@ public:
         myFileName.clear();
     }
 
-    // Destructor
+    /// Destructor
     ~InputFile();
 
+    /// Constructor for opening a file.
+    /// \param filename file to open
+    /// \param mode same format as fopen: "r" for read & "w" for write.
+    /// \param compressionMode set the type of file to open for writing or
+    /// for reading from stdin (when reading files, the compression type is 
+    /// determined by reading the file).
     InputFile(const char * filename, const char * mode,
               InputFile::ifileCompression compressionMode = InputFile::DEFAULT);
 
+    /// Set the buffer size for reading from files so that bufferSize bytes
+    /// are read at a time and stored until accessed by another read call.
+    /// This improves performance over reading the file small bits at a time.
     /// Buffering reads disables the tell call for bgzf files.
-    /// Default buffer size is 1048576.
     /// Any previous values in the buffer will be deleted.
-    /// Turn off read buffering by setting bufferSize = 1;
+    /// \param bufferSize number of bytes to read/buffer at a time,
+    /// default buffer size is 1048576, and turn off read buffering by setting
+    /// bufferSize = 1;
     inline void bufferReads(unsigned int bufferSize = DEFAULT_BUFFER_SIZE)
     {
         // If the buffer size is the same, do nothing.
@@ -107,7 +126,8 @@ public:
     }
 
     
-    // Close the file.
+    /// Close the file.
+    /// \return status of the close (0 is success).
     inline int ifclose()
     {
         if (myFileTypePtr == NULL)
@@ -121,6 +141,11 @@ public:
         return result;
     }
 
+    /// Read size bytes from the file into the buffer.
+    /// \param buffer pointer to memory at least size bytes big to write the
+    /// data into.
+    /// \param size number of bytes to be read
+    /// \return number of bytes read
     inline int ifread(void * buffer, unsigned int size)
     {
         // There are 2 cases:
@@ -189,9 +214,10 @@ public:
     }
 
 
-    // Get a character from the file.  Read a character from the internal
-    // buffer, or if the end of the buffer has been reached, read from the
-    // file into the buffer and return index 0.
+    /// Get a character from the file.  Read a character from the internal
+    /// buffer, or if the end of the buffer has been reached, read from the
+    /// file into the buffer and return index 0.
+    /// \return character that was read or EOF.
     inline int ifgetc()
     {
         if (myBufferIndex >= myCurrentBufferSize)
@@ -209,7 +235,7 @@ public:
         return(myFileBuffer[myBufferIndex++]);
     }
 
-    // Reset to the beginning of the file.
+    /// Reset to the beginning of the file.
     inline void ifrewind()
     {
         // Just set the myBufferIndex and the myCurrentBufferSize to 0 to simulate
@@ -226,7 +252,8 @@ public:
     }
 
 
-    // Check to see if we have reached the EOF.
+    /// Check to see if we have reached the EOF.
+    /// \return 0 if not EOF, any other value means EOF.
     inline int ifeof()
     {
         // Not EOF if we are not at the end of the buffer.
@@ -247,7 +274,11 @@ public:
         }
     }
 
-    // We do not buffer the write call, so just leave this as normal.
+    /// Write the specified buffer into the file.
+    /// \param buffer buffer containing size bytes to write to the file.
+    /// \param size number of bytes to write
+    /// \return number of bytes written
+    /// We do not buffer the write call, so just leave this as normal.
     inline unsigned int ifwrite(const void * buffer, unsigned int size)
     {
         if (myFileTypePtr == NULL)
@@ -258,7 +289,8 @@ public:
         return myFileTypePtr->write(buffer, size);
     }
 
-    // Returns whether or not the file was successfully opened.
+    /// Returns whether or not the file was successfully opened.
+    /// \return true if the file is open, false if not.
     inline bool isOpen()
     {
         // It is open if the myFileTypePtr is set and says it is open.
@@ -270,8 +302,8 @@ public:
         return false;
     }
 
-    // Get current position in the file.
-    // -1 return value indicates an error.
+    /// Get current position in the file.
+    /// \return current position in the file, -1 indicates an error.
     inline long int iftell()
     {
         if (myFileTypePtr == NULL)
@@ -283,13 +315,14 @@ public:
     }
 
 
-    // Seek to the specified offset from the origin.
-    // origin can be any of the following:
-    // Note: not all are valid for all filetypes.
-    //   SEEK_SET - Beginning of file
-    //   SEEK_CUR - Current position of the file pointer
-    //   SEEK_END - End of file
-    // Returns true on successful seek and false on a failed seek.
+    /// Seek to the specified offset from the origin.
+    /// \param offset offset into the file to move to (must be from a tell call)
+    /// \param origin can be any of the following:
+    /// Note: not all are valid for all filetypes.
+    ///   SEEK_SET - Beginning of file
+    ///   SEEK_CUR - Current position of the file pointer
+    ///   SEEK_END - End of file
+    /// \return true on successful seek and false on a failed seek.
     inline bool ifseek(long int offset, int origin)
     {
         if (myFileTypePtr == NULL)
@@ -303,6 +336,8 @@ public:
         return myFileTypePtr->seek(offset, origin);
     }
 
+    /// Get the filename that is currently opened.
+    /// \return filename associated with this class
     const char* getFileName() const
     {
         return(myFileName.c_str());
@@ -361,11 +396,18 @@ protected:
     std::string myFileName;
 };
 
+
+/// Define IFILE as a pointer to an InputFile object.
 typedef InputFile* IFILE;
 
 
-
-
+/// Open a file.
+/// \param filename file to open
+/// \param mode same format as fopen: "r" for read & "w" for write.
+/// \param compressionMode set the type of file to open for writing or
+/// for reading from stdin (when reading files, the compression type is 
+/// determined by reading the file).
+/// \return IFILE - pointer to the InputFile object that has been opened.
 inline IFILE ifopen(const char * filename, const char * mode,
                     InputFile::ifileCompression compressionMode = InputFile::DEFAULT)
 {
@@ -381,6 +423,9 @@ inline IFILE ifopen(const char * filename, const char * mode,
 }
 
 
+/// Close the file.
+/// \param file file to be closed - IFILE is a pointer to an InputFile object
+/// \return status of the close (0 is success).
 inline int ifclose(IFILE file)
 {
     int result = file->ifclose();
@@ -389,52 +434,83 @@ inline int ifclose(IFILE file)
     return(result);
 }
 
+/// Read size bytes from the file into the buffer.
+/// \param file file to be read - IFILE is a pointer to an InputFile object
+/// \param buffer pointer to memory at least size bytes big to write the
+/// data into.
+/// \param size number of bytes to be read
+/// \return number of bytes read
 inline unsigned int ifread(IFILE file, void * buffer, unsigned int size)
 {
     return(file->ifread(buffer, size));
 }
 
+/// Get a character from the file.  Read a character from the internal
+/// buffer, or if the end of the buffer has been reached, read from the
+/// file into the buffer and return index 0.
+/// \param file file to be read - IFILE is a pointer to an InputFile object
+/// \return character that was read or EOF.
 inline int ifgetc(IFILE file)
 {
     return(file->ifgetc());
 }
 
+/// Reset to the beginning of the file.
+/// \param file file to be rewound - IFILE is a pointer to an InputFile object
 inline void ifrewind(IFILE file)
 {
     file->ifrewind();
 }
 
+/// Check to see if we have reached the EOF.
+/// \param file file to be checked - IFILE is a pointer to an InputFile object
+/// \return 0 if not EOF, any other value means EOF.
 inline int ifeof(IFILE file)
 {
     return(file->ifeof());
 }
 
+/// Write the specified buffer into the file.
+/// \param file file to write to - IFILE is a pointer to an InputFile object
+/// \param buffer buffer containing size bytes to write to the file.
+/// \param size number of bytes to write
+/// \return number of bytes written
 inline unsigned int ifwrite(IFILE file, const void * buffer, unsigned int size)
 {
     return(file->ifwrite(buffer, size));
 }
 
-// Get current position in the file.
-// -1 return value indicates an error.
+/// Get current position in the file.
+/// \param file file to perform tell on - IFILE is a pointer to an InputFile object
+/// \return current position in the file, -1 indicates an error.
 inline long int iftell(IFILE file)
 {
     return (file->iftell());
 }
 
-// Seek to the specified offset from the origin.
-// origin can be any of the following:
-// Note: not all are valid for all filetypes.
-//   SEEK_SET - Beginning of file
-//   SEEK_CUR - Current position of the file pointer
-//   SEEK_END - End of file
-// Returns true on successful seek and false on a failed seek.
+/// Seek to the specified offset from the origin.
+/// \param file file to perform seek on - IFILE is a pointer to an InputFile object
+/// \param offset offset into the file to move to (must be from a tell call)
+/// \param origin can be any of the following:
+/// Note: not all are valid for all filetypes.
+///   SEEK_SET - Beginning of file
+///   SEEK_CUR - Current position of the file pointer
+///   SEEK_END - End of file
+/// \return true on successful seek and false on a failed seek.
 inline bool ifseek(IFILE file, long int offset, int origin)
 {
     return (file->ifseek(offset, origin));
 }
 
+/// Write to a file using fprintf format.
+/// \param file file to write to - IFILE is a pointer to an InputFile object
+/// \param format printf format for writing, followed by parameters.
+/// \return number of bytes written
 int ifprintf(IFILE output, char * format, ...);
 
+/// Read a line from a file using streaming.
+/// \param stream file to read from - IFILE is a pointer to an InputFile object
+/// \param str output string containing the line read from the file.
 inline IFILE operator >> (IFILE stream, std::string &str)
 {
     str.clear();
