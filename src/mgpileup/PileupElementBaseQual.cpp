@@ -45,11 +45,11 @@ PileupElementBaseQual::PileupElementBaseQual()
     myCycles = (int8_t*)malloc(myAllocatedSize * sizeof(int8_t));
     myGLScores = (int16_t*)malloc(myAllocatedSize * sizeof(int16_t));
     if((myBases == NULL ) 
-    || (myMapQualities == NULL)
-    || (myQualities == NULL)
-    || (myStrands == NULL)
-    || (myCycles == NULL)
-    || (myGLScores == NULL))
+       || (myMapQualities == NULL)
+       || (myQualities == NULL)
+       || (myStrands == NULL)
+       || (myCycles == NULL)
+       || (myGLScores == NULL))
     {                     
         // TODO, check for malloc failures.
         std::cerr << "Failed Memory Allocation\n";
@@ -78,11 +78,11 @@ PileupElementBaseQual::PileupElementBaseQual(bool addDelAsBase)
     myStrands = (char*)malloc(myAllocatedSize + 1);
     myCycles = (int8_t*)malloc(myAllocatedSize * sizeof(int8_t));
     if((myBases == NULL ) 
-    || (myMapQualities == NULL)
-    || (myQualities == NULL)
-    || (myStrands == NULL)
-    || (myCycles == NULL)
-    || (myGLScores == NULL))
+       || (myMapQualities == NULL)
+       || (myQualities == NULL)
+       || (myStrands == NULL)
+       || (myCycles == NULL)
+       || (myGLScores == NULL))
     {                     
         // TODO, check for malloc failures.
         std::cerr << "Failed Memory Allocation\n";
@@ -111,11 +111,11 @@ PileupElementBaseQual::PileupElementBaseQual(const PileupElementBaseQual& q)
     myGLScores = (int16_t*)malloc(myAllocatedSize * sizeof(int16_t));
     myAddDelAsBase = q.myAddDelAsBase;
     if((myBases == NULL ) 
-    || (myMapQualities == NULL)
-    || (myQualities == NULL)
-    || (myStrands == NULL)
-    || (myCycles == NULL)
-    || (myGLScores == NULL))
+       || (myMapQualities == NULL)
+       || (myQualities == NULL)
+       || (myStrands == NULL)
+       || (myCycles == NULL)
+       || (myGLScores == NULL))
     {
         // TODO, check for malloc failures.
         std::cerr << "Failed Memory Allocation\n";
@@ -158,35 +158,35 @@ PileupElementBaseQual::~PileupElementBaseQual()
 
 void PileupElementBaseQual::computeGLScores(int index, int16_t* GLScores, char* bases, int8_t* baseQualities)
 {
-	int base;
-	double result;
-	for (int genotype=0; genotype<=9; ++genotype)
+    int base;
+    double result;
+    for (int genotype=0; genotype<=9; ++genotype)
     {
     	result = 0;
-		for (int i=0; i<=myIndex; ++i)
+        for (int i=0; i<=myIndex; ++i)
     	{
-    		switch(bases[i])
-    		{
-    			case 'A':
-    				base = 0;
-    				break;
-    			case 'C':
-    				base = 1;
-    				break;
-    			case 'G':
-    				base = 2;
-    				break;
-    			case 'T':
-    				base = 3;
-    				break;    			
-				default :
-					base = -1;
-    		}
+            switch(bases[i])
+            {
+                case 'A':
+                    base = 0;
+                    break;
+                case 'C':
+                    base = 1;
+                    break;
+                case 'G':
+                    base = 2;
+                    break;
+                case 'T':
+                    base = 3;
+                    break;    			
+                default :
+                    base = -1;
+            }
 
-			if(base!=-1)
-			{
-				result += myLogGLMatrix[baseQualities[i]][genotype][base];
-    		}
+            if(base!=-1)
+            {
+                result += myLogGLMatrix[baseQualities[i]][genotype][base];
+            }
     	}
 
     	GLScores[genotype] = -10*result;
@@ -195,7 +195,7 @@ void PileupElementBaseQual::computeGLScores(int index, int16_t* GLScores, char* 
 
 const char* PileupElementBaseQual::getRefAllele() 
 { 
-	return(myRefAllele.c_str()); 
+    return(myRefAllele.c_str()); 
 }
     
 // Add an entry to this pileup element.  
@@ -339,55 +339,55 @@ void PileupElementBaseQual::analyze()
         tempStr.append(tempCStr);
         for (int i=1; i<=myIndex; ++i)
         {
-        	sprintf(tempCStr, ",%c", myBases[i]);
-	        tempStr.append(tempCStr);
+            sprintf(tempCStr, ",%c", myBases[i]);
+            tempStr.append(tempCStr);
         }
         tempStr.append(":");	
 		
-		sprintf(tempCStr, "%d", myMapQualities[0]);
-	    tempStr.append(tempCStr);
+        sprintf(tempCStr, "%d", myMapQualities[0]);
+        tempStr.append(tempCStr);
         for (int i=1; i<=myIndex; ++i)
         {
-        	sprintf(tempCStr, ",%d", myMapQualities[i]);
-	        tempStr.append(tempCStr);
+            sprintf(tempCStr, ",%d", myMapQualities[i]);
+            tempStr.append(tempCStr);
         }
         tempStr.append(":");
 
-		sprintf(tempCStr, "%d", myQualities[0]);
-	    tempStr.append(tempCStr);    
+        sprintf(tempCStr, "%d", myQualities[0]);
+        tempStr.append(tempCStr);    
         for (int i=1; i<=myIndex; ++i)
         {
-        	sprintf(tempCStr, ",%d", myQualities[i]);
-	        tempStr.append(tempCStr);
+            sprintf(tempCStr, ",%d", myQualities[i]);
+            tempStr.append(tempCStr);
         }
         tempStr.append(":");
  
- 		sprintf(tempCStr, "%c", myStrands[0]);
-	    tempStr.append(tempCStr);
+        sprintf(tempCStr, "%c", myStrands[0]);
+        tempStr.append(tempCStr);
         for (int i=1; i<=myIndex; ++i)
         {
-        	sprintf(tempCStr, ",%c", myStrands[i]);
-	        tempStr.append(tempCStr);
+            sprintf(tempCStr, ",%c", myStrands[i]);
+            tempStr.append(tempCStr);
         }
         tempStr.append(":");
  
-	    sprintf(tempCStr, "%d", myCycles[0]);
-	    tempStr.append(tempCStr); 
+        sprintf(tempCStr, "%d", myCycles[0]);
+        tempStr.append(tempCStr); 
         for (int i=1; i<=myIndex; ++i)
         {
-        	sprintf(tempCStr, ",%d", myCycles[i]);
-	        tempStr.append(tempCStr);        	
+            sprintf(tempCStr, ",%d", myCycles[i]);
+            tempStr.append(tempCStr);        	
         }
         tempStr.append(":");
          
         computeGLScores(myIndex, myGLScores, myBases, myQualities);
         
         sprintf(tempCStr, "%d", myGLScores[0]);
-	    tempStr.append(tempCStr);    
+        tempStr.append(tempCStr);    
         for (int i=1; i<=9; ++i)
         {
-        	sprintf(tempCStr, ",%d", myGLScores[i]);
-	        tempStr.append(tempCStr);
+            sprintf(tempCStr, ",%d", myGLScores[i]);
+            tempStr.append(tempCStr);
         }
         
         tempStr.append("\n");  	
@@ -410,26 +410,26 @@ void PileupElementBaseQual::reset(int refPosition)
 
 void PileupElementBaseQual::reset(int refPosition, GenomeSequence* refSeq, InputFile* vcfOutFile, bool addDelAsBase, double*** logGLMatrix)
 {
-	// Assign pointer to myLogGLMatrix
-	if (myLogGLMatrix == NULL)
-	{
-		myLogGLMatrix = logGLMatrix;
-	}
+    // Assign pointer to myLogGLMatrix
+    if (myLogGLMatrix == NULL)
+    {
+        myLogGLMatrix = logGLMatrix;
+    }
 		
-	// Assign pointer to myRefSeq
-	if (myRefSeq == NULL)
-	{
-		myRefSeq = refSeq;
-	}
+    // Assign pointer to myRefSeq
+    if (myRefSeq == NULL)
+    {
+        myRefSeq = refSeq;
+    }
 
-	// Assign pointer to myVcfOutFile
-	if (myVcfOutFile == NULL)
-	{
-		myVcfOutFile = vcfOutFile;
-	}
+    // Assign pointer to myVcfOutFile
+    if (myVcfOutFile == NULL)
+    {
+        myVcfOutFile = vcfOutFile;
+    }
 	
-	myAddDelAsBase = addDelAsBase;	
-	myRefAllele.clear();
+    myAddDelAsBase = addDelAsBase;	
+    myRefAllele.clear();
 	
     // Call the base class.      
     PileupElement::reset(refPosition);

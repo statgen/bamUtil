@@ -311,7 +311,9 @@ public:
             // No myFileTypePtr, so return false - could not seek.
             return -1;
         }
-        return myFileTypePtr->tell();
+        long int pos = myFileTypePtr->tell();
+        pos -= (myCurrentBufferSize - myBufferIndex);
+        return(pos);
     }
 
 
