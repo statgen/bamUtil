@@ -176,12 +176,52 @@ void IFILE_Test::test_ifeof_ifrewind(const char* extension)
    // Track the total number of the bytes that have been read from the file
    // at any given point.
    int totalBytesPreviouslyRead = 0;
+   int numBytesRead = 0;
 
    //////////////////////////////////////////////////////////////
    // Test doing reads from file without IFILE internal buffering.
-   // Read the entire file, then check for eof.
-   int numBytesRead = readFromFile(myTestBuffer, MAX_TEST_BUFFER_SIZE);
-   assert(numBytesRead < MAX_TEST_BUFFER_SIZE);
+   disableBuffering();
+
+   // Verify position in file.
+   assert(iftell() == 0);
+
+   // Read a character from the file.
+   numBytesRead = readFromFile(myTestBuffer, 1);
+   assert(numBytesRead == 1);
+   assert(myTestBuffer[0] == TEST_FILE_CONTENTS[totalBytesPreviouslyRead]);
+   // Now that we have tested based on the previous total bytes read, 
+   // increment the count.
+   totalBytesPreviouslyRead += numBytesRead;
+   // Not at eof
+   assert(ifeof() == false);
+
+   // Perform char read.
+   char readChar = ifgetc();
+   assert(readChar == TEST_FILE_CONTENTS[totalBytesPreviouslyRead]);
+   // Now that we have tested based on the previous total bytes read, 
+   // increment the count.
+   ++totalBytesPreviouslyRead;
+   // Not at eof
+   assert(ifeof() == false);
+   
+   // bgzf files use a specialized return value for iftell that
+   // is not just straight file offset.
+   if((strcmp(extension, "bam") == 0) || (strcmp(extension, "glf") == 0))
+   {
+       // At this point, still the first block.
+       assert(iftell() == totalBytesPreviouslyRead);
+   }
+   else
+   {
+      assert(iftell() == totalBytesPreviouslyRead);
+   }
+
+   // Now read the rest.
+   numBytesRead = ifread(myTestBuffer, MAX_TEST_BUFFER_SIZE);
+   assert(numBytesRead == (TEST_FILE_SIZE - totalBytesPreviouslyRead));
+   // Now that we have tested based on the previous total bytes read, 
+   // increment the count.
+   totalBytesPreviouslyRead += numBytesRead;
 
    // Eof - slightly varies based on the type of file on whether or not the
    // next read is the one the current read or the next one shows eof.
@@ -205,18 +245,6 @@ void IFILE_Test::test_ifeof_ifrewind(const char* extension)
    // is not just straight file offset.
    if((strcmp(extension, "bam") == 0) || (strcmp(extension, "glf") == 0))
    {
-       bool caught = false;
-       try
-       {
-           assert(iftell() == (BGZF_TEST_FILE_SIZE << 16));
-       }
-       catch (std::exception& e)
-       {
-           caught = true;
-           assert(strcmp(e.what(), "IFILE: CANNOT use buffered reads and tell for BGZF files") == 0);
-       }
-       assert(caught);
-       disableBuffering();
        assert(iftell() == (BGZF_TEST_FILE_SIZE << 16));
    }
    else
@@ -224,6 +252,8 @@ void IFILE_Test::test_ifeof_ifrewind(const char* extension)
       assert(iftell() == TEST_FILE_SIZE);
    }
 
+   ///////////////////////////////////
+   // Test doing IFILE buffered reads.
    // rewind the file and verify that it no longer registers eof.
    ifrewind();
    totalBytesPreviouslyRead = 0;
@@ -245,17 +275,36 @@ void IFILE_Test::test_ifeof_ifrewind(const char* extension)
    // Not at eof
    assert(ifeof() == false);
 
-   ///////////////////////////////////
-   // Test doing IFILE buffered reads.
    // Perform char read.
-   char readChar = ifgetc();
+   readChar = ifgetc();
    assert(readChar == TEST_FILE_CONTENTS[totalBytesPreviouslyRead]);
    // Now that we have tested based on the previous total bytes read, 
    // increment the count.
-   totalBytesPreviouslyRead += numBytesRead;
+   ++totalBytesPreviouslyRead;
    // Not at eof
    assert(ifeof() == false);
    
+   // bgzf files use a specialized return value for iftell that
+   // is not just straight file offset.
+   if((strcmp(extension, "bam") == 0) || (strcmp(extension, "glf") == 0))
+   {
+       bool caught = false;
+       try
+       {
+           assert(iftell() == totalBytesPreviouslyRead);
+       }
+       catch (std::exception& e)
+       {
+           caught = true;
+           assert(strcmp(e.what(), "IFILE: CANNOT use buffered reads and tell for BGZF files") == 0);
+       }
+       assert(caught);
+   }
+   else
+   {
+      assert(iftell() == totalBytesPreviouslyRead);
+   }
+
    // Now read the rest.
    numBytesRead = ifread(myTestBuffer, MAX_TEST_BUFFER_SIZE);
    assert(numBytesRead == (TEST_FILE_SIZE - totalBytesPreviouslyRead));
