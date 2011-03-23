@@ -14,7 +14,7 @@ class MapperBase;
 //
 class MatchedReadBase
 {
- public:
+  public:
     MatchedReadBase()
     {
         constructorClear();
@@ -98,6 +98,14 @@ class MatchedReadBase
                                GenomeSequence* csgs,
                                CigarRoller& cigarRoller,
                                bool         showReferenceBases = true);
+    void translateCS2BSByCigarOperation(const Cigar::CigarOperator& cigar, 
+                                        std::string& cs_read, std::string& cs_qual, 
+                                        uint32_t& readPos, 
+                                        GenomeSequence* gs, GenomeSequence* csgs, 
+                                        genomeIndex_t& referencePos,
+                                        bool showReferenceBases,
+                                        std::string& sequence2print, std::string& quality2print);
+
     ///
     /// Write a single read to the stream.  It may
     /// have been sequenced as a pair, in which case
@@ -124,42 +132,42 @@ class MatchedReadBase
     /// SAM flag bit 0x0002 and ISIZE fields.
     ///
     void print(
-               std::ostream &outputStream,
-               MatchedReadBase *mate,
-               std::string &fragmentTag,
-               bool showReferenceBases,
-               CigarRoller  &cigarRoller,
-               bool    isProperAligned,
-               uint16_t    samMateFlag,
-               const std::string &sampleGroupID,
-               const std::string &alignmentPathTag
-               );
+        std::ostream &outputStream,
+        MatchedReadBase *mate,
+        std::string &fragmentTag,
+        bool showReferenceBases,
+        CigarRoller  &cigarRoller,
+        bool    isProperAligned,
+        uint16_t    samMateFlag,
+        const std::string &sampleGroupID,
+        const std::string &alignmentPathTag
+        );
 
     ///
     /// It is a similar procedure to print(), internally, we translate
     /// color space reads to base space, and color space qualities to base space qualities
     ///
     void printColorSpace(
-                         std::ostream &file,
-                         GenomeSequence* gs,
-                         GenomeSequence* csgs,
-                         MatchedReadBase *mate,
-                         std::string &cs_read_fragment,
-                         std::string &cs_data_quality,
-                         std::string &fragmentTag,
-                         bool showReferenceBases,
-                         CigarRoller  &cigarRoller,
-                         bool    isProperAligned,
-                         uint16_t    samMateFlag,
-                         const std::string &sampleGroupID,
-                         const std::string &alignmentPathTag
-                         );
+        std::ostream &file,
+        GenomeSequence* gs,
+        GenomeSequence* csgs,
+        MatchedReadBase *mate,
+        std::string &cs_read_fragment,
+        std::string &cs_data_quality,
+        std::string &fragmentTag,
+        bool showReferenceBases,
+        CigarRoller  &cigarRoller,
+        bool    isProperAligned,
+        uint16_t    samMateFlag,
+        const std::string &sampleGroupID,
+        const std::string &alignmentPathTag
+        );
 
     virtual void printOptionalTags(
-                                   std::ostream &, 
-                                   bool isProperAligned,
-                                   const std::string &readGroupID,
-                                   const std::string &alignmentPathTag);
+        std::ostream &, 
+        bool isProperAligned,
+        const std::string &readGroupID,
+        const std::string &alignmentPathTag);
 
 
     // MapperBase has debugPrint also, but it does more validation.  This
@@ -167,20 +175,26 @@ class MatchedReadBase
     void debugPrint();
 
     // Fix a range of mismatches in color space
-    void fixBaseRange(int start, int end, /// inclusive boundaries
+    void fixBaseRange(uint32_t start, uint32_t end, /// inclusive boundaries
                       std::string& read_fragment, std::string& data_quality,
                       const std::string& cs_read_fragment, const std::string& cs_data_quality,
                       GenomeSequence* gs, GenomeSequence* csgs,
                       genomeIndex_t genomeMatchPosition,
                       bool isForwardStrand);
 
-    // 
+    //
+    void calibrateSequence(uint32_t count, 
+                           std::string& cs_read, std::string& cs_qual, int readPosition,
+                           GenomeSequence* gs, GenomeSequence* csgs, genomeIndex_t referencePosition,
+                           bool isForward, 
+                           std::string& sequence2print, std::string& quality2print) ;
+#if 0
     void calibrateSequence(std::string& read_fragment, std::string& data_quality,
                            const std::string& cs_read_fragment, const std::string& cs_data_quality,
                            GenomeSequence* gs, GenomeSequence* csgs,
                            genomeIndex_t genomeMatchPosition,
                            bool isForwardStrand);
-
+#endif
 
 
     //////////////////////////////////////////////////
