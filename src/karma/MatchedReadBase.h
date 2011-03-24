@@ -105,7 +105,10 @@ class MatchedReadBase
                                         genomeIndex_t& referencePos,
                                         bool showReferenceBases,
                                         std::string& sequence2print, std::string& quality2print);
-
+    void markUnmatchedBases(const CigarRoller& cigarRoller, 
+                            GenomeSequence* gs, genomeIndex_t genomePos, 
+                            bool showReferenceBases,
+                            std::string& sequence2print);
     ///
     /// Write a single read to the stream.  It may
     /// have been sequenced as a pair, in which case
@@ -188,6 +191,11 @@ class MatchedReadBase
                            GenomeSequence* gs, GenomeSequence* csgs, genomeIndex_t referencePosition,
                            bool isForward, 
                            std::string& sequence2print, std::string& quality2print) ;
+
+
+    //////////////////////////////////////////////////
+    // Obselete code goes here
+    //////////////////////////////////////////////////
 #if 0
     void calibrateSequence(std::string& read_fragment, std::string& data_quality,
                            const std::string& cs_read_fragment, const std::string& cs_data_quality,
@@ -196,13 +204,8 @@ class MatchedReadBase
                            bool isForwardStrand);
 #endif
 
-
-    //////////////////////////////////////////////////
-    // Obselete code goes here
-    //////////////////////////////////////////////////
 #if 0
     // not ever used funcitons
-    // Xiaowei use #if to comment them out.
     virtual const char *getMateReferenceSequence();
     virtual genomeIndex_t getMatePosition();
     virtual int getISize();     // insertion size -> 0 for single, delta for paired
