@@ -5,7 +5,7 @@ SRCONLY =
 DATE=$(shell date)
 NODE=$(shell uname -n)
 USER=$(shell whoami)
-USER_COMPILE_VARS = -DDATE="\"${DATE}\"" -DNODE="\"${NODE}\"" -DUSER="\"${USER}\"" -Wno-trigraphs -fopenmp
+USER_COMPILE_VARS = -DDATE="\"${DATE}\"" -DNODE="\"${NODE}\"" -DUSER="\"${USER}\"" -Wno-trigraphs -fopenmp -lcrypto
 
 #TESTBASE = MapperBase_test MapperPEBaseSpace_test MapperPEColorSpace_test MapperSEBaseSpace_test MapperSEColorSpace_test 
 
