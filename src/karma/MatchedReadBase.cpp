@@ -251,22 +251,19 @@ bool MatchedReadBase::getBSSeq2print(std::string&    sequence2print,
  *  read (CS):            A 0|1 2 1 2               (note: 1 2 1 2 is the part that actually aligned)
  *  read (BS):           (A)A|C T G A               (note: (A) is a primer. it should not be outputed)
  *  read index(CS):       0 1|2 3 4 5 
-cs_index = 3 => genome_index = referencePosition - 2 + (3) = referencePosition + 1
- *                                                  to delete this line: read index(BS):         0|1 2 3 4
  *  genomeMatchPosition:     |^                     (note: ^ marked the genomeMatchPosition)          
+ *  E.g. cs_index = 3 => genome_index = referencePosition - 2 + (3) = referencePosition + 1
  *  
  *  Backward match:
  *  reference index:        0 1 2 3 4 5 6 7 8
  *  reference (BS):         A C T G A C G T A
  *  reference (CS):           1 2 1 2 1 3 1 3 
- *  read (CS):                      2 1 3 1|0 T     (note: 2 1 3 1 is the part that actually aligned)
- *  read (BS - observed.)           G A C G|T(T)    (note: (T) is a primer, should not be outputed)
- *  read (BS - rev. comp.):         C T G C|A(A)    (note: reverse complement in base space) 
- *  read index (CS):                5 4 3 2|1 0
-cs_index = 2 => genome_index = referencePosition + (6-1) - (2) = referencePosition + 3
-
- *  to be deleted : read index (BS):                0 1 2 3|4       (note: SAM specification requires to output SEQ in forward strand)
- *  genomeMatchPosition:            ^               (note: ^ marked the genomeMatchPosition)          
+ *  read (CS):                        1 3 1 3|0 T     (note: 1 3 1 3 is the part that actually aligned)
+ *  read (BS - observed.)             T G C A|T(T)    (note: (T) is a primer, should not be outputed)
+ *  read (BS - rev. comp.):           A C G T|A(A)    (note: reverse complement in base space) 
+ *  read index (CS):                  5 4 3 2|1 0
+ *  genomeMatchPosition:              ^               (note: ^ marked the genomeMatchPosition)          
+ *  E.g. cs_index = 2 => genome_index = referencePosition + (6-1) - (2) = referencePosition + 3
  *  
  *  Also note, in the FORWARD match case, the base (CS) at poisition i (in reference index) represents 
  *  a transition of the underlying bases (in BS) at position (i-1) and (i) (in reference index)
@@ -274,6 +271,9 @@ cs_index = 2 => genome_index = referencePosition + (6-1) - (2) = referencePositi
  *  a transition of the underlying bases (in BS) at position (i) and (i+1) (in reference index)
  */
 
+//////////////////////////////////////////////////////////////////////
+// OBSOLETE COMMENTS
+//////////////////////////////////////////////////////////////////////
 // when we access CS read at position (0-based) i, then (shown above, read in the column)
 // we are accessing BS read at position (0-based) i-1, and
 // the genome position is (genomeMatchPosition+(i)-2)
@@ -294,22 +294,6 @@ cs_index = 2 => genome_index = referencePosition + (6-1) - (2) = referencePositi
 
 #pragma message "i cannot explain this line for now"
 #define BACKWARD_CS2BS_REF_OFFSET (-1)
-#if 0
-inline int getForwardBSIndexFromCSIndex(std::string& read, const int cs_index) {
-    return (cs_index-1);
-}
-inline int getForwardGSIndexFromCSIndex(std::string& read, const int cs_index) {
-    return (cs_index-1);
-}
-inline int getBackwardBSIndexFromCSIndex(std::string& read, const int cs_index) {
-    return (cs_index-1);
-}
-inline int getBackwardGSIndexFromCSIndex(std::string& read, const int cs_index) {
-    return (cs_index-1);
-}
-
-#endif
-
 void MatchedReadBase::translateCS2BSByCigarOperation(const Cigar::CigarOperator& cigar, 
                                                      std::string& cs_read, 
                                                      std::string& cs_qual, 
@@ -489,6 +473,8 @@ bool MatchedReadBase::getCSSeqAndQual2print(std::string&    sequence2print,
 
         
         // TODO(zhanxw): chop the first base
+        // add codes here.
+        
         if (!indexer->isForward) {
             std::reverse(sequence2print.begin(), sequence2print.end());
             sequence2print = getComplement(sequence2print);
@@ -842,19 +828,30 @@ void MatchedReadBase::fixBaseRange(uint32_t start, uint32_t end, /// inclusive b
                                    bool isForwardStrand)
 {
     if (referencePosition == INVALID_GENOME_INDEX) return;
-    
-    // we will add more code later
-    #pragma message "more codes goes here"
-    if (start <=2 || end == read_fragment.size() - 1) {
-        fprintf(stderr, "mismatches happend at the end of the read\n");
-        return; 
-    }
+    // we can only fix mismatches after start =2 
+    assert(start>=2); 
 
     // we will not fix longer (>2) color space mismatches
     // as single color space error rate is 1-2%, at least 3 consecutive error has rate 1^(-6), which is rare
     int nMismatch = end-start+1;
     if (nMismatch>2)
         return;
+
+    // fix the reads end part
+    if (end == read_fragment.size() - 1) {
+        if (isForwardStrand) {
+            for (uint32_t i = start ; i <= end; i++) {
+                BaseAndColorToBase(read_fragment[i-1], cs_read_fragment[i], read_fragment[i]);
+                data_quality[i] = cs_data_quality[i];
+            }
+        } else { // backward strand
+            for (uint32_t i = start ; i <= end; i++) {
+                BaseAndColorToBase(read_fragment[i-1], cs_read_fragment[i], read_fragment[i]);
+                data_quality[i] = cs_data_quality[i];
+            }
+        }
+        return; 
+    }
 
     // for mismatch at one position, we can infer its base call from two direction
     // one direction is from lower read index, we represent it choice0
@@ -872,15 +869,15 @@ void MatchedReadBase::fixBaseRange(uint32_t start, uint32_t end, /// inclusive b
             // 1. can use cs_read[start], gs[start-1] 
             // 2. can use cs_read[end+1], gs[end]
             // as in the case:
-            // cs_read: . . . X . . 
+            // cs_read: . . . X Y . 
             //                ^                 (start and end both point here)
-            // gs:          B _                 (method 1: use B and X to infer _)
-            // gs:            _ B               (method 2: use B and X to infer _)
-            // here, B means any base in genome sequence (in BS), X means the mismatched base (in CS), and
-            // _ means the ambigous base
-            
+            // gs:          A _                 (method 1: use A and X to infer _)
+            // gs:            _ B               (method 2: use B and Y to infer _)
+            // here, A, B means any base in genome sequence (in BS), X means the mismatched base (in CS), and
+            // Y is just the base (in CS) after X, _ means the ambigous base
+
             BaseAndColorToBase((*gs)[referencePosition-2 + start-1], cs_read_fragment[start], choice1);
-            BaseAndColorToBase((*gs)[referencePosition-2 + (end+1)], cs_read_fragment[end], choice2);
+            BaseAndColorToBase((*gs)[referencePosition-2 + (end+1)], cs_read_fragment[end+1], choice2); 
             qual1 = data_quality[(start)];
             qual2 = data_quality[(end+1)];
             if (choice1 != choice2)
@@ -963,9 +960,16 @@ void MatchedReadBase::fixBaseRange(uint32_t start, uint32_t end, /// inclusive b
     }
     else   // backwardStrand
     {
+        char base1 ='N', base2='N';
         switch (nMismatch)
         {
         case 1:
+            // for a backward cs_read[index], it represents a change of bs_read[index-1] and bs_read[index]
+            // if cs_read[index] matches *csgs[index], it represents a change of *gs[index] and *gs[index+1]
+            // NOTE: here the index is the cs_read index.
+            //       we will have to convert *gs[index] to genome index, such as:
+            //       *gs[(referencePosition+length-1) - (index)]
+            // 
             // as start == end, we have two ways to guess that base
             // 1. can use cs_read[start], gs[start-1] 
             // 2. can use cs_read[end+1], gs[end]
@@ -976,9 +980,19 @@ void MatchedReadBase::fixBaseRange(uint32_t start, uint32_t end, /// inclusive b
             // gs:            _ B               (method 2: use B and X to infer _)
             // here, B means any base in genome sequence (in BS), X means the mismatched base (in CS), and
             // _ means the ambigous base
-            
-            BaseAndColorToBase((*gs)[(referencePosition+length-1)-(start-1)], cs_read_fragment[start], choice1);
-            BaseAndColorToBase((*gs)[(referencePosition+length-1)-(end+1)], cs_read_fragment[end], choice2);
+            //
+            // cs_read[start] is the transition of bs_read[start-1] and bs_read[start] ( in cs_read index)
+            // it may also represents a change of *gs[start] and *gs[start+1]          ( in cs_read index)
+            // (in genome index), we can write as :
+            // *gs[(referencePosition+length-1) - (start)] and *gs[(referencePosition+length-1) - (start+1)]
+            //
+            // here choice1 is one possible base of bs[start]
+            base1 = GenomeSequence::base2complement[ (int) (*gs)[(referencePosition+length-1)-(start)] ];
+            BaseAndColorToBase(base1, cs_read_fragment[start], choice1);
+
+            base2 = (*gs)[(referencePosition+length-1)-(end+2)];
+            base2 = GenomeSequence::base2complement[ (int) base2 ];
+            BaseAndColorToBase(base2, cs_read_fragment[end+1], choice2);
             qual1 = data_quality[(start)];
             qual2 = data_quality[(end+1)];
             if (choice1 != choice2)
@@ -1012,8 +1026,12 @@ void MatchedReadBase::fixBaseRange(uint32_t start, uint32_t end, /// inclusive b
             BaseAndColorToBase((*gs)[BWD_GENOME_POS(end+1) +BACKWARD_CS2BS_REF_OFFSET],
                                cs_read_fragment[end+1], choice2);
 #else
-            BaseAndColorToBase((*gs)[(referencePosition+length-1)-(start-1)], cs_read_fragment[start], choice1);
-            BaseAndColorToBase((*gs)[(referencePosition+length-1)-(end+1) ], cs_read_fragment[end+1], choice2);
+
+            base1 = GenomeSequence::base2complement[ (int) (*gs)[(referencePosition+length-1)-(start)] ];
+            base2 = GenomeSequence::base2complement[ (int) (*gs)[(referencePosition+length-1)-(end+2)] ];
+            
+            BaseAndColorToBase(base1, cs_read_fragment[start], choice1);
+            BaseAndColorToBase(base2, cs_read_fragment[end+1], choice2);
 #endif
             BaseAndBaseToColor(choice1, choice2, color);
             if (color != cs_read_fragment[end])
