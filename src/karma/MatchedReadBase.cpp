@@ -453,8 +453,14 @@ bool MatchedReadBase::getCSSeqAndQual2print(std::string&    sequence2print,
                                                sequence2print, quality2print);
             }
         } else{ // backward match
-            
-            fprintf(stderr, "to write something");
+            //fprintf(stderr, "to write something");
+
+            // recover the first base
+            BaseAndColorToBase(cs_read_fragment[0], cs_read_fragment[1], sequence2print[1]);
+            quality2print[1] = cs_data_quality[1];
+            ++readPosition;
+            ++referencePosition;
+
             // recover the rest
             for (int cigarIndex = 0; cigarIndex < cigarRoller.size(); cigarIndex++)
             {
@@ -471,19 +477,19 @@ bool MatchedReadBase::getCSSeqAndQual2print(std::string&    sequence2print,
             }
         } // end if (indexer->isForward)
 
-        
-        // TODO(zhanxw): chop the first base
-        // add codes here.
-        
         if (!indexer->isForward) {
             std::reverse(sequence2print.begin(), sequence2print.end());
             sequence2print = getComplement(sequence2print);
             std::reverse(quality2print.begin(), quality2print.end());
         }
 
+        // chop the first base
+        sequence2print.erase(0, 1);
+        quality2print.erase(0, 1);
+
         // TODO(zhanxw):  showReferenceBases will be implemented here 
         // translate matched bases to = or lower case.
-
+        
 
 #else
         calibrateSequence(read_fragment, data_quality,
@@ -1134,8 +1140,8 @@ void MatchedReadBase::calibrateSequence(uint32_t count,
                     quality2print[readPos] = cs_qual[readPos];
                 }
                 if (consecutiveMatch == false) {
-                    
                     consecutiveMatch = true;
+                    end = readPos;
                     if (end != 0) {
                         fixBaseRange(start, end, sequence2print, quality2print, 
                                      cs_read, cs_qual, gs, csgs, referencePosition, isForward);
