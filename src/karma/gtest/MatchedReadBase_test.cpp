@@ -32,6 +32,8 @@ public:
     // const char* csgs = "512121313";
     GenomeSequence* gs;
     GenomeSequence* csgs;
+    GenomeSequence* phiXgs;
+    GenomeSequence* phiXcsgs;
 
     std::string cs_fwd_read;
     std::string cs_fwd_qual;
@@ -55,6 +57,13 @@ protected:
         gs->open(false);
         csgs->setReferenceName("short.fa");
         csgs->open(true);
+
+        phiXgs = new GenomeSequence;
+        phiXgs->setReferenceName("../test/phiX.fa");
+        phiXgs->open(false);
+        phiXcsgs = new GenomeSequence;
+        phiXcsgs->setReferenceName("../test/phiX.fa");
+        phiXcsgs->open(true);
 
         cs_fwd_read = "A01212";
         cs_fwd_qual = "!12345";
@@ -166,7 +175,10 @@ TEST_F(MatchedReadBaseTest, fixBaseRange_fwd_toEnd)
 TEST_F(MatchedReadBaseTest, fixBaseRange_bwd_0base)
 {
     uint32_t start = 2, end = 2;
-    genomeIndex_t referencePos = 5;
+    genomeIndex_t genomeMatchPosition = 5;
+    uint length = cs_bwd_read.size();
+    genomeIndex_t referencePos = genomeMatchPosition + length - 1;
+
     // not correct any base
     m.fixBaseRange(start, end,
                    bs_bwd_read, bs_bwd_qual,
@@ -180,7 +192,9 @@ TEST_F(MatchedReadBaseTest, fixBaseRange_bwd_0base)
 TEST_F(MatchedReadBaseTest, fixBaseRange_bwd_1base)
 {
     uint32_t start = 2, end = 2;
-    genomeIndex_t referencePos = 5;
+    genomeIndex_t genomeMatchPosition = 5;
+    uint length = cs_bwd_read.size();
+    genomeIndex_t referencePos = genomeMatchPosition + length - 1;
     // correct forward match, let us change 1 base
     cs_bwd_read[2]='0'; 
     bs_bwd_qual_correct[2] = '!' + 1;
@@ -196,7 +210,9 @@ TEST_F(MatchedReadBaseTest, fixBaseRange_bwd_1base)
 TEST_F(MatchedReadBaseTest, fixBaseRange_bwd_2base)
 {
     uint32_t start = 3, end = 4;
-    genomeIndex_t referencePos = 5;
+    genomeIndex_t genomeMatchPosition = 5;
+    uint length = cs_bwd_read.size();
+    genomeIndex_t referencePos = genomeMatchPosition + length - 1;
     // correct forward match, let us change 2 base
     // 2 base represents a SNP.
     // we change from 13 to 31
@@ -229,7 +245,9 @@ TEST_F(MatchedReadBaseTest, fixBaseRange_bwd_2base)
 TEST_F(MatchedReadBaseTest, fixBaseRange_bwd_toEnd)
 {
     uint32_t start = 4, end = 5;
-    genomeIndex_t referencePos = 5;
+    genomeIndex_t genomeMatchPosition = 5;
+    uint length = cs_bwd_read.size();
+    genomeIndex_t referencePos = genomeMatchPosition + length - 1;
     // correct forward match, let us change 1 base
     cs_bwd_read[start]='0'; 
     cs_bwd_read[end]='0'; 
@@ -244,4 +262,129 @@ TEST_F(MatchedReadBaseTest, fixBaseRange_bwd_toEnd)
     EXPECT_EQ(bs_bwd_read, bs_bwd_read_correct);
     EXPECT_EQ(bs_bwd_qual, bs_bwd_qual_correct);
 }
+
+TEST_F(MatchedReadBaseTest, markUnmatchecdBase)
+{
+    CigarRoller cigar("35M");
+    std::string sequence2print("NNNAAACAGNNNNNNTCCNNNNNNCGTACGAGAAA");
+    std::string correct("NNN==ACAGNNNNNNTCCNNNNNNCGTACGAG===");
+    //markUnmatchedBases(cigarRoller, gs, genomeMatchPosition-1, showReferenceBases, sequence2print);
+    m.markUnmatchedBases(cigar, phiXgs, 777 - 1, false, sequence2print);
+    EXPECT_EQ(sequence2print, correct);
+    
+    sequence2print = "NGAAACACTGACGTTCTTACTGACGCAGTAGAAAA";
+    correct = "N===========================T======";
+    m.markUnmatchedBases(cigar, phiXgs, 777 - 1, false, sequence2print);
+    EXPECT_EQ(sequence2print, correct);
+
+    // short.fa
+    // ACTGACGTA
+    // 0
+    cigar.Set("9M");
+    sequence2print = "ACTGACGTA";
+    correct        = "=========";
+    m.markUnmatchedBases(cigar, gs, 0, false, sequence2print);
+    EXPECT_EQ(correct, sequence2print);
+    
+    cigar.Set("2S5M2S");
+    sequence2print = "ACTGACGTA";
+    correct        = "AC=====TA";
+    m.markUnmatchedBases(cigar, gs, 0, false, sequence2print);
+    EXPECT_EQ(correct, sequence2print);
+
+    cigar.Set("2M4I3M");
+    sequence2print = "ACTGACGTA";
+    sequence2print = "ACAAAATGA";
+    correct        = "==AAAA===";
+    m.markUnmatchedBases(cigar, gs, 0, false, sequence2print);
+    EXPECT_EQ(correct, sequence2print) << "Test D";
+
+    cigar.Set("2M2D3M");
+    sequence2print = "ACTGACGTA";
+    sequence2print =  "CTCGT";
+    correct        =  "=====";
+    m.markUnmatchedBases(cigar, gs, 1, false, sequence2print);
+    EXPECT_EQ(correct, sequence2print);
+
+}
+
+// void translateCigarMatchSequence(uint32_t count,
+//                                  std::string& cs_read, std::string& cs_qual, int readPosition,
+//                                  GenomeSequence* gs, GenomeSequence* csgs, genomeIndex_t referencePosition,
+//                                  bool isForward,
+//                                  std::string& sequence2print, std::string& quality2print)
+TEST_F(MatchedReadBaseTest, translateCigarMatchSequence_fwd)
+{
+    uint32_t count = 35;
+    std::string cs_read="A55200111212131022031212133121322000"; // len = 36
+    std::string cs_qual="!'???BBBBBCBCCCCCCCCCCCCCBCCCCCACCCC"; // len = 36
+    int readPosition = 2;
+    genomeIndex_t referencePosition = 777;
+    bool isForward = true;
+    std::string sequence2print(36, 'N');
+    sequence2print[0] = 'A';
+    // std::cout << cs_read << " len = " << cs_read.size() << std::endl;
+    // std::cout << sequence2print << " len = " << sequence2print.size() << std::endl;
+
+    std::string quality2print(35, '!');
+    std::string correct("N===========================T======");
+    m.translateCigarMatchSequence(count, 
+                                  cs_read, cs_qual, readPosition, 
+                                  phiXgs, phiXcsgs, referencePosition, 
+                                  isForward, 
+                                  sequence2print, quality2print);
+    CigarRoller cigar("35M");
+    bool showReferenceBases = false;
+    genomeIndex_t genomeMatchPosition = 777;
+    sequence2print.erase(0,1);
+    m.markUnmatchedBases(cigar, phiXgs, genomeMatchPosition-1, showReferenceBases, sequence2print);
+    EXPECT_EQ(sequence2print, correct);
+}
+
+TEST_F(MatchedReadBaseTest, translateCigarMatchSequence_bwd)
+{
+    uint32_t count = 35;
+    std::string cs_read="A55311211302122020013033022013201013"; // len = 36
+    std::string cs_qual="!';99CCCCCCCCCCCCCCACCCCCCCCCCCCCCCC"; // len = 36
+    int readPosition = 2;
+    uint length = cs_read.size();
+    genomeIndex_t referencePosition = (3981 + length - 1) - 2;
+    bool isForward = false;
+    std::string sequence2print(36, 'N');
+    sequence2print[0] = 'A';
+    // std::cout << cs_read << " len = " << cs_read.size() << std::endl;
+    // std::cout << sequence2print << " len = " << sequence2print.size() << std::endl;
+
+    std::string quality2print(35, '!');
+    std::string correct("==================================N");
+    m.translateCigarMatchSequence(count, 
+                                  cs_read, cs_qual, readPosition, 
+                                  phiXgs, phiXcsgs, referencePosition, 
+                                  isForward, 
+                                  sequence2print, quality2print);
+
+    // std::cout << sequence2print << " len = " << sequence2print.size() << std::endl;
+    // std::string temp = sequence2print;
+    // reverse(temp.begin(), temp.end());
+    // std::cout << temp << " len = " << temp.size() << std::endl;
+
+    CigarRoller cigar("35M");
+    bool showReferenceBases = false;
+    genomeIndex_t genomeMatchPosition = 3981;
+
+    sequence2print.erase(0,1);
+    if (!isForward) {
+        std::reverse(sequence2print.begin(), sequence2print.end());
+        //sequence2print = getComplement(sequence2print);
+        std::reverse(quality2print.begin(), quality2print.end());
+    }
+
+
+
+    // std::cout << sequence2print << " len = " << sequence2print.size() << std::endl;
+    m.markUnmatchedBases(cigar, phiXgs, genomeMatchPosition, showReferenceBases, sequence2print);
+    EXPECT_EQ(sequence2print, correct);
+}
+
+
 

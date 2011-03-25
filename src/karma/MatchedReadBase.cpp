@@ -293,11 +293,11 @@ void MatchedReadBase::translateCS2BSByCigarOperation(const Cigar::CigarOperator&
     {
     case CigarRoller::match:
     case CigarRoller::mismatch:
-        calibrateSequence(count,
-                          cs_read, cs_qual, readPosition,
-                          gs, csgs, referencePosition,
-                          isForward,
-                          sequence2print, quality2print );
+        translateCigarMatchSequence(count,
+                                    cs_read, cs_qual, readPosition,
+                                    gs, csgs, referencePosition,
+                                    isForward,
+                                    sequence2print, quality2print );
 
         readPosition += count;
         if (isForward)
@@ -384,8 +384,6 @@ bool MatchedReadBase::getCSSeqAndQual2print(std::string&    sequence2print,
     // if showReference is false: match will be  "="    , mismatch will be readBase
     if (qualityIsValid())
     {
-#if 1
-
         assert(genomeMatchPosition != INVALID_GENOME_INDEX );
 
         int length = cs_read_fragment.size();
@@ -394,10 +392,16 @@ bool MatchedReadBase::getCSSeqAndQual2print(std::string&    sequence2print,
         sequence2print[0] = cs_read_fragment[0];
         quality2print[0] = cs_data_quality[0];
         fill(sequence2print.begin()+1, sequence2print.begin()+length, 'N');
-        fill(quality2print.begin()+1, quality2print.begin()+length, '#');
+        fill(quality2print.begin()+1, quality2print.begin()+length, '!');
 
+        // we try to synchronize readPosition and referencePosition
+        // however, remember that we will have to manually recover the base after the primer
+        uint32_t readPosition = 2;
         genomeIndex_t referencePosition = genomeMatchPosition;
-        uint32_t readPosition = 1;
+        if (!indexer->isForward) 
+        {
+            referencePosition = (genomeMatchPosition + length - 1) - (2); 
+        }
 
         // need to rewrite calibrateSequence() function as we need to support cigar
         // the work flow is:
@@ -413,8 +417,19 @@ bool MatchedReadBase::getCSSeqAndQual2print(std::string&    sequence2print,
             // recover the first base
             BaseAndColorToBase(cs_read_fragment[0], cs_read_fragment[1], sequence2print[1]);
             quality2print[1] = cs_data_quality[1];
-            ++readPosition;
-            ++referencePosition;
+            if (sequence2print[1] == (*gs)[genomeMatchPosition-1])
+            {
+                CigarRoller temp("1M");
+                temp+= cigarRoller;
+                cigarRoller = temp;
+            } else {
+                // we can set add '1S' to the leftmost of the cigar,
+                // however, the next step, translateCS2BSByCigarOperation() will be affetced.
+                // for simplicity we will also append '1M' here for now.
+                CigarRoller temp("1M");
+                temp+= cigarRoller;
+                cigarRoller = temp;
+            }
 
             // recover the rest
             for (int cigarIndex = 0; cigarIndex < cigarRoller.size(); cigarIndex++)
@@ -431,13 +446,9 @@ bool MatchedReadBase::getCSSeqAndQual2print(std::string&    sequence2print,
                                                sequence2print, quality2print);
             }
         } else{ // backward match
-            //fprintf(stderr, "to write something");
-
             // recover the first base
             BaseAndColorToBase(cs_read_fragment[0], cs_read_fragment[1], sequence2print[1]);
             quality2print[1] = cs_data_quality[1];
-            ++readPosition;
-            ++referencePosition;
 
             // recover the rest
             for (int cigarIndex = 0; cigarIndex < cigarRoller.size(); cigarIndex++)
@@ -453,17 +464,27 @@ bool MatchedReadBase::getCSSeqAndQual2print(std::string&    sequence2print,
                                                indexer->isForward,
                                                sequence2print, quality2print);
             }
-        } // end if (indexer->isForward)
 
-        if (!indexer->isForward) {
-            std::reverse(sequence2print.begin(), sequence2print.end());
-            sequence2print = getComplement(sequence2print);
-            std::reverse(quality2print.begin(), quality2print.end());
-        }
+            // handle CIGAR for the base after the primer
+            if (sequence2print[1] == GenomeSequence::base2complement[(int) (*gs)[(genomeMatchPosition+length-1)-(1)]] )
+            {
+                cigarRoller.Add(CigarRoller::match, 1);
+            } else {
+                //cigarRoller.Add(CigarRoller::match, 1);
+                cigarRoller.Add(CigarRoller::softClip, 1);
+            }
+        } // end if (indexer->isForward)
 
         // chop the first base
         sequence2print.erase(0, 1);
         quality2print.erase(0, 1);
+
+        if (!indexer->isForward) {
+            std::reverse(sequence2print.begin(), sequence2print.end());
+            //sequence2print = getComplement(sequence2print);
+            std::reverse(quality2print.begin(), quality2print.end());
+        }
+
 
         // translate matched bases to = or lower case.
         if (indexer->isForward)
@@ -477,45 +498,6 @@ bool MatchedReadBase::getCSSeqAndQual2print(std::string&    sequence2print,
             // e.g. C A C A T (A)       (A) is the primer, here sequence2print does not contain A
             //      ^                   the genomeMatchPosition
             markUnmatchedBases(cigarRoller, gs, genomeMatchPosition, showReferenceBases, sequence2print);
-#else
-        calibrateSequence(read_fragment, data_quality,
-                          cs_read_fragment, cs_data_quality,
-                          gs, csgs, genomeMatchPosition,
-                          indexer->isForward);
-#endif
-#if 0
-        quality2print=cs_data_quality;
-        //        getCigarAndSequence2print(cigar, sequence2print);
-        if (isForward())
-        {
-            for (uint32_t i = 0; i< cs_read_fragment.size(); i++)
-            {
-                char readBase = cs_read_fragment[i];
-                if (readBase == (*gs)[genomeMatchPosition + i -1 ]) // correct for 0 based
-                    sequence2print.push_back(showReferenceBases ? readBase : '=');
-                else
-                {
-                    sequence2print.push_back(showReferenceBases ? tolower(readBase) : readBase);
-                }
-            }
-        }
-        else
-        {
-            for (uint32_t i = 0; i< read_fragment.size(); i++)
-            {
-                char readBase = read_fragment[i];
-                if (readBase == (*gs)[genomeMatchPosition + i - 1 ])
-                {
-                    sequence2print.push_back(showReferenceBases ? readBase : '=');
-                }
-                else
-                {
-                    sequence2print.push_back(showReferenceBases ? tolower(readBase) : readBase);
-                }
-            }
-            // quality2print.Invert();
-        }
-#endif
     }
     else
     {
@@ -535,6 +517,7 @@ bool MatchedReadBase::getCSSeqAndQual2print(std::string&    sequence2print,
  *   for indels, all bases will be shown like mismatches.
  * NOTE: sequence2print does NOT contain the leading primer
  * NOTE: we will work on FORWARD strand in base space.
+ * NOTE: we will NOT check the length given by CigarRoller equal to the length of sequence2print
  */
 void MatchedReadBase::markUnmatchedBases(const CigarRoller& cigarRoller, 
                                          GenomeSequence* gs, genomeIndex_t genomePos, 
@@ -594,7 +577,7 @@ void MatchedReadBase::markUnmatchedBases(const CigarRoller& cigarRoller,
             break;
         case CigarRoller::softClip:
             for (uint i = 0; i < cigar.count; i++) {
-                if (showReferenceBases == true) 
+                if (showReferenceBases == true)
                 {
                     sequence2print[readPos] = tolower(sequence2print[readPos]);
                 } else {
@@ -901,6 +884,7 @@ void MatchedReadBase::print(
 // translate1: AAAA (wrong, as it makes long mismatches in base space)
 // translate2: AACC (correct, as it uses the information at poisition 0 and 3)
 // 2 mismatches, at position 1 and 2, translate2 is preferred over translate1.
+// NOTE: referencePosition does not equal to genomeMatchPosition
 void MatchedReadBase::fixBaseRange(uint32_t start, uint32_t end, /// inclusive boundaries
                                    std::string& read_fragment, std::string& data_quality,
                                    const std::string& cs_read_fragment, const std::string& cs_data_quality,
@@ -939,7 +923,6 @@ void MatchedReadBase::fixBaseRange(uint32_t start, uint32_t end, /// inclusive b
     // the other direction is from higher read index, we represent it choice1
     char choice1, choice2;
     char qual1, qual2, qual3;
-    const int length = cs_read_fragment.size();
 
     if (isForwardStrand)
     {
@@ -1068,10 +1051,10 @@ void MatchedReadBase::fixBaseRange(uint32_t start, uint32_t end, /// inclusive b
             // *gs[(referencePosition+length-1) - (start)] and *gs[(referencePosition+length-1) - (start+1)]
             //
             // here choice1 is one possible base of bs[start]
-            base1 = GenomeSequence::base2complement[ (int) (*gs)[(referencePosition+length-1)-(start)] ];
+            base1 = GenomeSequence::base2complement[ (int) (*gs)[(referencePosition)-(start)] ];
             BaseAndColorToBase(base1, cs_read_fragment[start], choice1);
 
-            base2 = (*gs)[(referencePosition+length-1)-(end+2)];
+            base2 = (*gs)[(referencePosition)-(end+2)];
             base2 = GenomeSequence::base2complement[ (int) base2 ];
             BaseAndColorToBase(base2, cs_read_fragment[end+1], choice2);
             qual1 = data_quality[(start)];
@@ -1100,8 +1083,8 @@ void MatchedReadBase::fixBaseRange(uint32_t start, uint32_t end, /// inclusive b
             break;
         case 2:
             char color;
-            base1 = GenomeSequence::base2complement[ (int) (*gs)[(referencePosition+length-1)-(start)] ];
-            base2 = GenomeSequence::base2complement[ (int) (*gs)[(referencePosition+length-1)-(end+2)] ];
+            base1 = GenomeSequence::base2complement[ (int) (*gs)[(referencePosition)-(start)] ];
+            base2 = GenomeSequence::base2complement[ (int) (*gs)[(referencePosition)-(end+2)] ];
 
             BaseAndColorToBase(base1, cs_read_fragment[start], choice1);
             BaseAndColorToBase(base2, cs_read_fragment[end+1], choice2);
@@ -1149,14 +1132,13 @@ void MatchedReadBase::fixBaseRange(uint32_t start, uint32_t end, /// inclusive b
     }
 } // void MatchedReadBase::fixBaseRange(int start, int end, /// inclusive boundaries...
 
-void MatchedReadBase::calibrateSequence(uint32_t count,
-                                        std::string& cs_read, std::string& cs_qual, int readPosition,
-                                        GenomeSequence* gs, GenomeSequence* csgs, genomeIndex_t referencePosition,
-                                        bool isForward,
-                                        std::string& sequence2print, std::string& quality2print)
+void MatchedReadBase::translateCigarMatchSequence(uint32_t count,
+                                                  std::string& cs_read, std::string& cs_qual, int readPosition,
+                                                  GenomeSequence* gs, GenomeSequence* csgs, genomeIndex_t referencePosition,
+                                                  bool isForward,
+                                                  std::string& sequence2print, std::string& quality2print)
 {
-    bool consecutiveMatch = true;
-//    int consecutiveMismatchNum = 0;
+    bool lastBaseMatched = true;
     int start = 0;
     int end = 0;
     if (isForward) {
@@ -1165,30 +1147,36 @@ void MatchedReadBase::calibrateSequence(uint32_t count,
             int readPos = readPosition +i ;
             int genomePos = referencePosition + i ;
             if (cs_read[readPos] == (*csgs)[genomePos] ) { // this bases match
-                if (consecutiveMatch == true) {
+                if (lastBaseMatched == true) {
                     // although we can use CS translation to assign
                     // this base, just for simplicity, we use gs (BS) directly.
                     sequence2print[readPos] = (*gs)[genomePos];
                     quality2print[readPos] = cs_qual[readPos];
                 }
-                if (consecutiveMatch == false) {
-
-                    consecutiveMatch = true;
+                if (lastBaseMatched == false) {
+                    lastBaseMatched = true;
+                    end = readPos-1;
                     if (end != 0) {
+                        // fix [start, end] bases
                         fixBaseRange(start, end, sequence2print, quality2print,
                                      cs_read, cs_qual, gs, csgs, referencePosition, isForward);
                     }
+                    // fix (end+1) base, aka (readPos) base
+                    BaseAndColorToBase((*gs)[genomePos-1], cs_read[readPos], sequence2print[readPos]);
                 }
+                
             } else { // does not match
-                if (consecutiveMatch == true) {
-                    consecutiveMatch = false;
+                if (lastBaseMatched == true) {
+                    lastBaseMatched = false;
                     start = readPos;
                 }  else {
                     end = readPos;
+                    fixBaseRange(start, end, sequence2print, quality2print,
+                                 cs_read, cs_qual, gs, csgs, referencePosition, isForward);
                 }
             }
         }
-        if (consecutiveMatch == false) {
+        if (lastBaseMatched == false) {
             end = readPosition + count - 1;
             fixBaseRange(start, end, sequence2print, quality2print,
                          cs_read, cs_qual, gs, csgs, referencePosition, isForward);
@@ -1199,36 +1187,44 @@ void MatchedReadBase::calibrateSequence(uint32_t count,
             int readPos = readPosition +i ;
             int genomePos = referencePosition - i ;
             if (cs_read[readPos] == (*csgs)[genomePos] ) { // this bases match
-                if (consecutiveMatch == true) {
+                if (lastBaseMatched == true) {
                     // although we can use CS translation to assign
                     // this base, just for simplicity, we use gs (BS) directly.
                     sequence2print[readPos] = (*gs)[genomePos];
                     quality2print[readPos] = cs_qual[readPos];
                 }
-                if (consecutiveMatch == false) {
-                    consecutiveMatch = true;
-                    end = readPos;
+                if (lastBaseMatched == false) {
+                    lastBaseMatched = true;
+                    end = readPos-1;
                     if (end != 0) {
                         fixBaseRange(start, end, sequence2print, quality2print,
                                      cs_read, cs_qual, gs, csgs, referencePosition, isForward);
                     }
+                    char base = (*gs)[genomePos];
+                    base = GenomeSequence::base2complement[(int) base];
+                    // (*gs)[genomePos]  and cs_read[readPos] determines (*gs)[genomePos-1],
+                    // which is sequence2print[readPos]
+                    BaseAndColorToBase(base, cs_read[readPos], sequence2print[readPos]);
                 }
+
             } else { // does not match
-                if (consecutiveMatch == true) {
-                    consecutiveMatch = false;
+                if (lastBaseMatched == true) {
+                    lastBaseMatched = false;
                     start = readPos;
                 }  else {
                     end = readPos;
+                    fixBaseRange(start, end, sequence2print, quality2print,
+                                 cs_read, cs_qual, gs, csgs, referencePosition, isForward);
                 }
             }
         }
-        if (consecutiveMatch == false) {
+        if (lastBaseMatched == false) {
             end = readPosition + count - 1;
             fixBaseRange(start, end, sequence2print, quality2print,
                          cs_read, cs_qual, gs, csgs, referencePosition, isForward);
         }
     }
-} //void MatchedReadBase::calibrateSequence(int count, ...)
+} //void MatchedReadBase::translateCigarMatchSequence(uint32_t count,...)
 
 void MatchedReadBase::printColorSpace(
     std::ostream &file,
@@ -1356,12 +1352,7 @@ void MatchedReadBase::printColorSpace(
 
     if (qualityIsValid())
     {
-        // TODO
-        // now manually add '1M' to the left of the current cigar roller, is there better way?
-        CigarRoller temp;
-        temp.Add(CigarRoller::match,1);
-        temp.Add(cigarRoller);
-        cigarString = (char *) temp.getString();
+        cigarString = cigarRoller.getString();
     }
     else
     {
@@ -1372,7 +1363,7 @@ void MatchedReadBase::printColorSpace(
     // final sanity check:
     //  read length == qual length == cigar string M count
     if (indexer->phredQuality!="*") assert(sequence2print.size() == quality2print.size());
-    if (strcmp(cigarString, "*")!=0) assert(sequence2print.size() == 1 + (unsigned int) cigarRoller.getExpectedQueryBaseCount());
+    if (strcmp(cigarString, "*")!=0) assert(sequence2print.size() == (unsigned int) cigarRoller.getExpectedQueryBaseCount());
 
     file
         << (fragmentTag.c_str() + 1)             // QNAME

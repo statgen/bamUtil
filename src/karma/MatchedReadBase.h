@@ -186,11 +186,11 @@ class MatchedReadBase
                       bool isForwardStrand);
 
     //
-    void calibrateSequence(uint32_t count, 
-                           std::string& cs_read, std::string& cs_qual, int readPosition,
-                           GenomeSequence* gs, GenomeSequence* csgs, genomeIndex_t referencePosition,
-                           bool isForward, 
-                           std::string& sequence2print, std::string& quality2print) ;
+    void translateCigarMatchSequence(uint32_t count, 
+                                     std::string& cs_read, std::string& cs_qual, int readPosition,
+                                     GenomeSequence* gs, GenomeSequence* csgs, genomeIndex_t referencePosition,
+                                     bool isForward, 
+                                     std::string& sequence2print, std::string& quality2print) ;
 
 
     //////////////////////////////////////////////////
