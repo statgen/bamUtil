@@ -3,25 +3,26 @@
 
 struct MapperUserOption
 {
-    MapperUserOption() :
-            checkIndexWordMutations(false),
-            debug(false),
-            expectedSNPRate(.001),
-            expectedErrorRate(.01),
-            expectedInDelRate(.0001),
-            mismatchCutoff(-1),
-            minimumIndexCount(2),
-            maximumIndexCount(4),
-            forceSmithWaterman(false),
-            allowSmithWaterman(false),
-            smithWatermanBandSize(4),
-            readSumQCutoff(-1),
-            showReferenceBases(false),
-            qValueCutoff(INT32_MAX),
-            genomePositionFilterWidth(1500),
-            trimLeft(0),
-            trimRight(0),
-            qualityTrim(0)
+MapperUserOption() :
+    checkIndexWordMutations(false),
+        debug(false),
+        expectedSNPRate(.001),
+        expectedErrorRate(.01),
+        expectedInDelRate(.0001),
+        mismatchCutoff(-1),
+        minimumIndexCount(2),
+        maximumIndexCount(4),
+        forceSmithWaterman(false),
+        allowSmithWaterman(false),
+        smithWatermanBandSize(4),
+        readSumQCutoff(-1),
+        showReferenceBases(false),
+        qValueCutoff(INT32_MAX),
+        genomePositionFilterWidth(1500),
+        trimLeft(0),
+        trimRight(0),
+        qualityTrim(0),
+        numThread(1)    
     {
     }
     bool     checkIndexWordMutations;
@@ -39,16 +40,18 @@ struct MapperUserOption
     bool     forceSmithWaterman;
     bool     allowSmithWaterman;
     int      smithWatermanBandSize;
-    int         readSumQCutoff;
+    int      readSumQCutoff;
     bool     showReferenceBases;
     int32_t  qValueCutoff;
 
-    uint32_t   genomePositionFilterWidth;
+    uint32_t genomePositionFilterWidth;
 
-    int trimLeft, trimRight;
+    int      trimLeft;
+    int      trimRight;
 
-    int qualityTrim;
+    int      qualityTrim;
 
+    int      numThread;
     std::string readGroupID;
 };
 

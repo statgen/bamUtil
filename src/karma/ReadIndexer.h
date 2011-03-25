@@ -33,8 +33,8 @@
 #include <string>
 #include <vector>
 #include "GenomeSequence.h"
+#include "CigarRoller.h"
 #include "MapperUserOption.h"
-#include "SmithWaterman.h"
 #include "WordIndex.h"  // for wordInteger_t
 //#include "MapperBase.h" // for using MatchedReadBase::UNSET_QUALITY
 
@@ -50,7 +50,7 @@
 class ReadIndexer
 {
     int Word2Integer(const char *read, int offset, int &wordNLocation);
-public:
+ public:
     //
     // mismatchCutoff is calculated each read based on the
     // length of the read, and the expected SNP and machine read
@@ -61,12 +61,12 @@ public:
 
     GenomeSequence  *gs;
     WordIndex       *wordIndex;
-    bool    isForward;
-    int readLength;     // this helps us compute the reverse wordPositions
+    bool            isForward;
+    int             readLength;     // this helps us compute the reverse wordPositions
     ReadIndexer(MapperUserOption &m);
 
     //
-    // Q: What is this enum structure for?
+    // Question to Paul: What is this enum structure for?
     //
     enum MatchStrategy {unable, noEdits, edits, secondaryHash} matchStrategy;
     bool setIndexStrategy();    // true -> too few valid index words
@@ -103,7 +103,6 @@ public:
     // I comment this out, since Paul have new getSumQ function
     // int getSumQ(genomeIndex_t, int &, int);
     int getColorSpaceSumQ(genomeIndex_t, int &, int, int);
-    int getColorSpaceSumQOrig(genomeIndex_t, int &, int, int);
     bool checkColorSpaceSNP(const char& reference1,
                             const char& reference2,
                             const char& read1,
@@ -175,15 +174,15 @@ public:
     //
     //
     genomeIndex_t localAlignment(
-        genomeIndex_t localAlignmentWindowPostion,
-        genomeIndex_t localAlignmentWindowSize,
-        int &mismatchCount,
-        int &quality,
-        int &gapOpenCount,
-        int &gapCloseCount,
-        int &gapExtensionCount,
-        CigarRoller &cigarRoller
-    );
+                                 genomeIndex_t localAlignmentWindowPostion,
+                                 genomeIndex_t localAlignmentWindowSize,
+                                 int &mismatchCount,
+                                 int &quality,
+                                 int &gapOpenCount,
+                                 int &gapCloseCount,
+                                 int &gapExtensionCount,
+                                 CigarRoller &cigarRoller
+                                 );
 
 
     //////////////////////////////////////////////////
@@ -198,6 +197,12 @@ public:
         }
     }
     //////////////////////////////////////////////////
+
+
+#ifdef COMPILE_OBSOLETE_METHOD
+    int getColorSpaceSumQOrig(genomeIndex_t, int &, int, int);
+#endif
+
 };
 
 #if 1
@@ -232,11 +237,11 @@ public:
  * @return                      the quality which equals the sum of the base qualities at mismatched sites
  */
 inline int ReadIndexer::getSumQ(
-    genomeIndex_t matchPosition,
-    int &mismatchCount,
-    int bestMatchSumQ,
-    int whichWord   // passed to getSumQSW if useGapped->true
-)
+                                genomeIndex_t matchPosition,
+                                int &mismatchCount,
+                                int bestMatchSumQ,
+                                int whichWord   // passed to getSumQSW if useGapped->true
+                                )
 {
     // fairly horrible hack, but cleanest way for now:
     if (useGapped) return getSumQSW(matchPosition, mismatchCount, bestMatchSumQ, whichWord);
@@ -245,16 +250,16 @@ inline int ReadIndexer::getSumQ(
     // or the lowest boundary 0, we will have to return UNSET_QUALITY, which is -1 ,
     // as the quality cannot be defined.
     if (matchPosition + this->packedRead.size() >= gs->getNumberBases() ||
-            matchPosition < 0)
+        matchPosition < 0)
         return -1;//MatchedReadBase::UNSET_QUALITY;
 
     int quality = 0;
     mismatchCount = 0;
 
-// XXX circular reference - fix it later...
-//    if(bestMatchSumQ == MatchedReadBase::UNSET_QUALITY) bestMatchSumQ = 9999999;
-// TODO by Xiaowei:
-// bestMatchSumQ is never used in this function, so it maybe need to be deleted.
+    // XXX circular reference - fix it later...
+    //    if(bestMatchSumQ == MatchedReadBase::UNSET_QUALITY) bestMatchSumQ = 9999999;
+    // TODO by Xiaowei:
+    // bestMatchSumQ is never used in this function, so it maybe need to be deleted.
     if (bestMatchSumQ == -1) bestMatchSumQ = 9999999;
 
     vector<uint8_t>::iterator readIndexPosition = this->packedRead.packedBases.begin();
@@ -331,20 +336,20 @@ inline int ReadIndexer::getSumQ(
  * @return                      the quality which equals the sum of the base qualities at mismatched sites
  */
 inline int ReadIndexer::getColorSpaceSumQ(
-    genomeIndex_t matchPosition,
-    int &mismatchCount,
-    int bestMatchSumQ,
-    int whichWord
-)
+                                          genomeIndex_t matchPosition,
+                                          int &mismatchCount,
+                                          int bestMatchSumQ,
+                                          int whichWord
+                                          )
 {
     // if we have to check beyond the boundary of the maximum bases of reference genome,
     // or the lowest boundary 0, we will have to return UNSET_QUALITY, which is -1 ,
     // as the quality cannot be defined.
     if (matchPosition + this->packedRead.size() >= gs->getNumberBases() ||
-            matchPosition < 0)
+        matchPosition < 0)
         return -1;//MatchedReadBase::UNSET_QUALITY;
 
-//#define DEBUG_GETCOLORSPACESUMQ
+    //#define DEBUG_GETCOLORSPACESUMQ
 #ifdef DEBUG_GETCOLORSPACESUMQ
     std::cout<<"getColorSpaceSumQ() ref_pos="<<matchPosition<<std::endl;
     std::cout<<"read: "<<read<<std::endl;
@@ -358,7 +363,7 @@ inline int ReadIndexer::getColorSpaceSumQ(
     int quality = 0;
     mismatchCount = 0;
 
-//    if(bestMatchSumQ == MatchedReadBase::UNSET_QUALITY) bestMatchSumQ = 9999999;
+    //    if(bestMatchSumQ == MatchedReadBase::UNSET_QUALITY) bestMatchSumQ = 9999999;
     if (bestMatchSumQ == -1) bestMatchSumQ = 9999999;
 
     // here we will make it suitable for color space reads.
@@ -370,8 +375,8 @@ inline int ReadIndexer::getColorSpaceSumQ(
     for (int readIndexPosition=0; readIndexPosition<readLength; readIndexPosition++, matchPosition++)
     {
         if (read[readIndexPosition] != (*gs)[ matchPosition] && read[readIndexPosition] != '5'
-                && binaryQuality[readIndexPosition] > ('#' -'!') /* TODO Xiaowei: clear this up by using trimming!!*/
-           )
+            && binaryQuality[readIndexPosition] > ('#' -'!') /* TODO Xiaowei: clear this up by using trimming!!*/
+            )
         {
             consecutiveMismatch ++;
             quality += binaryQuality[readIndexPosition];
@@ -398,10 +403,10 @@ inline int ReadIndexer::getColorSpaceSumQ(
         else   // here the read matches the reference
         {
             if (consecutiveMismatch == 2 &&
-                    checkColorSpaceSNP((*gs)[ matchPosition-1],
-                                       (*gs)[ matchPosition-2],
-                                       read[readIndexPosition-1],
-                                       read[readIndexPosition-2]))
+                checkColorSpaceSNP((*gs)[ matchPosition-1],
+                                   (*gs)[ matchPosition-2],
+                                   read[readIndexPosition-1],
+                                   read[readIndexPosition-2]))
             {
                 quality -= (binaryQuality[readIndexPosition-1] +
                             binaryQuality[readIndexPosition-2] -
@@ -414,10 +419,10 @@ inline int ReadIndexer::getColorSpaceSumQ(
 
     // adjust quality if mismatch is in the last bp of the read.
     if (consecutiveMismatch == 2  &&
-            checkColorSpaceSNP((*gs)[ matchPosition-1],
-                               (*gs)[ matchPosition-2],
-                               read[readLength-1],
-                               read[readLength-2]))
+        checkColorSpaceSNP((*gs)[ matchPosition-1],
+                           (*gs)[ matchPosition-2],
+                           read[readLength-1],
+                           read[readLength-2]))
         quality -= (binaryQuality[readLength-1] +
                     binaryQuality[readLength-2] -
                     QUALITY_CAP);
@@ -435,60 +440,59 @@ inline int ReadIndexer::getColorSpaceSumQ(
 // If reference is 00, a potential reads representing a SNP can be : 00 11 22 33
 // If reference is 01, a potential reads representing a SNP can be : 01 10 23 32
 inline bool ReadIndexer::checkColorSpaceSNP(const char& reference1,
-        const char& reference2,
-        const char& read1,
-        const char& read2)
+                                            const char& reference2,
+                                            const char& read1,
+                                            const char& read2)
 {
     if (
         // condition 1: if reference is 00, 11, 22, 33, then
         // SNP mutation should also be 00, 11, 22, 33
         (
-            (reference1 == reference2)
-            && (read1 == read2)
-        )
+         (reference1 == reference2)
+         && (read1 == read2)
+         )
         ||
         // condition 2: if reference is 01, then SNP mutation must be
         // either 10, 23, 32
         (
-            (reference1 != reference2) // e.g. reference is 01
-            && (
-                (// e.g. read is 01
-                    (read1 == reference1)
-                    && (read2 == reference2)
-                )
-                ||
-                (// e.g. read is 10
-                    (read1 == reference2)
-                    && (read2 == reference1)
-                )
-                ||
-                (// e.g. read is 23 or 32
-                    (read1    != read2)
-                    && (read1 != reference1)
-                    && (read1 != reference2)
-                    && (read2 != reference1)
-                    && (read2 != reference2)
-                )
-            )
-        )
-    ) // end if
+         (reference1 != reference2) // e.g. reference is 01
+         && (
+             (// e.g. read is 01
+              (read1 == reference1)
+              && (read2 == reference2)
+              )
+             ||
+             (// e.g. read is 10
+              (read1 == reference2)
+              && (read2 == reference1)
+              )
+             ||
+             (// e.g. read is 23 or 32
+              (read1    != read2)
+              && (read1 != reference1)
+              && (read1 != reference2)
+              && (read2 != reference1)
+              && (read2 != reference2)
+              )
+             )
+         )
+        ) // end if
         return true;
     return false;
 }
 
-
-
-#ifdef COMPILE_OBSOLETE_METHOD
+////////////////////////////////////////////////////////////
 // WARNING: this is an obsolete method
+#ifdef COMPILE_OBSOLETE_METHOD
 // this is a non-optimized version of getSumQ - I'd like to leave it here
 // awhile longer for testing purposes in the future.
 //
 inline int ReadIndexer::getSumQOrig(
-    genomeIndex_t matchPosition,
-    int &mismatchCount,
-    int bestMatchSumQ,
-    int whichWord   // unused here
-)
+                                    genomeIndex_t matchPosition,
+                                    int &mismatchCount,
+                                    int bestMatchSumQ,
+                                    int whichWord   // unused here
+                                    )
 {
 
     // insert fast checking here.
@@ -496,7 +500,7 @@ inline int ReadIndexer::getSumQOrig(
     int quality = 0;
     mismatchCount = 0;
 
-//    if(bestMatchSumQ == MatchedReadBase::UNSET_QUALITY) bestMatchSumQ = 9999999;
+    //    if(bestMatchSumQ == MatchedReadBase::UNSET_QUALITY) bestMatchSumQ = 9999999;
     if (bestMatchSumQ == -1) bestMatchSumQ = 9999999;
 
     for (int readIndexPosition=0; readIndexPosition<read.Length(); readIndexPosition++, matchPosition++)

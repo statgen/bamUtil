@@ -48,7 +48,7 @@ using std::vector;
 
 class ReadsProcessor
 {
-private:
+ private:
     // IO related params
     bool isColorSpace;
     GenomeSequence *gs;
@@ -56,26 +56,37 @@ private:
     WordIndex *wi;
     WordHash  *wordHashLeft;
     WordHash  *wordHashRight;
-    std::string outputBaseFilename;
 
     // mapping related params
     SamHeader header;
     MapperUserOption    mapperOptions;    // gets passed onto the mappers it uses
     uint64_t maxBases;
     uint64_t maxReads;
-public:
+    
+    // multithread param
+    int numThread;
+ public:
     ReadsProcessor();
     ~ReadsProcessor();
-    
+
+    // assign h to this->header
     void setHeader(SamHeader& h);  
+
+    // assign Mapping related argument
+    // idealy, we should use args to init Mapper, 
+    // however, this is top-priority task.
     void parseMapArguments(const MapArguments& args);
+
+    // open GenomeSequence, WordIndex and WordHash classes
     int openReference(std::string& referenceName, 
                       int wordSize, 
                       int occurrenceCutoff,
                       bool quietMode = false, 
-                      bool debug = false);// open reference, wordindex ...
+                      bool debug = false);
+
+    // close GenomeSequence, WordIndex and WordHash classes
     void closeReference();
-public:
+ public:
     ///
     /// using the word index, left and righ hashes, etc,
     /// construct and return a single end mapper:
@@ -87,33 +98,45 @@ public:
     /// @return a usable pointer to MapperPE class
     ///
     MapperPE* createPEMapper();
-    void MapPEReadsFromFiles(
-        std::string filename1,
-        std::string filename2,
-        std::string of
-    );
 
-    void MapSEReadsFromFile(
-        std::string filename,
-        std::string of
-    );
+    void MapPEReadsFromFiles(
+                             std::string filename1,
+                             std::string filename2,
+                             std::string outputFilename
+                             );
+
+    void MapPEReadsFromFilesMT(
+                               std::string filename1,
+                               std::string filename2,
+                               std::string outputFilename
+                               );
+
     void MapSEReadsFromFileMT(
-        std::string filename,
-        std::string outputFilename
-    );
+                              std::string filename,
+                              std::string outputFilename
+                              );
 
     void CalibratePairedReadsFiles(
-        std::string filename1,
-        std::string filename2
-    );
+                                   std::string filename1,
+                                   std::string filename2
+                                   );
 
-private:
+ private:
     ///
     /// called by createSEMapper and createPEMapper to
     /// do common asserts on necessary word index, and
     /// left and right hashes.
     //
     void verifyHashesExist();
+
+
+#ifdef COMPILE_OBSOLETE_CODE
+ public:
+    void MapSEReadsFromFile(
+                            std::string filename,
+                            std::string outputFilename
+                            );
+#endif
 
 };
 

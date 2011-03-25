@@ -14,7 +14,7 @@
 //
 class MatchedReadPE : public MatchedReadBase
 {
-public:
+ public:
     int pairQuality;
     inline bool pairQualityIsValid() const
     {
@@ -28,10 +28,10 @@ public:
     }
     void constructorClear();
     void printOptionalTags(
-        std::ostream &,
-        bool isProperAligned,
-        const std::string &sampleGroupID,
-        const std::string &alignmentPathTag);
+                           std::ostream &,
+                           bool isProperAligned,
+                           const std::string &sampleGroupID,
+                           const std::string &alignmentPathTag);
     void updateMatch(MatchedReadPE &);
     double getQualityScore();
 };

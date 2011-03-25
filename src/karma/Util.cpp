@@ -128,23 +128,23 @@ unsigned int MapBaseToInteger(char base)
 {
     switch (base)
     {
-        case 'A' :
-        case 'a' :
-            return 0;
-        case 'T' :
-        case 't' :
-            return 1;
-        case 'C' :
-        case 'c' :
-            return 2;
-        case 'G' :
-        case 'g' :
-            return 3;
-        case 'N' :
-        case 'n' :
-            return 4;
-        default:
-            return 5;
+    case 'A' :
+    case 'a' :
+        return 0;
+    case 'T' :
+    case 't' :
+        return 1;
+    case 'C' :
+    case 'c' :
+        return 2;
+    case 'G' :
+    case 'g' :
+        return 3;
+    case 'N' :
+    case 'n' :
+        return 4;
+    default:
+        return 5;
     }
 }
 
@@ -155,18 +155,18 @@ char MapIntegerToBase(unsigned int i)
 {
     switch (i)
     {
-        case 0 :
-            return 'A';
-        case 1:
-            return 'T';
-        case 2:
-            return 'C';
-        case 3:
-            return 'G';
-        case 4:
-            return 'N';
-        default:
-            return 'M';
+    case 0 :
+        return 'A';
+    case 1:
+        return 'T';
+    case 2:
+        return 'C';
+    case 3:
+        return 'G';
+    case 4:
+        return 'N';
+    default:
+        return 'M';
     }
 }
 

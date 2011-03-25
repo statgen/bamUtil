@@ -37,31 +37,8 @@
 
 MapperPEColorSpace::MapperPEColorSpace()
 {
-    //
-    // This set of three vectors allows us to merge sort the sets of
-    // words by shuffling pointers around to the match candidates
-    // rather than the who MatchedReadPE object.
-    //
-    // This turned out to be weak because matchCandidatesPointers
-    // will be invalidate if matchCandidates gets reallocated (grown), and
-    // likewise the interators in matchCandidatesIndex will be invalidated
-    // if matchCandidatesPointers is reallocated (grown).
-    //
-    matchCandidates.reserve(240*5000);
-    matchCandidatesPointers.reserve(240*5000);
-    matchCandidatesIndex.reserve(240);
-
-    //
-    // when we count the number of possible matches for a read, store
-    // them in these counters - this will give us an idea of the cost
-    // of doing the merge.
-    //
-    forwardCount = 0;
-    backwardCount = 0;
-
     mapperSE = new MapperSEColorSpace;
     assert(mapperSE != NULL);
-
 }
 
 MapperPEColorSpace::~MapperPEColorSpace()
@@ -74,7 +51,7 @@ MapperPEColorSpace::~MapperPEColorSpace()
 // this helper function is because getting pointer to method to work the way I want
 // it to is a big pain in the backside.
 //
-static bool evalTrampoline(
+bool evalTrampolineMapReads(
     MapperBase *mapper,
     ReadIndexer &indexer,
     int candidateCount,
@@ -103,14 +80,15 @@ static bool evalTrampoline(
 //
 void MapperPEColorSpace::mapReads(MapperPE *pairedReadB)
 {
-    this->mappingMethod = PE_MODE;
-    pairedReadB->mappingMethod = PE_MODE;
-
     // feh... do this better...
     // need this so eval code can search sorted match candidates
     pairedReadB->otherEndMapper = this;
     otherEndMapper = pairedReadB;
 
+    this->resetMapper();
+    pairedReadB->resetMapper();
+
+#if 0
     matchCandidate.constructorClear();
     pairedReadB->matchCandidate.constructorClear();
     bestMatch.constructorClear();
@@ -118,37 +96,39 @@ void MapperPEColorSpace::mapReads(MapperPE *pairedReadB)
 
     bestMatch.indexer = &forward;
     pairedReadB->bestMatch.indexer = &pairedReadB->forward;
+#endif
 
+    this->mappingMethod = PE_MODE;
+    pairedReadB->mappingMethod = PE_MODE;
+
+    // store potential match positions of pairedReadB
     if (pairedReadB->populateMatchCandidates(true))
         return;
 
     // ad-hoc setting up mismatch cutoff values for both mappers
     forward.mismatchCutoff =
         backward.mismatchCutoff =
-            2.5 + 4 * forward.read.size() * (mapperOptions.expectedErrorRate + mapperOptions.expectedSNPRate);
+        2.5 + 4 * forward.read.size() * (mapperOptions.expectedErrorRate + mapperOptions.expectedSNPRate);
 
 
     pairedReadB->forward.mismatchCutoff =
         pairedReadB->backward.mismatchCutoff =
-            2.5 + 4 * pairedReadB->forward.read.size() * (mapperOptions.expectedErrorRate + mapperOptions.expectedSNPRate);
+        2.5 + 4 * pairedReadB->forward.read.size() * (mapperOptions.expectedErrorRate + mapperOptions.expectedSNPRate);
 
-    evalColorSpaceReads(NULL, evalTrampoline);
+    evalColorSpaceReads(NULL, evalTrampolineMapReads);
     return;
-
 }
 
-static MatchedReadPE   compareHelper;
-
 bool MapperPEColorSpace::mapReads(
-    ReadIndexer         &indexer,
-    int                 whichWord,
-    int                 candidateCount,
-    genomeIndex_t       *candidates
-)
+                                  ReadIndexer         &indexer,
+                                  int                 whichWord,
+                                  int                 candidateCount,
+                                  genomeIndex_t       *candidates
+                                  )
 {
 
 
-//    otherEndMapper->printMatchCandidates();
+    //    otherEndMapper->printMatchCandidates();
 
     matchCandidate.indexer = &indexer;
 
@@ -233,7 +213,7 @@ bool MapperPEColorSpace::mapReads(
                        matchCandidateB.word,
                        matchCandidateB.whichWord,
                        matchCandidateB.wordMutationIndex
-                      );
+                       );
             }
 #endif
             //
@@ -242,11 +222,11 @@ bool MapperPEColorSpace::mapReads(
             if (matchCandidate.quality == MatchedReadBase::UNSET_QUALITY)
             {
                 matchCandidate.quality = indexer.getColorSpaceSumQ(
-                                             matchCandidate.genomeMatchPosition,
-                                             matchCandidate.mismatchCount,
-                                             bestMatch.quality,
-                                             whichWord
-                                         );
+                                                                   matchCandidate.genomeMatchPosition,
+                                                                   matchCandidate.mismatchCount,
+                                                                   bestMatch.quality,
+                                                                   whichWord
+                                                                   );
                 matchCandidate.whichWord = whichWord;
                 //
                 // if we are too many edits away, just stop processing
@@ -287,11 +267,11 @@ bool MapperPEColorSpace::mapReads(
             if (matchCandidateB.quality == MatchedReadBase::UNSET_QUALITY)
             {
                 matchCandidateB.quality = matchCandidateB.indexer->getColorSpaceSumQ(
-                                              matchCandidateB.genomeMatchPosition,
-                                              matchCandidateB.mismatchCount,
-                                              MAX_Q2P,        // XXX FIX THIS -
-                                              matchCandidateB.whichWord
-                                          );
+                                                                                     matchCandidateB.genomeMatchPosition,
+                                                                                     matchCandidateB.mismatchCount,
+                                                                                     MAX_Q2P,        // XXX FIX THIS -
+                                                                                     matchCandidateB.whichWord
+                                                                                     );
                 if (matchCandidateB.mismatchCount> forward.mismatchCutoff)
                 {
                     continue;
@@ -335,14 +315,14 @@ bool MapperPEColorSpace::mapReads(
     } // iterate on (this->matchCandidate)
     // safe guard bestMatch & otherEndMapper->bestMatch indexer pointer NOT to bu
     if (bestMatch.quality == MatchedReadBase::UNSET_QUALITY &&
-            otherEndMapper->bestMatch.quality == MatchedReadBase::UNSET_QUALITY)
+        otherEndMapper->bestMatch.quality == MatchedReadBase::UNSET_QUALITY)
     {
         bestMatch.indexer=& forward;
         otherEndMapper->bestMatch.indexer= & (otherEndMapper->forward);
     }
     return false;
 }
-bool MapperPEColorSpace::tryLocalAlign(MapperPE* anchor)
+bool MapperPEColorSpace::tryLocalAlign(MapperBase* anchor)
 {
     genomeIndex_t localAlignmentSize;
     int64_t localAlignmentPosition;
@@ -358,12 +338,9 @@ bool MapperPEColorSpace::tryLocalAlign(MapperPE* anchor)
     assert(mapperSE->processReadAndQuality(fragmentTag, forward.read, forward.phredQuality)==0);
 
     localAlignmentSize = mapperOptions.genomePositionFilterWidth +
-                         anchor->forward.readLength +
-                         mapperSE->forward.readLength;
-    if (anchor->mappingMethod == SE_MODE)
-        localAlignmentPosition = anchor->mapperSE->bestMatch.genomeMatchPosition - localAlignmentSize/2;
-    else
-        localAlignmentPosition = anchor->bestMatch.genomeMatchPosition - localAlignmentSize/2;
+        anchor->forward.readLength +
+        mapperSE->forward.readLength;
+    localAlignmentPosition = anchor->getBestMatch().genomeMatchPosition - localAlignmentSize/2;
 
     //
     // the following two checks are done using
@@ -384,39 +361,39 @@ bool MapperPEColorSpace::tryLocalAlign(MapperPE* anchor)
     // a chromosome boundary.
     //
     if (localAlignmentPosition + localAlignmentSize >
-            gs->sequenceLength())
+        gs->sequenceLength())
         localAlignmentPosition=gs->sequenceLength() - localAlignmentSize;
 
     // TODO: uninitialized temporary variables, need to consider more!!!!
     int mismatchCount, quality, gapOpenCount, gapCloseCount, gapExtensionCount;
-    if (!anchor->bestMatch.indexer->isForward)
+    if (!anchor->getBestMatch().indexer->isForward)
     {
         optimalLocalAlignment = this->mapperSE->forward.localAlignment(
-                                    (genomeIndex_t) localAlignmentPosition,
-                                    localAlignmentSize,
-                                    mismatchCount,
-                                    quality,
-                                    gapOpenCount,
-                                    gapCloseCount,
-                                    gapExtensionCount,
-                                    this->mapperSE->cigarRoller
-                                );
+                                                                       (genomeIndex_t) localAlignmentPosition,
+                                                                       localAlignmentSize,
+                                                                       mismatchCount,
+                                                                       quality,
+                                                                       gapOpenCount,
+                                                                       gapCloseCount,
+                                                                       gapExtensionCount,
+                                                                       this->mapperSE->cigarRoller
+                                                                       );
     }
     else
     {
         optimalLocalAlignment = this->mapperSE->backward.localAlignment(
-                                    (genomeIndex_t) localAlignmentPosition,
-                                    localAlignmentSize,
-                                    mismatchCount,
-                                    quality,
-                                    gapOpenCount,
-                                    gapCloseCount,
-                                    gapExtensionCount,
-                                    this->mapperSE->cigarRoller
-                                );
+                                                                        (genomeIndex_t) localAlignmentPosition,
+                                                                        localAlignmentSize,
+                                                                        mismatchCount,
+                                                                        quality,
+                                                                        gapOpenCount,
+                                                                        gapCloseCount,
+                                                                        gapExtensionCount,
+                                                                        this->mapperSE->cigarRoller
+                                                                        );
     };
     if (mapperSE->cigarRoller.size() > 5 ||
-            mapperSE->cigarRoller.getExpectedQueryBaseCount() != (int) mapperSE->forward.read.size())
+        mapperSE->cigarRoller.getExpectedQueryBaseCount() != (int) mapperSE->forward.read.size())
     {
         return false;
     }
@@ -427,7 +404,7 @@ bool MapperPEColorSpace::tryLocalAlign(MapperPE* anchor)
         this->mapperSE->bestMatch.numMatchContributors = 1;
         this->mapperSE->bestMatch.mismatchCount = mismatchCount;
         this->mapperSE->bestMatch.quality = quality;
-        if (!anchor->bestMatch.indexer->isForward)
+        if (!anchor->getBestMatch().indexer->isForward)
             this->mapperSE->bestMatch.indexer = &(this->mapperSE->forward);
         else
             this->mapperSE->bestMatch.indexer = &(this->mapperSE->backward);
@@ -441,7 +418,7 @@ int MapperPEColorSpace::test(int testNum,
                              MapperPE    *otherMapper,
                              const char *read1, const char *qual1, char direction1, int chr1, genomeIndex_t index1, int misMatches1,
                              const char *read2, const char *qual2, char direction2, int chr2, genomeIndex_t index2, int misMatches2
-                            )
+                             )
 {
     std::string r1 = read1;    // read
     std::string q1 = qual1;    // quality
@@ -461,7 +438,7 @@ int MapperPEColorSpace::test(int testNum,
 
     check(rc, testNum, "direction1", direction1, getBestMatch().isForward() ? 'F' : 'R');
     check(rc, testNum, "mismatch1", misMatches1, getBestMatch().mismatchCount);
-//    check(rc, testNum, "quality1", quality1, getBestMatch().quality);
+    //    check(rc, testNum, "quality1", quality1, getBestMatch().quality);
 
     int c = gs->getChromosome(this->getBestMatch().genomeMatchPosition);
     genomeIndex_t i = getBestMatch().genomeMatchPosition - gs->getChromosomeStart(c) + 1;
@@ -472,7 +449,7 @@ int MapperPEColorSpace::test(int testNum,
 
     check(rc, testNum, "direction2", direction2, otherMapper->getBestMatch().isForward() ? 'F' : 'R');
     check(rc, testNum, "mismatch2", misMatches2, otherMapper->getBestMatch().mismatchCount);
-//    check(rc, testNum, "quality1", quality1, otherMapper->getBestMatch().quality);
+    //    check(rc, testNum, "quality1", quality1, otherMapper->getBestMatch().quality);
 
     c = gs->getChromosome(otherMapper->getBestMatch().genomeMatchPosition);
     i = otherMapper->getBestMatch().genomeMatchPosition - gs->getChromosomeStart(c) + 1;

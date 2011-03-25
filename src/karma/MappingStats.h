@@ -26,8 +26,8 @@
 #ifndef _MAPPING_STATS
 #define _MAPPING_STATS
 
-#include "MapperPE.h"
-#include "MapperSE.h"
+#include "MatchedReadSE.h"
+#include "MatchedReadPE.h"
 #include "Performance.h"
 
 #ifndef __STDC_LIMIT_MACROS
@@ -35,7 +35,8 @@
 #endif
 #include <stdint.h>
 #include <iostream>
-
+#include <fstream>
+#include <string>
 //
 // keep and display genome matching statistics.
 // this separates a bunch of nitpicking detail from the core loops,
@@ -45,9 +46,9 @@
 //
 class MappingStatsBase
 {
-protected:
-    uint64_t    totalReads;
-    uint64_t    totalMatches;
+ protected:
+    uint64_t    totalReads;          // number of Fastq reads that are from input
+    uint64_t    totalMatches;        // number of Fastq reads that are mapped
     uint64_t    badShortData;        // too short a read
     uint64_t    badUnequalData;      // read length!=quality length
     uint64_t    badIndexWords;       // too few index words (<2)
@@ -58,73 +59,66 @@ protected:
     uint64_t    lowQualityDrops;
     uint64_t    invalidQualityDrops;
     uint64_t    totalBasesMapped;
-    uint64_t    totalBasesMappedAndWritten;
-
-public:
-    MappingStatsBase();
-    Timing  runTime;
-    void    updateConsole(bool force = false);
 
     void    recordQualityInfo(MatchedReadBase &match);
     void    printStats(std::ostream &file, std::ostream &fileR);
 
-    // simple functions for comparisons
-    bool isTotalBasesMappedAndWrittenLessThan(const uint64_t& i)
-    {
-        return (totalBasesMappedAndWritten < i);
-    };
-    bool isTotalMatchesLessThan(const uint64_t& i)
-    {
-        return (totalMatches < i);
-    };
-    bool isTotalReadsLessThan(const uint64_t& i)
-    {
-        return (totalReads < i);
-    }
+ public:
+    Timing  runTime;
+    MappingStatsBase();
+
+    void    updateConsole(bool force = false);
+
+    // update bad data stats, this is called after we prepared the mapper and before the alignment begin
     void updateBadInputStats(const int& rc)
     {
         badShortData += (rc==1);
         badUnequalData += (rc==2);
         badIndexWords += (rc==3);
     }
-    void addTotalReadsByOne()
+
+    // simple getter functions for comparisons
+    uint64_t getTotalBasesMapped() 
     {
-        totalReads++;
+        return (totalBasesMapped);
     }
-    void addTotalBasesMappedBy(const int& i)
+    uint64_t getTotalMatches() 
     {
-        totalBasesMapped += i;
-    }
-    void addTotalMatchesByOne()
+        return (totalMatches );
+    };
+    uint64_t getTotalReads()
     {
-        totalMatches ++;
-    }
-    void addTotalBasesMappedAndWritten(const int& i)
-    {
-        totalBasesMappedAndWritten += i;
+        return (totalReads );
     }
 };
 
 class SingleEndStats: public MappingStatsBase
 {
-private:
+ private:
     static const int qualityScoreBucketCount = 100;
     static const int qualityScoreBucketRange = 100 / qualityScoreBucketCount;
     uint64_t    qualityScoreHistogram[qualityScoreBucketCount];
-public:
-    SingleEndStats();
+
+ protected:
     void recordQualityInfo(MatchedReadSE &match);
     void printStats(std::ostream &file, std::ostream &fileR);
+
+ public:
+    SingleEndStats();
+    void recordMatchedRead(MatchedReadBase& matchedRead);
+
+    // output to baseFileName.stat and baseFileName.R files including mapping related statistics
+    void outputStatFile(std::string& baseFileName);
 };
 
 class PairedEndStats: public MappingStatsBase
 {
-private:
+ private:
     uint64_t    noneMappable;
     uint64_t    oneMappable;
 
-    static const int shortDistanceRange = 1000;    // choose a reasonable short distanace for histgrams
-    static const int longDistanceBucketCount = 1000;    // choose a reasonable bucket count for whole range
+    static const int shortDistanceRange = 100;    // choose a reasonable short distanace for histgrams
+    static const int longDistanceBucketCount = 100;    // choose a reasonable bucket count for whole range
     static const uint32_t bucketSize = (uint32_t)(((uint64_t) 1<<(sizeof(uint32_t)*8)) / longDistanceBucketCount);     // values per bucket
 
     struct
@@ -133,24 +127,48 @@ private:
         uint64_t    probesInOrder;
     } matchDirection[2][2];
 
+    // record probeA and probeB status in the 8 dimension below:
+    // probeA:  [probeA.qualityIsValid()]
+    //          [probeA.quality==MatchedReadBase::UNSET_QUALITY]
+    //          [probeA.quality==MatchedReadBase::EARLYSTOP_QUALITY]
+    //          [probeA.quality==MatchedReadBase::REPEAT_QUALITY]
+    //          [probeB.qualityIsValid()]
+    // probeB:  [probeB.quality==MatchedReadBase::UNSET_QUALITY]
+    //          [probeB.quality==MatchedReadBase::EARLYSTOP_QUALITY]
+    //          [probeB.quality==MatchedReadBase::REPEAT_QUALITY]
     uint64_t    qValueBuckets[2][2][2][2][2][2][2][2];
-    uint64_t    qValueBucketsDrop[2][2][2][2][2][2][2][2];
     uint64_t    qValueBucketsA[2][2][2][2];
     uint64_t    qValueBucketsB[2][2][2][2];
 
     uint64_t    shortDistanceHistogram[2*shortDistanceRange];
     uint64_t    longDistanceHistogram[2*longDistanceBucketCount];
 
-public:
-    PairedEndStats();
+ protected:
     void printHistograms(std::ostream &file, std::ostream &fileR);
 
-    void addStats(MatchedReadPE &probeA, MatchedReadPE &probeB, int readLength);
-    void addQValueBuckets(MatchedReadPE &probeA, MatchedReadPE &probeB);
-    void addQValueBucketsDrop(MatchedReadPE &probeA, MatchedReadPE &probeB);
+    // record the match directions and outer distance distribution between two reads
+    void addStats(MatchedReadBase &probeA, MatchedReadBase &probeB, int readLength);
+
+    // record invalid quality (invalid, unset, early_stop, repeat) for each probe.
+    void addQValueBuckets(MatchedReadBase &probeA, MatchedReadBase &probeB);
+
     void printQValueBuckets(std::ostream &file, std::ostream &fileR);
+
     void printStats(std::ostream &file, std::ostream &fileR);
 
+ public:
+    PairedEndStats();
+    
+    // record statistics from MatchedRead from the bestMatch of each aligner after alignment finished
+    void recordMatchedRead(MatchedReadBase& matchedRead1, MatchedReadBase& matchedRead2);
+
+    // output to baseFileName.stat and baseFileName.R files including mapping related statistics
+    void outputStatFile(std::string& baseFileName);
+    
+#ifdef COMPILE_OBSOLETE_CODE
+    uint64_t    qValueBucketsDrop[2][2][2][2][2][2][2][2];
+    void addQValueBucketsDrop(MatchedReadPE &probeA, MatchedReadPE &probeB);
+#endif
 };
 
 #endif
