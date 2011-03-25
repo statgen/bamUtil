@@ -1,5 +1,3 @@
-#Include ../Makefile.toolchain
-
 #
 # Goncalo's Generic Makefile -- Compiles and installs a Generic Goncalo Tool
 # (c) 2000-2007 Goncalo Abecasis

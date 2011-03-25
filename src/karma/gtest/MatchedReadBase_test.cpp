@@ -288,7 +288,7 @@ TEST_F(MatchedReadBaseTest, markUnmatchecdBase)
     
     cigar.Set("2S5M2S");
     sequence2print = "ACTGACGTA";
-    correct        = "AC=====TA";
+    correct        = "========="; // soft clip will be t
     m.markUnmatchedBases(cigar, gs, 0, false, sequence2print);
     EXPECT_EQ(correct, sequence2print);
 

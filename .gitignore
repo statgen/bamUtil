@@ -3,3 +3,8 @@
 *.a
 dox/
 dox_errors.txt
+*#
+GPATH
+GRTAGS
+GTAGS
+GSYMS
