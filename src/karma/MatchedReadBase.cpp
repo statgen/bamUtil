@@ -577,11 +577,18 @@ void MatchedReadBase::markUnmatchedBases(const CigarRoller& cigarRoller,
             break;
         case CigarRoller::softClip:
             for (uint i = 0; i < cigar.count; i++) {
-                if (showReferenceBases == true)
-                {
-                    sequence2print[readPos] = tolower(sequence2print[readPos]);
-                } else {
-                    // do not need to consider this case, as the bases are already upper cases
+                if (showReferenceBases == true) {
+                    if (sequence2print[readPos] == (*gs)[genomePos]) {
+                        // we don't need to change anything (it's already like A)
+                    } else {
+                        sequence2print[readPos] = tolower(sequence2print[readPos]);
+                    }
+                } else { // do not show reference bases 
+                    if (sequence2print[readPos] == (*gs)[genomePos]) {
+                        sequence2print[readPos] = '=';
+                    } else{
+                        // we don't need to change anything. (it's already like A)
+                    }
                 }
                 readPos ++;
                 genomePos ++;
