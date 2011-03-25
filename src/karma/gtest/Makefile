@@ -1,25 +1,4 @@
 #
-# Goncalo's Generic Makefile -- Compiles and installs a Generic Goncalo Tool
-# (c) 2000-2007 Goncalo Abecasis
-#
-
-# version information
-TOOL = karma
-# 0.8.7->0.8.8 fix genomeSequence.cpp
-# 0.8.8S fix paired end, fix gapped alignment
-# 0.9.0 -> new command line. new reference naming.  many map fixes.
-#          local (re-)alignments work better.  Tom Mode.  Fix
-#          SAM headers.
-VERSION = 0.9.0
-#OPTFLAG?=-O0 -fno-rtti -Werror
-OPTFLAG?=-O0 -Werror
-
-# default installation directory
-INSTALLDIR=/usr/local/bin
-
-DATE=$(shell date)
-NODE=$(shell uname -n)
-#
 # default compilation flags are 
 #
 # CFLAGS=-02 -I./libsrc/ -I./$(TOOL)
@@ -44,9 +23,6 @@ NODE=$(shell uname -n)
 #
 CFLAGS=-pipe -Wall -Wno-trigraphs -ggdb  $(OPTFLAG) -I.. -I../libcsg -I../fastQFile -I../../../lib/general -D__ZLIB_AVAILABLE__  -D_FILE_OFFSET_BITS=64 -D__STDC_LIMIT_MACROS -fopenmp
 
-# executable file names and locations
-TARGET = $(TOOL)
-
 # Source File Set
 # For best results, consider editing this manually ...
 TOOLBASE = ../obj/ColorSpace ../obj/DumpInfo ../obj/FastqReader ../obj/MapperBase ../obj/MapperPEBaseSpace ../obj/MapperPEColorSpace ../obj/MapperPE ../obj/MapperSEBaseSpace ../obj/MapperSEColorSpace ../obj/MapperSE ../obj/MappingStats ../obj/MatchedReadBase ../obj/MatchedReadPE ../obj/MatchedReadSE ../obj/ReadIndexer ../obj/ReadsProcessor ../obj/SamHeader ../obj/Test ../obj/UserOptions ../obj/Util ../obj/WordHash ../obj/WordIndex
@@ -55,56 +31,46 @@ TOOLHDR = $(TOOLBASE:=.h)
 TOOLSRC = $(TOOLBASE:=.cpp) Main.cpp
 TOOLOBJ = $(TOOLSRC:.cpp=.o)
 
-
-# Utility Library File Set
-LIBRARY_ROOT = ../../../lib
-LIBRARY = $(LIBRARY_ROOT)/libStatGen.a $(LIBRARY_ROOT)/samtools/libbam.a 
-
-# private parameters
-FETCHDIR=$(HOME)/code
-DISTRIBDIR=$(HOME)/code/distrib/$(TOOL)-$(VERSION)
-
 # make everything
-all : $(TARGET)
+TARGET = ./unittest
+all: $(TARGET)
 
-# google test part
-GTEST_LIB=-lgtest 
-#../thirdParty/gtest-1.5.0/lib/.libs/libgtest.a
+# Statgen related library
+LIBSTATGEN = ../../../lib/libStatGen.a
+LIBBAM = ../../../lib/samtools/libbam.a
+LIBRARY = $(LIBSTATGEN) $(LIBBAM)
+
+# Google test part
 GTEST_INC=.
-#GTEST_INC=../thirdParty/gtest-1.5.0/include
+GTEST_SRC = ./gtest/gtest-all.cc
+GTEST_OBJ = ./gtest/gtest-all.o
 
-#TOOLTEST=$(TOOLBASE:=_test)
+$(GTEST_OBJ): $(GTEST_SRC)
+	g++ -c -o $@ $< -I$(GTEST_INC)
+
 TOOLTEST=gtest Integrity_check MapperBase_test MapperSEBaseSpace_test MapperPEBaseSpace_test MapperSEColorSpace_test MapperPEColorSpace_test MatchedReadBase_test
 TOOLTESTHDR=$(TOOLTEST:=.h)
 TOOLTESTSRC=$(TOOLTEST:=.cpp)
 TOOLTESTOBJ=$(TOOLTESTSRC:.cpp=.o)
 TOOLOBJ_NOMAIN=$(TOOLOBJ:Main.o=)
-gtest_build: $(TOOLTESTOBJ) #$(TOOLOBJ) 
-	(cd .. && make -j )
-	g++  $(TOOLTESTOBJ) $(TOOLOBJ_NOMAIN) $(GTEST_LIB) $(LIBRARY) -lm -lz -lssl -lpthread -fopenmp -o ./gtest
-gtest: gtest_build
-	./gtest --gtest_color=no #| grep -B 1 -A 4 'Failure'
-	#./gtest --gtest_color=yes #| grep -B 1 -A 4 'Failure'
+
+$(TOOLOBJ):
+	(cd .. && make -j && cd gtest)
+gtest_build: $(TOOLTESTOBJ) $(TOOLOBJ) $(GTEST_OBJ)
+	g++  $(TOOLTESTOBJ) $(TOOLOBJ_NOMAIN) $(GTEST_OBJ) $(LIBRARY) -lm -lz -lssl -lpthread -fopenmp -o $(TARGET)
+reference_genome: 
+	test -f short-bs.umfa || ../../../src/bin/karma create short.fa
+	test -f short-cs.umfa || ../../../src/bin/karma create -c short.fa
+$(TARGET): gtest_build reference_genome
+	$(TARGET) --gtest_color=no #| grep -B 1 -A 4 'Failure'
 
 # helpful screen listing available options
 help : 
-	@echo "Generic Source Distribution"
-	@echo " "
-	@echo "This Makefile will compile and install" $(TOOL) "on your system"
-	@echo " "
 	@echo "Type...           To..."
 	@echo "make help         Display this help screen"
-	@echo "make all          Compile everything "
-	@echo "make install      Install binaries in $(INSTALLDIR)"
-	@echo "make install INSTALLDIR=directory_for_binaries"
+	@echo "make all          Build unittest featured by Google Test Framework "
 	@echo "                  Install binaries in directory_for_binaries"
 	@echo "make clean        Delete temporary files"
-
-# dependencies for executables
-$(TARGET) : $(LIBRARY) $(TOOLOBJ) $(BINDIR)
-	$(CXX) $(CFLAGS) -o $@ $(TOOLOBJ) $(LIBRARY) -lm -lz -lssl -lstdc++
-
-$(TOOLOBJ): $(TOOLHDR) $(LIBHDR)
 
 clean :
 	-rm -f *.o $(TARGET) *~
@@ -112,7 +78,7 @@ clean :
 	-rm -f phiX-cs*.um* phiX.cs.sam phiX.cs.sam.R phiX.cs.sam.stats phiX-paired.cs.sam phiX-paired.cs.sam.R phiX-paired.cs.sam.stats phiX.cs.bam	
 	-rm -f phiX-synth-paired.sam phiX-synth-paired.sam.R phiX-synth-paired.sam.stats
 	-rm -f phiX-synth-paired.cs.sam phiX-synth-paired.cs.sam.R phiX-synth-paired.cs.sam.stats
-	-rm -f gtest
+	-rm -f unittest
 
 install : all $(INSTALLDIR)
 	@echo " "
