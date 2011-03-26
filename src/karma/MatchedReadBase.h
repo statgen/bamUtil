@@ -7,8 +7,6 @@
 #include "CigarRoller.h"
 #include <algorithm>
 
-
-class MapperBase;
 //
 // When we get a match, mutated or not, keep records here
 //
