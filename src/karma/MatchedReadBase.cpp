@@ -1283,20 +1283,19 @@ void MatchedReadBase::translateCigarMatchSequence(uint32_t count,
     }
 } //void MatchedReadBase::translateCigarMatchSequence(uint32_t count,...)
 
-void MatchedReadBase::printColorSpace(
-    std::ostream &file,
-    GenomeSequence* gs,
-    GenomeSequence* csgs,
-    MatchedReadBase *mate,
-    std::string &cs_read_fragment,
-    std::string &cs_data_quality,
-    std::string &fragmentTag,
-    bool showReferenceBases,
-    CigarRoller  &cigarRoller,
-    bool        isProperAligned,
-    uint16_t        samMateFlag,
-    const std::string     &sampleGroupID,
-    const std::string     &alignmentPathTag
+void MatchedReadBase::printColorSpace(std::ostream &file,
+                                      GenomeSequence* gs,
+                                      GenomeSequence* csgs,
+                                      MatchedReadBase *mate,
+                                      std::string &cs_read_fragment,
+                                      std::string &cs_data_quality,
+                                      std::string &fragmentTag,
+                                      bool showReferenceBases,
+                                      CigarRoller  &cigarRoller,
+                                      bool        isProperAligned,
+                                      uint16_t        samMateFlag,
+                                      const std::string     &sampleGroupID,
+                                      const std::string     &alignmentPathTag
     )
 {
     assert(!gs->isColorSpace());
@@ -1440,7 +1439,10 @@ void MatchedReadBase::printColorSpace(
     file << std::endl;
 }
 
-void MatchedReadBase::printOptionalTags(std::ostream &file, bool isPairAligned, const std::string &sampleGroupID, const std::string &alignmentPathTag)
+void MatchedReadBase::printOptionalTags(std::ostream &file, 
+                                        bool isPairAligned, 
+                                        const std::string &sampleGroupID, 
+                                        const std::string &alignmentPathTag)
 {
     if (alignmentPathTag != "") file << "\tXA:Z:" << alignmentPathTag;
 
