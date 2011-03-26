@@ -1,58 +1,58 @@
- /*
-  * Copyright (c) 2009 Regents of the University of Michigan
-  *
-  * Permission is hereby granted, free of charge, to any person
-  * obtaining a copy of this software and associated documentation
-  * files (the "Software"), to deal in the Software without
-  * restriction, including without limitation the rights to use,
-  * copy, modify, merge, publish, distribute, sublicense, and/or sell
-  * copies of the Software, and to permit persons to whom the
-  * Software is furnished to do so, subject to the following
-  * conditions:
-  *
-  * The above copyright notice and this permission notice shall be
-  * included in all copies or substantial portions of the Software.
-  *
-  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-  * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-  * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-  * OTHER DEALINGS IN THE SOFTWARE.
-  */
+/*
+ * Copyright (c) 2009 Regents of the University of Michigan
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ */
 
- #ifndef _USER_OPTIONS
- #define _USER_OPTIONS
+#ifndef _USER_OPTIONS
+#define _USER_OPTIONS
 
- #ifndef __STDC_LIMIT_MACROS
- #define __STDC_LIMIT_MACROS
- #endif
+#ifndef __STDC_LIMIT_MACROS
+#define __STDC_LIMIT_MACROS
+#endif
 
- #include <stdint.h>
+#include <stdint.h>
 
- #include <iostream>
- #include <stdint.h>
- #include <cstring>
- #include <cstdlib>
- #include <vector>
- #include <string>
+#include <iostream>
+#include <stdint.h>
+#include <cstring>
+#include <cstdlib>
+#include <vector>
+#include <string>
 
 
- //
- // base class of a hierarchy of command argument processing.
- //
- // The goal is to minimize redundant argument checking and
- // help message printing, as well as to ensure consistent
- // argument processing among different modes.
- //
- // baseArguments is the base framework plus a few common
- // underlying flags.
- //
- // Derive other classes for other modes and add arguments
- // specific to the mode involved.
- //
+//
+// base class of a hierarchy of command argument processing.
+//
+// The goal is to minimize redundant argument checking and
+// help message printing, as well as to ensure consistent
+// argument processing among different modes.
+//
+// baseArguments is the base framework plus a few common
+// underlying flags.
+//
+// Derive other classes for other modes and add arguments
+// specific to the mode involved.
+//
 class BaseArguments
 {
   protected:
@@ -85,7 +85,7 @@ class BaseArguments
 
 class MapArguments : public BaseArguments
 {
- public:
+  public:
     int      mapInColorSpace;
     int      insertSize;
     uint64_t maxBases;
@@ -99,7 +99,7 @@ class MapArguments : public BaseArguments
     std::string                 outputFilename;
     std::vector<std::string>    references;
     std::vector<std::string>    SAMHeaderOptions;
- MapArguments() :
+  MapArguments() :
     mapInColorSpace(false),
         insertSize(250),
         maxBases(0),
@@ -109,7 +109,7 @@ class MapArguments : public BaseArguments
         showReferenceBases(false),
         quietMode(false),
         wordSize(15),
-        numThread(1)    
+        numThread(1)
         {
             optionString += "a:B:cEH:m:o:O:q:r:R:t:Qw:";
         }
@@ -148,7 +148,7 @@ class MapArguments : public BaseArguments
 
 class RemapArguments : public BaseArguments
 {
- public:
+  public:
     std::string chromosome;
     int insertSize;
     int occurrenceCutoff;
@@ -160,7 +160,7 @@ class RemapArguments : public BaseArguments
     std::string                 outputFilename;
     std::vector<std::string>    references;
     std::vector<std::string>    SAMHeaderOptions;
- RemapArguments() :
+  RemapArguments() :
     insertSize(250),
         occurrenceCutoff(5000),
         wordSize(15),
@@ -195,12 +195,12 @@ class RemapArguments : public BaseArguments
 
 class CreateArguments : public BaseArguments
 {
- public:
+  public:
     bool createIndex;
     bool isColorSpace;
     int occurrenceCutoff;
     int wordSize;
- CreateArguments() :
+  CreateArguments() :
     createIndex(false),
         isColorSpace(false),
         occurrenceCutoff(5000),
@@ -226,9 +226,9 @@ class CreateArguments : public BaseArguments
 
 class CheckArguments : public BaseArguments
 {
- public:
+  public:
     bool verbose;
- CheckArguments() : verbose(false)
+  CheckArguments() : verbose(false)
     {
         optionString += "v";
     }
@@ -247,11 +247,11 @@ class CheckArguments : public BaseArguments
 
 class HeaderArguments : public BaseArguments
 {
- public:
+  public:
     bool editFlag;
     bool isColorSpace;
     std::string newHeaderFile;
- HeaderArguments() : editFlag(false), isColorSpace(false)
+  HeaderArguments() : editFlag(false), isColorSpace(false)
     {
         optionString += "ceh:";
     }
@@ -275,11 +275,11 @@ class HeaderArguments : public BaseArguments
 //
 class FastQCheckArguments : public BaseArguments
 {
- public:
+  public:
     bool isColorSpace;
     int minReadLength;
     int maxReportedErrors;
- FastQCheckArguments() : isColorSpace(false), minReadLength(10), maxReportedErrors(20)
+  FastQCheckArguments() : isColorSpace(false), minReadLength(10), maxReportedErrors(20)
     {
         optionString += "m:e:c";
     }
