@@ -55,19 +55,20 @@
 //
 class BaseArguments
 {
- protected:
+  protected:
     std::string optionString;
     virtual void getoptH();
     int argc;
     const char **argv;
     int opt;
- public:
+  public:
     bool debug;
     int seed;
- BaseArguments() : debug(false), seed(12345)
+  BaseArguments() : debug(false), seed(12345)
     {
         optionString += "ds:";
     }
+    virtual ~BaseArguments() {}
     void setArgs(int argc, const char **argv)
     {
         this->argc = argc;
@@ -84,7 +85,7 @@ class BaseArguments
 
 class MapArguments : public BaseArguments
 {
- public:
+  public:
     int      mapInColorSpace;
     int      insertSize;
     uint64_t maxBases;
@@ -98,7 +99,7 @@ class MapArguments : public BaseArguments
     std::string                 outputFilename;
     std::vector<std::string>    references;
     std::vector<std::string>    SAMHeaderOptions;
- MapArguments() :
+  MapArguments() :
     mapInColorSpace(false),
         insertSize(250),
         maxBases(0),
@@ -108,7 +109,7 @@ class MapArguments : public BaseArguments
         showReferenceBases(false),
         quietMode(false),
         wordSize(15),
-        numThread(1)    
+        numThread(1)
         {
             optionString += "a:B:cEH:m:o:O:q:r:R:t:Qw:";
         }
@@ -147,7 +148,7 @@ class MapArguments : public BaseArguments
 
 class RemapArguments : public BaseArguments
 {
- public:
+  public:
     std::string chromosome;
     int insertSize;
     int occurrenceCutoff;
@@ -159,7 +160,7 @@ class RemapArguments : public BaseArguments
     std::string                 outputFilename;
     std::vector<std::string>    references;
     std::vector<std::string>    SAMHeaderOptions;
- RemapArguments() :
+  RemapArguments() :
     insertSize(250),
         occurrenceCutoff(5000),
         wordSize(15),
@@ -194,12 +195,12 @@ class RemapArguments : public BaseArguments
 
 class CreateArguments : public BaseArguments
 {
- public:
+  public:
     bool createIndex;
     bool isColorSpace;
     int occurrenceCutoff;
     int wordSize;
- CreateArguments() :
+  CreateArguments() :
     createIndex(false),
         isColorSpace(false),
         occurrenceCutoff(5000),
@@ -225,9 +226,9 @@ class CreateArguments : public BaseArguments
 
 class CheckArguments : public BaseArguments
 {
- public:
+  public:
     bool verbose;
- CheckArguments() : verbose(false)
+  CheckArguments() : verbose(false)
     {
         optionString += "v";
     }
@@ -246,11 +247,11 @@ class CheckArguments : public BaseArguments
 
 class HeaderArguments : public BaseArguments
 {
- public:
+  public:
     bool editFlag;
     bool isColorSpace;
     std::string newHeaderFile;
- HeaderArguments() : editFlag(false), isColorSpace(false)
+  HeaderArguments() : editFlag(false), isColorSpace(false)
     {
         optionString += "ceh:";
     }
@@ -274,11 +275,11 @@ class HeaderArguments : public BaseArguments
 //
 class FastQCheckArguments : public BaseArguments
 {
- public:
+  public:
     bool isColorSpace;
     int minReadLength;
     int maxReportedErrors;
- FastQCheckArguments() : isColorSpace(false), minReadLength(10), maxReportedErrors(20)
+  FastQCheckArguments() : isColorSpace(false), minReadLength(10), maxReportedErrors(20)
     {
         optionString += "m:e:c";
     }
