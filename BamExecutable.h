@@ -15,28 +15,29 @@
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-//////////////////////////////////////////////////////////////////////////
-// This file contains the processing for the executable option "readIndexedBam"
-// which reads an indexed BAM file by chromosome and writes it into a new
-// file sorted from reference id -1 to maxRefID.
+#ifndef __BAM_EXECUTABLE_H__
+#define __BAM_EXECUTABLE_H__
 
-#ifndef __READ_INDEXED_BAM_H__
-#define __READ_INDEXED_BAM_H__
+#include "StringBasics.h"
+#include "Parameters.h"
 
-#include "BamExecutable.h"
-
-class ReadIndexedBam : public BamExecutable
+/// Base Class BAM Executable.
+class BamExecutable
 {
-public:
-    static void readIndexedBamDescription();
-    void description();
-    void usage();
-    int execute(int argc, char **argv);
+public: 
+    static void bamVersion();
+    static void bamExecutableDescription();
+    BamExecutable();
+    virtual ~BamExecutable();
+
+    /// Print the 
+    virtual void description();
+    virtual void usage();
+    virtual int execute(int argc, char**argv) = 0;
+
+protected:
 
 private:
-    int readIndexedBam(const char* inputFilename,
-                       const char* outputFilename,
-                       const char* indexFilename);
 };
 
 #endif

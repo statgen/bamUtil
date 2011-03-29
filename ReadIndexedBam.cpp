@@ -20,26 +20,43 @@
 // which reads an indexed BAM file by chromosome and writes it into a new
 // file sorted from reference id -1 to maxRefID.
 
+#include "ReadIndexedBam.h"
 #include "SamFile.h"
 #include "Parameters.h"
 #include "SamValidation.h"
 
-void readIndexedBamDescription()
+void ReadIndexedBam::readIndexedBamDescription()
 {
-    std::cerr << " readIndexedBam - Read Indexed BAM By Reference and write it from reference id -1 to maxRefId:" << std::endl;
-    std::cerr << "\t./bam readIndexedBam <inputFilename> <outputFile.sam/bam> <bamIndexFile>" << std::endl;
+    std::cerr << " readIndexedBam - Read Indexed BAM By Reference and write it from reference id -1 to maxRefId" << std::endl;
 }
 
 
-void readIndexedBamUsage()
+void ReadIndexedBam::description()
 {
     readIndexedBamDescription();
 }
 
 
-int readIndexedBam(const char* inputFilename,
-                   const char* outputFilename,
-                   const char* indexFilename)
+void ReadIndexedBam::usage()
+{
+    BamExecutable::usage();
+    std::cerr << "\t./bam readIndexedBam <inputFilename> <outputFile.sam/bam> <bamIndexFile>" << std::endl;
+}
+
+
+int ReadIndexedBam::execute(int argc, char ** argv)
+{
+    if(argc != 5)
+    {
+        usage();
+        exit(-1);
+    }
+    return(readIndexedBam(argv[2], argv[3], argv[4]));
+}
+
+int ReadIndexedBam::readIndexedBam(const char* inputFilename,
+                                   const char* outputFilename,
+                                   const char* indexFilename)
 {
     // Open the input file for reading.
     SamFile samIn;

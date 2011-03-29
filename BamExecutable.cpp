@@ -16,27 +16,47 @@
  */
 
 //////////////////////////////////////////////////////////////////////////
-// This file contains the processing for the executable option "readIndexedBam"
-// which reads an indexed BAM file by chromosome and writes it into a new
-// file sorted from reference id -1 to maxRefID.
+// This file contains the processing for the executable option "convert"
+// which reads an SAM/BAM file and writes a SAM/BAM file (it can convert 
+// between SAM and BAM formats).
 
-#ifndef __READ_INDEXED_BAM_H__
-#define __READ_INDEXED_BAM_H__
-
+#include <iostream>
+#include <string.h>
+#include <stdlib.h>
 #include "BamExecutable.h"
 
-class ReadIndexedBam : public BamExecutable
+BamExecutable::BamExecutable()
 {
-public:
-    static void readIndexedBamDescription();
-    void description();
-    void usage();
-    int execute(int argc, char **argv);
+}
 
-private:
-    int readIndexedBam(const char* inputFilename,
-                       const char* outputFilename,
-                       const char* indexFilename);
-};
 
-#endif
+BamExecutable::~BamExecutable()
+{
+}
+
+
+void BamExecutable::bamVersion()
+{
+    std::cerr << "Version: " << VERSION
+              << "; Built: " << DATE << " by "<< USER << std::endl;
+}
+
+void BamExecutable::bamExecutableDescription()
+{
+    std::cerr << "Set of tools for operating on SAM/BAM files." << std::endl;
+    bamVersion();
+}
+
+
+void BamExecutable::description()
+{
+    bamExecutableDescription();
+}
+
+
+void BamExecutable::usage()
+{
+    bamVersion();
+    std::cerr << std::endl;
+    description();
+}
