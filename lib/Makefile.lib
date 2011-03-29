@@ -36,6 +36,23 @@ OBJECTS=$(patsubst %,$(OBJDIR)/%,$(TOOLOBJ))
 # make everything
 all : $(addprefix $(INCLUDE_PATH)/, $(HEADERS)) $(NEWLIBRARY)
 
+install: all
+
+help : 
+	@echo "Generic Source Distribution"
+	@echo " "
+	@echo "This Makefile will compile and install" $(TOOL) "on your system"
+	@echo " "
+	@echo "Type...           To..."
+	@echo "make              Compile everything "
+	@echo "make help         Display this help screen"
+	@echo "make all          Compile everything "
+	@echo "make install      Install binaries in $(INSTALLDIR)"
+	@echo "make install INSTALLDIR=directory_for_binaries"
+	@echo "                  Install binaries in directory_for_binaries"
+	@echo "make clean        Delete temporary files"
+	@echo "make test         Execute tests (if there are any)"
+
 $(INCLUDE_PATH)/%.h: %.h
 	ln  -s $(PATH_INCLUDE_TO_LIB_BASE)/$(DIR_NAME)/$< $@
 
@@ -52,12 +69,12 @@ clean :
 	-rm -f $(OBJDIR)/*.o *~ $(addprefix $(INCLUDE_PATH)/, $(HEADERS))
 	$(AR) d $(STAT_GEN_LIB) $(OBJECTS)
 	$(RANLIB) $(STAT_GEN_LIB)
-	$(MAKE) $(PARALLEL_MAKE) -C $(TEST_DIR) OPTFLAG="$(OPTFLAG)" --no-print-directory $@
+	$(MAKE) -C $(TEST_DIR) OPTFLAG="$(OPTFLAG)" --no-print-directory $@
 
 test: all
-	if test -d $(TEST_DIR); \
+	@if test -d $(TEST_DIR); \
         then \
-	$(MAKE) $(PARALLEL_MAKE) -C $(TEST_DIR) OPTFLAG="$(OPTFLAG)" --no-print-directory $@; \
+	$(MAKE) -C $(TEST_DIR) OPTFLAG="$(OPTFLAG)" --no-print-directory $@; \
         fi
 
 $(OBJDIR)/%.o: %.c

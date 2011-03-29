@@ -53,12 +53,12 @@ private:
     
     // SEC1 values:
     static const std::string SEC1_REFNAME;
-    static const uint32_t SEC1_REFLEN = 100;
+    static const uint32_t SEC1_REFLEN = 200;
     
     // SEC1REC1 values:
     static const uint8_t SEC1REC1_RECTYPE = 1;
-    static const uint8_t SEC1REC1_REFBASE = 2;
-    static const uint32_t SEC1REC1_OFFSET = 500;
+    static const uint8_t SEC1REC1_REFBASE = 4;
+    static const uint32_t SEC1REC1_OFFSET = 99;
     static const uint32_t SEC1REC1_MINLK = 55;
     static const uint32_t SEC1REC1_READDEPTH = 31;
     static const uint8_t SEC1REC1_RMSMAPQ = 25;
@@ -85,7 +85,7 @@ private:
     // SEC2REC1 values:
     static const uint8_t SEC2REC1_RECTYPE = 1;
     static const uint8_t SEC2REC1_REFBASE = 2;
-    static const uint32_t SEC2REC1_OFFSET = 500;
+    static const uint32_t SEC2REC1_OFFSET = 50;
     static const uint32_t SEC2REC1_MINLK = 55;
     static const uint32_t SEC2REC1_READDEPTH = 31;
     static const uint8_t SEC2REC1_RMSMAPQ = 25;

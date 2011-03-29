@@ -7,6 +7,13 @@ then
     ERROR=true
 fi
 
+../../bin/bam validate --params --in testFiles/testInvalid1.sam  --v 2> results/validateInvalid1.txt
+diff results/validateInvalid1.txt expected/invalid1.txt
+if [ $? -ne 0 ]
+then
+    ERROR=true
+fi
+
 # Test converting bam to sam 
 ../../bin/bam convert --params --in testFiles/testBam.bam --out results/convertBam.sam 2> results/convertBam.log && diff results/convertBam.sam expected/convertBam.sam && diff results/convertBam.log expected/convertBam.log
 if [ $? -ne 0 ]

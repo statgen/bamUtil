@@ -193,6 +193,10 @@ public:
     {
         return (const char *) buffer;
     }
+    operator char *()
+    {
+        return buffer;
+    }
 
     operator int () const
     {

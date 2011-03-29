@@ -26,8 +26,9 @@ class PileupElementBaseQual : public PileupElement
 {
 public:
     PileupElementBaseQual();
-    virtual ~PileupElementBaseQual();
+    // NOTE that this method does not actually copy, it just resets.
     PileupElementBaseQual(const PileupElementBaseQual& q);
+    virtual ~PileupElementBaseQual();
 
     // Add an entry to this pileup element.  
     virtual void addEntry(SamRecord& record);

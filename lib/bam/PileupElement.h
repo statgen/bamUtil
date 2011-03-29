@@ -28,6 +28,7 @@ class PileupElement
 public:
     PileupElement();
 
+    // NOTE that this method does not actually copy, it just resets.
     PileupElement(const PileupElement& q);
 
     virtual ~PileupElement();
@@ -46,12 +47,16 @@ public:
 
     int32_t getRefPosition()  const { return(myRefPosition); }
 
+    static void setReference(GenomeSequence* reference);
+
 protected:
     static const int32_t UNSET_POSITION = -1;
+    static GenomeSequence* getReference() { return(myRefPtr); }
 
 private:
     int32_t myRefPosition;
     std::string myChromosome;
+    static GenomeSequence* myRefPtr;
 };
 
 

@@ -1,65 +1,32 @@
-TEST_SUBDIRS="bam fastqValidator glf karma qplot polishBam trimBam rgMergeBam splitBam  vcfGenomeStat"
-SUBDIRS=$(TEST_SUBDIRS)
+SUBDIRS=bam fastqValidator glf glfMerge glfMultiples glfSingle mgpileup qplot polishBam trimBam rgMergeBam splitBam squeezeBam superDeDuper thunderVCF vcfCooker vcfGenomeStat verifyBamID
 
 # Build in all subdirectories.
 #
-# see http://www.gnu.org/software/make/manual/make.html#Phony-Targets
-# for a way of improving the following:
-#
+.PHONY: $(SUBDIRS) all test clean
 
-all: 
-	@for i in "$(SUBDIRS)"; do \
-		if [ "XXX$$i" = XXX ] ;\
-		then \
-		    continue; \
-		fi;\
-		if [ \! -d $$i ] ; \
-		then \
-		    echo "directory $$i does not exist, skipping." ; \
-		    continue ; \
-		fi ; \
-		(echo "building in directory $$i";cd $$i; $(MAKE) $(PARALLEL_MAKE) OPTFLAG="$(OPTFLAG)" --no-print-directory $@) ; \
-		if [ $$? -ne 0 ] ; \
-		then \
-		    echo "make stopped because of errors." ; \
-		    break ; \
-		fi \
-	done
+all: TARGET = all
+test: TARGET = test
+clean: TARGET = clean
+install: TARGET = install
+all test clean install: $(SUBDIRS)
 
-test: 
-	@for i in "$(TEST_SUBDIRS)"; do \
-		if [ "XXX$$i" = XXX ] ;\
-		then \
-		    continue; \
-		fi;\
-		if [ \! -d $$i ] ; \
-		then \
-		    echo "directory $$i does not exist, skipping." ; \
-		    continue ; \
-		fi ; \
-		(echo "building in directory $$i";cd $$i; $(MAKE) $(PARALLEL_MAKE) OPTFLAG="$(OPTFLAG)" --no-print-directory $@) ; \
-		if [ $$? -ne 0 ] ; \
-		then \
-		    echo "make stopped because of errors." ; \
-		    break ; \
-		fi \
-	done
+# the following depend on libvcf which is currently found in vcfCooker
+mergeFilterStats mgpileup recab thunderVCF verifyBamID: vcfCooker
 
-clean:
-	@for i in "$(SUBDIRS)"; do \
-		if [ "XXX$$i" = XXX ] ;\
-		then \
-		    continue; \
-		fi;\
-		if [ \! -d $$i ] ; \
-		then \
-		    echo "directory $$i does not exist, skipping." ; \
-		    continue ; \
-		fi ; \
-		(echo "building in directory $$i";cd $$i; $(MAKE) $(PARALLEL_MAKE) --no-print-directory $@) ; \
-		if [ $$? -ne 0 ] ; \
-		then \
-		    echo "make stopped because of errors." ; \
-		    break ; \
-		fi \
-	done
+help : 
+	@echo "Generic Source Distribution"
+	@echo " "
+	@echo "This Makefile will compile and install" $(TOOL) "on your system"
+	@echo " "
+	@echo "Type...           To..."
+	@echo "make              Compile everything "
+	@echo "make help         Display this help screen"
+	@echo "make all          Compile everything "
+	@echo "make install      Install binaries in $(INSTALLDIR)"
+	@echo "make install INSTALLDIR=directory_for_binaries"
+	@echo "                  Install binaries in directory_for_binaries"
+	@echo "make clean        Delete temporary files"
+	@echo "make test         Execute tests (if there are any)"
+
+$(SUBDIRS):
+	@$(MAKE) OPTFLAG="$(OPTFLAG)" -C $@ $(TARGET)

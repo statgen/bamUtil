@@ -19,6 +19,18 @@
 // This file contains the processing for the executable option "splitChromosome"
 // which splits a sorted/indexed BAM file into one file per chromosome.
 
-void splitChromosomeDescription();
-void splitChromosomeUsage();
-int splitChromosome(int argc, char **argv);
+#ifndef __SPLIT_CHROMOSOME_H__
+#define __SPLIT_CHROMOSOME_H__
+
+#include "BamExecutable.h"
+
+class SplitChromosome : public BamExecutable
+{
+public:
+    static void splitChromosomeDescription();
+    void description();
+    void usage();
+    int execute(int argc, char **argv);
+};
+
+#endif

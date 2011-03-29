@@ -226,10 +226,3 @@ bool Person::isAncestor(Person * descendant)
     return (isAncestor(descendant->mother) ||
             isAncestor(descendant->father));
 }
-
-
-
-
-
-
-

@@ -16,6 +16,7 @@
  */
 
 #include "StringHash.h"
+#include "InputFile.h"
 #include "Error.h"
 
 StringHash::StringHash(int startsize)
@@ -212,7 +213,7 @@ void StringHash::ReadLinesFromFile(const char * filename)
 void StringHash::ReadLinesFromFile(FILE * f)
 {
     String buffer;
-
+    
     while (!feof(f))
     {
         buffer.ReadLine(f);
@@ -579,6 +580,19 @@ void StringHash::Print(FILE * output)
             strings[i]->WriteLine(output);
 }
 
+String StringHash::StringList(char separator)
+{
+    String list;
+
+    for (unsigned int i = 0; i < size; i++)
+        if (SlotInUse(i))
+            list += *strings[i] + separator;
+
+    list.SetLength(list.Length() - 1);
+
+    return list;
+}
+
 int StringIntHash::GetCount(const String & key) const
 {
     int index = Find(key);
@@ -594,6 +608,17 @@ int StringIntHash::IncrementCount(const String & key)
 
     SetInteger(key, 1);
     return 1;
+}
+
+int StringIntHash::IncrementCount(const String & key, int amount)
+{
+    int index = Find(key);
+
+    if (index != -1)
+        return (integers[index] += amount);
+
+    SetInteger(key, amount);
+    return amount;
 }
 
 int StringIntHash::DecrementCount(const String & key)

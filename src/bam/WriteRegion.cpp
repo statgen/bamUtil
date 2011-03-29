@@ -19,19 +19,25 @@
 // This file contains the processing for the executable option "writeRegion"
 // which writes a file with the reads in the specified region.
 
+#include "WriteRegion.h"
 #include "SamFile.h"
 #include "Parameters.h"
 #include "BgzfFileType.h"
 
-void writeRegionDescription()
+void WriteRegion::writeRegionDescription()
 {
     std::cerr << " writeRegion - Write a file with reads in the specified region" << std::endl;
-    std::cerr << "\t./bam writeRegion --in <inputFilename>  --out <outputFilename> [--bamIndex <bamIndexFile>] [--noeof] [--refName <reference Name> | --refID <reference ID>] [--start <0-based start pos>] [--end <0-based end psoition>] [--params]"<< std::endl;
 }
 
-void writeRegionUsage()
+void WriteRegion::description()
 {
     writeRegionDescription();
+}
+
+void WriteRegion::usage()
+{
+    BamExecutable::usage();
+    std::cerr << "\t./bam writeRegion --in <inputFilename>  --out <outputFilename> [--bamIndex <bamIndexFile>] [--noeof] [--refName <reference Name> | --refID <reference ID>] [--start <0-based start pos>] [--end <0-based end psoition>] [--params]" << std::endl;
     std::cerr << "\tRequired Parameters:" << std::endl;
     std::cerr << "\t\t--in       : the BAM file to be read" << std::endl;
     std::cerr << "\t\t--out      : the SAM/BAM file to write to" << std::endl;
@@ -48,7 +54,7 @@ void writeRegionUsage()
 }
 
 
-int writeRegion(int argc, char **argv)
+int WriteRegion::execute(int argc, char **argv)
 {
     // Extract command line arguments.
     static const int UNSPECIFIED_INT = -1;
@@ -91,7 +97,7 @@ int writeRegion(int argc, char **argv)
     // Check to see if the in file was specified, if not, report an error.
     if(inFile == "")
     {
-        writeRegionUsage();
+        usage();
         // mandatory argument was not specified.
         inputParameters.Status();
         std::cerr << "Missing mandatory argument: --in" << std::endl;
@@ -99,7 +105,7 @@ int writeRegion(int argc, char **argv)
     }
     if(outFile == "")
     {
-        writeRegionUsage();
+        usage();
         // mandatory argument was not specified.
         inputParameters.Status();
         std::cerr << "Missing mandatory argument: --out" << std::endl;

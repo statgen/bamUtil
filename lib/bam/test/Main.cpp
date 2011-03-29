@@ -23,6 +23,7 @@
 #include "Modify.h"
 #include "SamFileTest.h"
 #include "TestEquals.h"
+#include "TestFilter.h"
 
 int main(int argc, char ** argv)
 {
@@ -58,7 +59,9 @@ int main(int argc, char ** argv)
         testSamFile();
 
         testSeqEquals();
-    }
+
+        testFilter();
+   }
     else
     {
         modifyFirstBaseLong();

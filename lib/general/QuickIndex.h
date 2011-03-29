@@ -20,6 +20,7 @@
 
 #include "MathVector.h"
 #include "StringArray.h"
+#include "StringHash.h"
 #include "IntArray.h"
 #include "StringMap.h"
 
@@ -44,6 +45,7 @@ public:
     void Index(const StringArray & source_data);
     void Index(const Vector & source_data);
     void IndexCounts(const StringIntMap & source_data);
+    void IndexCounts(const StringIntHash & source_data);
 
 private:
     const void * source;

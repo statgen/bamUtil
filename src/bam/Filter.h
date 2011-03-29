@@ -17,7 +17,18 @@
 
 //////////////////////////////////////////////////////////////////////////
 
-void filterDescription();
-void filterUsage();
-int filter(int argc, char **argv);
+#ifndef __FILTER_H__
+#define __FILTER_H__
 
+#include "BamExecutable.h"
+
+class Filter : public BamExecutable
+{
+public:
+    static void filterDescription();
+    void description();
+    void usage();
+    int execute(int argc, char **argv);
+};
+
+#endif

@@ -88,7 +88,7 @@ public:
     /// Open a sam/bam file for reading with the specified filename.
     /// \param  filename the sam/bam file to open for reading.
     /// \param header to read into or write from (optional)
-    /// \return true = success; false = failure.   
+    /// \return true = success; false = failure.
     bool OpenForRead(const char * filename, SamFileHeader* header = NULL);
 
     /// Open a sam/bam file for writing with the specified filename.
@@ -97,10 +97,21 @@ public:
     /// \return true = success; false = failure.
     bool OpenForWrite(const char * filename, SamFileHeader* header = NULL);
 
-    /// Reads the specified bam index file.  It must be read prior to setting a
+    /// Read the specified bam index file.  It must be read prior to setting a
     /// read section, for seeking and reading portions of a bam file.
-    /// \return true = success; false = failure.   
+    /// \param filename the name of the bam index file to be read.
+    /// \return true = success; false = failure.
     bool ReadBamIndex(const char * filename);
+
+    /// Read the bam index file using the BAM filename as a base. 
+    /// It must be read prior to setting a read section, for seeking
+    /// and reading portions of a bam file.
+    /// Must be read after opening the BAM file since it uses the
+    /// BAM filename as a base name for the index file.
+    /// First it tries filename.bam.bai. If that fails, it tries
+    /// it without the .bam extension, filename.bai.
+    /// \return true = success; false = failure.
+    bool ReadBamIndex();
 
     /// Sets the reference to the specified genome sequence object.
     /// \param reference pointer to the GenomeSequence object.
@@ -148,6 +159,8 @@ public:
    
     /// Set the flag to validate that the file is sorted as it is read/written.
     /// Must be called after the file has been opened.
+    /// Sorting validation is reset everytime SetReadPosition is called since
+    /// it can jump around in the file.
     void setSortedValidation(SortedType sortType);
 
     /// Return the number of records that have been read/written so far.
@@ -178,6 +191,8 @@ public:
     /// records have been retrieved for the specified reference id, ReadRecord
     /// will return failure until a new read section is set.
     /// Must be called only after the file has been opened for reading.
+    /// Sorting validation is reset everytime SetReadPosition is called since
+    /// it can jump around in the file.
     /// \param  refID the reference ID of the records to read from the file.
     /// \return true = success; false = failure.
     bool SetReadSection(int32_t refID);
@@ -188,6 +203,8 @@ public:
     /// records have been retrieved for the specified reference name,
     /// ReadRecord will return failure until a new read section is set.
     /// Must be called only after the file has been opened for reading.
+    /// Sorting validation is reset everytime SetReadPosition is called since
+    /// it can jump around in the file.
     /// \param  refName the reference name of the records to read from the file.
     /// \return true = success; false = failure.
     bool SetReadSection(const char* refName);
@@ -198,6 +215,8 @@ public:
     /// call.  When all records have been retrieved for the specified section,
     /// ReadRecord will return failure until a new read section is set.
     /// Must be called only after the file has been opened for reading.
+    /// Sorting validation is reset everytime SetReadPosition is called since
+    /// it can jump around in the file.
     /// \param  refID the reference ID of the records to read from the file.
     /// \param  start inclusive 0-based start position of records that should be read for this refID.
     /// \param  end exclusive 0-based end position of records that should be read for this refID.
@@ -210,11 +229,41 @@ public:
     /// call.  When all records have been retrieved for the specified section,
     /// ReadRecord will return failure until a new read section is set.
     /// Must be called only after the file has been opened for reading.
+    /// Sorting validation is reset everytime SetReadPosition is called since
+    /// it can jump around in the file.
     /// \param  refName the reference name of the records to read from the file.
     /// \param  start inclusive 0-based start position of records that should be read for this refID.
     /// \param  end exclusive 0-based end position of records that should be read for this refID.
     /// \return true = success; false = failure.   
     bool SetReadSection(const char* refName, int32_t start, int32_t end);
+
+    /// Get the number of mapped reads in the specified reference id.  
+    /// Returns -1 for out of range refIDs.
+    /// \param refID reference ID for which to extract the number of mapped reads.
+    /// \return number of mapped reads for the specified reference id.
+    int32_t getNumMappedReadsFromIndex(int32_t refID);
+
+    /// Get the number of unmapped reads in the specified reference id.  
+    /// Returns -1 for out of range refIDs.
+    /// \param refID reference ID for which to extract the number of unmapped reads.
+    /// \return number of unmapped reads for the specified reference id.
+    int32_t getNumUnMappedReadsFromIndex(int32_t refID);
+
+    /// Get the number of mapped reads in the specified reference name.
+    /// Returns -1 for unknown reference names.
+    /// \param refName reference name for which to extract the number of mapped reads.
+    /// \param header header object containing the map from refName to refID
+    /// \return number of mapped reads for the specified reference name.
+    int32_t getNumMappedReadsFromIndex(const char* refName,
+                                       SamFileHeader& header);
+
+    /// Get the number of unmapped reads in the specified reference name.
+    /// Returns -1 for unknown reference names.
+    /// \param refName reference name for which to extract the number of unmapped reads.
+    /// \param header header object containing the map from refName to refID
+    /// \return number of unmapped reads for the specified reference name.
+    int32_t getNumUnMappedReadsFromIndex(const char* refName,
+                                         SamFileHeader& header);
 
     /// Returns the number of bases in the passed in read that overlap the
     /// region that is currently set.
@@ -239,6 +288,8 @@ protected:
     /// Validate that the record is sorted compared to the previously read
     /// record if there is one, according to the specified sort order.
     /// If the sort order is UNSORTED, true is returned.
+    /// Sorting validation is reset everytime SetReadPosition is called since
+    /// it can jump around in the file.
     bool validateSortOrder(SamRecord& record, SamFileHeader& header);
    
     // Return the sort order as defined by the header.  If it is undefined

@@ -987,7 +987,7 @@ const char* SamRecord::getSequence(SequenceTranslation translation)
                 // Sequence defined, so translate it.
                 SamQuerySeqWithRef::seqWithEquals(mySequence.c_str(), 
                                                   myRecordPtr->myPosition,
-                                                  myCigarRoller,
+                                                  *(getCigarInfo()),
                                                   getReferenceName(),
                                                   *myRefPtr,
                                                   mySeqWithEq);
@@ -1010,7 +1010,7 @@ const char* SamRecord::getSequence(SequenceTranslation translation)
                 // Sequence defined, so translate it.
                 SamQuerySeqWithRef::seqWithoutEquals(mySequence.c_str(), 
                                                      myRecordPtr->myPosition,
-                                                     myCigarRoller,
+                                                     *(getCigarInfo()),
                                                      getReferenceName(),
                                                      *myRefPtr,
                                                      mySeqWithoutEq);
@@ -1118,7 +1118,7 @@ char SamRecord::getSequence(int index, SequenceTranslation translation)
                     // Sequence defined, so translate it.
                     SamQuerySeqWithRef::seqWithEquals(mySequence.c_str(), 
                                                       myRecordPtr->myPosition, 
-                                                      myCigarRoller,
+                                                      *(getCigarInfo()),
                                                       getReferenceName(),
                                                       *myRefPtr,
                                                       mySeqWithEq);
@@ -1149,7 +1149,7 @@ char SamRecord::getSequence(int index, SequenceTranslation translation)
                     // so get the string.
                     SamQuerySeqWithRef::seqWithoutEquals(mySequence.c_str(), 
                                                          myRecordPtr->myPosition, 
-                                                         myCigarRoller,
+                                                         *(getCigarInfo()),
                                                          getReferenceName(),
                                                          *myRefPtr,
                                                          mySeqWithoutEq);
@@ -1224,7 +1224,7 @@ Cigar* SamRecord::getCigarInfo()
 }
 
 
-uint32_t SamRecord::getTagLength() 
+uint32_t SamRecord::getTagLength()
 {
     myStatus = SamStatus::SUCCESS;
     if(myNeedToSetTagsFromBuffer)
@@ -1441,6 +1441,86 @@ void SamRecord::clearTags()
     doubles.Clear();
     myTagBufferSize = 0;
     resetTagIter();
+}
+
+
+bool SamRecord::rmTag(const char* tag, char type)
+{
+    // Check the length of tag.
+    if(strlen(tag) != 2)
+    {
+        // Tag is the wrong length.
+        myStatus.setStatus(SamStatus::INVALID, 
+                           "rmTag called with tag that is not 2 characters\n");
+        return(false);
+    }
+
+    myStatus = SamStatus::SUCCESS;
+    if(myNeedToSetTagsFromBuffer)
+    {
+        if(!setTagsFromBuffer())
+        {
+            // Failed to read the tags from the buffer, so cannot
+            // get tags.
+            return(false);
+        }
+    }
+
+    // Construct the key.
+    int key = MAKEKEY(tag[0], tag[1], type);
+    // Look to see if the key exsists in the hash.
+    int offset = extras.Find(key);
+
+    if(offset < 0)
+    {
+        // Not found, so return true, successfully removed since
+        // it is not in tag.
+        return(true);
+    }
+
+    int rmBuffSize = 0;
+    
+    // Offset is set, so recalculate the buffer size without this entry.
+    // Do NOT remove from strings, integers, or doubles because then
+    // extras would need to be updated for all entries with the new indexes
+    // into those variables.
+    switch(type)
+    {
+        case 'A':
+        case 'c':
+        case 'C':
+            rmBuffSize = 4;
+            break;
+        case 's':
+        case 'S':
+            rmBuffSize = 5;
+            break;
+        case 'i':
+        case 'I':
+            rmBuffSize = 7;
+            break;
+        case 'f':
+            rmBuffSize = 7;
+            break;
+        case 'Z':
+            rmBuffSize = 4 + getString(offset).Length();
+            break;
+        default:
+            myStatus.setStatus(SamStatus::INVALID, 
+                               "rmTag called with unknown type.\n");
+            return(false);
+            break;
+    };
+
+    // The buffer tags are now out of sync.
+    myNeedToSetTagsInBuffer = true;
+    myIsTagsBufferValid = false;
+    myIsBufferSynced = false;
+    myTagBufferSize -= rmBuffSize;
+
+    // Remove from the hash.
+    extras.Delete(offset);
+    return(true);
 }
 
 

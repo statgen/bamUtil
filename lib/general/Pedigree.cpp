@@ -241,7 +241,8 @@ void Pedigree::EstimateFrequencies(int estimator, bool quiet)
     bool estimated = false;
     int  line = 3;
 
-    const char * estimators[] = { "using all genotypes", "using founder genotypes", "assumed equal" };
+    const char * estimators[] = 
+        { "using all genotypes", "using founder genotypes", "assumed equal" };
 
     bool condensed = markerCount > 100;
     int  grain = markerCount / 50, estimates = 0;
@@ -326,19 +327,22 @@ void Pedigree::WriteDataFile(FILE * output)
     // markers, traits, affections, covariates
 
     if (haveTwins)
-        fprintf(output, " Z  Zygosity \n");
+        fprintf(output, " Z  Zygosity\n");
 
     for (int m = 0; m < markerCount; m++)
-        fprintf(output, " M  %s \n", (const char *) markerNames[m]);
+        fprintf(output, " M  %s\n", (const char *) markerNames[m]);
 
     for (int t = 0; t < traitCount; t++)
-        fprintf(output, " T  %s \n", (const char *) traitNames[t]);
+        fprintf(output, " T  %s\n", (const char *) traitNames[t]);
 
     for (int a = 0; a < affectionCount; a++)
-        fprintf(output, " A  %s \n", (const char *) affectionNames[a]);
+        fprintf(output, " A  %s\n", (const char *) affectionNames[a]);
 
     for (int c = 0; c < covariateCount; c++)
-        fprintf(output, " C  %s \n", (const char *) covariateNames[c]);
+        fprintf(output, " C  %s\n", (const char *) covariateNames[c]);
+
+    for (int s = 0; s < stringCount; s++)
+        fprintf(output, " $  %s\n", (const char *) stringNames[s]);
 
     fprintf(output, " E  END-OF-DATA \n");
 }
@@ -417,6 +421,12 @@ void Pedigree::WriteRecodedPerson(
             fprintf(output, "%.3f\t", p->covariates[c]);
         else
             fprintf(output, "x\t");
+
+    for (int s = 0; s < stringCount; s++)
+        if (!p->strings[s].IsEmpty())
+            fprintf(output, "%s\t", (const char *) p->strings[s]);
+        else
+            fprintf(output, ".\t");
 
     fprintf(output, "\n");
 }

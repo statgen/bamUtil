@@ -106,7 +106,7 @@ int main(int argc, char ** argv)
   bClear = true;
 
   while ( (c = getopt_long(argc, argv, "vf:i:o:l:", getopt_long_options, &n_option_index)) != -1 ) {
-    std::cout << getopt_long_options[n_option_index].name << "\t" << optarg << std::endl;
+      //    std::cout << getopt_long_options[n_option_index].name << "\t" << optarg << std::endl;
     if ( c == 'f' ) {
       sFasta = optarg;
     }

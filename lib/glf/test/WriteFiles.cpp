@@ -40,7 +40,7 @@ void TestWrite::testWrite()
     
     std::string testFile = "results/MyTestOut1.glf";
 
-    assert(glfOut.openForWrite(testFile.c_str()));
+    assert(glfOut.openForWrite(testFile.c_str(), false));
 
     // Create a glf header.
     GlfHeader glfHeader;

@@ -125,6 +125,11 @@ void PedigreeDescription::Load(IFILE & input, bool warnIfLinkage)
                 columns.Push(pcCovariate);
                 columnCount++;
                 break;
+            case '$' :
+                columnHash.Push(GetStringID(tokens[1]));
+                columns.Push(pcString);
+                columnCount++;
+                break;
             case 'S' :
                 i = (int) tokens[0].SubStr(1);
                 i = i > 0 ? i : 1;
@@ -823,6 +828,7 @@ const char * PedigreeDescription::ColumnSummary(String & string)
     UpdateSummary(string, pcTrait, " traits");
     UpdateSummary(string, pcAffection, " discrete traits");
     UpdateSummary(string, pcCovariate, " covariates");
+    UpdateSummary(string, pcString, " strings");
     UpdateSummary(string, pcZygosity, " zygosity");
     UpdateSummary(string, pcSkip, " skipped");
     return string;
@@ -839,5 +845,97 @@ void PedigreeDescription::UpdateSummary(String & string, int type, const char * 
         string += count;
         string += label;
     }
+}
+
+
+void PedigreeDescription::AddMarkerColumn(const char * markerName)
+{
+    if (columns.Last() == pcEnd)
+    {
+        columns.Pop();
+        columnHash.Pop();
+    }
+
+    columnHash.Push(GetMarkerID(markerName));
+    columns.Push(pcMarker);
+    columnCount++;
+}
+
+void PedigreeDescription::AddCovariateColumn(const char * covariateName)
+{
+    if (columns.Last() == pcEnd)
+    {
+        columns.Pop();
+        columnHash.Pop();
+    }
+
+    columnHash.Push(GetCovariateID(covariateName));
+    columns.Push(pcCovariate);
+    columnCount++;
+}
+
+void PedigreeDescription::AddTraitColumn(const char * traitName)
+{
+    if (columns.Last() == pcEnd)
+    {
+        columns.Pop();
+        columnHash.Pop();
+    }
+
+    columnHash.Push(GetCovariateID(traitName));
+    columns.Push(pcTrait);
+    columnCount++;
+}
+
+void PedigreeDescription::AddAffectionColumn(const char * affectionName)
+{
+    if (columns.Last() == pcEnd)
+    {
+        columns.Pop();
+        columnHash.Pop();
+    }
+
+    columnHash.Push(GetAffectionID(affectionName));
+    columns.Push(pcAffection);
+    columnCount++;
+}
+
+void PedigreeDescription::AddStringColumn(const char * stringName)
+{
+    if (columns.Last() == pcEnd)
+    {
+        columns.Pop();
+        columnHash.Pop();
+    }
+
+    columnHash.Push(GetStringID(stringName));
+    columns.Push(pcString);
+    columnCount++;
+}
+
+void PedigreeDescription::AddZygosityColumn()
+{
+    if (columns.Last() == pcEnd)
+    {
+        columns.Pop();
+        columnHash.Pop();
+    }
+
+    columnHash.Push(0);
+    columns.Push(pcZygosity);
+    columnCount++;
+}
+
+void PedigreeDescription::AddSkippedColumn()
+{
+    if (columns.Last() == pcEnd)
+    {
+        columns.Pop();
+        columnHash.Pop();
+    }
+
+    columnHash.Push(0);
+    columns.Push(pcSkip);
+    columnCount++;
 }
 
