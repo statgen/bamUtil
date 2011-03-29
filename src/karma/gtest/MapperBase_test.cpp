@@ -38,7 +38,7 @@
 TEST(GenomeSequenceClass, forBaseSpace)
 {
     GenomeSequence gs;
-    gs.setReferenceName("../testdata/phiX.fa");
+    gs.setReferenceName("../test/phiX.fa");
     gs.open(false);
     // test phiX
     // >1 phiX: http://www.genome.jp/dbget-bin/www_bget?refseq+NC_001422
@@ -69,7 +69,7 @@ TEST(GenomeSequenceClass, forBaseSpace)
 TEST(GenomeSequenceClass, forColorSpace)
 {
     GenomeSequence gs;
-    gs.setReferenceName("../testdata/phiX.fa");
+    gs.setReferenceName("../test/phiX.fa");
     gs.open(true); // open color space
     // test phiX
     // >1 phiX: http://www.genome.jp/dbget-bin/www_bget?refseq+NC_001422
@@ -106,9 +106,9 @@ public:
 protected:
     virtual void SetUp()
     {
-        gs.setReferenceName("../testdata/phiX.fa");
+        gs.setReferenceName("../test/phiX.fa");
         gs.open(false);
-        csgs.setReferenceName("../testdata/phiX.fa");
+        csgs.setReferenceName("../test/phiX.fa");
         csgs.open(true);
     }
     virtual void TearDown()
@@ -116,6 +116,7 @@ protected:
     }
 };
 
+#if 0
 TEST_F(MapperBaseTest, calibrateSequenceTest)
 {
     std::string read_fragment = "";
@@ -128,17 +129,20 @@ TEST_F(MapperBaseTest, calibrateSequenceTest)
     genomeIndex_t genomeMatchPosition = 0;
     bool isForwardStrand = false;
 
-    matchedRead.calibrateSequence(read_fragment, data_quality,
-                                  cs_read_fragment, cs_data_quality,
-                                  &gs, &csgs,
-                                  genomeMatchPosition,
-                                  isForwardStrand);
+    // unfinished test cases:
+    // matchedRead.calibrateSequence(read_fragment, data_quality,
+    //                               cs_read_fragment, cs_data_quality,
+    //                               &gs, &csgs,
+    //                               genomeMatchPosition,
+    //                               isForwardStrand);
+
     // EXPECT_EQ("GAGTTTTATCGCTTCCATGACGCAGAAGTTAACAT", read_fragment);
     //        AGAGTTTTATCGCTTCCATGACGCAGAAGTTAACAT (reverse complement of the read)
     //       GAGTTTTATCGCTTCCATGACGCAGAAGTTAACACTTTCGGATATTTCTGATGAGTCGAA (first line of phiX.fa)
     // unfinished
 };
-
+#endif
+#if 0
 TEST_F(MapperBaseTest, fixBaseRangeTest)
 {
     int start = 1;
@@ -161,36 +165,7 @@ TEST_F(MapperBaseTest, fixBaseRangeTest)
     // TODO: unfisihed
     SUCCEED();
 };
-
-TEST_F(MapperBaseTest, ColorSpaceRelatedFunction)
-{
-    // convertCSReadTest
-    std::string input;
-    std::string ret;
-    input = "A00";
-    EXPECT_EQ("AA", matchedRead.convertCSRead(input));
-    EXPECT_EQ("AAA", matchedRead.convertCSRead(input, true));
-
-    input = "A011223";
-    EXPECT_EQ("AACAGAT", matchedRead.convertCSRead(input, true));
-
-    input =   "G310022100002020303200022112.1.21.2.";
-    EXPECT_EQ("GCAAAGACCCCCTTCCGGCTTTTCTGTCNNNNNNNN", matchedRead.convertCSRead(input,true));
-
-    // test reverse, complement, reverse complement
-    input = "ACCGT";
-    EXPECT_EQ("TGCCA", matchedRead.getReverse(input));
-    EXPECT_EQ("TGGCA", matchedRead.getComplement(input));
-    EXPECT_EQ("ACGGT", matchedRead.getReverseComplement(input));
-
-    input = "A011223";
-    EXPECT_EQ("322110A", matchedRead.getReverse(input));
-    EXPECT_EQ("T011223", matchedRead.getComplement(input));
-    EXPECT_EQ("322110T", matchedRead.getReverseComplement(input));
-
-
-};
-
+#endif
 //////////////////////////////////////////////////////////////////////
 // Old code
 //////////////////////////////////////////////////////////////////////
@@ -370,10 +345,10 @@ TEST_F(ColorSpaceTest, printColorSpace)
     String fragmentTag="@Chromosome_4__132622643_Genome_0822325337";
     String inputCigar="0M";
     (mapper->getBestMatch()).printColorSpace(output, &gs, &csgs, 0,
-            mapper->originalCSRead,
-            mapper->originalCSQual,
-            fragmentTag,
-            true, inputCigar);
+                                             mapper->originalCSRead,
+                                             mapper->originalCSQual,
+                                             fragmentTag,
+                                             true, inputCigar);
     std::istringstream in(output.str(),std::istringstream::in);
     std::string tag, flag, chr, pos, mapq, cigar, mchr, mpos, isize, seq, qual, hatag, cstag, cqtag;
     in>>tag>> flag>> chr>> pos>> mapq>> cigar>> mchr>> mpos>> isize>> seq>> qual>>hatag>>cstag>>cqtag;

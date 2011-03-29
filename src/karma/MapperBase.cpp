@@ -50,7 +50,7 @@ unsigned int MapperBase::colorSpaceSNP[][3]={{ 5,10,15}, { 4,11,14}, { 7, 8,13},
                                              { 3, 6, 9}, { 2, 7, 8}, { 1, 4,11}, { 0, 5,10}
 };
 
-#include "debug.h"
+#include "Debug.h"
 
 /**
  * If trimming happened, restore to original read and quality and adjust genomeMatchingPosition

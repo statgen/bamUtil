@@ -76,8 +76,8 @@ TEST_F(MapperSEColorSpaceTest, CS_SE_exactMatch)
     seMapper->MapSingleRead();
     std::ostringstream output;
     (seMapper->getBestMatch()).printColorSpace(output, &gs, &csgs, 0,
-            readFragment, dataQuality,
-            fragmentTag, true, inputCigar);
+                                               readFragment, dataQuality,
+                                               fragmentTag, true, inputCigar);
     std::istringstream in(output.str(),std::istringstream::in);
     std::string tag, flag, chr, pos, mapq, cigar, mchr, mpos, isize, seq, qual, cszTag, csqTag;
     in>>tag>> flag>> chr>> pos>> mapq>> cigar>> mchr>> mpos>> isize>> seq>> qual>> cszTag >> csqTag;
@@ -106,7 +106,7 @@ TEST_F(MapperSEColorSpaceTest, CS_SE_reverse)
     String fragmentTag  = "@Chromosome_7__110805955_Genome_1343539570";
     String readFragment =                 "C21202221110033303332010301313022211";
     String expectedReadFragment =          "TGAAGAGTGTTTATAATATCCAATTGCATTCTCAC";
-//    String expectedReadFragment =          "TGAGAATGCAATTGGATATTATAAACACTCTTCA";
+    //    String expectedReadFragment =          "TGAGAATGCAATTGGATATTATAAACACTCTTCA";
     String inverseComplementReadFragment = "T11122203131030102333033300111222021";
     String inverseReadFragment =           "A11122203131030102333033300111222021";
     String dataQuality =                   "!55555555555555555555555555555555566";
@@ -118,8 +118,8 @@ TEST_F(MapperSEColorSpaceTest, CS_SE_reverse)
 
     std::ostringstream output;
     (seMapper->getBestMatch()).printColorSpace(output, &gs, &csgs, 0,
-            inverseReadFragment, inverseDataQuality,
-            fragmentTag, true, inputCigar);
+                                               inverseReadFragment, inverseDataQuality,
+                                               fragmentTag, true, inputCigar);
     std::istringstream in(output.str(),std::istringstream::in);
     std::string tag, flag, chr, pos, mapq, cigar, mchr, mpos, isize, seq, qual, cszTag, csqTag;
     in>>tag>> flag>> chr>> pos>> mapq>> cigar>> mchr>> mpos>> isize>> seq>> qual>> cszTag >> csqTag;
@@ -146,8 +146,8 @@ TEST_F(MapperSEColorSpaceTest, CS_SE_reverse)
 
     output.seekp(0);
     (seMapper->getBestMatch()).printColorSpace(output, &gs, &csgs, 0,
-            inverseComplementReadFragment, inverseDataQuality,
-            fragmentTag, true, inputCigar);
+                                               inverseComplementReadFragment, inverseDataQuality,
+                                               fragmentTag, true, inputCigar);
     in.str(output.str());
     in>>tag>> flag>> chr>> pos>> mapq>> cigar>> mchr>> mpos>> isize>> seq>> qual>> cszTag >> csqTag;
     EXPECT_STREQ(fragmentTag.c_str()+1, tag.c_str());
@@ -200,8 +200,8 @@ TEST_F(MapperSEColorSpaceTest, CS_SE_1MisMatch)
 
             std::ostringstream output;
             (seMapper->getBestMatch()).printColorSpace(output, &gs, &csgs, 0,
-                    mutatedCSReadFragment, dataQuality,
-                    fragmentTag, true, inputCigar);
+                                                       mutatedCSReadFragment, dataQuality,
+                                                       fragmentTag, true, inputCigar);
 
             std::istringstream in(output.str(),std::istringstream::in);
             std::string tag, flag, chr, pos, mapq, cigar, mchr, mpos, isize, seq, qual, cszTag, csqTag;
@@ -248,8 +248,8 @@ TEST_F(MapperSEColorSpaceTest, CS_SE_nonMappable)
 
     std::ostringstream output;
     (seMapper->getBestMatch()).printColorSpace(output, &gs, &csgs, 0,
-            readFragment, dataQuality,
-            fragmentTag, true, inputCigar);
+                                               readFragment, dataQuality,
+                                               fragmentTag, true, inputCigar);
     // printf("%s\n", output.str().c_str());
     std::istringstream in(output.str(),std::istringstream::in);
     std::string tag, flag, chr, pos, mapq, cigar, mchr, mpos, isize, seq, qual, haTag, nbTag, erTag;

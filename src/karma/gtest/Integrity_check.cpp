@@ -35,12 +35,12 @@
 TEST(IntegrityCheck, forBaseSpace)
 {
     GenomeSequence gs;
-    gs.setReferenceName("../testdata/phiX.fa");
+    gs.setReferenceName("../test/phiX.fa");
     if (gs.open(false))
         error(1,1, "Cannot open reference genome at __LINE__");
     genomeIndex_t index=0;
 
-    FILE* f=fopen("../testdata/phiX.fa","rt");
+    FILE* f=fopen("../test/phiX.fa","rt");
     char data;
     while (!feof(f))
     {
@@ -92,12 +92,12 @@ TEST(IntegrityCheck, forColorSpace)
         };
 
     GenomeSequence gs;
-    gs.setReferenceName("../testdata/phiX.fa");
+    gs.setReferenceName("../test/phiX.fa");
     if (gs.open(true))
         error(1,1, "Cannot open reference genome at __LINE__");
     genomeIndex_t index=0;
 
-    FILE* f=fopen("../testdata/phiX.fa","rt");
+    FILE* f=fopen("../test/phiX.fa","rt");
     char data;
     signed char lastBase = 5;    // for converting the reference to colorspace, the first bp is always 5 (in base space it is 'N')
     while (!feof(f))

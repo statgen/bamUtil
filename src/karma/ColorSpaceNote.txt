@@ -1,0 +1,26 @@
+Case 1:
+genome: GAAACACTGACGTTCTTACTGACGCAGAAGAAAAC
+         2001112121310220312121331220220001
+        ^                                         (^ genomeIndex = 777)
+read: A55200111212131022031212133121322000	  (tag: unknown_0001:8:1:1044:2657#0/1)
+       N===========================T======        (35 bp)
+       NGAAACACTGACGTTCTTACTGACGCAGTAGAAAA
+       0        0         0         012345        (35 bp)
+       NNN==ACAGNNNNNNTCCNNNNNNCGTACGAG==A	  
+       NNNAAACAGNNNNNNTCCNNNNNNCGTACGAGAAA
+      ANNAAACACTGACGTTCTTACTGACGCAGCGGAAAA
+                                   ^
+//Case 2:
+      TGGTTCGTTCTTATTACCCTTCTGAATGTCACGCT	  (gs)
+       1010231022033031002022120311211332         (csgs)
+      31010231022033031002022120311211355A	  (read)
+      TGGTTCGTTCTTATTACCCTTCTGAATGTCACGTNA	  (read)
+      TACCAAGCAAGAATAATGGGAAGACTTACAGTGCN	  (phiX.cs.sam)
+      ==================================N         (phiX.sam)
+      TACCAAGCAAGAATAATGGGAAGACTTACAGTGCN         (phiX.sam)
+      ATGGTTCGTTCTTATTACCCTTCTGAATGTCACGN	  (phiX.sam comp)
+      ^						  (genomeMatchPosition)
+
+      ACCAAGCAAGAATAATGGGAAGACTTACAGTGCAN
+
+      NCGTGACATTCAGAAGGGTAATAAGAACGAACCAT         (phiX.fastq)
