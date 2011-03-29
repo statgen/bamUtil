@@ -97,7 +97,7 @@ typedef uint32_t wordIndex_t;
 
 class WordHashMmapHeader : public MemoryMapArrayHeader
 {
-public:
+ public:
     size_t getHeaderSize(int i)
     {
         return sizeof(*this);
@@ -115,19 +115,19 @@ std::ostream &operator << (std::ostream &stream, WordHashMmapHeader &h);
 
 typedef MemoryMapArray<
 uint32_t,
-uint32_t,
-UMWH_COOKIE,
-UMWH_VERSION,
-mmapUint32Access,
-mmapUint32Set,
-mmapUint32elementCount2Bytes,
-WordHashMmapHeader
-> WordHashArray;
+    uint32_t,
+    UMWH_COOKIE,
+    UMWH_VERSION,
+    mmapUint32Access,
+    mmapUint32Set,
+    mmapUint32elementCount2Bytes,
+    WordHashMmapHeader
+    > WordHashArray;
 
 
 class WordHash : public WordHashArray
 {
-private:
+ private:
     typedef uint64_t    WordHashKey;
 
     WordHashKey    hash(wordInteger_t prefix, wordInteger_t suffix)
@@ -148,7 +148,7 @@ private:
     genomeIndex_t   *wordPositions;
     hashEntry       *wordHash;
 
-public:
+ public:
     WordHash();
     ~WordHash();
     void close();

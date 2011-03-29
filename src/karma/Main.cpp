@@ -46,10 +46,10 @@
 // and occurrenceCutoff.
 //
 static std::string getReferenceNameWithArgs(
-    int wordSize,
-    int occurrenceCutoff,
-    GenomeSequence *baseSpaceReference,
-    GenomeSequence *colorSpaceReference)
+                                            int wordSize,
+                                            int occurrenceCutoff,
+                                            GenomeSequence *baseSpaceReference,
+                                            GenomeSequence *colorSpaceReference)
 {
     std::ostringstream buf;
     // ugly, but we want to open the color space index if it was provided,
@@ -62,6 +62,18 @@ static std::string getReferenceNameWithArgs(
     return buf.str();
 }
 
+static bool isFileExistAndNonEmpty(const char* filename) 
+{
+    std::ifstream ifs(filename);
+    if (!ifs) return false;
+
+    char ch;
+    if (!ifs.get(ch)) 
+        return false;
+
+    ifs.close();
+    return true;
+}
 
 void mainCheck(const char *program, int argc, const char **argv)
 {
@@ -192,7 +204,7 @@ void mainMap(const char *program, int argc, const char **argv)
 
     if (args.outputFilename=="")
     {
-        std::cerr << "Must specify an output filename using -o." << std::endl;
+        std::cerr << "Must specify an output filename using -o." << std::endl << std::endl;
         args.usage();
         exit(1);
     }
@@ -224,37 +236,49 @@ void mainMap(const char *program, int argc, const char **argv)
     // setting mapper related parameters
     engine.parseMapArguments(args);
 
+    // check whether input file(s) exist
+    enum MappingMode {SINGLE_END_MAPPING, PAIRED_END_MAPPING} mappingMode;
+    std::string sequenceFilename1 ; // = argv[optind];
+    std::string sequenceFilename2 ;
+
+    if (optind != argc - 2) {
+        mappingMode = SINGLE_END_MAPPING;
+        sequenceFilename1 = argv[optind];
+    } else {
+        mappingMode = PAIRED_END_MAPPING;
+        sequenceFilename1 = argv[optind];
+        sequenceFilename2 = argv[optind+1];
+    }
+    if (!isFileExistAndNonEmpty(sequenceFilename1.c_str()))
+    {
+        std::cout << "Error: " << sequenceFilename1 << " does not exist or is empty" << std::endl;
+        exit(1);
+    }
+    if (mappingMode == PAIRED_END_MAPPING &&
+        !isFileExistAndNonEmpty(sequenceFilename2.c_str()))
+    {
+        std::cout << "Error: " << sequenceFilename2 << " does not exist or is empty" << std::endl;
+        exit(1);
+    }
+        
     // open reference, wordindex, wordhash
     if (engine.openReference(args.references[0], args.wordSize, args.occurrenceCutoff, args.quietMode, args.debug)) {
         std::cerr << "Open reference failed! " << std::endl;
         exit(1);
     }
 
-    std::string sequenceFilename1 = argv[optind];
-    std::string sequenceFilename2 ;
-
-    if (optind != argc - 2)
-    {
-#if 0
-        // single end mapping
-        engine.MapSEReadsFromFile(
-            sequenceFilename1,
-            args.outputFilename);
-#else
-        // single end mapping
-        engine.MapSEReadsFromFileMT(
-            sequenceFilename1,
-            args.outputFilename);
-#endif
-    } else
-    {
-        sequenceFilename2 = argv[optind+1];
-                // paired end mapping
-        engine.MapPEReadsFromFiles(
-            sequenceFilename1,
-            sequenceFilename2,
-            args.outputFilename);
-    } 
+    switch (mappingMode) {
+        case SINGLE_END_MAPPING:
+            engine.MapSEReadsFromFileMT(
+                sequenceFilename1,
+                args.outputFilename);
+            break;
+        case PAIRED_END_MAPPING:
+            engine.MapPEReadsFromFilesMT(
+                sequenceFilename1,
+                sequenceFilename2,
+                args.outputFilename);
+    }
 
     engine.closeReference();
 }

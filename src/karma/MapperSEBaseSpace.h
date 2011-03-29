@@ -31,7 +31,7 @@
 class MapperSEBaseSpace: public MapperSE
 {
 
-public:
+ public:
     MapperSEBaseSpace();
     void MapSingleRead();
     void MapSingleReadGapped();

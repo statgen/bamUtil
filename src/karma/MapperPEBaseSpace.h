@@ -39,32 +39,38 @@
 //
 class MapperPEBaseSpace : public MapperPE
 {
-public:
+ public:
     MapperPEBaseSpace();
     ~MapperPEBaseSpace();
 
     void mapReads(MapperPE *);
     void mapReads2(MapperPE *);
     bool mapReads(
-        ReadIndexer         &indexer,
-        int                 whichWord,
-        int                 candidateCount,
-        genomeIndex_t       *candidates
-    );
-    bool tryLocalAlign(MapperPE* anchor);
+                  ReadIndexer         &indexer,
+                  int                 whichWord,
+                  int                 candidateCount,
+                  genomeIndex_t       *candidates
+                  );
+    bool tryLocalAlign(MapperBase* anchor);
 
-public:
+ protected:
     void testMatchCandidates();
     void testMatchCandidates(MatchCandidatesIndex_t::iterator);
     void printMatchCandidates(MatchCandidatesIndex_t::iterator);
 
     void printMatchCandidates();
+
+  private:
+    MatchedReadPE   compareHelper;
+
+
+ public:
     int test(
-        int testNum,
-        MapperPE    *otherMapper,
-        const char *read1, const char *qual1, char direction1, int chr1, genomeIndex_t index1, int misMatches1,
-        const char *read2, const char *qual2, char direction2, int chr2, genomeIndex_t index2, int misMatches2
-    );
+             int testNum,
+             MapperPE    *otherMapper,
+             const char *read1, const char *qual1, char direction1, int chr1, genomeIndex_t index1, int misMatches1,
+             const char *read2, const char *qual2, char direction2, int chr2, genomeIndex_t index2, int misMatches2
+             );
 
 };
 

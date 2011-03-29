@@ -14,7 +14,7 @@ class MapperBase;
 //
 class MatchedReadBase
 {
-public:
+  public:
     MatchedReadBase()
     {
         constructorClear();
@@ -98,6 +98,17 @@ public:
                                GenomeSequence* csgs,
                                CigarRoller& cigarRoller,
                                bool         showReferenceBases = true);
+    void translateCS2BSByCigarOperation(const Cigar::CigarOperator& cigar, 
+                                        std::string& cs_read, std::string& cs_qual, 
+                                        uint32_t& readPos, 
+                                        GenomeSequence* gs, GenomeSequence* csgs, 
+                                        genomeIndex_t& referencePos,
+                                        bool showReferenceBases,
+                                        std::string& sequence2print, std::string& quality2print);
+    void markUnmatchedBases(const CigarRoller& cigarRoller, 
+                            GenomeSequence* gs, genomeIndex_t genomePos, 
+                            bool showReferenceBases,
+                            std::string& sequence2print);
     ///
     /// Write a single read to the stream.  It may
     /// have been sequenced as a pair, in which case
@@ -133,11 +144,11 @@ public:
         uint16_t    samMateFlag,
         const std::string &sampleGroupID,
         const std::string &alignmentPathTag
-    );
+        );
 
     ///
-    /// It is a similar procedure to print(), however, we implicitly translate
-    /// color space reads to base space.
+    /// It is a similar procedure to print(), internally, we translate
+    /// color space reads to base space, and color space qualities to base space qualities
     ///
     void printColorSpace(
         std::ostream &file,
@@ -153,7 +164,7 @@ public:
         uint16_t    samMateFlag,
         const std::string &sampleGroupID,
         const std::string &alignmentPathTag
-    );
+        );
 
     virtual void printOptionalTags(
         std::ostream &, 
@@ -166,8 +177,8 @@ public:
     // method just prints the data to cout:
     void debugPrint();
 
-    // 
-    void fixBaseRange(int start, int end, /// inclusive boundaries
+    // Fix a range of mismatches in color space
+    void fixBaseRange(uint32_t start, uint32_t end, /// inclusive boundaries
                       std::string& read_fragment, std::string& data_quality,
                       const std::string& cs_read_fragment, const std::string& cs_data_quality,
                       GenomeSequence* gs, GenomeSequence* csgs,
@@ -175,19 +186,26 @@ public:
                       bool isForwardStrand);
 
     //
+    void translateCigarMatchSequence(uint32_t count, 
+                                     std::string& cs_read, std::string& cs_qual, int readPosition,
+                                     GenomeSequence* gs, GenomeSequence* csgs, genomeIndex_t referencePosition,
+                                     bool isForward, 
+                                     std::string& sequence2print, std::string& quality2print) ;
+
+
+    //////////////////////////////////////////////////
+    // Obselete code goes here
+    //////////////////////////////////////////////////
+#if 0
     void calibrateSequence(std::string& read_fragment, std::string& data_quality,
                            const std::string& cs_read_fragment, const std::string& cs_data_quality,
                            GenomeSequence* gs, GenomeSequence* csgs,
                            genomeIndex_t genomeMatchPosition,
                            bool isForwardStrand);
+#endif
 
-
-//////////////////////////////////////////////////
-// Obselete code goes here
-//////////////////////////////////////////////////
 #if 0
     // not ever used funcitons
-    // Xiaowei use #if to comment them out.
     virtual const char *getMateReferenceSequence();
     virtual genomeIndex_t getMatePosition();
     virtual int getISize();     // insertion size -> 0 for single, delta for paired

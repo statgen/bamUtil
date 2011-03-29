@@ -56,11 +56,11 @@ MapperSE::~MapperSE()
 // 4. adjust for huge posterior probability.
 // XXX UPDATE whichWord as well, so getCigarStringOffset() can work
 bool MapperSE::updateBestMatch(
-    ReadIndexer& indexer,
-    int quality,
-    int mismatchCount,
-    int whichWord,
-    genomeIndex_t genomeMatchPosition)
+                               ReadIndexer& indexer,
+                               int quality,
+                               int mismatchCount,
+                               int whichWord,
+                               genomeIndex_t genomeMatchPosition)
 {
 #if 0
     std::cout<<"genomeMatchPosition="<<genomeMatchPosition<<" quality="<<quality<<std::endl;
@@ -122,7 +122,7 @@ bool MapperSE::updateBestMatch(
     if (
         bestMatch.cumulativePosteriorProbabilities > cumulativePosteriorProbabilitiesCutoff &&
         sumQualityToProb[quality] > cumulativePosteriorProbabilitiesCutoff
-    )
+        )
     {
 #if 0
         // debug:

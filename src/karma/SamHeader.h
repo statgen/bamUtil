@@ -32,9 +32,9 @@
 
 class SamHeader
 {
-private:
+ private:
     std::map<std::string, std::map<std::string, std::string> > header;
-public:
+ public:
     std::map<std::string, std::string> &operator[](std::string &key)
     {
         return header[key];

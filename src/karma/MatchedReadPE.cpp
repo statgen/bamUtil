@@ -9,8 +9,8 @@ void MatchedReadPE::constructorClear()
     MatchedReadBase::constructorClear();
 
     pairCumulativePosteriorProbabilities = 0.0;
-
     pairQuality = UNSET_QUALITY;
+
 }
 
 double MatchedReadPE::getQualityScore()

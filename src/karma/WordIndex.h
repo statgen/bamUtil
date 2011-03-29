@@ -62,7 +62,7 @@ typedef uint32_t wordIndex_t;
 
 class WordIndex
 {
-protected:
+ protected:
     int debugFlag;
     int verboseFlag;
 
@@ -70,7 +70,7 @@ protected:
     String      baseFilename;
     String IntegerToBPSeq(wordInteger_t word);
 
-public:
+ public:
     WordIndex();
     ~WordIndex();
 
@@ -120,7 +120,7 @@ public:
     unsigned char *wordReachedCutoffBitvector;
     unsigned int wordReachedCutoffBitvectorLength;  // size in bytes, not bits
 
-public:
+ public:
     unsigned int * hashindices; // given a word index, point to a list of words in wordpositions
 
     genomeIndex_t   *wordpositions; // an array of lists of words
@@ -163,9 +163,9 @@ public:
     unsigned int   findWordPosition(wordInteger_t word, genomeIndex_t filter, uint32_t width);
 
     inline genomeIndex_t   getMatchPosition(
-        unsigned int wordPositionIndex,
-        int wordStartPosition
-    ) const
+                                            unsigned int wordPositionIndex,
+                                            int wordStartPosition
+                                            ) const
     {
         return  wordpositions[wordPositionIndex] - wordStartPosition;
     }
@@ -176,7 +176,7 @@ public:
     }
 
 
-protected:
+ protected:
     bool AllocateWordsCountHashMemory();
 
     // only hashes the first instance of each wordSize sequence;

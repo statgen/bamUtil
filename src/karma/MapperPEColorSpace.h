@@ -40,39 +40,32 @@
 //
 class MapperPEColorSpace : public MapperPE
 {
-public:
+ public:
     MapperPEColorSpace();
     ~MapperPEColorSpace();
     void mapReads(MapperPE *);
     bool mapReads(
-        ReadIndexer         &indexer,
-        int                 whichWord,
-        int                 candidateCount,
-        genomeIndex_t       *candidates
-    );
-    bool tryLocalAlign(MapperPE* anchor);
+                  ReadIndexer         &indexer,
+                  int                 whichWord,
+                  int                 candidateCount,
+                  genomeIndex_t       *candidates
+                  );
+    bool tryLocalAlign(MapperBase* anchor);
 
-    /* private: */
-    /*     bool mapPairedReads( */
-    /*         MapperPE        *, */
-    /*         ReadIndexer &indexer, */
-    /*         int     whichWord, */
-    /*         int     wordXORMask, */
-    /*         int     wordMutationPosition */
-    /*         ); */
-public:
-
+ protected:
     void testMatchCandidates();
     void testMatchCandidates(MatchCandidatesIndex_t::iterator);
     void printMatchCandidates(MatchCandidatesIndex_t::iterator);
-
     void printMatchCandidates();
+  private:
+    MatchedReadPE   compareHelper;
+ public:
     int test(
-        int testNum,
-        MapperPE    *otherMapper,
-        const char *read1, const char *qual1, char direction1, int chr1, genomeIndex_t index1, int misMatches1,
-        const char *read2, const char *qual2, char direction2, int chr2, genomeIndex_t index2, int misMatches2
-    );
+             int testNum,
+             MapperPE    *otherMapper,
+             const char *read1, const char *qual1, char direction1, int chr1, genomeIndex_t index1, int misMatches1,
+             const char *read2, const char *qual2, char direction2, int chr2, genomeIndex_t index2, int misMatches2
+             );
 
 };
 
