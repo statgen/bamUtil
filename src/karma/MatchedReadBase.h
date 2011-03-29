@@ -156,7 +156,7 @@ class MatchedReadBase
                          std::string &fragmentTag,
                          bool showReferenceBases,
                          CigarRoller  &cigarRoller,
-       v                  bool    isProperAligned,
+                         bool    isProperAligned,
                          uint16_t    samMateFlag,
                          const std::string &sampleGroupID,
                          const std::string &alignmentPathTag
