@@ -13,9 +13,20 @@ PATH_INCLUDE_TO_LIB_BASE=..
 #
 #CFLAGS=$(OPTFLAG) -Werror -Wno-unused-variable -Wno-unused-result -pipe -Wall -ggdb -D__ZLIB_AVAILABLE__  -D_FILE_OFFSET_BITS=64 -I$(SAMTOOLS_PATH) -D__STDC_LIMIT_MACROS
 
+UNAME := $(shell uname)
+
+ifeq ($(UNAME), Linux)
+# do something Linux-y
 WARNINGS=-Wno-unused-variable
 WARNINGS+=$(shell if [ X$(CCVERSION) \> X4.2.0 ] ; then echo " -Wno-unused-result" ; fi)
 CFLAGS=$(OPTFLAG) -Werror $(WARNINGS) -pipe -Wall -ggdb -D__ZLIB_AVAILABLE__  -D_FILE_OFFSET_BITS=64 -I$(SAMTOOLS_PATH) -D__STDC_LIMIT_MACROS
+endif
+ifeq ($(UNAME), Darwin)
+# do something Mac OS
+# -Wall contain -Wunused-variable and -Wunused-result from 'man gcc'
+CFLAGS=$(OPTFLAG) -Werror -pipe -Wall -ggdb -D__ZLIB_AVAILABLE__  -D_FILE_OFFSET_BITS=64 -I$(SAMTOOLS_PATH) -D__STDC_LIMIT_MACROS
+endif
+
 
 SOURCES_WITH_HEADER=\
 	BaseAsciiMap.cpp \

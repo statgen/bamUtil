@@ -36,7 +36,7 @@ class Test
     WordIndex       *wordIndex;
     WordHash        *wordHashLeft;
     WordHash        *wordHashRight;
-public:
+ public:
     void setGenomeSequence(GenomeSequence *g)
     {
         gs = g;
@@ -60,11 +60,11 @@ public:
     int testSEColorSpaceReads();
     int testPEBaseSpaceReads();
     int testRemapReference(
-        std::string &outputFile,
-        std::string &chromosome,
-        int readBaseCount,
-        int skipBases
-    );
+                           std::string &outputFile,
+                           std::string &chromosome,
+                           int readBaseCount,
+                           int skipBases
+                           );
 };
 
 #endif

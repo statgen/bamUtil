@@ -28,7 +28,6 @@
 #include "MapperSEBaseSpace.h"
 #include "MappingStats.h"
 #include "ReadsProcessor.h"
-#include "Error.h"
 #include "MathConstant.h"
 #include "Performance.h"
 #include "Util.h"
@@ -55,6 +54,9 @@ MapperSEBaseSpace::MapperSEBaseSpace()
 //
 void MapperSEBaseSpace::MapSingleRead()
 {
+    // resetMapper() function is called in
+    // both MapSingleReadGapped() and MapSingleReadUnGapped()
+    // so that Mapper will work as fresh as they can
     if (mapperOptions.forceSmithWaterman)
     {
         //
@@ -81,15 +83,11 @@ void MapperSEBaseSpace::MapSingleRead()
             mapperOptions.allowSmithWaterman &&
             (bestMatch.quality == MatchedReadBase::REPEAT_QUALITY ||
              bestMatch.quality == MatchedReadBase::UNSET_QUALITY)
-        )
+            )
         {
             //
-            // bleh... gotta clean up some stuff in this mapper
-            // so that we can re-run against the same read:
+            // clean-up work is included in MapSingleReadGapped()
             //
-            bestMatch.constructorClear();
-            forward.checkedPositions.Clear();
-            backward.checkedPositions.Clear();
 
             // now rerun, but do gapped alignment (slow)
             MapSingleReadGapped();
@@ -106,6 +104,8 @@ void MapperSEBaseSpace::MapSingleRead()
 //
 void MapperSEBaseSpace::MapSingleReadGapped()
 {
+    this->resetMapper();
+
     forward.useGapped = true;
     backward.useGapped = true;
     MapSingleReadUnGapped();    // ugly -- now MapSingleReadUnGapped acts like a gapped mapper
@@ -118,24 +118,27 @@ void MapperSEBaseSpace::MapSingleReadGapped()
 // this helper function is because getting pointer to method to work the way I want
 // it to is a big pain in the backside.
 //
-static bool evalTrampoline(
-    MapperBase *mapper,
-    ReadIndexer &indexer,
-    genomeIndex_t genomeMatchPosition,
-    int whichWord)
+bool evalTrampolineEvalBaseSpace(
+                           MapperBase *mapper,
+                           ReadIndexer &indexer,
+                           genomeIndex_t genomeMatchPosition,
+                           int whichWord)
 {
     return ((MapperSEBaseSpace*)mapper)->evalSEBaseSpace(indexer, genomeMatchPosition, whichWord);
 }
 
 void MapperSEBaseSpace::MapSingleReadUnGapped()
 {
+    this->resetMapper();
+
 #if 0
     if (mapperOptions.minimumMapQuality>0)
-//        cumulativePosteriorProbabilitiesCutoff = 1.0 - pow(10.0, -mapperOptions.minimumMapQuality/10.0);
+        //        cumulativePosteriorProbabilitiesCutoff = 1.0 - pow(10.0, -mapperOptions.minimumMapQuality/10.0);
         cumulativePosteriorProbabilitiesCutoff = 1.0 / (1 - pow(10.0, -mapperOptions.minimumMapQuality/10.0));
     else
-#endif
         cumulativePosteriorProbabilitiesCutoff = 100000;
+#endif
+    cumulativePosteriorProbabilitiesCutoff = 100000;
 
     clearBestMatch();
 
@@ -149,19 +152,18 @@ void MapperSEBaseSpace::MapSingleReadUnGapped()
     // evalAllCandidatesForWord(evalTrampoline, NULL, indxer, whichWord, 0)    =>
     // (MapperSEBaseSpace*)mapper->evalSEBaseSpace()   (from evalTrampoline)
     //
-    evalBaseSpaceReads(evalTrampoline, NULL);
+    evalBaseSpaceReads(evalTrampolineEvalBaseSpace, NULL);
 
 }
 
 inline
 bool MapperSEBaseSpace::evalSEBaseSpace(
-    ReadIndexer &indexer,
-    genomeIndex_t genomeMatchPosition,
-    int whichWord)
+                                        ReadIndexer &indexer,
+                                        genomeIndex_t genomeMatchPosition,
+                                        int whichWord)
 {
-
     int quality;
-    int mismatchCount;
+    int mismatchCount=-1; // in getSumQ(), this value should be calculated to be non-negative
 
     //
     // whichWord is used only by the Smith Waterman gapped
@@ -174,11 +176,11 @@ bool MapperSEBaseSpace::evalSEBaseSpace(
     // even for exact match only, non-gapped alignments.
     //
     quality = indexer.getSumQ(
-                  genomeMatchPosition,
-                  mismatchCount,
-                  bestMatch.quality,
-                  whichWord
-              );
+                              genomeMatchPosition,
+                              mismatchCount,
+                              bestMatch.quality,
+                              whichWord
+                              );
 
     //
     // use a base class method to update the match --- shared
@@ -252,14 +254,14 @@ int MapperSEBaseSpace::test(int testNum, const char *read, const char *qual, cha
         //
         std::string referenceString;
         gs->getString(
-            referenceString,
-            bestMatch.genomeMatchPosition,
-            strlen(read) /* - offset */);
+                      referenceString,
+                      bestMatch.genomeMatchPosition,
+                      strlen(read) /* - offset */);
         std::cout << "Want CIGAR:" << expectedCigarStringLocal << std::endl;
         std::cout << "Got CIGAR: " << cigarString << std::endl;
         std::cout << "Cigar Operations:" << std::endl;
         std::cout << cigarRoller;
-//        std::cout << "Offset:    " << offset << std::endl;
+        //        std::cout << "Offset:    " << offset << std::endl;
         std::cout << "Read:      " << read << std::endl;
         std::cout << "Reference: " << referenceString << std::endl;
 

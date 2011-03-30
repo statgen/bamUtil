@@ -24,15 +24,13 @@
  */
 
 #include "DumpInfo.h"
-#include "Error.h"
 #include "GenomeSequence.h"
-#include "MapperPE.h"
-#include "MapperPEBaseSpace.h"
 #include "ReadsProcessor.h"
 #include "Test.h"
 #include "Random.h"
 #include "Util.h"
 #include "WordIndex.h"
+#include "SamHeader.h"
 
 #include <iostream>
 #include <iomanip>
@@ -40,54 +38,42 @@
 #include <string>
 #include <unistd.h>
 
-struct arguments
+#include "Main.h"
+
+//
+// somewhat messy routine to get the filenames using the basename
+// obtained from the appropriate reference, and the arguments wordSize
+// and occurrenceCutoff.
+//
+static std::string getReferenceNameWithArgs(
+                                            int wordSize,
+                                            int occurrenceCutoff,
+                                            GenomeSequence *baseSpaceReference,
+                                            GenomeSequence *colorSpaceReference)
 {
-    arguments()
-    {
-        createIndex = false;
-        createReference = false;
-        debug = false;
-        help = false;
-        isColorSpace = false;
-        matchedReadsPrefix = "./";
-        maxBases = 0;
-        maxReads = 0;
-        maxTotalReads = 0;
-        occurrenceCutoff = 5000;
-        pairedReads = false;
-        seed = 123456;
-        test = false;
-        theReference = "";
-        theColorSpaceReference = "";
-        assemblyID = "";
-        species = "human";
-        uri = "";
-        wordSize = 15;          // default wordSize for WordIndex::create
-    }
-    bool createIndex;
-    bool createReference;
-    bool debug;
-    bool help;
-    bool isColorSpace;
-    String matchedReadsPrefix;
-    int maxBases;
-    int maxReads;
-    int maxTotalReads;
-    int occurrenceCutoff;
-    bool pairedReads;
-    int seed;
-    bool test;
-    String theReference;
-    String theColorSpaceReference;
-    String assemblyID;
-    String species;
-    String uri;
-    int wordSize;
+    std::ostringstream buf;
+    // ugly, but we want to open the color space index if it was provided,
+    // otherwise the base space one:
+    GenomeSequence &referenceTmp = colorSpaceReference ? *colorSpaceReference : *baseSpaceReference;
 
-    void usage(int argc, char **argv);
-};
+    buf << referenceTmp.getBaseFilename()
+        << "-" << (referenceTmp.isColorSpace() ? "cs" : "bs") << "."
+        << wordSize << "." << occurrenceCutoff;
+    return buf.str();
+}
 
+static bool isFileExistAndNonEmpty(const char* filename) 
+{
+    std::ifstream ifs(filename);
+    if (!ifs) return false;
 
+    char ch;
+    if (!ifs.get(ch)) 
+        return false;
+
+    ifs.close();
+    return true;
+}
 
 void mainCheck(const char *program, int argc, const char **argv)
 {
@@ -116,212 +102,20 @@ void mainCheck(const char *program, int argc, const char **argv)
     }
 }
 
-//
-// somewhat messy routine to get the filenames using the basename
-// obtained from the appropriate reference, and the arguments wordSize
-// and occurrenceCutoff.
-//
-static std::string getReferenceNameWithArgs(
-    int wordSize,
-    int occurrenceCutoff,
-    GenomeSequence *baseSpaceReference,
-    GenomeSequence *colorSpaceReference)
-{
-    std::ostringstream buf;
-    // ugly, but we want to open the color space index if it was provided,
-    // otherwise the base space one:
-    GenomeSequence &referenceTmp = colorSpaceReference ? *colorSpaceReference : *baseSpaceReference;
-
-    buf << referenceTmp.getBaseFilename()
-    << "-" << (referenceTmp.isColorSpace() ? "cs" : "bs") << "."
-    << wordSize << "." << occurrenceCutoff;
-    return buf.str();
-}
-
-void mainMap(const char *program, int argc, const char **argv)
-{
-    MapArguments args;
-    args.setArgs(argc, argv);
-    args.getopt();
-
-    if (args.outputFilename == "-") args.tomMode = true;
-
-    // we expect one or two sequence files
-    if (optind >= argc || optind < argc - 2)
-    {
-        args.usage();   // no return
-    }
-
-    if (args.outputFilename=="")
-    {
-        std::cerr << "Must specify an output filename using -o." << std::endl;
-        args.usage();
-    }
-
-    // only allow user to specify one reference name, since we now have unified way to open base/color space ref. genome.
-    if (args.references.size() != 1)
-    {
-        std::cerr << "Unspecified base space reference" << std::endl;
-        args.usage();
-        exit(1);
-    }
-
-    GenomeSequence *baseSpaceReference = NULL;
-    GenomeSequence *colorSpaceReference = NULL;
-
-    baseSpaceReference = new GenomeSequence();
-    baseSpaceReference->setReferenceName(args.references[0].c_str());
-    baseSpaceReference->useMemoryMap();
-    if (baseSpaceReference->open(false))
-    {
-        std::cerr << baseSpaceReference->getErrorString();
-        exit(1);
-    }
-
-    if (args.mapInColorSpace)
-    {
-        colorSpaceReference = new GenomeSequence();
-        colorSpaceReference->setReferenceName(args.references[0].c_str());
-        colorSpaceReference->useMemoryMap();
-        if (colorSpaceReference->open(true))
-        {
-            std::cerr << colorSpaceReference->getErrorString();
-            exit(1);
-        }
-    }
-
-    //
-    // get the base index file name -- essentially the prefix that
-    // excludes the strings .umwiwp, .umwihi, .umwhl, .umwhr.
-    //
-    // This portion of the filename includes a) the user provided
-    // reference name (after stripping .fa, .umfa, etc) plus short
-    // period separated strings encoding the wordCount and occurrenceCutoff.
-    //
-    std::string baseName = getReferenceNameWithArgs(args.wordSize, args.occurrenceCutoff, baseSpaceReference, colorSpaceReference);
-
-    WordIndex wi;
-
-    wi.setFilenames(baseName.c_str());
-    if (!args.tomMode) std::cout << "open and prefetch the reference genome word index: " << std::flush;
-
-    if (wi.open(colorSpaceReference ? *colorSpaceReference : *baseSpaceReference))
-    {
-        std::cout << "failed.\n";
-        exit(1);
-    }
-
-    if (!args.debug) wi.prefetch();
-
-    if (!args.tomMode) std::cout << "done." << std::endl;
-
-    if (args.debug)
-    {
-        std::cout << std::endl << "Dumping Word Index file header: " << std::endl;
-        std::cout << wi << std::endl;
-    }
-
-    if (!args.tomMode) std::cout << "open and prefetch long word hashes: " << std::flush;
-
-    WordHash whLeft;
-    WordHash whRight;
-
-    std::string leftHashName, rightHashName;
-
-    leftHashName = baseName + ".umwhl";
-    rightHashName = baseName + ".umwhr";
-
-
-    // turn it on
-    if (whLeft.open(leftHashName.c_str()))
-    {
-        std::cerr << "failed to open left word hash " << leftHashName  << "." << std::endl;
-        exit(1);
-    }
-    if (whRight.open(rightHashName.c_str()))
-    {
-        std::cerr << "failed to open right word hash " << rightHashName  << "." << std::endl;
-    }
-
-    if (!args.debug)
-    {
-        whLeft.prefetch();
-        whRight.prefetch();
-    }
-
-
-    if (!args.tomMode) std::cout << "done." << std::endl << std::flush;
-
-    if (args.debug)
-    {
-        std::cout << std::endl << "Dumping Left Word Hash file header: " << std::endl;
-        std::cout << whLeft.getHeader() << std::endl;
-        std::cout << "Dumping Right Word Hash file header: " << std::endl;
-        std::cout << whRight.getHeader() << std::endl;
-    }
-
-    //
-    // base and color space references are identified, now
-    // figure out which index to open.
-    //
-
-    //
-    // XXX messy...
-    //
-    ReadsProcessor engine;
-
-    engine.maxBases = args.maxBases * 1000 * 1000;
-    engine.maxReads = args.maxReads;
-    engine.maxTotalReads = args.maxReads;
-
-    // get the date for the SAM header:
-    time_t t = time(NULL);
-    struct tm *timep = gmtime(&t);
-    char timeBuffer[256];
-    strftime(timeBuffer,sizeof(timeBuffer), "%Y-%m-%dT%H:%MZ", timep);
-
-    engine.maxBases = args.maxBases * 1000 * 1000;
-    engine.maxReads = args.maxReads;
-    engine.maxTotalReads = args.maxReads;
-    //    XXX XXX XXX XXX
-    //    engine.mapperOptions = mapperOptions;
-    engine.setColorSpace(args.mapInColorSpace);
-
-    engine.setGenomeSequence(baseSpaceReference);
-    engine.setColorSpaceGenomeSequence(colorSpaceReference);
-    engine.setWordIndex(&wi);
-    engine.setWordHashLeft(&whLeft);
-    engine.setWordHashRight(&whRight);
-
-    engine.mapperOptions.genomePositionFilterWidth = args.insertSize*2;
-    engine.mapperOptions.showReferenceBases = args.showReferenceBases;
-
-    engine.mapperOptions.qualityTrim = args.qualityTrim;
-
-    // get the commandline string for the SAM header and stdout:
-    std::string commandLine = program;
-    for (int i=0; i<argc; i++)
-    {
-        commandLine += " ";
-        commandLine+=argv[i];
-    }
+/**
+ * Obtain a usable header
+ */
+static int parseHeader(SamHeader& header, MapArguments& args, std::string& commandLine) {
+    header.clear();
 
     // get other fields for the SAM output header:
-    engine.header.set("HD", "VN", "1.0");
-    engine.header.set("HD", "SO", "unsorted");
-    engine.header.set("PG", "ID", "karma");
-    engine.header.set("PG", "VN", VERSION);
-    engine.header.set("PG", "CL", commandLine.c_str());
+    header.set("HD", "VN", "1.0");
+    header.set("HD", "SO", "unsorted");
+    header.set("PG", "ID", "karma");
+    header.set("PG", "VN", VERSION);
+    header.set("PG", "CL", commandLine.c_str());
 
-    //
-    // RG is special - if the line exists, both SM and ID must also
-    // exist, even if set to unknown.  I decided I always wanted
-    // DT set, so I also have to set SM and ID here.
-    //
-    engine.header.set("RG", "DT", timeBuffer);
-    engine.header.set("RG", "SM", "Unknown");
-    engine.header.set("RG", "ID", "1");
-    engine.mapperOptions.readGroupID = "1";
+    // bool isReadGroupSet = false; // if RG tag is not set, we will set it to a default value.
 
     //
     // now handle SAM header overrides from the command line:
@@ -353,38 +147,140 @@ void mainMap(const char *program, int argc, const char **argv)
             args.usage();   // no return
         }
 
-        // ugly way to track this... not sure of best solution.
-        if (headerLineName=="RG" && headerLineTag=="ID")
-            engine.mapperOptions.readGroupID = headerLineValue;
+        // // ugly way to track this... not sure of best solution.
+        // if (headerLineName=="RG" && headerLineTag=="ID")
+        //     isReadGroupSet = true;
 
-        engine.header.set(headerLineName, headerLineTag, headerLineValue);
+        header.set(headerLineName, headerLineTag, headerLineValue);
+    }
+
+
+    // validate SAMHeader:
+    // check if starred tag exists (to conform to SAM specification)
+    if (!header.conformSpecification())
+        return 1;
+
+
+    // check if RG tag is present, since...
+    // get the date for the SAM header:
+    if (!header.containTag("RG")) {
+        time_t t = time(NULL);
+        struct tm *timep = gmtime(&t);
+        char timeBuffer[256];
+        strftime(timeBuffer,sizeof(timeBuffer), "%Y-%m-%dT%H:%MZ", timep);
+
+        //
+        // RG is special - if the line exists, both SM and ID must also
+        // exist, even if set to unknown.  I decided I always wanted
+        // DT set, so I also have to set SM and ID here.
+        //
+        //
+        const char* defaultReadGroupID = "1";
+        header.set("RG", "DT", timeBuffer);
+        header.set("RG", "SM", "Unknown");
+        header.set("RG", "ID", defaultReadGroupID);
     }
 
     // engine.mapperOptions.showReferenceBases = true;
+    return 0;
+}
 
-    std::string sequenceFilename1 = argv[optind];
-    std::string sequenceFilename2;
 
-    if (optind == argc - 2)
+void mainMap(const char *program, int argc, const char **argv)
+{
+    MapArguments args;
+    args.setArgs(argc, argv);
+    args.getopt();
+
+    if (args.outputFilename == "-") args.quietMode = true;
+
+    // we expect one or two sequence files
+    if (optind >= argc || optind < argc - 2)
     {
+        std::cerr << "Must specify one sequence for mapping in single end mode, or specify two sequences for mapping in paired end mode " << std::endl;
+        args.usage();   // no return
+        exit(1);
+    }
+
+    if (args.outputFilename=="")
+    {
+        std::cerr << "Must specify an output filename using -o." << std::endl << std::endl;
+        args.usage();
+        exit(1);
+    }
+
+    // only allow user to specify one reference name, since we now have unified way to open base/color space ref. genome.
+    if (args.references.size() != 1)
+    {
+        std::cerr << "Unspecified base space reference" << std::endl;
+        args.usage();
+        exit(1);
+    }
+
+    ReadsProcessor engine;
+    // get the commandline string for the SAM header and stdout:
+    std::string commandLine = program;
+    for (int i=0; i<argc; i++)
+    {
+        commandLine += " ";
+        commandLine+=argv[i];
+    }
+    // deal with SAM header related params
+    SamHeader header;
+    if ( parseHeader(header, args, commandLine) ) {
+        std::cerr << "Cannot set SAM header." << std::endl;
+        exit(1);
+    }
+    engine.setHeader(header);
+
+    // setting mapper related parameters
+    engine.parseMapArguments(args);
+
+    // check whether input file(s) exist
+    enum MappingMode {SINGLE_END_MAPPING, PAIRED_END_MAPPING} mappingMode;
+    std::string sequenceFilename1 ; // = argv[optind];
+    std::string sequenceFilename2 ;
+
+    if (optind != argc - 2) {
+        mappingMode = SINGLE_END_MAPPING;
+        sequenceFilename1 = argv[optind];
+    } else {
+        mappingMode = PAIRED_END_MAPPING;
+        sequenceFilename1 = argv[optind];
         sequenceFilename2 = argv[optind+1];
     }
+    if (!isFileExistAndNonEmpty(sequenceFilename1.c_str()))
+    {
+        std::cout << "Error: " << sequenceFilename1 << " does not exist or is empty" << std::endl;
+        exit(1);
+    }
+    if (mappingMode == PAIRED_END_MAPPING &&
+        !isFileExistAndNonEmpty(sequenceFilename2.c_str()))
+    {
+        std::cout << "Error: " << sequenceFilename2 << " does not exist or is empty" << std::endl;
+        exit(1);
+    }
+        
+    // open reference, wordindex, wordhash
+    if (engine.openReference(args.references[0], args.wordSize, args.occurrenceCutoff, args.quietMode, args.debug)) {
+        std::cerr << "Open reference failed! " << std::endl;
+        exit(1);
+    }
 
-    if (sequenceFilename2!="")
-    {
-        // paired end mapping
-        engine.MapPEReadsFromFiles(
-            sequenceFilename1,
-            sequenceFilename2,
-            args.outputFilename);
+    switch (mappingMode) {
+        case SINGLE_END_MAPPING:
+            engine.MapSEReadsFromFileMT(
+                sequenceFilename1,
+                args.outputFilename);
+            break;
+        case PAIRED_END_MAPPING:
+            engine.MapPEReadsFromFilesMT(
+                sequenceFilename1,
+                sequenceFilename2,
+                args.outputFilename);
     }
-    else
-    {
-        // single end mapping
-        engine.MapSEReadsFromFile(
-            sequenceFilename1,
-            args.outputFilename);
-    }
+
+    engine.closeReference();
 }
 
 void mainCreate(const char *program, int argc, const char **argv)
@@ -426,19 +322,6 @@ void mainCreate(const char *program, int argc, const char **argv)
         std::cerr << "failed to create the reference file " << fileName << "." << std::endl;
         exit(1);
     }
-
-#if 0
-    //
-    // XXX A LOT OF THINGS NEED TO BE FILLED IN HERE:
-    //
-    // the header now exists, and is read/write, so we set
-    // these up here (putting them before ::create() above,
-    // these initializations will fail).
-    //
-    reference.setAssemblyID(args.assemblyID);
-    reference.setSpecies(args.species);
-    reference.setURI(args.uri);
-#endif
 
     if (args.createIndex)
     {
@@ -753,10 +636,4 @@ int main(int argc, const char ** argv)
         commandList(std::cerr, argc, argv);
         args.usage();   // no return
     }
-
-#if 0
-    if (strcmp(argv[1], "testInternals")==0) mainTestInternals(argc - 1, argv + 1);
-    if (strcmp(argv[1], "debugRead")==0) mainDebugRead(argc - 1, argv + 1);
-#endif
-
 }

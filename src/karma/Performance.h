@@ -33,7 +33,7 @@ class Timing
 {
     timeval startInterval;
     timeval endInterval;
-public:
+ public:
     Timing()
     {
         start();
@@ -60,7 +60,7 @@ inline void Timing::end()
 inline double Timing::interval()
 {
     return (endInterval.tv_sec + (endInterval.tv_usec/1000000.0)) -
-           (startInterval.tv_sec + (startInterval.tv_usec/1000000.0));
+        (startInterval.tv_sec + (startInterval.tv_usec/1000000.0));
 }
 
 #endif

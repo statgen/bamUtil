@@ -6,4 +6,5 @@ TOOLBASE=GCContent  GenomeRegionSeqStats QSamFlag Sequence BamQC QCStats
 SRCONLY=main.cpp
 HDRONLY=FlagDef.h
 
+USER_COMPILE_VARS = -lcrypto
 # DO NOT DELETE THIS LINE -- make depend depends on it

@@ -33,14 +33,14 @@ void SamHeader::dump(std::ostream &f)
     for (h = header.begin(); h != header.end(); h++)
     {
         f << "@" << h->first;
-//        fprintf(f,"@%s", h->first);
+        //        fprintf(f,"@%s", h->first);
         for (val=h->second.begin(); val!=h->second.end(); val++)
         {
             f << "\t" << val->first << ":" <<  val->second;
-//            fprintf(f,"\t%s:%s", val->first.c_str(), val->second.c_str());
+            //            fprintf(f,"\t%s:%s", val->first.c_str(), val->second.c_str());
         }
         f << std::endl;
-//        fprintf(f,"\n");
+        //        fprintf(f,"\n");
     }
 }
 
@@ -56,4 +56,25 @@ void SamHeader::set(std::string &k1, std::string &k2, std::string &val)
     }
     // gotta bomb here:
     header[k1][k2] = val;
+}
+
+// check if the header conforms to SAM specification
+// detail:
+//   if @HD exists, VN must exist
+//   if @SQ exists, SN, LN must exist
+//   if @RG exists, ID must exist
+//   if @PG exists, ID must exit
+bool SamHeader::conformSpecification() {
+    if (header.find("HD") != header.end() && header["HD"].find("VN") == header["HD"].end()) 
+        return false;
+    if (header.find("SQ") != header.end() && header["SQ"].find("SN") == header["SQ"].end()) 
+        return false;
+    if (header.find("SQ") != header.end() && header["SQ"].find("LN") == header["SQ"].end()) 
+        return false;
+    if (header.find("RG") != header.end() && header["RG"].find("ID") == header["RG"].end()) 
+        return false;
+    if (header.find("PG") != header.end() && header["PG"].find("ID") == header["PG"].end()) 
+        return false;
+
+    return true;
 }

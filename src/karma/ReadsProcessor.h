@@ -30,7 +30,8 @@
 #include "WordIndex.h"
 #include "GenomeSequence.h"
 #include "SamHeader.h"
-#include "UserOptions.h"        // for MapperUserOptions
+#include "UserOptions.h"
+#include "MapperUserOption.h" 
 
 #include <vector>
 
@@ -47,60 +48,45 @@ using std::vector;
 
 class ReadsProcessor
 {
+ private:
+    // IO related params
+    bool isColorSpace;
     GenomeSequence *gs;
     GenomeSequence *csgs;
     WordIndex *wi;
     WordHash  *wordHashLeft;
     WordHash  *wordHashRight;
 
-    std::string outputBaseFilename;
-    bool isColorSpace;
-public:
+    // mapping related params
+    SamHeader header;
+    MapperUserOption    mapperOptions;    // gets passed onto the mappers it uses
+    uint64_t maxBases;
+    uint64_t maxReads;
+    
+    // multithread param
+    int numThread;
+ public:
     ReadsProcessor();
     ~ReadsProcessor();
 
-    MapperUserOptions    mapperOptions;    // gets passed onto the mappers it uses
-    uint64_t maxBases;
-    uint64_t maxReads;
-    uint64_t maxTotalReads;
+    // assign h to this->header
+    void setHeader(SamHeader& h);  
 
-    void setGenomeSequence(GenomeSequence *g)
-    {
-        gs = g;
-    }
-    void setColorSpaceGenomeSequence(GenomeSequence *g)
-    {
-        csgs = g;
-    }
-    void setWordIndex(WordIndex *w)
-    {
-        wi = w;
-    }
-    void setWordHashLeft(WordHash *w)
-    {
-        wordHashLeft = w;
-    }
-    void setWordHashRight(WordHash *w)
-    {
-        wordHashRight = w;
-    }
-    void setOutputBaseFilename(const char *s)
-    {
-        outputBaseFilename = s;
-    }
-    void setColorSpace(bool t)
-    {
-        isColorSpace = t;
-    }
+    // assign Mapping related argument
+    // idealy, we should use args to init Mapper, 
+    // however, this is top-priority task.
+    void parseMapArguments(const MapArguments& args);
 
-private:
-    ///
-    /// called by createSEMapper and createPEMapper to
-    /// do common asserts on necessary word index, and
-    /// left and right hashes.
-    //
-    void verifyHashesExist();
-public:
+    // open GenomeSequence, WordIndex and WordHash classes
+    int openReference(std::string& referenceName, 
+                      int wordSize, 
+                      int occurrenceCutoff,
+                      bool quietMode = false, 
+                      bool debug = false);
+
+    // close GenomeSequence, WordIndex and WordHash classes
+    void closeReference();
+ public:
     ///
     /// using the word index, left and righ hashes, etc,
     /// construct and return a single end mapper:
@@ -112,23 +98,45 @@ public:
     /// @return a usable pointer to MapperPE class
     ///
     MapperPE* createPEMapper();
-    void MapPEReadsFromFiles(
-        std::string filename1,
-        std::string filename2,
-        std::string of
-    );
 
-    void MapSEReadsFromFile(
-        std::string filename,
-        std::string of
-    );
+    void MapPEReadsFromFiles(
+                             std::string filename1,
+                             std::string filename2,
+                             std::string outputFilename
+                             );
+
+    void MapPEReadsFromFilesMT(
+                               std::string filename1,
+                               std::string filename2,
+                               std::string outputFilename
+                               );
+
+    void MapSEReadsFromFileMT(
+                              std::string filename,
+                              std::string outputFilename
+                              );
 
     void CalibratePairedReadsFiles(
-        std::string filename1,
-        std::string filename2
-    );
+                                   std::string filename1,
+                                   std::string filename2
+                                   );
 
-    SamHeader header;
+ private:
+    ///
+    /// called by createSEMapper and createPEMapper to
+    /// do common asserts on necessary word index, and
+    /// left and right hashes.
+    //
+    void verifyHashesExist();
+
+
+#ifdef COMPILE_OBSOLETE_CODE
+ public:
+    void MapSEReadsFromFile(
+                            std::string filename,
+                            std::string outputFilename
+                            );
+#endif
 
 };
 

@@ -26,7 +26,6 @@
 #include "MapperPE.h"
 #include "MappingStats.h"
 #include "ReadsProcessor.h"
-#include "Error.h"
 #include "MathConstant.h"
 #include "Performance.h"
 #include "Util.h"
@@ -52,12 +51,12 @@ MapperPEBaseSpace::~MapperPEBaseSpace()
 // this helper function is because getting pointer to method to work the way I want
 // it to is a big pain in the backside.
 //
-static bool evalTrampoline(
-    MapperBase *mapper,
-    ReadIndexer &indexer,
-    int candidateCount,
-    genomeIndex_t *candidates,
-    int whichWord)
+static bool evalTrampolineMapReads(
+                           MapperBase *mapper,
+                           ReadIndexer &indexer,
+                           int candidateCount,
+                           genomeIndex_t *candidates,
+                           int whichWord)
 {
     return ((MapperPEBaseSpace*)mapper)->mapReads(indexer, whichWord, candidateCount, candidates);
 }
@@ -82,6 +81,8 @@ static bool evalTrampoline(
 //
 void MapperPEBaseSpace::mapReads(MapperPE *pairedReadB)
 {
+    this->resetMapper();
+    pairedReadB->resetMapper();
     // XXX messy here and in single end, and worse, we handle it quite
     // differently in top level logic, but it should accomplish the same
     // thing...
@@ -90,9 +91,9 @@ void MapperPEBaseSpace::mapReads(MapperPE *pairedReadB)
     // first --- if we aren't forcing smith waterman, attempt
     // a non gapped alignment
     //
-    if (!mapperOptions.forceSmithWaterman)
+    if (!mapperOptions.forceSmithWaterman){
         mapReads2(pairedReadB);
-
+    }
     //
     // second --- if we either are forcing smith waterman or we
     // failed to get a match and we are allowing it, get set to run
@@ -106,13 +107,8 @@ void MapperPEBaseSpace::mapReads(MapperPE *pairedReadB)
             //
             // clear our the old match information, we're starting over.
             //
-            bestMatch.constructorClear();
-            forward.checkedPositions.Clear();
-            backward.checkedPositions.Clear();
-
-            pairedReadB->bestMatch.constructorClear();
-            pairedReadB->forward.checkedPositions.Clear();
-            pairedReadB->backward.checkedPositions.Clear();
+            this->resetMapper();
+            pairedReadB->resetMapper();
         }
 
         //
@@ -150,16 +146,6 @@ void MapperPEBaseSpace::mapReads2(MapperPE *pairedReadB)
     pairedReadB->otherEndMapper = this;
     otherEndMapper = pairedReadB;
 
-    matchCandidate.constructorClear();
-    pairedReadB->matchCandidate.constructorClear();     // XXX should be unused here
-    bestMatch.constructorClear();
-    pairedReadB->bestMatch.constructorClear();
-
-    // assure that there is a default indexer hanging around in
-    // case there are no maps:
-    bestMatch.indexer = &forward;
-    pairedReadB->bestMatch.indexer = &pairedReadB->forward;
-
     // Chain reaction here:
     // populateMatchCandidates()  in MapperPE                                                         =>
     // evalBaseSpaceReads(NULL, evalTrampoline)                                                       =>
@@ -168,6 +154,8 @@ void MapperPEBaseSpace::mapReads2(MapperPE *pairedReadB)
     // ((MapperPE*)mapper)->populateMatchCandidates(indexer, whichWord, candidateCount, candidates);  by evalTrampoline
     //
     // this actually no longer fails, but check here anyway
+    //
+    // store potential match positions of pairedReadB
     if (pairedReadB->populateMatchCandidates(false))
     {
         return;
@@ -175,12 +163,12 @@ void MapperPEBaseSpace::mapReads2(MapperPE *pairedReadB)
 
     forward.mismatchCutoff =
         backward.mismatchCutoff =
-            2.5 + 4 * forward.read.size() * (mapperOptions.expectedErrorRate + mapperOptions.expectedSNPRate);
+        2.5 + 4 * forward.read.size() * (mapperOptions.expectedErrorRate + mapperOptions.expectedSNPRate);
 
 
     pairedReadB->forward.mismatchCutoff =
         pairedReadB->backward.mismatchCutoff =
-            2.5 + 4 * pairedReadB->forward.read.size() * (mapperOptions.expectedErrorRate + mapperOptions.expectedSNPRate);
+        2.5 + 4 * pairedReadB->forward.read.size() * (mapperOptions.expectedErrorRate + mapperOptions.expectedSNPRate);
 
 
     //  Another chain reaction:
@@ -188,14 +176,9 @@ void MapperPEBaseSpace::mapReads2(MapperPE *pairedReadB)
     // evalBaseSpaceRead(NULL, evalTrampoline, forward/backward) in MapperBase                                =>
     // evalAllCandidatesForWord(NULL, evalTrampoline, indexer, whichWord, masks) in Mapper Base               =>
     //     ((MapperPEBaseSpace*)mapper)->mapReads(indexer, whichWord, candidateCount, candidates) from evalTrampoline
-    evalBaseSpaceReads(NULL, evalTrampoline);
+    evalBaseSpaceReads(NULL, evalTrampolineMapReads);
+    return;
 }
-
-//
-// we don't want to keep calling the constructor for this,
-// so make it static here (used only in ::mapReads below).
-//
-static MatchedReadPE   compareHelper;
 
 //
 // examine a candidate in read A (*this), checking against the
@@ -224,14 +207,14 @@ static MatchedReadPE   compareHelper;
 // been done here.
 //
 bool MapperPEBaseSpace::mapReads(
-    ReadIndexer         &indexer,
-    int                 whichWord,
-    int                 candidateCount,
-    genomeIndex_t       *candidates
-)
+                                 ReadIndexer         &indexer,
+                                 int                 whichWord,
+                                 int                 candidateCount,
+                                 genomeIndex_t       *candidates
+                                 )
 {
-//    otherEndMapper->printMatchCandidates();
-//
+    //    otherEndMapper->printMatchCandidates();
+    //
     localGappedAlignment = false;
     otherEndMapper->localGappedAlignment = false;
 
@@ -285,7 +268,7 @@ bool MapperPEBaseSpace::mapReads(
         // In this instance, std::distance() is slower than (end-begin) by a wide margin.
         //
         //
-        matchCandidatesPointers_t::iterator low, high, it;
+        MatchCandidatesPointers_t::iterator low, high, it;
 #if 0
         // old code always calls lower_bound, upper_bound - no clear performance
         // gain, but I need to check this change in.  We can revert later if need be.
@@ -308,8 +291,8 @@ bool MapperPEBaseSpace::mapReads(
         // When I test with paired end phiX reads, I get better and more reads mapped
         // using this little snippet.  This should NOT happen.
         //
-        matchCandidatesPointers_t::iterator begin = otherEndMapper->matchCandidatesPointers.begin();
-        matchCandidatesPointers_t::iterator end = otherEndMapper->matchCandidatesPointers.end();
+        MatchCandidatesPointers_t::iterator begin = otherEndMapper->matchCandidatesPointers.begin();
+        MatchCandidatesPointers_t::iterator end = otherEndMapper->matchCandidatesPointers.end();
         if ((end - begin) < 2)
         {
             low = begin;
@@ -364,7 +347,7 @@ bool MapperPEBaseSpace::mapReads(
                        matchCandidateB.word,
                        matchCandidateB.whichWord,
                        matchCandidateB.wordMutationIndex
-                      );
+                       );
             }
 #endif
             //
@@ -372,12 +355,12 @@ bool MapperPEBaseSpace::mapReads(
             //
             if (matchCandidate.quality == MatchedReadBase::UNSET_QUALITY)
             {
-                matchCandidate.quality = indexer.getColorSpaceSumQ(
-                                             matchCandidate.genomeMatchPosition,
-                                             matchCandidate.mismatchCount,
-                                             bestMatch.quality,
-                                             whichWord
-                                         );
+                matchCandidate.quality = indexer.getSumQ(
+                                                         matchCandidate.genomeMatchPosition,
+                                                         matchCandidate.mismatchCount,
+                                                         bestMatch.quality,
+                                                         whichWord
+                                                         );
                 matchCandidate.whichWord = whichWord;
 #if 0
                 //
@@ -434,12 +417,12 @@ bool MapperPEBaseSpace::mapReads(
             //
             if (matchCandidateB.quality == MatchedReadBase::UNSET_QUALITY)
             {
-                matchCandidateB.quality = matchCandidateB.indexer->getColorSpaceSumQ(
-                                              matchCandidateB.genomeMatchPosition,
-                                              matchCandidateB.mismatchCount,
-                                              MAX_Q2P,        // XXX FIX THIS -
-                                              matchCandidateB.whichWord
-                                          );
+                matchCandidateB.quality = matchCandidateB.indexer->getSumQ(
+                                                                           matchCandidateB.genomeMatchPosition,
+                                                                           matchCandidateB.mismatchCount,
+                                                                           MAX_Q2P,        // XXX FIX THIS -
+                                                                           matchCandidateB.whichWord
+                                                                           );
 
                 if (!matchCandidateB.qualityIsValid() || matchCandidateB.quality >= MAX_Q2P)
                 {
@@ -460,9 +443,9 @@ bool MapperPEBaseSpace::mapReads(
             }
 
 #if 0
-//
-// debug code to show all possible matches... leave it here, please.
-//
+            //
+            // debug code to show all possible matches... leave it here, please.
+            //
             std::string s;
             gs->getChromosomeAndIndex(s, matchCandidateB.genomeMatchPosition);
             std::cout << "eval position " << matchCandidateB.genomeMatchPosition << " " << s << " this position quality = " << matchCandidateB.quality << std::endl;
@@ -506,7 +489,7 @@ bool MapperPEBaseSpace::mapReads(
 
     // safe guard bestMatch & otherEndMapper->bestMatch indexer pointer NOT to be null
     if (bestMatch.quality == MatchedReadBase::UNSET_QUALITY &&
-            otherEndMapper->bestMatch.quality == MatchedReadBase::UNSET_QUALITY)
+        otherEndMapper->bestMatch.quality == MatchedReadBase::UNSET_QUALITY)
     {
         bestMatch.indexer=& forward;
         otherEndMapper->bestMatch.indexer= & (otherEndMapper->forward);
@@ -516,25 +499,40 @@ bool MapperPEBaseSpace::mapReads(
     return false;
 }
 
-bool MapperPEBaseSpace::tryLocalAlign(MapperPE* anchor)
+//
+// XXX TODO: refactor this code.
+//
+// Attempt to do a local alignment.
+//
+// The goal appears to be to try local alignment so that the caller may
+// determine whether or not it wishes to use the result.
+//
+bool MapperPEBaseSpace::tryLocalAlign(MapperBase* anchor)
 {
     genomeIndex_t localAlignmentSize;
     int64_t localAlignmentPosition;
     genomeIndex_t   optimalLocalAlignment;
 
     // here mapperSE serves as localMapper
-    if (mapperSE->processReadAndQuality(fragmentTag, forward.read, forward.phredQuality) != 0)
+    if (mapperSE->processReadAndQuality(fragmentTag, originalRead, originalQuality) != 0)
     {
         // can't continue -- really the caller probably should
         // have already failed by now anyway.
         return false;
     }
-    assert(mapperSE->processReadAndQuality(fragmentTag, forward.read, forward.phredQuality)==0);
 
+    //
+    // attempt to find a window of reasonable size
+    //
+    // mapperOptions.genomePositionFilterWidth is used, but is misnamed.
+    //
+    // the width should determine how far on either side of the anchor
+    // postion we look, not just the overall width.  Otherwise, it is
+    // misleading to most users (this one, for example).
     localAlignmentSize = mapperOptions.genomePositionFilterWidth +
-                         anchor->forward.readLength +
-                         mapperSE->forward.readLength;
-    localAlignmentPosition = anchor->bestMatch.genomeMatchPosition - localAlignmentSize/2;
+        anchor->forward.readLength +
+        mapperSE->forward.readLength;
+    localAlignmentPosition = anchor->getBestMatch().genomeMatchPosition - localAlignmentSize/2;
 
     //
     // the following two checks are done using
@@ -555,50 +553,61 @@ bool MapperPEBaseSpace::tryLocalAlign(MapperPE* anchor)
     // a chromosome boundary.
     //
     if (localAlignmentPosition + localAlignmentSize >
-            gs->sequenceLength())
+        gs->sequenceLength())
         localAlignmentPosition=gs->sequenceLength() - localAlignmentSize;
 
-    // TODO: uninitialized temporary variables, need to consider more!!!!
-    int mismatchCount, quality, gapOpenCount, gapCloseCount, gapExtensionCount;
-    if (!anchor->bestMatch.indexer->isForward)
+    // TODO(zhanxw): uninitialized temporary variables, need to consider more!!!!
+    int mismatchCount = 0, quality = 0, gapOpenCount = 0, gapCloseCount = 0, gapExtensionCount = 0;
+    if (!anchor->getBestMatch().indexer->isForward)
     {
         optimalLocalAlignment = this->mapperSE->forward.localAlignment(
-                                    (genomeIndex_t) localAlignmentPosition,
-                                    localAlignmentSize,
-                                    mismatchCount,
-                                    quality,
-                                    gapOpenCount,
-                                    gapCloseCount,
-                                    gapExtensionCount,
-                                    this->mapperSE->cigarRoller
-                                );
+                                                                       (genomeIndex_t) localAlignmentPosition,
+                                                                       localAlignmentSize,
+                                                                       mismatchCount,
+                                                                       quality,
+                                                                       gapOpenCount,
+                                                                       gapCloseCount,
+                                                                       gapExtensionCount,
+                                                                       this->mapperSE->cigarRoller
+                                                                       );
     }
     else
     {
         optimalLocalAlignment = this->mapperSE->backward.localAlignment(
-                                    (genomeIndex_t) localAlignmentPosition,
-                                    localAlignmentSize,
-                                    mismatchCount,
-                                    quality,
-                                    gapOpenCount,
-                                    gapCloseCount,
-                                    gapExtensionCount,
-                                    this->mapperSE->cigarRoller
-                                );
+                                                                        (genomeIndex_t) localAlignmentPosition,
+                                                                        localAlignmentSize,
+                                                                        mismatchCount,
+                                                                        quality,
+                                                                        gapOpenCount,
+                                                                        gapCloseCount,
+                                                                        gapExtensionCount,
+                                                                        this->mapperSE->cigarRoller
+                                                                        );
     };
     if (mapperSE->cigarRoller.size() > 5 ||
-            mapperSE->cigarRoller.getExpectedQueryBaseCount() != (int) mapperSE->forward.read.size())
+        mapperSE->cigarRoller.getExpectedQueryBaseCount() != (int) mapperSE->forward.read.size())
     {
+        // fails obvious QC check here, so return failure
         return false;
     }
     else
     {
+        //
+        // XXX fill in gapOpenCount and mismatchCount based on cigar string?
+        //
+        // XXX technically, there are two cases this code should get called
+        // 1) we get a good single end match, and guess that the other might
+        // be nearby.
+        // 2) we get two matches, one has high mismatch, and a realignment
+        // picks up a local gapped alignment - in this case, we can re-use
+        // the numBest and numMatchContributors values.
+        //
         this->mapperSE->bestMatch.genomeMatchPosition = optimalLocalAlignment;
         this->mapperSE->bestMatch.numBest = 1;
         this->mapperSE->bestMatch.numMatchContributors = 1;
         this->mapperSE->bestMatch.mismatchCount = mismatchCount;
-        this->mapperSE->bestMatch.quality = quality;
-        if (!anchor->bestMatch.indexer->isForward)
+        this->mapperSE->bestMatch.quality = anchor->getBestMatch().quality; // quality should be at most anchor's quality
+        if (!anchor->getBestMatch().indexer->isForward)
             this->mapperSE->bestMatch.indexer = &(this->mapperSE->forward);
         else
             this->mapperSE->bestMatch.indexer = &(this->mapperSE->backward);
@@ -611,7 +620,7 @@ int MapperPEBaseSpace::test(int testNum,
                             MapperPE    *otherMapper,
                             const char *read1, const char *qual1, char direction1, int chr1, genomeIndex_t index1, int misMatches1,
                             const char *read2, const char *qual2, char direction2, int chr2, genomeIndex_t index2, int misMatches2
-                           )
+                            )
 {
     std::string r1 = read1;    // read
     std::string q1 = qual1;    // quality
@@ -631,7 +640,7 @@ int MapperPEBaseSpace::test(int testNum,
 
     check(rc, testNum, "direction1", direction1, getBestMatch().isForward() ? 'F' : 'R');
     check(rc, testNum, "mismatch1", misMatches1, getBestMatch().mismatchCount);
-//    check(rc, testNum, "quality1", quality1, getBestMatch().quality);
+    //    check(rc, testNum, "quality1", quality1, getBestMatch().quality);
 
     int c = gs->getChromosome(getBestMatch().genomeMatchPosition);
     genomeIndex_t i = getBestMatch().genomeMatchPosition - gs->getChromosomeStart(c) + 1;
@@ -642,7 +651,7 @@ int MapperPEBaseSpace::test(int testNum,
 
     check(rc, testNum, "direction2", direction2, otherMapper->getBestMatch().isForward() ? 'F' : 'R');
     check(rc, testNum, "mismatch2", misMatches2, otherMapper->getBestMatch().mismatchCount);
-//    check(rc, testNum, "quality1", quality1, otherMapper->getBestMatch().quality);
+    //    check(rc, testNum, "quality1", quality1, otherMapper->getBestMatch().quality);
 
     c = gs->getChromosome(otherMapper->getBestMatch().genomeMatchPosition);
     i = otherMapper->getBestMatch().genomeMatchPosition - gs->getChromosomeStart(c) + 1;

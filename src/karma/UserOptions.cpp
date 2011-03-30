@@ -51,21 +51,17 @@ void BaseArguments::getoptH()
 {
     switch (opt)
     {
-        case 'd':
-            debug = true;
-            return;
-        case 's':
-            seed = atoi(optarg);
-            return;
-        default:
-            usage();
-            exit(1);
-            // XXX NOTREACHED
+    case 'd':
+        debug = true;
+        return;
+    case 's':
+        seed = atoi(optarg);
+        return;
+    default:
+        usage();
+        exit(1);
+        // XXX NOTREACHED
     }
-}
-
-void BaseArguments::processArguments()
-{
 }
 
 void BaseArguments::usage()
@@ -80,6 +76,7 @@ void BaseArguments::usage()
     exit(1);
 }
 
+////////////////////////////////////////////////////////////
 //
 // "Map" argument methods
 //
@@ -98,6 +95,7 @@ void MapArguments::usage()
     std::cerr  << "   -Q           -> quiet mode (no output except errors)" << std::endl;
     std::cerr  << "   -r [name]    -> required genome reference" << std::endl;
     std::cerr  << "   -R [int]     -> max number of reads" << std::endl;
+    std::cerr  << "   -t [int]     -> number of threads (default 1)" << std::endl;
     std::cerr  << "   -w [int]     -> index word size (default 15)" << std::endl;
     std::cerr  << std::endl;
     std::cerr  << "-O and -w modify which reference index gets opened." << std::endl;
@@ -114,49 +112,48 @@ void MapArguments::getoptH()
 {
     switch (opt)
     {
-        case 'a':
-            insertSize = atoi(optarg);
-            return;
-        case 'B':
-            maxBases = atoi(optarg) * 1000 * 1000;
-            return;
-        case 'c':
-            mapInColorSpace = true;
-            return;
-        case 'E':
-            showReferenceBases = true;
-            return;
-        case 'H':
-            SAMHeaderOptions.push_back(optarg);
-            return;
-        case 'o':
-            outputFilename = optarg;
-            return;
-        case 'O':
-            occurrenceCutoff = atoi(optarg);
-            return;
-        case 'q':
-            qualityTrim = atoi(optarg);
-            return;
-        case 'Q':
-            tomMode = true;
-            return;
-        case 'r':
-            references.push_back(optarg);
-            return;
-        case 'R':
-            maxReads = atoi(optarg);
-            return;
-        case 'w':
-            wordSize = atoi(optarg);
-            return;
-            break;
+    case 'a':
+        insertSize = atoi(optarg);
+        return;
+    case 'B':
+        maxBases = atoi(optarg) * 1000 * 1000;
+        return;
+    case 'c':
+        mapInColorSpace = true;
+        return;
+    case 'E':
+        showReferenceBases = true;
+        return;
+    case 'H':
+        SAMHeaderOptions.push_back(optarg);
+        return;
+    case 'o':
+        outputFilename = optarg;
+        return;
+    case 'O':
+        occurrenceCutoff = atoi(optarg);
+        return;
+    case 'q':
+        qualityTrim = atoi(optarg);
+        return;
+    case 'Q':
+        quietMode = true;
+        return;
+    case 'r':
+        references.push_back(optarg);
+        return;
+    case 't':
+        numThread = atoi(optarg);
+        return;
+    case 'R':
+        maxReads = atoi(optarg);
+        return;
+    case 'w':
+        wordSize = atoi(optarg);
+        return;
+        break;
     }
     BaseArguments::getoptH();
-}
-
-void MapArguments::processArguments()
-{
 }
 
 //
@@ -180,34 +177,30 @@ void RemapArguments::getoptH()
 {
     switch (opt)
     {
-        case 'a':
-            insertSize = atoi(optarg);
-            return;
-        case 'c':
-            chromosome = optarg;
-            return;
-        case 'o':
-            outputFilename = optarg;
-            return;
-        case 'O':
-            occurrenceCutoff = atoi(optarg);
-            return;
-        case 'r':
-            references.push_back(optarg);
-            return;
-        case 's':
-            readSkipOffset = atoi(optarg);
-            return;
-        case 'w':
-            wordSize = atoi(optarg);
-            return;
-            break;
+    case 'a':
+        insertSize = atoi(optarg);
+        return;
+    case 'c':
+        chromosome = optarg;
+        return;
+    case 'o':
+        outputFilename = optarg;
+        return;
+    case 'O':
+        occurrenceCutoff = atoi(optarg);
+        return;
+    case 'r':
+        references.push_back(optarg);
+        return;
+    case 's':
+        readSkipOffset = atoi(optarg);
+        return;
+    case 'w':
+        wordSize = atoi(optarg);
+        return;
+        break;
     }
     BaseArguments::getoptH();
-}
-
-void RemapArguments::processArguments()
-{
 }
 
 //
@@ -227,22 +220,18 @@ void CreateArguments::getoptH()
 {
     switch (opt)
     {
-        case 'c':
-            isColorSpace = true;
-            return;
-        case 'i':
-            createIndex = true;
-            return;
-        case 'w':
-            wordSize = atoi(optarg);
-            return;
-            break;
+    case 'c':
+        isColorSpace = true;
+        return;
+    case 'i':
+        createIndex = true;
+        return;
+    case 'w':
+        wordSize = atoi(optarg);
+        return;
+        break;
     }
     BaseArguments::getoptH();
-}
-
-void CreateArguments::processArguments()
-{
 }
 
 //
@@ -260,16 +249,12 @@ void CheckArguments::getoptH()
 {
     switch (opt)
     {
-        case 'v':
-            verbose = true;
-            return;
-            break;
+    case 'v':
+        verbose = true;
+        return;
+        break;
     }
     BaseArguments::getoptH();
-}
-
-void CheckArguments::processArguments()
-{
 }
 
 //
@@ -289,22 +274,18 @@ void HeaderArguments::getoptH()
 {
     switch (opt)
     {
-        case 'c':
-            isColorSpace = true;
-            return;
-        case 'e':
-            editFlag = true;
-            return;
-        case 'h':
-            newHeaderFile = optarg;
-            return;
-            break;
+    case 'c':
+        isColorSpace = true;
+        return;
+    case 'e':
+        editFlag = true;
+        return;
+    case 'h':
+        newHeaderFile = optarg;
+        return;
+        break;
     }
     BaseArguments::getoptH();
-}
-
-void HeaderArguments::processArguments()
-{
 }
 
 //
@@ -324,20 +305,15 @@ void FastQCheckArguments::getoptH()
 {
     switch (opt)
     {
-        case 'b':
-            isColorSpace = false;
-            return;
-        case 'm':
-            minReadLength = atoi(optarg);
-            return;
-        case 'e':
-            maxReportedErrors = atoi(optarg);
-            return;
+    case 'b':
+        isColorSpace = false;
+        return;
+    case 'm':
+        minReadLength = atoi(optarg);
+        return;
+    case 'e':
+        maxReportedErrors = atoi(optarg);
+        return;
     }
     BaseArguments::getoptH();
 }
-
-void FastQCheckArguments::processArguments()
-{
-}
-

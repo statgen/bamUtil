@@ -4,8 +4,8 @@
 #include "GenomeSequence.h"
 #include <string>
 
-#define HAS_SUFFIX(filename,suffix) \
-    (strlen(suffix) < strlen(filename) && \
+#define HAS_SUFFIX(filename,suffix)                                     \
+    (strlen(suffix) < strlen(filename) &&                               \
      strcasecmp(filename + strlen(filename) - strlen(suffix), suffix)==0)
 
 void DumpInfo(CheckArguments args, std::ostream &stream, const char *file)

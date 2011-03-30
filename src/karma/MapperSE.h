@@ -27,6 +27,7 @@
 #define _MAPPERSE_H
 
 #include "GenomeSequence.h"
+#include "MatchedReadSE.h"
 #include "MapperBase.h"
 #include "MemoryMapArray.h"
 #include "WordIndex.h"
@@ -34,47 +35,44 @@
 #include <iostream>
 #include <vector>
 
-class MatchedReadSE : public MatchedReadBase
-{
-public:
-    // overloaded methods - see base class for descriptions:
-    // char *getSequence(String &sequence, genomeIndex_t genomeMatchPosition);
-    void updateMatch(MatchedReadSE& betterMatch);
-
-};
-
 //
 // Mapper algorithms for Single End reads (SE)
 //
 class MapperSE : public MapperBase
 {
-public:
+ public:
     MatchedReadSE bestMatch;
 
-public:
+ public:
     MapperSE();
     ~MapperSE();
 
     virtual void MapSingleRead()=0;
+    MatchedReadBase &getBestMatch();
+    // reset method, it should be called before any alignment actually happen
+    void resetMapper() {
+        localGappedAlignment = false; // mapperSE will be called inside MapperPE, so set this to false is important.
+        this->clearBestMatch();
+        this->forward.checkedPositions.Clear();
+        this->backward.checkedPositions.Clear();
+    };
+
+ protected:
+    // reset bestMatch variable, as well as
+    // assign its member variables to default values
+    void clearBestMatch();
+
     // the following two are not claimed to be pure virtual,
     // since MapperSEColorSpace class has not ready to implement these 2 functions yet.
     virtual void MapSingleReadGapped()=0;
     virtual void MapSingleReadUnGapped()=0;
 
-    void setBestMatch(MatchedReadSE& m)
-    {
-        this->bestMatch=m;
-    };
-    void clearBestMatch();
-
     int evaluateAllCandidates(
-        ReadIndexer &indexer,
-        int     whichWord,
-        int     candidateCount,
-        genomeIndex_t *candidates
-    );
-
-    MatchedReadBase &getBestMatch();
+                              ReadIndexer &indexer,
+                              int     whichWord,
+                              int     candidateCount,
+                              genomeIndex_t *candidates
+                              );
 
     //
     // for every single end match candidate, call
@@ -90,11 +88,22 @@ public:
     // changes in the match).
     //
     bool updateBestMatch(
-        ReadIndexer& indexer,
-        int quality,
-        int mismatchCount,
-        int whichWord,
-        genomeIndex_t genomeMatchPosition);
+                         ReadIndexer& indexer,
+                         int quality,
+                         int mismatchCount,
+                         int whichWord,
+                         genomeIndex_t genomeMatchPosition);
+
+#ifdef COMPILE_OBSOLETE_CODE
+    // 
+    void setBestMatch(MatchedReadSE& m)
+    {
+        this->bestMatch=m;
+    };
+#endif
+
 };
+
+
 
 #endif

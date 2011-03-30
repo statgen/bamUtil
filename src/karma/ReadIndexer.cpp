@@ -26,12 +26,13 @@
 #include "ReadIndexer.h"
 #include "GreedyTupleAligner.h"
 #include "TrimSequence.h"
+#include "SmithWaterman.h"
 #include <algorithm>    // for sort
 #include <iostream>
 
 int ReadIndexer::Word2Integer(const char *read, int offset, int &wordNLocation)
 {
-//    assert(word.size() + index >= wordIndex->wordSize && index >= 0);
+    //    assert(word.size() + index >= wordIndex->wordSize && index >= 0);
 
     int wordinteger = 0;
     wordNLocation = -1;
@@ -43,37 +44,37 @@ int ReadIndexer::Word2Integer(const char *read, int offset, int &wordNLocation)
 
         switch (crtbaseinteger)
         {
-            case GenomeSequence::baseXIndex:
-                // policy: if a single index word in a read contains
-                // a single unknown character, we currently consider
-                // it different from an 'N', and discard the index.
-                // The read can still be mapped, just not on the
-                // basis of this particular index word position.
+        case GenomeSequence::baseXIndex:
+            // policy: if a single index word in a read contains
+            // a single unknown character, we currently consider
+            // it different from an 'N', and discard the index.
+            // The read can still be mapped, just not on the
+            // basis of this particular index word position.
+            return INVALID_WORDINDEX;
+        case GenomeSequence::baseNIndex:
+            // policy: indexing allows for a single N character to exist
+            // in each word.  If more than one exists, we can't readily
+            // code to mutate all possible combinations, so we'll bail in
+            // that case.
+            if (wordNLocation<0)
+            {
+                wordNLocation = i - offset;
+                crtbaseinteger = 0;         // knowing this is 0, we'll visit all edits of this base later
+            }
+            else
+            {
                 return INVALID_WORDINDEX;
-            case GenomeSequence::baseNIndex:
-                // policy: indexing allows for a single N character to exist
-                // in each word.  If more than one exists, we can't readily
-                // code to mutate all possible combinations, so we'll bail in
-                // that case.
-                if (wordNLocation<0)
-                {
-                    wordNLocation = i - offset;
-                    crtbaseinteger = 0;         // knowing this is 0, we'll visit all edits of this base later
-                }
-                else
-                {
-                    return INVALID_WORDINDEX;
-                }
-                // drop through to default handling
-            default:
-                wordinteger |= crtbaseinteger;
+            }
+            // drop through to default handling
+        default:
+            wordinteger |= crtbaseinteger;
         }
     }
 
     return wordinteger;
 }
 
-ReadIndexer::ReadIndexer(MapperUserOptions &m) : mapperOptions(m)
+ReadIndexer::ReadIndexer(MapperUserOption &m) : mapperOptions(m)
 {
     readLength = -1;
     isForward = true;
@@ -85,9 +86,9 @@ ReadIndexer::ReadIndexer(MapperUserOptions &m) : mapperOptions(m)
 
 struct wordsCompareClass {
     bool operator() (const ReadIndexer::Word& w1, const ReadIndexer::Word& w2)
-        {
-            return (w1.sortKey < w2.sortKey);
-        }
+    {
+        return (w1.sortKey < w2.sortKey);
+    }
 } wordsCompareInstance;
 
 //
@@ -109,6 +110,7 @@ struct wordsCompareClass {
 //  this needs to be driven by how we choose to assemble and
 //  iterate over the candidates.
 //
+// @return bool true: failed to set index strategy; false: succeed
 bool ReadIndexer::setIndexStrategy()
 {
     checkedPositions.Clear();       // clear hash of genome positions we have already checked.
@@ -139,7 +141,7 @@ bool ReadIndexer::setIndexStrategy()
 
         if (isForward) word.position = offset;
         else word.position =
-                readLength - offset - wordIndex->wordSize;
+                 readLength - offset - wordIndex->wordSize;
 
         word.wordInt =  Word2Integer(read.c_str(), word.position, word.NLocation);
 
@@ -194,8 +196,8 @@ bool ReadIndexer::setIndexStrategy()
     checkEdits = false;
     unsigned int whichWord = 0;
     while (wordInts.size() < mapperOptions.maximumIndexCount &&   // while not enough words
-            whichWord < words.size()              // while more exist
-          )
+           whichWord < words.size()              // while more exist
+           )
     {
         wordInts.push_back(words[whichWord].wordInt);
         wordNLocations.push_back(words[whichWord].NLocation);
@@ -461,10 +463,10 @@ void ReadIndexer::dump()
 //
 //
 int ReadIndexer::getSumQSW(
-    genomeIndex_t matchPosition,
-    int &mismatchCount,
-    int bestMatchSumQ,
-    int whichWord)
+                           genomeIndex_t matchPosition,
+                           int &mismatchCount,
+                           int bestMatchSumQ,
+                           int whichWord)
 {
     mismatchCount = 0;
     // all this work is to return sumQ:
@@ -607,10 +609,10 @@ int ReadIndexer::getSumQSW(
 // of indels).
 //
 int ReadIndexer::getCigarRoller(
-    genomeIndex_t matchPosition,
-    int whichWord,
-    int &matchPositionOffset,
-    CigarRoller &cigarRollerBackward)
+                                genomeIndex_t matchPosition,
+                                int whichWord,
+                                int &matchPositionOffset,
+                                CigarRoller &cigarRollerBackward)
 {
     CigarRoller cigarRollerForward;
     cigarRollerBackward.clear();
@@ -789,14 +791,14 @@ int ReadIndexer::getCigarRoller(
 // output: mismatchCount, gapOpenCount, gapCloseCount, gapExtensionCount, cigarRoller
 //
 genomeIndex_t ReadIndexer::localAlignment(
-    genomeIndex_t localAlignmentWindowPostion,
-    genomeIndex_t localAlignmentWindowSize,
-    int &mismatchCount,
-    int &quality,
-    int &gapOpenCount,
-    int &gapCloseCount,
-    int &gapExtensionCount,
-    CigarRoller &cigarRoller)
+                                          genomeIndex_t localAlignmentWindowPostion,
+                                          genomeIndex_t localAlignmentWindowSize,
+                                          int &mismatchCount,
+                                          int &quality,
+                                          int &gapOpenCount,
+                                          int &gapCloseCount,
+                                          int &gapExtensionCount,
+                                          CigarRoller &cigarRoller)
 {
     mismatchCount = quality = gapOpenCount = gapCloseCount = gapExtensionCount = 0;
 
@@ -821,18 +823,18 @@ genomeIndex_t ReadIndexer::localAlignment(
     uint32_t    softClipCount = 0;
 
     SW.localAlignment(
-        MAX_SMITH_WATERMAN_REFERENCE,      // XXX this is a band size parameter...
-        read,
-        read.Length(),
-        phredQuality,
-        *gs,
-        localAlignmentWindowSize,
-        localAlignmentWindowPostion,
-        cigarRoller,
-        softClipCount,
-        cigarStartingPoint,
-        quality
-    );
+                      MAX_SMITH_WATERMAN_REFERENCE,      // XXX this is a band size parameter...
+                      read,
+                      read.Length(),
+                      phredQuality,
+                      *gs,
+                      localAlignmentWindowSize,
+                      localAlignmentWindowPostion,
+                      cigarRoller,
+                      softClipCount,
+                      cigarStartingPoint,
+                      quality
+                      );
 
 #if 0
     SW.debugPrint(false);
@@ -845,14 +847,14 @@ genomeIndex_t ReadIndexer::localAlignment(
     genomeIndex_t   matchPosition = INVALID_GENOME_INDEX;
     GreedyTupleAligner< const char *, GenomeSequence &, genomeIndex_t > greedy(wt);
     greedy.Align(
-        read.c_str(),                   // query- XXXX THIS WAS A String & argument
-        read.size(),                    // query length
-        *gs,                            // reference
-        localAlignmentWindowPostion,    // index to start of reference to search
-        localAlignmentWindowSize,       // number of bases to search in reference
-        cigarRoller,                    // put the resulting cigar string here
-        matchPosition                   // put the match here
-    );
+                 read.c_str(),                   // query- XXXX THIS WAS A String & argument
+                 read.size(),                    // query length
+                 *gs,                            // reference
+                 localAlignmentWindowPostion,    // index to start of reference to search
+                 localAlignmentWindowSize,       // number of bases to search in reference
+                 cigarRoller,                    // put the resulting cigar string here
+                 matchPosition                   // put the match here
+                 );
     return matchPosition + localAlignmentWindowPostion;   // plus what offsert?
 
 #endif

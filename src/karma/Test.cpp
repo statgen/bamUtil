@@ -36,7 +36,7 @@
 
 int Test::testSEBaseSpaceReads()
 {
-    MapperUserOptions mapperOptions;
+    MapperUserOption mapperOptions;
 
     MapperSEBaseSpace se;
     std::string readFrag;
@@ -319,7 +319,7 @@ int Test::testSEBaseSpaceReads()
 
 int Test::testSEColorSpaceReads()
 {
-    MapperUserOptions mapperOptions;
+    MapperUserOption mapperOptions;
 
     MapperSEColorSpace se;
     std::string readFrag;
@@ -377,7 +377,7 @@ int Test::testSEColorSpaceReads()
 
 int Test::testPEBaseSpaceReads()
 {
-    MapperUserOptions mapperOptions;
+    MapperUserOption mapperOptions;
 
     MapperPEBaseSpace pe1, pe2;
     std::string readFrag;
@@ -400,7 +400,7 @@ int Test::testPEBaseSpaceReads()
                          &pe2,
                          "GAAAGGGGGCTATTCCTAGTTTTATTGCTATAGCCA", "CCCCDCDCEDDDC>CDDEDECBEBEDEC@ABD=BAA", 'R', 1, 555181, 0,
                          "CAACCGCATCCATAATCCTTCTAATAGCTATCCTCT", "@@?DAA@AADFFBGDADADAECBCAFBA?A@?=>??", 'F', 1, 555073, 0
-                        );
+                         );
 
     //
     // I used extractGenomeSequnece to confirm that both of the following reads are on
@@ -410,7 +410,7 @@ int Test::testPEBaseSpaceReads()
                          &pe2,
                          "ATTCCATTCCATTCCCcTGtACTCGGGTTGATTCCA", ">>?>>>???@@@@@@@@@@@>A?@?9=9=90>>>:,", 'F', 10, 41699896, 2,
                          "TTgCATTCCATTCCATTCCATTCCATTCCATTCCAT", "354?87:<>;79?==99;?A;;>@;87<=<76???<", 'F', 10, 41700502, 1
-                        );
+                         );
 
     // note: the following pair has 2 best matches, so depending on
     // which the random number generator says to write, we'll get
@@ -424,7 +424,7 @@ int Test::testPEBaseSpaceReads()
                          &pe2,
                          "CcTTaCTcTCCATTaCATTCCATTCCATTCGGGTTG", "@=??9???@@?>@@=A7@A@@@A?>>3?;C<:;>;;", 'F', 4, 48796294, 4,
                          "ATTCCATTCCATTCCATTCCATTCCATTACAaTCgA", "=4:>>=4:@AA<@?AA@@@@@@@@@@@???>>>?>>", 'F', 4, 48795762, 2
-                        );
+                         );
 
 
     //
@@ -437,7 +437,7 @@ int Test::testPEBaseSpaceReads()
                          &pe2,
                          "AACCAAAATCATTTGAATAGGCTGAGAGTGAGACAAATAAAACAAATGCCCCACAATGAGAGAATGATACTGAAAACCCCCAAGGATGAATGCGATCTCATCCATCAC", "%4======<<8<<=;63<8:95:=95.:6//'--.%%80)0))0;2/;4)%%:3%%+%20)%;2)+4<2%%%+02%)8.%2-22+4))17+)%(/-%1%%%1..%%%1", 'F', 9, 83445275, 2,
                          "ACTATATCATTACAGTAACACTCTGAATGTAAACAGCAAAGTCAGTTTCATTATAGTAATATAATTGACCCAAGCTGCACTAAGTAAAATGTGAATTAAAATTCTCAA", "%1==========<=7:;<:<=;==<<<==8,7<5-::;;85;9;;;9<<9:;9;9<89::/<=7(,5:96//13699661+1/953653%-/17-)))/24,7,%-'0", 'R', 9, 83445275-124, 1
-                        );
+                         );
 
 
     // also from the above sanger dataset
@@ -445,7 +445,7 @@ int Test::testPEBaseSpaceReads()
                          &pe2,
                          "GCACCATCCTTTCTAGCTGTACAGCCCTCCTGAGCCTTAGTTCTTACATCTTGAAGATGGAACCAGCTCAACAAGCATAGGGATGTAGCAAGAATCAAGACAATGTAG", "%0<0<8:/::<;<<:<<=<:9:<:4-4:<:;2719686:8:9236;90'.;0.1.0.3(7-5'+)2-86/8888;/:2)3<:66<9/(--'.)/)%%%%%))%)/+2%", 'F', 23, 55351604, 2,
                          "GTCAAGGTCATAGAAGAAATAGTGCCACACAAGGTAGAGGGTGAAGATAACTCTAGAGAACCATTCTCAAACCAACGGCTAGGCGCTGCATCCCGAGCGTATTGATTC", "%/>>>8<:><>>;<=<;2;<==>>;>><==<<=>;;==</+%%5,0313%/%%&%(+%%1+/8%%)%))/%%,+%).))&%+%+%&+%,,/.%)&0,+-)),%)-%-%", 'R', 23, 55351604-91, 1
-                        );
+                         );
 
     //
     // small insert from  alignment_comp_250110/108mer_hap2_[12].fastq.gz:
@@ -466,7 +466,7 @@ int Test::testPEBaseSpaceReads()
                          &pe2,
                          "CTCTTAAAAAAAAAATACTAAAACTAAGTTCTATTACAATTTATGTTTTACTTCTCATAAAATAAATTATACATATTATCAGAAGGAATTGTAGAAAAAATGTGTAAA", "CC=CCCCC=DCBBCBACCB?<DBCCCAC;BBCCAB?BB=@@@=>:@@A=@>>BA9?=;7<C@@69@8?>@=:=?@B=C=60(4:5964=9?:8027;>8)9?1/84-'", 'F', 23, 46303310, 16,
                          "ACTTACCAGGTCCTTTTGAGTTTTCTAATAAAAACATAAATCAATAAACAAACATATTTTCTGGGCAAAGAGTGGCTTCTCACAGGAATTTTTTCTAATTTTACACAT", "BBBBBB@BBB>BBBBBBB>AB<40BBBBB@@@ABBABBBB?BBBBA@@>BBA723;@@=7:4+>@@@?;==8@68,8-+6(<@>8624,=B@B7'8@=(,7,0>3->B", 'R', 23, 46303403, 0
-                        );
+                         );
 
 
     std::cout << "Paired end tests: " << success << "/" << totalTests << " pass."<< std::endl;
@@ -480,7 +480,7 @@ int Test::testRemapReference(std::string &outputFile, std::string &whichChromoso
     std::ofstream   outFile;
 
     MapperSEBaseSpace se;
-    MapperUserOptions mapperOptions;
+    MapperUserOption mapperOptions;
 
     mapperOptions.mismatchCutoff = 4;
     mapperOptions.debug = false;
@@ -518,8 +518,8 @@ int Test::testRemapReference(std::string &outputFile, std::string &whichChromoso
         genomeIndex_t   chromosomeStart = gs->getChromosomeStart(chromosome);
 
         for (genomeIndex_t chromosomePosition = 0;
-                chromosomePosition < gs->getChromosomeSize(chromosome) - numberBases;
-                chromosomePosition += skipBases)
+             chromosomePosition < gs->getChromosomeSize(chromosome) - numberBases;
+             chromosomePosition += skipBases)
         {
 
             genomeIndex_t readGenomePosition = chromosomeStart + chromosomePosition;
@@ -564,18 +564,18 @@ int Test::testRemapReference(std::string &outputFile, std::string &whichChromoso
                 (*out) << "0\t";
                 switch (se.getBestMatch().quality)
                 {
-                    case MatchedReadBase::UNSET_QUALITY:
-                        (*out) << "Z";
-                        break;
-                    case MatchedReadBase::INVALID_DATA:
-                        (*out) << "I";
-                        break;
-                    case MatchedReadBase::EARLYSTOP_QUALITY:
-                        (*out) << "E";
-                        break;
-                    case MatchedReadBase::REPEAT_QUALITY:
-                        (*out) << "R";
-                        break;
+                case MatchedReadBase::UNSET_QUALITY:
+                    (*out) << "Z";
+                    break;
+                case MatchedReadBase::INVALID_DATA:
+                    (*out) << "I";
+                    break;
+                case MatchedReadBase::EARLYSTOP_QUALITY:
+                    (*out) << "E";
+                    break;
+                case MatchedReadBase::REPEAT_QUALITY:
+                    (*out) << "R";
+                    break;
                 }
                 (*out) << std::endl;
             }
@@ -609,7 +609,7 @@ int Test::test()
     testSEBaseSpaceReads();
     testPEBaseSpaceReads();
 
-//    testRemapReference(30);     // 25, 35, 50, 75, 100
+    //    testRemapReference(30);     // 25, 35, 50, 75, 100
     return 0;
 }
 

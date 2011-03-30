@@ -23,10 +23,10 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "Error.h"
 #include "InplaceMerge.h"
 #include "Performance.h"
 #include "WordIndex.h"
+#include "Error.h"
 #include "Util.h"
 
 #include <ctype.h>
@@ -108,7 +108,7 @@ bool WordIndex::AllocateWordsCountHashMemory()
     *((unsigned int *) hashIndicesMemoryMap.data + 0) = UMWI_HI_COOKIE;
     *((unsigned int *) hashIndicesMemoryMap.data + 1) = UMWI_VERSION;
     *((unsigned int *) hashIndicesMemoryMap.data + 2) = wordSize;
-//  *((uint64_t *) hashIndicesMemoryMap.data + 3) = wordsCountHashSize;
+    //  *((uint64_t *) hashIndicesMemoryMap.data + 3) = wordsCountHashSize;
     hashindices = (unsigned int *) hashIndicesMemoryMap.data + 3;
 
     // wordCounts is only needed during ::create().  It is
@@ -291,7 +291,7 @@ int WordIndex::GetOccurrenceCutoff(double pctWordsToKeep)
     assert(wordSize <= 16 && wordSize > 0);
     assert(pctWordsToKeep>0.0);
 
-//  unsigned int indexFromHighRepeats = (unsigned int) numberWords * (1.0 - pctWordsToKeep);
+    //  unsigned int indexFromHighRepeats = (unsigned int) numberWords * (1.0 - pctWordsToKeep);
     int cutoff = 1;
 
     // sort XXWordCounts to get the cutoff BUT do NOT distort the original order;
@@ -376,7 +376,7 @@ void WordIndex::StoreWordPositions(GenomeSequence & gs, WordHash &wordHashLeft, 
                 wordHashRight.addGenomeLocation(sequenceInteger, sequenceIntegerRight, location);
 
             }
-// #define WRITEHIGHREPEATLOCATIONS
+            // #define WRITEHIGHREPEATLOCATIONS
 #if defined(WRITEHIGHREPEATLOCATIONS)
             // for development purposes, this code prints to stdout the index word,
             // the location of this word, and the 30 bases at this location for
@@ -429,21 +429,21 @@ void WordIndex::StoreWordPositions(GenomeSequence & gs, WordHash &wordHashLeft, 
 
     delete [] wordCounts;
     wordCounts = NULL;
-//
-// To finish up, we write the malloc() version of wordpositions out to
-// disk.
-// We leave it hanging around in case the caller wants to use the word
-// index immediately after creating it.
-//
+    //
+    // To finish up, we write the malloc() version of wordpositions out to
+    // disk.
+    // We leave it hanging around in case the caller wants to use the word
+    // index immediately after creating it.
+    //
     int fd = ::open(wordPositionsFilename,O_CREAT|O_RDWR, 0666);
     if (fd<0)
     {
         perror("open:");
         exit(1);
     }
-//
-// write the header - magic cookie plus the version
-//
+    //
+    // write the header - magic cookie plus the version
+    //
     ssize_t len, bytesWritten, wordPositionsLength;
     wordPositionsLength = sizeof(unsigned int) * (numberWordPositions);
 
@@ -453,7 +453,7 @@ void WordIndex::StoreWordPositions(GenomeSequence & gs, WordHash &wordHashLeft, 
     wpHeader->numberWordPositions = numberWordPositions;
     wpHeader->wordPositionsOffset = sizeof(*wpHeader);
     wpHeader->wordReachedCutoffBitvectorOffset = wpHeader->wordPositionsOffset +
-            wordPositionsLength;
+        wordPositionsLength;
 
 
     bytesWritten = write(fd, (char *) wpHeader, sizeof(*wpHeader));
@@ -495,7 +495,7 @@ void WordIndex::StoreWordPositions(GenomeSequence & gs, WordHash &wordHashLeft, 
 void WordIndex::WriteOutWordPositions()
 {
 #if 0
-// XXX need to rewrite
+    // XXX need to rewrite
     // if potential clashes: cannot guarantee hashindices[index] == index
     // therefore, cannot invoke this function since it will
     // replace hashindices[index] (i.e., sequenceInteger or wordAsInteger) with
@@ -543,7 +543,7 @@ int WordIndex::open(GenomeSequence &reference)
 
     setWordSize(*((unsigned int *)hashIndicesMemoryMap.data + 2));
 
-//  assert(*((unsigned int *)hashIndicesMemoryMap.data + 3)==wordsCountHashSize);
+    //  assert(*((unsigned int *)hashIndicesMemoryMap.data + 3)==wordsCountHashSize);
 
     hashindices = (unsigned int *)hashIndicesMemoryMap.data + 3;
 
@@ -719,7 +719,7 @@ int WordIndex::testHashIndex(GenomeSequence &gs, wordInteger_t word)
                     std::cerr << tolower(gs[genomeIndex + i]);
                 }
             }
-//          gs.printNearbyWords(genomeIndex, 60, bases);
+            //          gs.printNearbyWords(genomeIndex, 60, bases);
             std::cerr << std::endl;
         }
     }
@@ -789,9 +789,9 @@ void WordIndex::whatWordPointsAt(genomeIndex_t g)
             if (g == genomeIndex)
             {
                 std::cout << "word " << std::hex <<
-                          word <<
-                          std::dec <<
-                          " maps to genome location " << g << std::endl;
+                    word <<
+                    std::dec <<
+                    " maps to genome location " << g << std::endl;
             }
         }
     }
@@ -829,14 +829,14 @@ bool WordIndex::getWordPositions(wordInteger_t word, std::vector<genomeIndex_t> 
         // and a copy of the word positions.  When done, we will do a recursive
         // inplace_merge, which will tend to minimize data movement.
         //
-#define PUSH_BACK_POSITIONS(mask)                                               \
-        count = hashindices[(word ^ mask) + 1] - hashindices[(word ^ mask)];    \
-        if(count) {                                                             \
-            candidates = &wordpositions[hashindices[(word ^ mask)]];            \
-            positions.insert(positions.end(), candidates, candidates+count);    \
-            counts.push_back(count);                                            \
-            offsets.push_back(offset);                                          \
-            offset += count;                                                    \
+#define PUSH_BACK_POSITIONS(mask)                                       \
+        count = hashindices[(word ^ mask) + 1] - hashindices[(word ^ mask)]; \
+        if(count) {                                                     \
+            candidates = &wordpositions[hashindices[(word ^ mask)]];    \
+            positions.insert(positions.end(), candidates, candidates+count); \
+            counts.push_back(count);                                    \
+            offsets.push_back(offset);                                  \
+            offset += count;                                            \
         }
 
         PUSH_BACK_POSITIONS(0);
