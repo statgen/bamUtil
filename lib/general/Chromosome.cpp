@@ -7,6 +7,7 @@ Chromosome::Chromosome(GenomeSequence* gs, uint chromosomeIndex)
     assert(chromosomeIndex < (uint)gs->getChromosomeCount());
 
     this->gs = gs;
+    this->chromosomeIndex = chromosomeIndex;
     this->offset = gs->getChromosomeStart((int)chromosomeIndex);
     this->chromosomeSize = gs->getChromosomeSize((int)chromosomeIndex);
 }
@@ -16,7 +17,7 @@ Chromosome::Chromosome(GenomeSequence* gs, const char* chromosomeName)
     assert(gs);
     this->gs = gs;
 
-    int chromosomeIndex = gs->getChromosome(chromosomeName);
+    this->chromosomeIndex = gs->getChromosome(chromosomeName);
     assert(chromosomeIndex != INVALID_CHROMOSOME_INDEX);
 
     this->offset = gs->getChromosomeStart((int)chromosomeIndex);
@@ -31,7 +32,7 @@ Chromosome::Chromosome(const char* genomseSequenceFileName, uint chromosomeIndex
     assert(gs);
     gs->setReferenceName(s);
     assert(!gs->open(isColorSpace));
-
+    this->chromosomeIndex = chromosomeIndex;
     this->offset = gs->getChromosomeStart((int)chromosomeIndex);
     this->chromosomeSize = gs->getChromosomeSize((int)chromosomeIndex);
 }
@@ -43,7 +44,7 @@ Chromosome::Chromosome(const std::string& genomseSequenceFileName, uint chromoso
     assert(gs);
     gs->setReferenceName(genomseSequenceFileName);
     assert(!gs->open(isColorSpace));
-
+    this->chromosomeIndex = chromosomeIndex;
     this->offset = gs->getChromosomeStart((int)chromosomeIndex);
     this->chromosomeSize = gs->getChromosomeSize((int)chromosomeIndex);
 }

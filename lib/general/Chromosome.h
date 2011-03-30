@@ -20,7 +20,7 @@ public:
         return (*gs)[index];
     }
     const char* Name() const {
-        return (*gs);
+        return gs->getChromosomeName(this->chromosomeIndex);
     }
 private:
     GenomeSequence* gs;
