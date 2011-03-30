@@ -19,25 +19,43 @@
 // This file contains the processing for the executable option "dumpHeader"
 // which prints the SAM/BAM header file to the screen.
 
+#include "DumpHeader.h"
 #include "SamFile.h"
 #include "Parameters.h"
 
-void dumpHeaderDescription()
+void DumpHeader::dumpHeaderDescription()
 {
-    std::cerr << " dumpHeader - Print SAM/BAM Header:" << std::endl;
+    std::cerr << " dumpHeader - Print SAM/BAM Header" << std::endl;
+}
+
+
+void DumpHeader::description()
+{
+    dumpHeaderDescription();
+}
+
+
+void DumpHeader::usage()
+{
+    BamExecutable::usage();
     std::cerr << "\t./bam dumpHeader <inputFile>" << std::endl;
 }
 
 
-void dumpHeaderUsage()
+// Dump the specified Bam Index file.
+int DumpHeader::execute(int argc, char **argv)
 {
-    dumpHeaderDescription();
-    std::cerr << std::endl;
+    if(argc != 3)
+    {
+        usage();
+        exit(-1);
+    }
+    // Dump the bam index.
+    return(dumpHeader(argv[2]));
 }
 
 
-// Dump the specified Bam Index file.
-int dumpHeader(const char* filename)
+int DumpHeader::dumpHeader(const char* filename)
 {
     // Open the input file for reading.
     SamFile samIn;

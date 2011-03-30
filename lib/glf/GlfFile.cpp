@@ -106,13 +106,20 @@ bool GlfFile::openForRead(const char * filename, GlfHeader& header)
 
 
 // Open a glf file for writing with the specified filename.
-bool GlfFile::openForWrite(const char * filename)
+bool GlfFile::openForWrite(const char * filename, bool compressed)
 {
     // Reset for any previously operated on files.
     resetFile();
 
-    myFilePtr = ifopen(filename, "wb", InputFile::BGZF);
-    
+    if(compressed)
+    {
+        myFilePtr = ifopen(filename, "wb", InputFile::BGZF);
+    }
+    else
+    {
+        myFilePtr = ifopen(filename, "wb", InputFile::UNCOMPRESSED);
+    }
+
     if (myFilePtr == NULL)
     {
         std::string errorMessage = "Failed to Open ";

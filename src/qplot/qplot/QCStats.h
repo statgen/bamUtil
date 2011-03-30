@@ -36,7 +36,10 @@ class QCStats
   std::map<int, uint64_t> matchCountByQual;
   std::map<int, uint64_t> misMatchCountByQual;
   std::map<int, double> misMatchRateByQual;
+  std::map<int, uint64_t> *baseCountByQualByCycle;
+  std::vector<uint64_t> baseQ20CountByCycle;
   std::map<int, uint64_t> qualCount;
+  std::map<int, uint64_t> Q20QualScores;
   std::vector<int> qual;
   std::map<int, uint64_t> depthDist;
   std::vector<bool> *genomePosCovered;
@@ -95,6 +98,7 @@ public:
   void CalcMisMatchRateByQual();
   double CalcMisMatchRateByQual_MSE();
   void CalcQ20Bases();
+  void CalcQ20BasesByCycle();
   void CalcBaseComposition();
   void CalcDepthGC(GCContent &gc, std::vector<bool> &);
   void CalcDepthDist();

@@ -19,6 +19,18 @@
 // This file contains the processing for the executable option "dumpRefInfo"
 // which prints the SAM/BAM Reference Information to the screen.
 
-void dumpRefInfoDescription();
-void dumpRefInfoUsage();
-int dumpRefInfo(int argc, char **argv);
+#ifndef __DUMP_REF_INFO_H__
+#define __DUMP_REF_INFO_H__
+
+#include "BamExecutable.h"
+
+class DumpRefInfo : public BamExecutable
+{
+public:
+    static void dumpRefInfoDescription();
+    void description();
+    void usage();
+    int execute(int argc, char **argv);
+};
+
+#endif

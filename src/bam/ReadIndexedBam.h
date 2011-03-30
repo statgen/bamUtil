@@ -20,8 +20,23 @@
 // which reads an indexed BAM file by chromosome and writes it into a new
 // file sorted from reference id -1 to maxRefID.
 
-void readIndexedBamDescription();
-void readIndexedBamUsage();
-int readIndexedBam(const char* inputFilename,
-                   const char* outputFilename,
-                   const char* indexFilename);
+#ifndef __READ_INDEXED_BAM_H__
+#define __READ_INDEXED_BAM_H__
+
+#include "BamExecutable.h"
+
+class ReadIndexedBam : public BamExecutable
+{
+public:
+    static void readIndexedBamDescription();
+    void description();
+    void usage();
+    int execute(int argc, char **argv);
+
+private:
+    int readIndexedBam(const char* inputFilename,
+                       const char* outputFilename,
+                       const char* indexFilename);
+};
+
+#endif

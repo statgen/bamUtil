@@ -18,6 +18,7 @@
 #ifndef __BGZFFILETYPE_H__
 #define __BGZFFILETYPE_H__
 
+#include <stdexcept> // stdexcept header file
 #include "bgzf.h"
 #include "FileType.h"
 
@@ -117,6 +118,10 @@ public:
     // -1 return value indicates an error.
     virtual inline long int tell()
     {
+        if(myUsingBuffer)
+        {
+            throw std::runtime_error("IFILE: CANNOT use buffered reads and tell for BGZF files");
+        }
         return bgzf_tell(bgzfHandle);
     }
 

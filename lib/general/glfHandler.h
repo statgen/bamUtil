@@ -73,6 +73,7 @@ class glfHandler
 {
 public:
     // Global information about the current GLF file
+    bool     isStub;
     IFILE    handle;
     String   header;
 
@@ -81,6 +82,9 @@ public:
     int      sections;
     int      currentSection;
     int      maxPosition;
+
+    // Information on whether the end of the current section has been reached
+    bool   endOfSection;
 
     // Currently active GLF record
     glfEntry data;
@@ -95,6 +99,7 @@ public:
     ~glfHandler();
 
     bool Open(const String & filename);
+    void OpenStub();
     bool Create(const String & filename);
     bool isOpen();
     void Close();

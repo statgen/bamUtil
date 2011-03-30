@@ -1,0 +1,47 @@
+
+The following parameters are available.  Ones with "[]" are in effect:
+                Base Call File : results/output.vcf (-bname)
+           Posterior Threshold :            0.50 (-p99.999)
+
+Additional Options
+           Pedigree File : --ped []
+      Map Quality Filter : --minMapQuality, --strict
+      Total Depth Filter : --minDepth [1], --maxDepth [10000000]
+         Position Filter : --positionFile []
+       Chromosome Labels : --xChr [X], --yChr [Y], --mito [MT],
+                           --xStart [2699520], --xStop [154931044]
+       Filtering Options : --hardFilter, --smartFilter, --softFilter [ON]
+           Prior Options : --uniformPrior [ON], --robustPrior
+                  Output : --verbose
+            Sample Names : --glfAliases [testFiles/glfAlias.txt]
+   Prefixes and Suffixes : --glfPrefix [], --glfSuffix []
+
+glfMultiples -- SNP calls based on .glf or .glz files
+(c) 2008-2011 Goncalo Abecasis, Sebastian Zoellner, Yun Li
+
+Analysis started on Fri Mar  4 09:50:14 2011
+
+Calling genotypes for files ...
+testFiles/NA06984.20.1.1000000.glf
+testFiles/NA06985.20.1.1000000.glf
+testFiles/NA06986.20.1.1000000.glf
+testFiles/NA06989.20.1.1000000.glf
+testFiles/NA06994.20.1.1000000.glf
+testFiles/NA07000.20.1.1000000.glf
+testFiles/NA07037.20.1.1000000.glf
+
+Processing section 20 with 63025520 entries
+          Missing bases =         8 (0.000%)
+        Reference bases =  63025512 (100.000%)
+              A/T bases =    504094 (0.800%, 254363 A, 249731 T)
+              G/C bases =    435489 (0.691%, 216194 G, 219295 C)
+           Depth Filter =         0 bases (0.000%)
+     Map Quality Filter =         1 bases (0.000%)
+        Non-Polymorphic =    927542 bases (1.472%)
+            Transitions =      1527 bases (0.002%)
+          Transversions =       666 bases (0.001%)
+    Other Polymorphisms =         0 bases (0.000%)
+                No call =  62095777 bases (98.525%)
+
+Analysis completed on Fri Mar  4 09:51:18 2011
+

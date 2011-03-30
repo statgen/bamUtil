@@ -51,6 +51,7 @@ QCStats::~QCStats()
   delete [] matchCountByCycle;
   delete [] misMatchCountByCycle;
   delete [] misMatchRateByCycle;
+  delete [] baseCountByQualByCycle;
   for(int i=0; i<size; i++)
     delete [] baseCountByCycle[i];
   delete [] baseCountByCycle;
@@ -70,6 +71,8 @@ void QCStats::Init(int n)
   matchCountByCycle = new uint64_t[size_reserved];
   misMatchCountByCycle = new uint64_t[size_reserved];
   misMatchRateByCycle = new double[size_reserved];
+  baseCountByQualByCycle = new std::map<int, uint64_t>[size_reserved];
+  baseQ20CountByCycle.resize(size_reserved);
 
   dbSNP = NULL;
 
@@ -226,12 +229,32 @@ void QCStats::CalcQ20Bases()
   nQ20 = 0;
   for(unsigned int i=0; i<qual.size(); i++){
     if(misMatchRateByQual[qual[i]]<=0.01)
+    {
       nQ20+=qualCount[qual[i]];
+      Q20QualScores[qual[i]]++;
+    }
     total += qualCount[qual[i]];
   }
   pQ20 = 100*double(nQ20)/total;
 }
 
+void QCStats::CalcQ20BasesByCycle()
+{
+  for(int cycle=0; cycle<size; cycle++)
+  {
+    std::vector<int> qualInACycle;
+    std::map<int, uint64_t>::iterator p;
+
+    for(p=baseCountByQualByCycle[cycle].begin(); p!=baseCountByQualByCycle[cycle].end(); p++)
+       qualInACycle.push_back(p->first);
+
+    for(unsigned int i=0; i<qualInACycle.size(); i++)
+    {
+     if(Q20QualScores[qualInACycle[i]]>0)
+       baseQ20CountByCycle[cycle] += baseCountByQualByCycle[cycle][qualInACycle[i]];
+    }
+   }
+}
 void QCStats::CalcBaseComposition()
 {
   uint64_t total = 0;
@@ -392,7 +415,7 @@ void QCStats::UpdateStats(SamRecord & sam, QSamFlag &filter, double minMapQualit
   cigarcol.GetClipLength_begin(sam.data.cigar);
   cigarcol.GetClipLength_end(sam.data.cigar);
 #endif
-  CigarRoller cigar(sam.getCigar());
+  Cigar* cigar = sam.getCigarInfo();
 
   //CigarRoller cigarRoller;
   //cigarRoller.Set(sam.data.cigar);
@@ -460,9 +483,9 @@ void QCStats::UpdateStats(SamRecord & sam, QSamFlag &filter, double minMapQualit
   }
 
   String aligTypes="";
-  for (int i = 0; i < cigar.size(); i++)
-    for (unsigned int j = 0; j < cigar[i].count; j++)
-      aligTypes += cigar[i].getChar();
+  for (int i = 0; i < cigar->size(); i++)
+      for (unsigned int j = 0; j < cigar->getOperator(i).count; j++)
+          aligTypes += cigar->getOperator(i).getChar();
 
   int offset = 0; //to adjust position in ref genome due to insertion 'I' and 'S'
   int offset2 = 0;  //to adjust position in a read due to deletion 'D'
@@ -536,6 +559,9 @@ void QCStats::UpdateStats(SamRecord & sam, QSamFlag &filter, double minMapQualit
     // matchMatrix[Sequence::nt2idx(refBase)][Sequence::nt2idx(readBase)]++;
     
     qual = sam.getQuality()[seqpos]-33;
+
+    //update base count for each quality on each cycle
+    baseCountByQualByCycle[cycleIdx][qual]++;
 
     // update match/mismatch counts
     if(refBase==readBase || readBase=='=')

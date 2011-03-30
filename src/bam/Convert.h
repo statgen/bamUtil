@@ -20,6 +20,18 @@
 // which reads an SAM/BAM file and writes a SAM/BAM file (it can convert 
 // between SAM and BAM formats).
 
-void convertDescription();
-void convertUsage();
-int convert(int argc, char **argv);
+#ifndef __CONVERT_H__
+#define __CONVERT_H__
+
+#include "BamExecutable.h"
+
+class Convert : public BamExecutable
+{
+public:
+    static void convertDescription();
+    void description();
+    void usage();
+    int execute(int argc, char **argv);
+};
+
+#endif

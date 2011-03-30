@@ -17,14 +17,24 @@
 
 #include "BamIndex.h"
 #include "Validate.h"
+#include "BamIndexTest.h"
 
 #include <assert.h>
 
-void testBamIndex()
+void testIndex(BamIndex& bamIndex)
 {
-    // Create a bam index.
-    BamIndex bamIndex;
-    bamIndex.readIndex("testFiles/sortedBam.bam.bai");
+    assert(bamIndex.getNumMappedReads(1) == 2);
+    assert(bamIndex.getNumUnMappedReads(1) == 0);
+    assert(bamIndex.getNumMappedReads(0) == 4);
+    assert(bamIndex.getNumUnMappedReads(0) == 1);
+    assert(bamIndex.getNumMappedReads(23) == -1);
+    assert(bamIndex.getNumUnMappedReads(23) == -1);
+    assert(bamIndex.getNumMappedReads(-1) == 0);
+    assert(bamIndex.getNumUnMappedReads(-1) == 2);
+    assert(bamIndex.getNumMappedReads(-2) == -1);
+    assert(bamIndex.getNumUnMappedReads(-2) == -1);
+    assert(bamIndex.getNumMappedReads(22) == 0);
+    assert(bamIndex.getNumUnMappedReads(22) == 0);
 
     // Get the chunks for reference id 1.
     Chunk testChunk;
@@ -62,10 +72,38 @@ void testBamIndex()
     // Test reading an indexed bam file.
     SamFile inFile;
     assert(inFile.OpenForRead("testFiles/sortedBam.bam"));
+    inFile.setSortedValidation(SamFile::COORDINATE);
     assert(inFile.ReadBamIndex("testFiles/sortedBam.bam.bai"));
     SamFileHeader samHeader;
     assert(inFile.ReadHeader(samHeader));
     SamRecord samRecord;
+
+    // Test getting num mapped/unmapped reads.
+    assert(inFile.getNumMappedReadsFromIndex(1) == 2);
+    assert(inFile.getNumUnMappedReadsFromIndex(1) == 0);
+    assert(inFile.getNumMappedReadsFromIndex(0) == 4);
+    assert(inFile.getNumUnMappedReadsFromIndex(0) == 1);
+    assert(inFile.getNumMappedReadsFromIndex(23) == -1);
+    assert(inFile.getNumUnMappedReadsFromIndex(23) == -1);
+    assert(inFile.getNumMappedReadsFromIndex(-1) == 0);
+    assert(inFile.getNumUnMappedReadsFromIndex(-1) == 2);
+    assert(inFile.getNumMappedReadsFromIndex(-2) == -1);
+    assert(inFile.getNumUnMappedReadsFromIndex(-2) == -1);
+    assert(inFile.getNumMappedReadsFromIndex(22) == 0);
+    assert(inFile.getNumUnMappedReadsFromIndex(22) == 0);
+
+    assert(inFile.getNumMappedReadsFromIndex("2", samHeader) == 2);
+    assert(inFile.getNumUnMappedReadsFromIndex("2", samHeader) == 0);
+    assert(inFile.getNumMappedReadsFromIndex("1", samHeader) == 4);
+    assert(inFile.getNumUnMappedReadsFromIndex("1", samHeader) == 1);
+    assert(inFile.getNumMappedReadsFromIndex("22", samHeader) == 0);
+    assert(inFile.getNumUnMappedReadsFromIndex("22", samHeader) == 0);
+    assert(inFile.getNumMappedReadsFromIndex("", samHeader) == 0);
+    assert(inFile.getNumUnMappedReadsFromIndex("*", samHeader) == 2);
+    assert(inFile.getNumMappedReadsFromIndex("unknown", samHeader) == -1);
+    assert(inFile.getNumUnMappedReadsFromIndex("unknown", samHeader) == -1);
+    assert(inFile.getNumMappedReadsFromIndex("X", samHeader) == 0);
+    assert(inFile.getNumUnMappedReadsFromIndex("X", samHeader) == 0);
 
     // Section -1 = Ref *: 2 records (8 & 10 from testSam.sam that is reflected
     // in the validation.
@@ -178,3 +216,56 @@ void testBamIndex()
     assert(inFile.ReadRecord(samHeader, samRecord) == false);
            
 }
+
+
+void testBamIndex()
+{
+    // Create a bam index.
+    BamIndex bamIndex;
+    bamIndex.readIndex("testFiles/sortedBam.bam.bai");
+    testIndex(bamIndex);
+
+    BamIndexFileTest test1;
+    bool caughtException = false;
+    try
+    {
+        // Try reading the bam index without specifying a
+        // filename and before opening a bam file.
+        assert(test1.ReadBamIndex() == false);
+    }
+    catch (std::exception& e)
+    {
+        caughtException = true;
+        assert(strcmp(e.what(), "FAIL_ORDER: Failed to read the bam Index file - the BAM file needs to be read first in order to determine the index filename.") == 0);
+    }
+    // Should have failed and thrown an exception.
+    assert(caughtException);
+
+    // Read the bam index with a specified name.
+    assert(test1.ReadBamIndex("testFiles/sortedBam.bam.bai"));
+    BamIndex* index = test1.getBamIndex();
+    assert(index != NULL);
+    testIndex(*index);
+
+    // Open the bam file so the index can be opened.
+    assert(test1.OpenForRead("testFiles/sortedBam.bam"));
+    // Try reading the bam index without specifying a
+    // filename after opening a bam file.
+    assert(test1.ReadBamIndex() == true);
+    index = test1.getBamIndex();
+    assert(index != NULL);
+    testIndex(*index);
+
+    // Open the bam file so the index can be opened.
+    // This time the index file does not have .bam in it.
+    assert(test1.OpenForRead("testFiles/sortedBam2.bam"));
+    // Try reading the bam index without specifying a
+    // filename after opening a bam file.
+    assert(test1.ReadBamIndex() == true);
+    index = test1.getBamIndex();
+    assert(index != NULL);
+    testIndex(*index);
+
+}
+
+

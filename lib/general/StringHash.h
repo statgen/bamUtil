@@ -116,6 +116,8 @@ public:
     void Print(FILE * file);
     void Print(const char * filename);
 
+    String StringList(char separator = ',');
+
     // Initialize hash with the contents of a file
     void ReadLinesFromFile(FILE * file);
     void ReadLinesFromFile(const char * filename);
@@ -206,6 +208,7 @@ public:
     }
 
     int IncrementCount(const String & key);
+    int IncrementCount(const String & key, int amount);
     int DecrementCount(const String & key);
     int GetCount(const String & key) const;
     int GetCount(int index) const

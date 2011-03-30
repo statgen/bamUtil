@@ -18,7 +18,7 @@ UNAME := $(shell uname)
 ifeq ($(UNAME), Linux)
 # do something Linux-y
 WARNINGS=-Wno-unused-variable
-WARNINGS+=$(shell if [ X$(CCVERSION) \> X4.1.0 ] ; then echo " -Wno-unused-result" ; fi)
+WARNINGS+=$(shell if [ X$(CCVERSION) \> X4.2.0 ] ; then echo " -Wno-unused-result" ; fi)
 CFLAGS=$(OPTFLAG) -Werror $(WARNINGS) -pipe -Wall -ggdb -D__ZLIB_AVAILABLE__  -D_FILE_OFFSET_BITS=64 -I$(SAMTOOLS_PATH) -D__STDC_LIMIT_MACROS
 endif
 ifeq ($(UNAME), Darwin)
@@ -55,6 +55,7 @@ SOURCES_WITH_HEADER=\
 	LongHash.cpp \
 	LongLongCounter.cpp \
 	MapFunction.cpp \
+	MathMatrix.cpp \
 	MathVector.cpp \
 	MemoryAllocators.cpp \
 	MemoryInfo.cpp \
@@ -98,6 +99,10 @@ OBJECTS=$(patsubst %,$(OBJDIR)/%,$(OBJECT_FILES))
 
 all: $(addprefix $(INCLUDE_PATH)/, $(HEADERS)) $(STAT_GEN_LIB)
 
+install: all
+
+help:
+
 $(STAT_GEN_LIB) : $(OBJECTS)
 	$(AR) cr $@ $(OBJECTS)
 	$(RANLIB) $@
@@ -109,7 +114,7 @@ $(OBJDIR)/%.o : %.cpp
 	$(CXX) $(CFLAGS) -o $@ -c $*.cpp -DVERSION=\"$(VERSION)\"
 
 test : all
-	(cd test; $(MAKE) $(PARALLEL_MAKE) OPTFLAG="$(OPTFLAG)" --no-print-directory $@);
+	@$(MAKE) OPTFLAG="$(OPTFLAG)" -C test $@
 
 
 CPP_TESTS := $(shell grep -m 1 'if defined(TEST)' *cpp |cut -f1 -d: )
@@ -119,7 +124,7 @@ selftest:
 		then \
 		    continue; \
 		fi;\
-		(echo "building in self test $$i"; g++ -DTEST -D__STDC_LIMIT_MACROS -fno-rtti -o test_$$i $$i  -L. -lcsg -lm -lz -lssl ; ./test_$$i) ; \
+		(echo "building in self test $$i"; g++ -DTEST -D__STDC_LIMIT_MACROS -o test_$$i $$i  -L. -lcsg -lm -lz -lssl ; ./test_$$i) ; \
 		if [ $$? -ne 0 ] ; \
 		then \
 		    echo "make stopped because of errors." ; \
@@ -130,7 +135,7 @@ clean:
 	-rm -rf $(OBJECTS) $(addprefix $(INCLUDE_PATH)/, $(HEADERS))
 	$(AR) d $(STAT_GEN_LIB) $(OBJECTS)
 	$(RANLIB) $(STAT_GEN_LIB)
-	(cd test; $(MAKE) $(PARALLEL_MAKE) OPTFLAG="$(OPTFLAG)" --no-print-directory $@);
+	(cd test; $(MAKE) OPTFLAG="$(OPTFLAG)" --no-print-directory $@);
 
 .SUFFIXES : .cpp .c .o .X.o $(SUFFIXES)
 

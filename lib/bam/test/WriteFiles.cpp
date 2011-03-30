@@ -427,8 +427,6 @@ void testHeaderWrite()
     assert(strcmp(samHeader.getPGTagValue("ID", "newID"), "newID") == 0);
     assert(samHeader.getHeaderString(headerString) == true);
     assert(headerString == "@HD\tSO:queryname\tVN:3.1\n@PG\tID:newID\n");
-   
-
 
     ////////////////////////////////////////////////////////////////////
     // Add an SQ.
@@ -471,7 +469,6 @@ void testHeaderWrite()
     // Add the missing SM field.
     assert(samHeader.setRGTag("SM", "sm1", "rgID") == true);
     assert(samHeader.getHeaderString(headerString) == true);
-    // New RG does not show up since it is still missing a required field.
     assert(headerString == 
            "@HD\tSO:queryname\tVN:3.1\n@PG\tID:newID\n@SQ\tSN:newName\tAS:HG18\tLN:111\n@RG\tID:rgID\tSM:sm1\n");
     assert(strcmp(samHeader.getRGTagValue("ID", "rgID"), "rgID") == 0);
@@ -488,7 +485,6 @@ void testHeaderWrite()
     assert(headerString == "@HD\tVN:1.0\n@SQ\tLN:123\tSN:chr20\n");
     // Verify it was added to the parsed header.
     assert(strcmp(newHeader.getSQTagValue("LN", "chr20"), "123") == 0);
-
 
     // Add a new RG Tag
     assert(samHeader.setRGTag("SM", "sample1", "rgID1") == true);

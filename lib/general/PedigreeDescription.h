@@ -31,8 +31,9 @@
 #define  pcTrait     2
 #define  pcAffection 3
 #define  pcCovariate 4
-#define  pcZygosity  5
-#define  pcEnd       6
+#define  pcString    5
+#define  pcZygosity  6
+#define  pcEnd       7
 
 // Undocumented pedigree column types -- not recommended
 #define  pcUndocumentedTraitCovariate   1001
@@ -69,6 +70,14 @@ public:
     bool mendelFormat;
 
     String filename;
+
+    void AddMarkerColumn(const char * markerName);
+    void AddTraitColumn(const char * traitName);
+    void AddAffectionColumn(const char * affectionName);
+    void AddCovariateColumn(const char * covariateName);
+    void AddStringColumn(const char * stringName);
+    void AddZygosityColumn();
+    void AddSkippedColumn();
 
 private:
     int ReadLineHelper(IFILE & input, String & buffer, StringArray & tokens);

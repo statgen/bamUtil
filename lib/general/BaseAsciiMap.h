@@ -40,6 +40,10 @@ public:
 
     enum SPACE_TYPE {UNKNOWN, BASE_SPACE, COLOR_SPACE};
 
+    static unsigned char baseColor2int[256+1];   // base space read (ATCG)
+    static unsigned char base2int[256+1];        // base space read (ATCG)
+    static unsigned char color2int[256+1];       // base space read (ATCG)
+
 public:
     BaseAsciiMap();
     ~BaseAsciiMap();
@@ -170,9 +174,6 @@ private:
     unsigned int myPrimerCount;
 
     unsigned char* myBase2IntMapPtr;
-    static unsigned char baseColor2int[256+1];   // base space read (ATCG)
-    static unsigned char base2int[256+1];        // base space read (ATCG)
-    static unsigned char color2int[256+1];       // base space read (ATCG)
 };
 
 #endif

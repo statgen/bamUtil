@@ -32,23 +32,30 @@
 
 void Usage()
 {
-    std::cerr << "Usage: " << std::endl;
+    BamExecutable::bamExecutableDescription();
     std::cerr << std::endl;
-    validateDescription();
-    convertDescription();
-    dumpHeaderDescription();
-    splitChromosomeDescription();
-    writeRegionDescription();
-    dumpRefInfoDescription();
-    dumpIndexDescription();
-    readIndexedBamDescription();
-    filterDescription();
-    readReferenceDescription();
+    std::cerr << "Tools: " << std::endl;
+    Validate::validateDescription();
+    Convert::convertDescription();
+    DumpHeader::dumpHeaderDescription();
+    SplitChromosome::splitChromosomeDescription();
+    WriteRegion::writeRegionDescription();
+    DumpRefInfo::dumpRefInfoDescription();
+    DumpIndex::dumpIndexDescription();
+    ReadIndexedBam::readIndexedBamDescription();
+    Filter::filterDescription();
+    ReadReference::readReferenceDescription();
+    std::cerr << std::endl;
+    std::cerr << "Usage: " << std::endl;
+    std::cerr << "\tbam <tool> [<tool arguments>]" << std::endl;
+    std::cerr << "The usage for each tool is described by specifying the tool with no arguments." << std::endl;
 }
 
 
 int main(int argc, char ** argv)
 {
+    BamExecutable* bamExe = NULL;
+
     // Verify at least one arg.
     if(argc < 2)
     {
@@ -59,70 +66,43 @@ int main(int argc, char ** argv)
 
     if(strcmp(argv[1], "readIndexedBam") == 0)
     {
-        if(argc != 5)
-        {
-            readIndexedBamUsage();
-            exit(-1);
-        }
-        return(readIndexedBam(argv[2], argv[3], argv[4]));
+        bamExe = new ReadIndexedBam();
     }
-   
-    if(strcmp(argv[1], "dumpHeader") == 0)
+    else if(strcmp(argv[1], "dumpHeader") == 0)
     {
-        if(argc != 3)
-        {
-            dumpHeaderUsage();
-            exit(-1);
-        }
-        // Dump the bam index.
-        return(dumpHeader(argv[2]));
+        bamExe = new DumpHeader();
     }
-   
-    if(strcmp(argv[1], "dumpIndex") == 0)
+    else if(strcmp(argv[1], "dumpIndex") == 0)
     {
-        // Dump the bam index.
-        return(dumpIndex(argc, argv));
+        bamExe = new DumpIndex();
     }
-   
-    if(strcmp(argv[1], "writeRegion") == 0)
+    else if(strcmp(argv[1], "writeRegion") == 0)
     {
-        return(writeRegion(argc, argv));
+        bamExe = new WriteRegion();
     }
-
-    if(strcmp(argv[1], "validate") == 0)
+    else if(strcmp(argv[1], "validate") == 0)
     {
-        return(validate(argc, argv));
+        bamExe = new Validate();
     }
-
-    if(strcmp(argv[1], "splitChromosome") == 0)
+    else if(strcmp(argv[1], "splitChromosome") == 0)
     {
-        return(splitChromosome(argc, argv));
+        bamExe = new SplitChromosome();
     }
-
-    if(strcmp(argv[1], "dumpRefInfo") == 0)
+    else if(strcmp(argv[1], "dumpRefInfo") == 0)
     {
-        return(dumpRefInfo(argc, argv));
+        bamExe = new DumpRefInfo();
     }
-
-    if(strcmp(argv[1], "filter") == 0)
+    else if(strcmp(argv[1], "filter") == 0)
     {
-        return(filter(argc, argv));
+        bamExe = new Filter();
     }
-
-    if(strcmp(argv[1], "readReference") == 0)
+    else if(strcmp(argv[1], "readReference") == 0)
     {
-        return(readReference(argc, argv));
+        bamExe = new ReadReference();
     }
-
-    if(strcmp(argv[1], "readReference") == 0)
+    else if(strcmp(argv[1], "convert") == 0)
     {
-        return(readReference(argc, argv));
-    }
-
-    // Check usage for the sam/bam converter.
-    if(strcmp(argv[1], "convert") == 0)
-    {
-        return(convert(argc, argv));
+        bamExe = new Convert();
     }
     else
     {
@@ -166,8 +146,21 @@ int main(int argc, char ** argv)
             args[6] = arg6;
             ++numArgs;
         }
-        return(convert(numArgs, args));
+        bamExe = new Convert();
+        int returnVal = bamExe->execute(numArgs, args);
+        delete bamExe;
+        bamExe = NULL;
+        return(returnVal);
     }
+    
+    if(bamExe != NULL)
+    {
+        int returnVal = bamExe->execute(argc, argv);
+        delete bamExe;
+        bamExe = NULL;
+        return(returnVal);
+    }
+    return(-1);
 }
 
 

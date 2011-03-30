@@ -38,7 +38,7 @@ int main(int argc, char ** argv)
   }
 
   if ( ! samIn.OpenForRead(argv[1]) ) {
-    printf("***Problem opening %s\n",argv[1]);
+      fprintf(stderr, "***Problem opening %s\n",argv[1]);
     abort();
   }
 
@@ -127,9 +127,9 @@ int main(int argc, char ** argv)
       fprintf(stderr, "%s\n", samIn.GetStatusMessage());
    }   
    
-   std::cout << std::endl << "Number of records read = " << 
+   std::cerr << std::endl << "Number of records read = " << 
      samIn.GetCurrentRecordCount() << std::endl;
-   std::cout << "Number of records written = " << 
+   std::cerr << "Number of records written = " << 
      samOut.GetCurrentRecordCount() << std::endl;
 
    if(samIn.GetStatus() != SamStatus::NO_MORE_RECS)

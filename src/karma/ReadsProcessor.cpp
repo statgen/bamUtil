@@ -337,9 +337,9 @@ void ReadsProcessor::MapPEReadsFromFilesMT(
                                            )
 {
     signalPoll userPoll;
+    userPoll.enableQuit();
 
     PairedEndStats peStats;
-
     std::ofstream   outputFile;
     std::ostream    *outputFilePtr;
 
@@ -356,10 +356,9 @@ void ReadsProcessor::MapPEReadsFromFilesMT(
     FastqReader readerA(filenameA.c_str());
     FastqReader readerB(filenameB.c_str());
 
-    if (outputFilePtr!=&std::cout) printf("\nProcessing paired short reads file [%s, %s] ... \n", filenameA.c_str(), filenameB.c_str());
-    //
+    if (outputFilePtr!=&std::cout) 
+        printf("\nProcessing paired short reads file [%s, %s] ... \n", filenameA.c_str(), filenameB.c_str());
 
-    userPoll.enableQuit();
     peStats.runTime.start();
 
     // write out SAM header:
@@ -744,11 +743,10 @@ void ReadsProcessor::MapSEReadsFromFileMT(
     )
 {
     signalPoll userPoll;
+    userPoll.enableQuit();
 
     SingleEndStats seStats;
-
     std::ofstream   outputFile;
-
     std::ostream    *outputFilePtr;
 
     if (outputFilename=="-")
@@ -766,9 +764,7 @@ void ReadsProcessor::MapSEReadsFromFileMT(
     if (outputFilePtr!=&std::cout)
         std::cout << std::endl << "Processing short reads file [" << filename << "] ..." << std::endl;
 
-    userPoll.enableQuit();
     seStats.runTime.start();
-
     header.dump(*outputFilePtr);
     gs->dumpSequenceSAMDictionary(*outputFilePtr);
 

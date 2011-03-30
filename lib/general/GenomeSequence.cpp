@@ -549,7 +549,7 @@ bool GenomeSequence::create()
     {
         if (_progressStream)
         {
-            newPercent = (1.0 * fastaIndex / fastaDataSize) * 100;
+            newPercent = (int) (1.0 * fastaIndex / fastaDataSize) * 100;
             if (newPercent>percent)
             {
                 std::cerr << "\r" << newPercent << "% ";
