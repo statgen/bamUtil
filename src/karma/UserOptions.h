@@ -55,27 +55,16 @@
 //
 class BaseArguments
 {
-<<<<<<< HEAD
- protected:
-=======
-  protected:
->>>>>>> 1ca3069614f965dc318c2a8fd22efb7a3b924725
+protected:
     std::string optionString;
     virtual void getoptH();
     int argc;
     const char **argv;
     int opt;
-<<<<<<< HEAD
- public:
-    bool debug;
-    int seed;
- BaseArguments() : debug(false), seed(12345)
-=======
   public:
     bool debug;
     int seed;
   BaseArguments() : debug(false), seed(12345)
->>>>>>> 1ca3069614f965dc318c2a8fd22efb7a3b924725
     {
         optionString += "ds:";
     }
@@ -96,11 +85,7 @@ class BaseArguments
 
 class MapArguments : public BaseArguments
 {
-<<<<<<< HEAD
- public:
-=======
   public:
->>>>>>> 1ca3069614f965dc318c2a8fd22efb7a3b924725
     int      mapInColorSpace;
     int      insertSize;
     uint64_t maxBases;
@@ -114,11 +99,7 @@ class MapArguments : public BaseArguments
     std::string                 outputFilename;
     std::vector<std::string>    references;
     std::vector<std::string>    SAMHeaderOptions;
-<<<<<<< HEAD
- MapArguments() :
-=======
   MapArguments() :
->>>>>>> 1ca3069614f965dc318c2a8fd22efb7a3b924725
     mapInColorSpace(false),
         insertSize(250),
         maxBases(0),
@@ -128,11 +109,7 @@ class MapArguments : public BaseArguments
         showReferenceBases(false),
         quietMode(false),
         wordSize(15),
-<<<<<<< HEAD
-        numThread(1)    
-=======
         numThread(1)
->>>>>>> 1ca3069614f965dc318c2a8fd22efb7a3b924725
         {
             optionString += "a:B:cEH:m:o:O:q:r:R:t:Qw:";
         }
@@ -171,11 +148,7 @@ class MapArguments : public BaseArguments
 
 class RemapArguments : public BaseArguments
 {
-<<<<<<< HEAD
- public:
-=======
   public:
->>>>>>> 1ca3069614f965dc318c2a8fd22efb7a3b924725
     std::string chromosome;
     int insertSize;
     int occurrenceCutoff;
@@ -187,11 +160,7 @@ class RemapArguments : public BaseArguments
     std::string                 outputFilename;
     std::vector<std::string>    references;
     std::vector<std::string>    SAMHeaderOptions;
-<<<<<<< HEAD
- RemapArguments() :
-=======
   RemapArguments() :
->>>>>>> 1ca3069614f965dc318c2a8fd22efb7a3b924725
     insertSize(250),
         occurrenceCutoff(5000),
         wordSize(15),
@@ -226,20 +195,12 @@ class RemapArguments : public BaseArguments
 
 class CreateArguments : public BaseArguments
 {
-<<<<<<< HEAD
- public:
-=======
   public:
->>>>>>> 1ca3069614f965dc318c2a8fd22efb7a3b924725
     bool createIndex;
     bool isColorSpace;
     int occurrenceCutoff;
     int wordSize;
-<<<<<<< HEAD
- CreateArguments() :
-=======
   CreateArguments() :
->>>>>>> 1ca3069614f965dc318c2a8fd22efb7a3b924725
     createIndex(false),
         isColorSpace(false),
         occurrenceCutoff(5000),
@@ -265,15 +226,9 @@ class CreateArguments : public BaseArguments
 
 class CheckArguments : public BaseArguments
 {
-<<<<<<< HEAD
- public:
-    bool verbose;
- CheckArguments() : verbose(false)
-=======
   public:
     bool verbose;
   CheckArguments() : verbose(false)
->>>>>>> 1ca3069614f965dc318c2a8fd22efb7a3b924725
     {
         optionString += "v";
     }
@@ -292,19 +247,11 @@ class CheckArguments : public BaseArguments
 
 class HeaderArguments : public BaseArguments
 {
-<<<<<<< HEAD
- public:
-    bool editFlag;
-    bool isColorSpace;
-    std::string newHeaderFile;
- HeaderArguments() : editFlag(false), isColorSpace(false)
-=======
   public:
     bool editFlag;
     bool isColorSpace;
     std::string newHeaderFile;
   HeaderArguments() : editFlag(false), isColorSpace(false)
->>>>>>> 1ca3069614f965dc318c2a8fd22efb7a3b924725
     {
         optionString += "ceh:";
     }
@@ -328,19 +275,11 @@ class HeaderArguments : public BaseArguments
 //
 class FastQCheckArguments : public BaseArguments
 {
-<<<<<<< HEAD
- public:
-    bool isColorSpace;
-    int minReadLength;
-    int maxReportedErrors;
- FastQCheckArguments() : isColorSpace(false), minReadLength(10), maxReportedErrors(20)
-=======
   public:
     bool isColorSpace;
     int minReadLength;
     int maxReportedErrors;
   FastQCheckArguments() : isColorSpace(false), minReadLength(10), maxReportedErrors(20)
->>>>>>> 1ca3069614f965dc318c2a8fd22efb7a3b924725
     {
         optionString += "m:e:c";
     }
