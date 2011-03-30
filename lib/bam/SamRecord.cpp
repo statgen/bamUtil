@@ -493,6 +493,7 @@ bool SamRecord::addTag(const char* tag, char vtype, const char* valuePtr)
             index = integers.Length();
             bamvtype = vtype;
             integers.Push((const int)*(valuePtr));
+            intType.push_back(vtype);
             tagBufferSize += 4;
             break;
         case 'i' :
@@ -548,6 +549,7 @@ bool SamRecord::addTag(const char* tag, char vtype, const char* valuePtr)
                 }
             }
             integers.Push(intVal);
+            intType.push_back(bamvtype);
             break;
         case 'Z' :
             index = strings.Length();
@@ -1291,25 +1293,21 @@ bool SamRecord::getNextSamTag(char* tag, char& vtype, void** value)
             // Found a slot to use.
             int key = extras.GetKey(myLastTagIndex);
             getTag(key, tag);
-            getVtype(key, vtype);
+            getTypeFromKey(key, vtype);
             tagFound = true;
             // Get the value associated with the key based on the vtype.
             switch (vtype)
             {
-                case 'A' :
-                    *value = getIntegerPtr(myLastTagIndex);
-                    break;
                 case 'f' :
                     *value = getDoublePtr(myLastTagIndex);
                     break;
-                case 'c' :
-                case 'C' :
-                case 's' :
-                case 'S' :
                 case 'i' :
-                case 'I' :
-                    vtype = 'i';
-                    *value = getIntegerPtr(myLastTagIndex);
+                    *value = getIntegerPtr(myLastTagIndex, vtype);
+                    if(vtype != 'A')
+                    {
+                        // Convert all int types to 'i'
+                        vtype = 'i';
+                    }
                     break;
                 case 'Z' :
                     *value = getStringPtr(myLastTagIndex);
@@ -1438,6 +1436,7 @@ void SamRecord::clearTags()
     }
     strings.Clear();
     integers.Clear();
+    intType.clear();
     doubles.Clear();
     myTagBufferSize = 0;
     resetTagIter();
@@ -1478,13 +1477,21 @@ bool SamRecord::rmTag(const char* tag, char type)
         return(true);
     }
 
-    int rmBuffSize = 0;
-    
+    // Offset is set, so the key was found.
+    // First if it is an integer, determine the actual type of the int.
+    char vtype;
+    getTypeFromKey(key, vtype);
+    if(vtype == 'i')
+    {
+        vtype = getIntegerType(offset);
+    }
+
     // Offset is set, so recalculate the buffer size without this entry.
     // Do NOT remove from strings, integers, or doubles because then
     // extras would need to be updated for all entries with the new indexes
     // into those variables.
-    switch(type)
+    int rmBuffSize = 0;
+    switch(vtype)
     {
         case 'A':
         case 'c':
@@ -1531,6 +1538,100 @@ const SamStatus& SamRecord::getStatus()
 }
 
 
+String* SamRecord::getStringTag(const char * tag)
+{
+    // Parse the buffer if necessary.
+    if(myNeedToSetTagsFromBuffer)
+    {
+        if(!setTagsFromBuffer())
+        {
+            // Failed to read the tags from the buffer, so cannot
+            // get tags.  setTagsFromBuffer set the errors,
+            // so just return null.
+            return(NULL);
+        }
+    }
+    
+    int key = MAKEKEY(tag[0], tag[1], 'Z');
+    int offset = extras.Find(key);
+
+    int value;
+    if (offset < 0)
+    {
+        // Tag not found.
+        return(NULL);
+    }
+
+    // Offset is valid, so return the tag.
+    value = extras[offset];
+    return(&(strings[value]));
+}
+
+
+int* SamRecord::getIntegerTag(const char * tag)
+{
+    // Init to success.
+    myStatus = SamStatus::SUCCESS;
+    // Parse the buffer if necessary.
+    if(myNeedToSetTagsFromBuffer)
+    {
+        if(!setTagsFromBuffer())
+        {
+            // Failed to read the tags from the buffer, so cannot
+            // get tags.  setTagsFromBuffer set the errors,
+            // so just return null.
+            return(NULL);
+        }
+    }
+    
+    int key = MAKEKEY(tag[0], tag[1], 'i');
+    int offset = extras.Find(key);
+
+    int value;
+    if (offset < 0)
+    {
+        // Failed to find the tag.
+        return(NULL);
+    }
+    else
+        value = extras[offset];
+
+    return(&(integers[value]));
+}
+
+
+double* SamRecord::getDoubleTag(const char * tag)
+{
+    // Init to success.
+    myStatus = SamStatus::SUCCESS;
+    // Parse the buffer if necessary.
+    if(myNeedToSetTagsFromBuffer)
+    {
+        if(!setTagsFromBuffer())
+        {
+            // Failed to read the tags from the buffer, so cannot
+            // get tags.  setTagsFromBuffer set the errors,
+            // so just return null.
+            return(NULL);
+        }
+    }
+    
+    int key = MAKEKEY(tag[0], tag[1], 'f');
+    int offset = extras.Find(key);
+
+    int value;
+    if (offset < 0)
+    {
+        // Failed to find the tag.
+        return(NULL);
+    }
+    else
+        value = extras[offset];
+
+    return(&(doubles[value]));
+}
+
+
 String & SamRecord::getString(const char * tag)
 {
     // Init to success.
@@ -1542,7 +1643,7 @@ String & SamRecord::getString(const char * tag)
         {
             // Failed to read the tags from the buffer, so cannot
             // get tags.
-            // TODO - what do we want to do on failure?
+            // TODO - what do we want to do on failure?            
         }
     }
     
@@ -1571,7 +1672,7 @@ int & SamRecord::getInteger(const char * tag)
         if(!setTagsFromBuffer())
         {
             // Failed to read the tags from the buffer, so cannot
-            // get tags.
+            // get tags.  setTagsFromBuffer set the error.
             // TODO - what do we want to do on failure?
         }
     }
@@ -1591,6 +1692,7 @@ int & SamRecord::getInteger(const char * tag)
     return integers[value];
 }
 
+
 double & SamRecord::getDouble(const char * tag)
 {
     // Init to success.
@@ -1601,7 +1703,7 @@ double & SamRecord::getDouble(const char * tag)
         if(!setTagsFromBuffer())
         {
             // Failed to read the tags from the buffer, so cannot
-            // get tags.
+            // get tags.  setTagsFromBuffer set the error.
             // TODO - what do we want to do on failure?
         }
     }
@@ -1632,7 +1734,7 @@ bool SamRecord::checkTag(const char * tag, char type)
         if(!setTagsFromBuffer())
         {
             // Failed to read the tags from the buffer, so cannot
-            // get tags.
+            // get tags.  setTagsFromBuffer set the error.
             return("");
         }
     }
@@ -1740,9 +1842,11 @@ void* SamRecord::getStringPtr(int index)
     return &(strings[value]);
 }
 
-void* SamRecord::getIntegerPtr(int offset)
+void* SamRecord::getIntegerPtr(int offset, char& type)
 {
     int value = extras[offset];
+
+    type = intType[value];
 
     return &(integers[value]);
 }
@@ -2306,67 +2410,67 @@ bool SamRecord::setTagsFromBuffer()
         int value;
         void * content = extraPtr + 3;
         int tagBufferSize = 0;
+
+        key = MAKEKEY(extraPtr[0], extraPtr[1], extraPtr[2]);
       
         switch (extraPtr[2])
         {
             case 'A' :
-                key = MAKEKEY(extraPtr[0], extraPtr[1], 'A');
                 value = integers.Length();
                 integers.Push(* (char *) content);
+                intType.push_back(extraPtr[2]);
                 extraPtr += 4;
                 tagBufferSize += 4;
                 break;
             case 'c' :
-                key = MAKEKEY(extraPtr[0], extraPtr[1], 'c');
                 value = integers.Length();
                 integers.Push(* (char *) content);
+                intType.push_back(extraPtr[2]);
                 extraPtr += 4;
                 tagBufferSize += 4;
                 break;
             case 'C' :
-                key = MAKEKEY(extraPtr[0], extraPtr[1], 'C');
                 value = integers.Length();
                 integers.Push(* (unsigned char *) content);
+                intType.push_back(extraPtr[2]);
                 extraPtr += 4;
                 tagBufferSize += 4;
                 break;
             case 's' :
-                key = MAKEKEY(extraPtr[0], extraPtr[1], 's');
                 value = integers.Length();
                 integers.Push(* (short *) content);
+                intType.push_back(extraPtr[2]);
                 extraPtr += 5;
                 tagBufferSize += 5;
                 break;
             case 'S' :
-                key = MAKEKEY(extraPtr[0], extraPtr[1], 'S');
                 value = integers.Length();
                 integers.Push(* (unsigned short *) content);
+                intType.push_back(extraPtr[2]);
                 extraPtr += 5;
                 tagBufferSize += 5;
                 break;
             case 'i' :
-                key = MAKEKEY(extraPtr[0], extraPtr[1], 'i');
                 value = integers.Length();
                 integers.Push(* (int *) content);
+                intType.push_back(extraPtr[2]);
                 extraPtr += 7;
                 tagBufferSize += 7;
                 break;
             case 'I' :
-                key = MAKEKEY(extraPtr[0], extraPtr[1], 'I');
                 value = integers.Length();
                 integers.Push((int) * (unsigned int *) content);
+                intType.push_back(extraPtr[2]);
                 extraPtr += 7;
                 tagBufferSize += 7;
                 break;
             case 'Z' :
-                key = MAKEKEY(extraPtr[0], extraPtr[1], 'Z');
                 value = strings.Length();
                 strings.Push((const char *) content);
                 extraPtr += 4 + strings.Last().Length();
                 tagBufferSize += 4 + strings.Last().Length();
                 break;
             case 'f' :
-                key = MAKEKEY(extraPtr[0], extraPtr[1], 'f');
                 value = doubles.Length();
                 doubles.Push(* (float *) content);
                 fprintf(stderr, "\n\nFLOAT!!!\n\n");
@@ -2435,8 +2539,15 @@ bool SamRecord::setTagsInBuffer()
                 int key = extras.GetKey(i);
                 getTag(key, extraPtr);
                 extraPtr += 2;
-                getVtype(key, extraPtr[0]);
-                char vtype = extraPtr[0];
+                char vtype;
+                getTypeFromKey(key, vtype);
+ 
+                if(vtype == 'i')
+                {
+                    vtype = getIntegerType(i);
+                }
+
+                extraPtr[0] = vtype;
 
                 // increment the pointer to where the value is.
                 extraPtr += 1;
@@ -2551,11 +2662,12 @@ void SamRecord::setVariablesForNewBuffer(SamFileHeader& header)
 
 
 // Extract the vtype from the key.
-void SamRecord::getVtype(int key, char& vtype) const
+void SamRecord::getTypeFromKey(int key, char& type) const
 {
-    // Extract the vtype from the key.
-    vtype = (key >> 16) & 0xFF;
+    // Extract the type from the key.
+    type = (key >> 16) & 0xFF;
 }
+
 
 // Extract the tag from the key.
 void SamRecord::getTag(int key, char* tag) const
@@ -2580,6 +2692,13 @@ int & SamRecord::getInteger(int offset)
     int value = extras[offset];
 
     return integers[value];
+}
+
+char & SamRecord::getIntegerType(int offset)
+{
+    int value = extras[offset];
+
+    return intType[value];
 }
 
 double & SamRecord::getDouble(int offset)

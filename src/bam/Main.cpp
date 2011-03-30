@@ -29,6 +29,7 @@
 #include "DumpRefInfo.h"
 #include "Filter.h"
 #include "ReadReference.h"
+#include "Revert.h"
 
 void Usage()
 {
@@ -45,6 +46,7 @@ void Usage()
     ReadIndexedBam::readIndexedBamDescription();
     Filter::filterDescription();
     ReadReference::readReferenceDescription();
+    Revert::revertDescription();
     std::cerr << std::endl;
     std::cerr << "Usage: " << std::endl;
     std::cerr << "\tbam <tool> [<tool arguments>]" << std::endl;
@@ -99,6 +101,10 @@ int main(int argc, char ** argv)
     else if(strcmp(argv[1], "readReference") == 0)
     {
         bamExe = new ReadReference();
+    }
+    else if(strcmp(argv[1], "revert") == 0)
+    {
+        bamExe = new Revert();
     }
     else if(strcmp(argv[1], "convert") == 0)
     {
