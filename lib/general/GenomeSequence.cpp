@@ -721,7 +721,7 @@ int GenomeSequence::getChromosome(genomeIndex_t position) const
     if (position == INVALID_GENOME_INDEX) return INVALID_CHROMOSOME_INDEX;
 
     if (header->_chromosomeCount == 0)
-        return -1;
+        return INVALID_CHROMOSOME_INDEX;
 
     int start = 0;
     int stop = header->_chromosomeCount - 1;
