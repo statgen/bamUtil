@@ -386,21 +386,6 @@ void QCStats::UpdateStats(SamRecord & sam, QSamFlag &filter, double minMapQualit
 //  genomeIndex_t mapPos = referencegenome->getGenomePosition(refLabel.c_str(), sam.data.header->position+1);
   genomeIndex_t mapPos = referencegenome->getGenomePosition(refLabel.c_str(), sam.get1BasedPosition());
 
-#if 0
-  CigarCol cigarcol;
-  cigarcol.CigarParse(sam.data.cigar);
-  cigarcol.GetClipLength_begin(sam.data.cigar);
-  cigarcol.GetClipLength_end(sam.data.cigar);
-#endif
-  CigarRoller cigar(sam.getCigar());
-
-  //CigarRoller cigarRoller;
-  //cigarRoller.Set(sam.data.cigar);
-  //int start = sam.data.header->position+cigarcol.nClips_begin;
-  //int refEndOffset = cigarRoller.getRefOffset(sam.data.sequence.Length()-1)-cigarcol.nClips_end;
-  //if(regionIndicator->size()>0 && !regions->IsInRegions(refLabel, start, sam.data.header->position+refEndOffset)) return;
-  //printf("%s %d %d %d\n", refLabel.c_str(), sam.data.header->position+start, start, sam.data.header->position+refEndOffset);
-
   if(sam.getReadLength()>size){
     if(sam.getReadLength()>size_reserved)
       ReAllocateMemory(sam.getReadLength()*2);
@@ -458,6 +443,21 @@ void QCStats::UpdateStats(SamRecord & sam, QSamFlag &filter, double minMapQualit
    }
     return;
   }
+
+#if 0
+  CigarCol cigarcol;
+  cigarcol.CigarParse(sam.data.cigar);
+  cigarcol.GetClipLength_begin(sam.data.cigar);
+  cigarcol.GetClipLength_end(sam.data.cigar);
+#endif
+  CigarRoller cigar(sam.getCigar());
+
+  //CigarRoller cigarRoller;
+  //cigarRoller.Set(sam.data.cigar);
+  //int start = sam.data.header->position+cigarcol.nClips_begin;
+  //int refEndOffset = cigarRoller.getRefOffset(sam.data.sequence.Length()-1)-cigarcol.nClips_end;
+  //if(regionIndicator->size()>0 && !regions->IsInRegions(refLabel, start, sam.data.header->position+refEndOffset)) return;
+  //printf("%s %d %d %d\n", refLabel.c_str(), sam.data.header->position+start, start, sam.data.header->position+refEndOffset);
 
   String aligTypes="";
   for (int i = 0; i < cigar.size(); i++)
