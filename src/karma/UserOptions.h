@@ -55,7 +55,7 @@
 //
 class BaseArguments
 {
-  protected:
+protected:
     std::string optionString;
     virtual void getoptH();
     int argc;

@@ -25,6 +25,7 @@ $(SUBDIRS):
 
 GTEST_COMPILE_FLAG=-DGTEST_HAS_TR1_TUPLE=0 -D GTEST_HAS_RTTI=0
 
+
 CFLAGS=-pipe -Wall -Wno-trigraphs -ggdb  $(OPTFLAG) -I. -I.. -I$(INCLUDE_PATH) -D__ZLIB_AVAILABLE__  -D_FILE_OFFSET_BITS=64 -D__STDC_LIMIT_MACROS $(GTEST_COMPILE_FLAG)
 
 LIBRARY=$(REQ_LIBS)
@@ -35,9 +36,13 @@ LIBRARY=$(REQ_LIBS)
 .cpp.o : 
 	$(CXX) $(CFLAGS) -o $@ -c $*.cpp -DVERSION="\"$(VERSION)\"" -DDATE="\"${DATE}\"" -DNODE="\"${NODE}\"" -DUSER="\"${USER}\"" -I$(GTEST_INC)
 
-# google test part
-GTEST_LIB=../../thirdParty/gtest-1.5.0/lib/.libs/libgtest.a
-GTEST_INC=../../thirdParty/gtest-1.5.0/include
+# Google test part
+GTEST_INC = ../../../src/karma/gtest
+GTEST_SRC = ../../../src/karma/gtest/gtest/gtest-all.cc
+GTEST_OBJ = ../../../src/karma/gtest/gtest/gtest-all.o
+
+$(GTEST_OBJ): $(GTEST_SRC)
+	g++ -c -o $@ $< -I$(GTEST_INC)
 
 #TOOLTEST=$(TOOLBASE:=_test)
 TOOLTEST=gtest TrimSequence_test GreedyTupleAligner_test STLUtilities_test GenomeSequence_test
@@ -58,8 +63,8 @@ TrimSequence_test.o: TrimSequence_test.cpp ../TrimSequence.h ../TrimSequence.cpp
 GreedyTupleAligner_test.o: GreedyTupleAligner_test.cpp ../GreedyTupleAligner.h
 	$(CXX) $(CFLAGS) -o $@ -c $< -DVERSION="\"$(VERSION)\"" -DDATE="\"${DATE}\"" -DNODE="\"${NODE}\"" -DUSER="\"${USER}\"" -I$(GTEST_INC)
 
-gtest_build: $(TOOLTESTOBJ) $(TOOLOBJ) 
-	g++  $(TOOLTESTOBJ) $(TOOLOBJ_NOMAIN) $(GTEST_LIB) $(LIBRARY) -lm -lz -lssl -lpthread -o ./gtest
+gtest_build: $(TOOLTESTOBJ) $(TOOLOBJ) $(GTEST_OBJ)
+	g++  $(TOOLTESTOBJ) $(TOOLOBJ_NOMAIN) $(GTEST_OBJ) $(LIBRARY) -lm -lz -lssl -lpthread -lcrypto -o ./gtest
 gtest: gtest_build
 	./gtest --gtest_color=yes
 

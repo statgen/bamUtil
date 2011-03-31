@@ -114,7 +114,11 @@ void CigarRoller::Add(char operation, int count)
             break;
         default:
             // Hmmm... what to do?
-            std::cerr << "ERROR parsing CIGAR - invalid character";
+            std::cerr << "ERROR "
+                      << "(" << __FILE__ << ":" << __LINE__ <<"): "
+                      << "Parsing CIGAR - invalid character found "
+                      << "with parameter " << operation << " and " << count
+                      << std::endl;
             break;
     }
 }

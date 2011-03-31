@@ -19,6 +19,10 @@
 
 #include "GenomeSequence.h"
 
+const char* RM_BS_REFERENCE = "rm -f ../../../src/karma/test/phiX-bs.umfa";
+const char* RM_CS_REFERENCE = "rm -f ../../../src/karma/test/phiX-cs.umfa";
+const char* REFERENCE_NAME = "../../../src/karma/test/phiX.fa";
+
 TEST(GenomeSequenceTest, staticLookupTest)
 {
     GenomeSequence s;
@@ -48,13 +52,14 @@ TEST(GenomeSequenceTest, staticLookupTest)
     EXPECT_EQ(GenomeSequence::base2int[(int) 'g'], 2);
 }
 
+
 TEST(GenomeSequenceTest, testBaseSpaceReference)
 {
     GenomeSequence s;
-    int exitCode = system("rm -f ../../testdata/phiX-bs.umfa");
+    int exitCode = system(RM_BS_REFERENCE);
     EXPECT_EQ(exitCode, 0);
 
-    s.setReferenceName("../../testdata/phiX.fa");
+    s.setReferenceName(REFERENCE_NAME);
     bool rc = s.create(false);
     EXPECT_EQ(rc, false);
     EXPECT_EQ(s[0], 'G');
@@ -71,10 +76,10 @@ TEST(GenomeSequenceTest, testBaseSpaceReference)
 TEST(GenomeSequenceTest, testColorSpaceReference)
 {
     GenomeSequence s;
-    int exitCode = system("rm -f ../../testdata/phiX-cs.umfa");
+    int exitCode = system(RM_CS_REFERENCE);
     EXPECT_EQ(exitCode, 0);
 
-    s.setReferenceName("../../testdata/phiX.fa");
+    s.setReferenceName(REFERENCE_NAME);
     bool rc = s.create(true);
 
     // NB: I did not calculate these expected values, I just
