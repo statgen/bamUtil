@@ -1,0 +1,6 @@
+Arguments in effect: 
+	Input file : testFiles/squeeze.bam
+	Output file : results/squeezeBam.sam
+
+Number of records read = 13
+Number of records written = 10

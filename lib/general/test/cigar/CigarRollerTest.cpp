@@ -29,7 +29,7 @@
 // Test the obvious cases.
 // Add non-obvious ones as bugs come up.
 //
-void CigarRollerTest::test(void)
+int CigarRollerTest::test(void)
 {
     // Create the CigarRoller.
     CigarRoller cigar;
@@ -439,6 +439,8 @@ void CigarRollerTest::test(void)
     check(failures, ++testNum, "getNumBeginClips", 2, cigar.getNumBeginClips());
 
     std::cout << "\nCigarRoller PASS: " << testNum - failures << "  FAIL: " << failures << std::endl;
+    // return the number of failures.
+    return(failures);
 }
 
 
@@ -464,7 +466,7 @@ int main(int argc, const char **argv)
     //
     // do cigar roller tests first
     //
-    roller.test();
+    return(roller.test());
 
     // CIGAR explanation - for backward SW runs, the corresponding
     // CIGAR string is generated from the back of the string to the

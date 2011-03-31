@@ -18,21 +18,27 @@
 //////////////////////////////////////////////////////////////////////////
 // This file contains the processing for the executable option "splitChromosome"
 // which splits a sorted/indexed BAM file into one file per chromosome.
-
+#include "SplitChromosome.h"
 #include "SamFile.h"
 #include "Parameters.h"
 #include "BgzfFileType.h"
 
-void splitChromosomeDescription()
+void SplitChromosome::splitChromosomeDescription()
 {
-    std::cerr << " splitChromosome - Split BAM by Chromosome:" << std::endl;
-    std::cerr << "\t./bam splitChromosome --in <inputFilename>  --out <outputFileBaseName> [--bamIndex <bamIndexFile>] [--noeof] [--bamout|--samout] [--params]"<< std::endl;
+    std::cerr << " splitChromosome - Split BAM by Chromosome" << std::endl;
 }
 
 
-void splitChromosomeUsage()
+void SplitChromosome::description()
 {
     splitChromosomeDescription();
+}
+
+
+void SplitChromosome::usage()
+{
+    BamExecutable::usage();
+    std::cerr << "\t./bam splitChromosome --in <inputFilename>  --out <outputFileBaseName> [--bamIndex <bamIndexFile>] [--noeof] [--bamout|--samout] [--params]"<< std::endl;
     std::cerr << "\tRequired Parameters:" << std::endl;
     std::cerr << "\t\t--in       : the BAM file to be split" << std::endl;
     std::cerr << "\t\t--out      : the base filename for the SAM/BAM files to write into.  Does not include the extension." << std::endl;    
@@ -50,7 +56,7 @@ void splitChromosomeUsage()
 
 
 
-int splitChromosome(int argc, char **argv)
+int SplitChromosome::execute(int argc, char **argv)
 {
     // Extract command line arguments.
     String inFile = "";
@@ -94,7 +100,7 @@ int splitChromosome(int argc, char **argv)
     // Check to see if the in file was specified, if not, report an error.
     if(inFile == "")
     {
-        splitChromosomeUsage();
+        usage();
         inputParameters.Status();
         // In file was not specified but it is mandatory.
         std::cerr << "--in is a mandatory argument, "
@@ -103,7 +109,7 @@ int splitChromosome(int argc, char **argv)
     }
     if(outFileBase == "")
     {
-        splitChromosomeUsage();
+        usage();
         inputParameters.Status();
         // In file was not specified but it is mandatory.
         std::cerr << "--out is a mandatory argument, "

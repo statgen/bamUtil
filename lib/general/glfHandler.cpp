@@ -21,13 +21,14 @@
 char glfHandler::translateBase[16] = {0, 1, 2, 0, 3, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0};
 char glfHandler::backTranslateBase[5] = { 15, 1, 2, 4, 8 };
 unsigned char glfHandler::nullLogLikelihoods[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-double glfHandler::nullLikelihoods[10] = {0., 0., 0., 0., 0., 0., 0., 0., 0., 0.};
+double glfHandler::nullLikelihoods[10] = {1., 1., 1., 1., 1., 1., 1., 1., 1., 1.};
 
 glfHandler::glfHandler()
 {
+    isStub = true;
     sections = 0;
     currentSection = 0;
-    maxPosition = position = 0;
+    maxPosition = position = endOfSection = 0;
 }
 
 glfHandler::~glfHandler()
@@ -39,24 +40,45 @@ glfHandler::~glfHandler()
 
 bool glfHandler::Open(const String & filename)
 {
+    isStub = false;
     handle = ifopen(filename, "rb");
 
     if (handle == NULL)
+    {
+        isStub = true;
         return false;
+    }
 
     if (!ReadHeader())
         ifclose(handle);
 
+    endOfSection = true;
+
     return handle != NULL;
+}
+
+void glfHandler::OpenStub()
+{
+    isStub = true;
+    handle = NULL;
+
+    endOfSection = true;
+    data.recordType = 0;
+    maxPosition = 1999999999;
+    position = maxPosition + 1;
 }
 
 bool glfHandler::Create(const String & filename)
 {
+    isStub = false;
     // glf is in BGZF format.
     handle = ifopen(filename, "wb", InputFile::BGZF);
 
     if (handle == NULL)
+    {
+        isStub = true;
         return false;
+    }
 
     WriteHeader();
 
@@ -70,6 +92,9 @@ bool glfHandler::isOpen()
 
 bool glfHandler::ReadHeader()
 {
+    if (isStub)
+        return true;
+
     if (handle == NULL)
         return false;
 
@@ -133,11 +158,27 @@ void glfHandler::Rewind()
 
         if (!ReadHeader())
             ifclose(handle);
+
+        endOfSection = true;
     }
 }
 
 bool glfHandler::NextSection()
 {
+    if (isStub)
+    {
+        endOfSection = true;
+        data.recordType = 0;
+        maxPosition = 1999999999;
+        position = maxPosition + 1;
+        return true;
+    }
+
+    while (!endOfSection && !ifeof(handle))
+        NextEntry();
+
+    endOfSection = false;
+
     int labelLength = 0;
 
     currentSection++;
@@ -172,9 +213,13 @@ bool glfHandler::NextBaseEntry()
 
 bool glfHandler::NextEntry()
 {
+    if (isStub)
+        return false;
+
     // Read record type
-    if (ifread(handle, &data, 1) != 1)
+    if (endOfSection || (ifread(handle, &data, 1) != 1))
     {
+        endOfSection = true;
         data.recordType = 0;
         position = maxPosition + 1;
         return false;
@@ -188,6 +233,7 @@ bool glfHandler::NextEntry()
     switch (data.recordType)
     {
         case 0 :
+            endOfSection = true;
             position = maxPosition + 1;
             return true;
         case 1 :

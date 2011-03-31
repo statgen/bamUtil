@@ -98,6 +98,7 @@ public:
     static int markerCount;
     static int affectionCount;
     static int covariateCount;
+    static int stringCount;
 
     // Should be set to true if handling X-linked data
     static bool chromosomeX;
@@ -109,10 +110,12 @@ public:
     static StringArray   covariateNames;
     static StringArray   affectionNames;
     static StringArray   markerNames;
+    static StringArray   stringNames;
     static StringIntHash markerLookup;
     static StringIntHash traitLookup;
     static StringIntHash affectionLookup;
     static StringIntHash covariateLookup;
+    static StringIntHash stringLookup;
 
     // These functions are guaranteed to return a valid ID
     // If no matching attribute exists, one is created
@@ -122,6 +125,7 @@ public:
     static int GetMarkerID(const char * name);
     static int GetCovariateID(const char * name);
     static int GetAffectionID(const char * name);
+    static int GetStringID(const char * name);
 
     // These functions return a matching ID or -1 if none is found
     //
@@ -141,6 +145,10 @@ public:
     static int LookupAffection(const char * name)
     {
         return affectionLookup.Integer(name);
+    }
+    static int LookupString(const char * name)
+    {
+        return stringLookup.Integer(name);
     }
 
     static int markerInfoCount;

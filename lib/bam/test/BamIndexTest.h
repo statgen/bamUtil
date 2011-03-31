@@ -12,7 +12,18 @@
  *   GNU General Public License for more details.
  *
  *   You should have received a copy of the GNU General Public License
- *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *   along with this program.  If not,x see <http://www.gnu.org/licenses/>.
  */
+#include "SamFile.h"
+
+class BamIndexFileTest : public SamFile
+{
+public:
+    BamIndex* getBamIndex()
+    {
+        return(myBamIndex);
+    }
+};
 
 void testBamIndex();
+

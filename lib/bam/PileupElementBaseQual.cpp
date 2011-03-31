@@ -37,7 +37,7 @@ PileupElementBaseQual::PileupElementBaseQual()
     }
 }
 
-
+// NOTE that this method does not actually copy, it just resets.
 PileupElementBaseQual::PileupElementBaseQual(const PileupElementBaseQual& q)
     : PileupElement(),
       myBases(NULL),

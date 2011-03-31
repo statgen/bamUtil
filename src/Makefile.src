@@ -2,6 +2,7 @@ EXE=
 TOOLBASE=
 SRCONLY=
 HDRONLY = 
+COMPILE_ANY_CHANGE = 
 VERSION = 0.0.1
 PATH_TO_BASE=../..
 BIN_DIR=$(PATH_TO_BASE)/src/bin
@@ -11,11 +12,17 @@ BIN_DIR=$(PATH_TO_BASE)/src/bin
 #   TOOLBASE - the base filename for files with .h & .cpp versions
 #   SRCONLY - any cpp files without headers.
 #   HDRONLY - any header files without cpp
+#   COMPILE_ANY_CHANGE - any files that should be compiled if any of the
+#                        files change.  These files MUST also be
+#                        included in TOOLBASE or SRCONLY.  Here they are
+#                        just the base name without the extension.
 #   VERSION - if not 0.0.1
 #   PATH_TO_BASE if it is not ../..
 #   BIN_DIR if it is not ../../src/bin
 #   USER_INCLUDES if any additional directories need to be included to pick up
 #                 header files (example: USER_INCLUDES=-ImyDir1 -ImyDir2)
+#   INSTALLDIR if not /usr/local/bin
+
 include Makefile.tool
 
 # Must be after the include of Makefile.tool since it uses PATH_TO_BASE
@@ -26,31 +33,70 @@ TOOLSRC = $(TOOLBASE:=.cpp) $(SRCONLY)
 TOOLOBJ = $(TOOLSRC:.cpp=.o)
 LIBRARY = $(USER_LIBS) $(REQ_LIBS)
 OBJECTS=$(patsubst %,$(OBJDIR)/%,$(TOOLOBJ))
+ALWAYS_COMP_OBJ = $(patsubst %,$(OBJDIR)/%,$(COMPILE_ANY_CHANGE:=.o))
+
+PROG = $(BIN_DIR)/$(EXE)
+
+.PHONY: all test clean install
 
 # make everything
-all : $(EXE)
+all : $(PROG)
+
+# helpful screen listing available options
+help : 
+	@echo "Generic Source Distribution"
+	@echo " "
+	@echo "This Makefile will compile and install" $(TOOL) "on your system"
+	@echo " "
+	@echo "Type...           To..."
+	@echo "make              Compile everything "
+	@echo "make help         Display this help screen"
+	@echo "make all          Compile everything "
+	@echo "make install      Install binaries in $(INSTALLDIR)"
+	@echo "make install INSTALLDIR=directory_for_binaries"
+	@echo "                  Install binaries in directory_for_binaries"
+	@echo "make clean        Delete temporary files"
+	@echo "make test         Execute tests (if there are any)"
 
 # dependencies for executables
-$(EXE) : $(LIBRARY) $(OBJECTS) $(BINDIR)
-	$(CXX) $(CFLAGS) -o $(BIN_DIR)/$@ $(OBJECTS) $(LIBRARY) -lm -lz -lssl
+$(PROG) : $(LIBRARY) $(OBJECTS)
+	$(CXX) $(CFLAGS) -o $(PROG) $(OBJECTS) $(LIBRARY) -lm -lz -lssl
 
-$(OBJECTS): $(TOOLHDR) $(LIBHDR) | $(OBJDIR)
+$(OBJECTS): $(TOOLHDR) | $(OBJDIR)
 
 $(OBJDIR):
 	mkdir $(OBJDIR)
 
 clean :
 	-rm -f $(OBJDIR)/*.o $(BIN_DIR)/$(EXE) *~
-	if test -d $(TEST_DIR); \
+	@if test -d $(TEST_DIR); \
         then \
-	$(MAKE) $(PARALLEL_MAKE) -C $(TEST_DIR) OPTFLAG="$(OPTFLAG)" --no-print-directory $@; \
+	$(MAKE) -C $(TEST_DIR) OPTFLAG="$(OPTFLAG)" --no-print-directory $@; \
         fi
 
 test : all
-	if test -d $(TEST_DIR); \
+	@if test -d $(TEST_DIR); \
         then \
-        $(MAKE) $(PARALLEL_MAKE) -C $(TEST_DIR) OPTFLAG="$(OPTFLAG)" --no-print-directory $@; \
+        $(MAKE) -C $(TEST_DIR) OPTFLAG="$(OPTFLAG)" --no-print-directory $@; \
         fi
+
+install : all $(INSTALLDIR)
+	@echo " "
+	@echo Installing to directory $(INSTALLDIR)
+	@echo To select a different directory, run
+	@echo " "
+	@echo make install INSTALLDIR=your_preferred_dir
+	@echo " "
+	cp $(BIN_DIR)/$(EXE) $(INSTALLDIR)
+
+$(INSTALLDIR) :
+	@echo " "
+	@echo Creating directory $(INSTALLDIR)
+	@echo " "
+	@mkdir -p $(INSTALLDIR)
+
+$(ALWAYS_COMP_OBJ):  $(COMPILE_ANY_CHANGE:=.cpp)  $(filter-out $(ALWAYS_COMP_OBJ),$(OBJECTS))
+	$(CXX) $(CFLAGS) -o $@ -c  $(*F).cpp -DVERSION="\"$(VERSION)\""
 
 $(OBJDIR)/%.o: %.c
 	$(CXX) $(CFLAGS) -o $@ -c $<

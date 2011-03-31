@@ -15,7 +15,8 @@ include $(PATH_TO_BASE)/Makefile.toolchain
 
 # -fno-ftti is sometimes useful to increase speed
 # 2-5%, but makes linking consistently more difficult
-OPTFLAG?=-ggdb -O0
+#OPTFLAG?=-ggdb -O0
+OPTFLAG?=-O4
 CXX?=g++ 
 
 # User specific variables listed here.
@@ -24,3 +25,5 @@ CXX?=g++
 
 CFLAGS?= -Wall  $(OPTFLAG) -I$(INCLUDE_PATH) -I$(SAMTOOLS_PATH) $(USER_INCLUDES) -D__ZLIB_AVAILABLE__  -D_FILE_OFFSET_BITS=64 -D__STDC_LIMIT_MACROS $(USER_COMPILE_VARS)
 
+# default installation directory
+INSTALLDIR?=/usr/local/bin

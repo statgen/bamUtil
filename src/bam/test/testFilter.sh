@@ -1,6 +1,6 @@
 ERROR=false
 
-../../bin/bam filter --ref testFiles/chr1_partial.fa --in testFiles/testFilter.sam --mis .49 --qu 30  > results/filter.sam ; diff results/filter.sam expected/filter.sam
+../../bin/bam filter --ref testFiles/chr1_partial.fa --in testFiles/testFilter.sam --mis .49 --qu 30  > results/filter.sam 2> results/filter.log && diff results/filter.sam expected/filter.sam && diff results/filter.log expected/filter.log
 
 if [ $? -ne 0 ]
 then

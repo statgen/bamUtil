@@ -253,6 +253,11 @@ public:
         return keys[index];
     }
 
+    long long GetKey(const unsigned int index) const
+    {
+        return keys[index];
+    }
+
     void SetAllowDuplicateKeys(bool toggle)
     {
         allowDuplicates = toggle;

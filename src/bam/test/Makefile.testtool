@@ -1,2 +1,3 @@
 TEST_COMMAND = mkdir -p results; ./samTests.sh && \
-               ./testFilter.sh
+               ./testFilter.sh && ./testSeq.sh && \
+               ./testRevert.sh

@@ -483,20 +483,46 @@ public:
     /// Does not set SamStatus.
     void clearTags();
    
+    /// Remove a tag.
+    /// \param tag tag to remove.
+    /// \param type of the tag to be removed.
+    /// \return true if the tag does no longer exists in the record, false if it could not be removed (Returns true if the tag was not found in the record).
+    bool rmTag(const char* tag, char type);
+
     /// Returns the status associated with the last method that sets the status.
     /// \return SamStatus of the last command that sets status.
     const SamStatus& getStatus();
     
     /// Get the string value for the specified tag.
-    /// Does not set SamStatus.
+    /// \param tag tag to retrieve
+    /// \param pointer to the tag's string value if found, NULL if not found.
+    String* getStringTag(const char * tag);
+
+    /// Get the integer value for the specified tag.
+    /// \param tag tag to retrieve
+    /// \retun pointer to the tag's integer value if found, NULL if not found.
+    int* getIntegerTag(const char * tag);
+
+    /// Get the char value for the specified tag.
+    /// \param tag tag to retrieve
+    /// \retun pointer to the tag's char value if found, NULL if not found.
+    char* getCharTag(const char * tag);
+
+    /// Get the double value for the specified tag.
+    /// \param tag tag to retrieve
+    /// \return pointer to the tag's double value if found, NULL if not found.
+    double* getDoubleTag(const char * tag);
+
+    /// Get the string value for the specified tag.
     String & getString(const char * tag);
 
     /// Get the integer value for the specified tag.
-    /// Does not set SamStatus.
     int &    getInteger(const char * tag);
 
+    /// Get the char value for the specified tag.
+    char &    getChar(const char * tag);
+
     /// Get the double value for the specified tag.
-    /// Does not set SamStatus.
     double & getDouble(const char * tag);
 
 
@@ -543,7 +569,27 @@ public:
 
 private:
     static int MAKEKEY(char ch1, char ch2, char type)
-    { return (type << 16) + (ch2 << 8) + ch1; }
+    { return (getKeyType(type) << 16) + (ch2 << 8) + ch1; }
+
+    static char getKeyType(char type)
+    {
+        switch(type)
+        {
+            // For any char/integer type, return 'i'
+            case 'A' :
+            case 'c' :
+            case 'C' :
+            case 's' :
+            case 'S' :
+            case 'i' :
+            case 'I' :
+                return('i');
+                break;
+            default:
+                // For all other types, return the actual type.
+                return(type);
+        };
+    }
 
     // Allocate space for the record - does a realloc.  
     // The passed in size is the size of the entire record including the
@@ -551,9 +597,9 @@ private:
     // Adds any errors to myStatus.
     bool allocateRecordStructure(int size);
 
-
     void* getStringPtr(int offset);
-    void* getIntegerPtr(int offset);
+    void* getIntegerPtr(int offset, char& vtype);
+    void* getCharPtr(int offset);
     void* getDoublePtr(int offset);
 
     // Fixes the buffer to match the variable length fields.
@@ -589,11 +635,13 @@ private:
 
     void setVariablesForNewBuffer(SamFileHeader& header);
 
-    void getVtype(int key, char& vtype) const;
+    void getTypeFromKey(int key, char& type) const;
     void getTag(int key, char* tag) const;
 
     String & getString(int offset);
     int &    getInteger(int offset);
+    char &   getIntegerType(int offset);
+    char &   getChar(int offset);
     double & getDouble(int offset);
 
     static const int DEFAULT_BLOCK_SIZE = 40;
@@ -651,8 +699,14 @@ private:
     CigarRoller myCigarRoller;
 
     LongHash<int>  extras;
+    // Note: not all values in strings, integers, and doubles are always
+    // in extras.  They will not be if the tags were removed.  Removed
+    // tags are removed from extras, but not from strings, integers, or doubles
+    // since if one was removed from these arrays, all other entries would
+    // need their indices updated in extras.
     StringArray    strings;
     IntArray       integers;
+    std::vector<char> intType; // contains the type of int at same position in integers.
     Vector         doubles;
 
 

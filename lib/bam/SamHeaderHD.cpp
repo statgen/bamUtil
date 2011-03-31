@@ -24,7 +24,7 @@ SamHeaderHD::SamHeaderHD()
     myType = SamHeaderRecord::HD;
     myTypeString = "HD";
     addRequiredTag("VN");
-    myKeyTag = "";   
+    myKeyTag.clear();   
 }
 
    

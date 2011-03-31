@@ -119,7 +119,7 @@ void SamFileHeader::resetHeader()
 // current contents.
 bool SamFileHeader::getHeaderString(std::string& header) const
 {
-    header = "";
+    header.clear();
    
     // Keep getting header lines until there are no more - false returned.
     unsigned int index = 0;

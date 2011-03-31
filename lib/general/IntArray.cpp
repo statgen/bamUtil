@@ -131,6 +131,16 @@ int IntArray::Sum(int start, int end) const
     return result;
 }
 
+double IntArray::dSum(int start, int end) const
+{
+    double result = 0;
+
+    for (int i = start; i <= end; i++)
+        result += items[i];
+
+    return result;
+}
+
 int IntArray::Max(int start, int end) const
 {
     if (start >= count) return 0;
@@ -388,3 +398,28 @@ int IntArray::Hash(int initval)
 {
     return hash((unsigned char *) items, sizeof(int) * count, initval);
 }
+
+int IntArray::SumProduct(const IntArray & weight) const
+{
+    if (count != weight.count)
+        error("IntArray::SumProduct called with different sized arrays\n");
+
+    int sum = 0;
+    for (int i = 0; i < count; i++)
+        sum += items[i] * weight[i];
+
+    return sum;
+}
+
+double IntArray::dSumProduct(const IntArray & weight) const
+{
+    if (count != weight.count)
+        error("IntArray::dSumProduct called with different sized arrays\n");
+
+    double sum = 0.0;
+    for (int i = 0; i < count; i++)
+        sum += items[i] * weight[i];
+
+    return sum;
+}
+

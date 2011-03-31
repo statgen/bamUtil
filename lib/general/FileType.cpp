@@ -25,3 +25,13 @@ FileType::FileType()
 FileType::~FileType()
 {
 };
+
+
+// Set by the InputFile to inform this class if buffering
+// is used.  Maybe used by child clases (bgzf) to disable 
+// tell.  NOTE: this class does no buffering, the
+// buffering is handled by the calling class.
+void FileType::setBuffered(bool buffered)
+{
+    myUsingBuffer = buffered;
+}

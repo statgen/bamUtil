@@ -9,6 +9,8 @@ static inline char baseComplement(const char& c) {
     return GenomeSequence::base2complement[(int) c];
 };
 
+#include "MatchedReadBase.h"
+#include "ColorSpace.h"
 //
 // There are several goals expressed in this matching code:
 //   1) index based on the high quality end of the read,

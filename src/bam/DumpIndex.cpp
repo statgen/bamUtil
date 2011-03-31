@@ -24,16 +24,22 @@
 #include "Parameters.h"
 #include <iomanip>
 
-void dumpIndexDescription()
+void DumpIndex::dumpIndexDescription()
 {
-    std::cerr << " dumpIndex - Print BAM Index File in English:" << std::endl;
-    std::cerr << "\t./bam dumpIndex --bamIndex <bamIndexFile> [--refID <ref#>] [--summary] [--params]" << std::endl;
+    std::cerr << " dumpIndex - Print BAM Index File in English" << std::endl;
 }
 
 
-void dumpIndexUsage()
+void DumpIndex::description()
 {
     dumpIndexDescription();
+}
+
+
+void DumpIndex::usage()
+{
+    BamExecutable::usage();
+    std::cerr << "\t./bam dumpIndex --bamIndex <bamIndexFile> [--refID <ref#>] [--summary] [--params]" << std::endl;
     std::cerr << "\tRequired Parameters:" << std::endl;
     std::cerr << "\t\t--bamIndex : the path/name of the bam index file to display" << std::endl;
     std::cerr << "\tOptional Parameters:" << std::endl;
@@ -45,7 +51,7 @@ void dumpIndexUsage()
 
 
 // Dump the specified Bam Index file.
-int dumpIndex(int argc, char **argv)
+int DumpIndex::execute(int argc, char **argv)
 {
     // Extract command line arguments.
     static const int UNSPECIFIED_INT = -1;
@@ -70,7 +76,7 @@ int dumpIndex(int argc, char **argv)
     // Check to see if the index file was specified, if not, report an error.
     if(indexFile == "")
     {
-        dumpIndexUsage();
+        usage();
         inputParameters.Status();
         // mandatory argument was not specified.
         std::cerr << "Missing mandatory argument: --bamIndex" << std::endl;

@@ -152,7 +152,7 @@ bool GlfHeader::write(IFILE filePtr) const
 
     int numWrite = 0;
     // Write the magic
-    numWrite = ifwrite(filePtr, &GLF_MAGIC, GLF_MAGIC_LEN);
+    numWrite = ifwrite(filePtr, GLF_MAGIC.c_str(), GLF_MAGIC_LEN);
     if(numWrite != GLF_MAGIC_LEN)
     {
         String errorMsg = "Failed to write the magic number (";
