@@ -5,10 +5,10 @@
 
 class Chromosome{
 public:
-    Chromosome(GenomeSequence* gs, uint chrosomeIndex);
-    Chromosome(GenomeSequence* gs, const char* chromosomeName);
-    Chromosome(const char* genomseSequenceFileName, uint chromosomeIndex, bool isColorSpace);
-    Chromosome(const std::string& genomseSequenceFileName, uint chromosomeIndex, bool isColorSpace);
+    explicit Chromosome(GenomeSequence* gs, uint chrosomeIndex);
+    explicit Chromosome(GenomeSequence* gs, const char* chromosomeName);
+    explicit Chromosome(const char* genomseSequenceFileName, uint chromosomeIndex, bool isColorSpace);
+    explicit Chromosome(const std::string& genomseSequenceFileName, uint chromosomeIndex, bool isColorSpace);
     genomeIndex_t Length() const
     {
         return chromosomeSize;

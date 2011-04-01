@@ -45,7 +45,7 @@ $(GTEST_OBJ): $(GTEST_SRC)
 	g++ -c -o $@ $< -I$(GTEST_INC)
 
 #TOOLTEST=$(TOOLBASE:=_test)
-TOOLTEST=gtest TrimSequence_test GreedyTupleAligner_test STLUtilities_test GenomeSequence_test
+TOOLTEST=gtest TrimSequence_test GreedyTupleAligner_test STLUtilities_test GenomeSequence_test Chromosome_test
 TOOLTESTHDR=$(TOOLTEST:=.h)
 TOOLTESTSRC=$(TOOLTEST:=.cpp)
 TOOLTESTOBJ=$(TOOLTESTSRC:.cpp=.o)
@@ -61,6 +61,9 @@ TrimSequence_test.o: TrimSequence_test.cpp ../TrimSequence.h ../TrimSequence.cpp
 	$(CXX) $(CFLAGS) -o $@ -c $< -DVERSION="\"$(VERSION)\"" -DDATE="\"${DATE}\"" -DNODE="\"${NODE}\"" -DUSER="\"${USER}\"" -I$(GTEST_INC)
 
 GreedyTupleAligner_test.o: GreedyTupleAligner_test.cpp ../GreedyTupleAligner.h
+	$(CXX) $(CFLAGS) -o $@ -c $< -DVERSION="\"$(VERSION)\"" -DDATE="\"${DATE}\"" -DNODE="\"${NODE}\"" -DUSER="\"${USER}\"" -I$(GTEST_INC)
+
+Chromosome_test.o: Chromosome_test.cpp ../Chromosome.h
 	$(CXX) $(CFLAGS) -o $@ -c $< -DVERSION="\"$(VERSION)\"" -DDATE="\"${DATE}\"" -DNODE="\"${NODE}\"" -DUSER="\"${USER}\"" -I$(GTEST_INC)
 
 gtest_build: $(TOOLTESTOBJ) $(TOOLOBJ) $(GTEST_OBJ)
