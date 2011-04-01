@@ -1,0 +1,1 @@
+Wrote results/regionNeg1.bam with 2 records.
