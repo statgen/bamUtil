@@ -2,6 +2,8 @@ EXE=bam
 TOOLBASE = BamExecutable Validate Convert DumpHeader SplitChromosome WriteRegion DumpIndex ReadIndexedBam DumpRefInfo Filter ReadReference Revert
 SRCONLY = Main.cpp
 
+#USER_COMPILE_VARS = -lcrypto -I../../lib/bam
+
 VERSION=0.1.1
 DATE=$(shell date)
 USER=$(shell whoami)
