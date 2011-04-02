@@ -35,6 +35,7 @@ SOURCES_WITH_HEADER=\
 	BaseUtilities.cpp \
 	BgzfFileType.cpp \
 	CharBuffer.cpp \
+	Chromosome.cpp \
 	Cigar.cpp \
 	CigarRoller.cpp \
 	Error.cpp \

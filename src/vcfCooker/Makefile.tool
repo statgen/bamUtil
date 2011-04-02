@@ -14,3 +14,5 @@ myclean:
 
 $(LIB_DIR)/libvcf.a:
 	$(MAKE) -C $(LIB_DIR) OPTFLAG="$(OPTFLAG)" --no-print-directory;
+
+USER_COMPILE_VARS = -lcrypto
