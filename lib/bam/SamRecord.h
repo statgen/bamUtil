@@ -486,8 +486,15 @@ public:
     /// Remove a tag.
     /// \param tag tag to remove.
     /// \param type of the tag to be removed.
-    /// \return true if the tag does no longer exists in the record, false if it could not be removed (Returns true if the tag was not found in the record).
+    /// \return true if the tag no longer exists in the record, false if it could not be removed (Returns true if the tag was not found in the record).
     bool rmTag(const char* tag, char type);
+
+    /// Remove tags.
+    /// \param tags tags to remove, formatted as  Tag:Type;Tag:Type;Tag:Type...
+    /// \return true if all tags no longer exist in the record, false if any could not be removed
+    /// (Returns true if the tags were not found in the record).
+    /// SamStatus is set to INVALID if the tags are incorrectly formatted.
+    bool rmTags(const char* tags);
 
     /// Returns the status associated with the last method that sets the status.
     /// \return SamStatus of the last command that sets status.

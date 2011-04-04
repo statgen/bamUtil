@@ -17,6 +17,8 @@
 
 #include "SamTags.h"
 
+const char* SamTags::BQ_TAG = "BQ";
+const char SamTags::BQ_TAG_TYPE = 'Z';
 const char* SamTags::ORIG_POS_TAG = "OP";
 const char SamTags::ORIG_POS_TAG_TYPE = 'i';
 const char* SamTags::ORIG_CIGAR_TAG = "OC";

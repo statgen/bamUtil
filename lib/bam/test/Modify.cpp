@@ -117,6 +117,11 @@ void modify::modifyTags()
         {
             assert(samRecord.rmTag("MD", 'Z'));
         }
+        else if(count == 2)
+        {
+            assert(samRecord.rmTags("XT:A;MD:Z;AB:c;NM:i"));
+        }
+
         assert(bamOut.WriteRecord(samHeader, samRecord));
         assert(samOut.WriteRecord(samHeader, samRecord));
         ++count;
