@@ -37,6 +37,8 @@ public:
 private:
     bool updateCigar(SamRecord& samRecord);
     bool updateQual(SamRecord& samRecord);
+    bool removeBQ(SamRecord& samRecord);
+
 
     bool myKeepTags;
 };

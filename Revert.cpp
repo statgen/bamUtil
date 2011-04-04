@@ -47,7 +47,7 @@ void Revert::description()
 void Revert::usage()
 {
     BamExecutable::usage();
-    std::cerr << "\t./bam revert --in <inputFile> --out <outputFile.sam/bam/ubam (ubam is uncompressed bam)> [--noeof] [--params]" << std::endl;
+    std::cerr << "\t./bam revert --in <inputFile> --out <outputFile.sam/bam/ubam (ubam is uncompressed bam)> [--cigar] [--qual] [--keepTags] [--rmBQ] [--rmTags <Tag:Type[;Tag:Type]*>] [--noeof] [--params]" << std::endl;
     std::cerr << "\tRequired Parameters:" << std::endl;
     std::cerr << "\t\t--in         : the SAM/BAM file to be read" << std::endl;
     std::cerr << "\t\t--out        : the SAM/BAM file to be written" << std::endl;
@@ -55,6 +55,8 @@ void Revert::usage()
     std::cerr << "\t\t--cigar      : update the cigar and the position based on the OC & OP tags." << std::endl;
     std::cerr << "\t\t--qual       : update the quality based on the OQ tag." << std::endl;
     std::cerr << "\t\t--keepTags   : keep the tags that are used to update the record.  Default is to remove them." << std::endl;
+    std::cerr << "\t\t--rmBQ       : Remove the BQ Tag." << std::endl;
+    std::cerr << "\t\t--rmTags     : Remove the specified Tags formatted as Tag:Type;Tag:Type;Tag:Type..." << std::endl;
     std::cerr << "\t\t--noeof      : do not expect an EOF block on a bam file." << std::endl;
     std::cerr << "\t\t--params     : print the parameter settings" << std::endl;
     std::cerr << std::endl;
@@ -70,6 +72,8 @@ int Revert::execute(int argc, char **argv)
     bool qual = false;
     bool noeof = false;
     bool params = false;
+    bool rmBQ = false;
+    String rmTags = "";
     myKeepTags = false;
 
     ParameterList inputParameters;
@@ -79,6 +83,8 @@ int Revert::execute(int argc, char **argv)
         LONG_PARAMETER("cigar", &cigar)
         LONG_PARAMETER("qual", &qual)
         LONG_PARAMETER("keepTags", &myKeepTags)
+        LONG_PARAMETER("rmBQ", &rmBQ)
+        LONG_STRINGPARAMETER("rmTags", &rmTags)
         LONG_PARAMETER("noeof", &noeof)
         LONG_PARAMETER("params", &params)
         END_LONG_PARAMETERS();
@@ -161,7 +167,27 @@ int Revert::execute(int argc, char **argv)
         {
             if(!updateQual(samRecord))
             {
-                // Failed to update the cigar & position.
+                // Failed to update the quality.
+                fprintf(stderr, "%s\n", samIn.GetStatusMessage());
+                returnStatus = samIn.GetStatus();
+            }
+        }
+
+        if(rmBQ)
+        {
+            if(!removeBQ(samRecord))
+            {
+                // Failed to remove BQ.
+                fprintf(stderr, "%s\n", samIn.GetStatusMessage());
+                returnStatus = samIn.GetStatus();
+            }
+        }
+
+        if(rmTags != "")
+        {
+            if(!samRecord.rmTags(rmTags.c_str()))
+            {
+                // Failed to remove the specified tags.
                 fprintf(stderr, "%s\n", samIn.GetStatusMessage());
                 returnStatus = samIn.GetStatus();
             }
@@ -203,7 +229,7 @@ bool Revert::updateCigar(SamRecord& samRecord)
         if(!myKeepTags)
         {
             // Remove the tag.
-            samRecord.rmTag(SamTags::ORIG_CIGAR_TAG, SamTags::ORIG_CIGAR_TAG_TYPE);
+            status &= samRecord.rmTag(SamTags::ORIG_CIGAR_TAG, SamTags::ORIG_CIGAR_TAG_TYPE);
         }
     }
     if(oldPos != NULL)
@@ -214,7 +240,7 @@ bool Revert::updateCigar(SamRecord& samRecord)
         if(!myKeepTags)
         {
             // Remove the tag.
-            samRecord.rmTag(SamTags::ORIG_POS_TAG, SamTags::ORIG_POS_TAG_TYPE);
+            status &= samRecord.rmTag(SamTags::ORIG_POS_TAG, SamTags::ORIG_POS_TAG_TYPE);
         }
     }
 
@@ -239,8 +265,13 @@ bool Revert::updateQual(SamRecord& samRecord)
             samRecord.rmTag(SamTags::ORIG_QUAL_TAG, SamTags::ORIG_QUAL_TAG_TYPE);
         }
     }
-
     return(status);
-
-    
 }
+
+
+bool Revert::removeBQ(SamRecord& samRecord)
+{
+    // Remove the tag.
+    return(samRecord.rmTag(SamTags::BQ_TAG, SamTags::BQ_TAG_TYPE));
+}
+
