@@ -804,14 +804,16 @@ void MatchedReadBase::print(std::ostream      &file,
         // Assumption here is that both reads were a) sequenced as a
         // pair, aligned as a pair, and have valid locations
         //
-        insertSize = (int64_t) genomeMatchPosition - (int64_t) mate->genomeMatchPosition;
-        if (insertSize >= 0)
+        insertSize = (int64_t) mate->genomeMatchPosition - (int64_t) genomeMatchPosition ;
+        if (insertSize >= 0) // mate coordinate is bigger
         {
-            insertSize += indexer->read.size();
+            // add mate length (no matter mate's strand)
+            insertSize += mate->indexer->read.size();
         }
-        else
+        else // mate coordinate is smaller, insertSize < 0
         {
-            insertSize -= indexer->read.size();
+            // minus this length (no matter mate's strand)
+            insertSize -= this->indexer->read.size();
         }
 
     }
