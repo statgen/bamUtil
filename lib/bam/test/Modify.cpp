@@ -23,6 +23,8 @@ void testModify()
     modify modTest;
     modTest.testModify("testFiles/testSam.sam");
     modTest.testModify("testFiles/testBam.bam");
+
+    
 }
 
 
@@ -32,6 +34,8 @@ void modify::testModify(const char* filename)
 
     modifyPosition();
     modifyCigar();
+
+    modifyTags();
 }
 
 void modify::modifyPosition()
@@ -68,11 +72,59 @@ void modify::modifyCigar()
 void modify::openAndRead1Rec()
 {
     // Open the file for reading.   
-    assert(samIn.OpenForRead(myFilename));
+    assert(samIn.OpenForRead(myFilename.c_str()));
 
     // Read the sam header.
     assert(samIn.ReadHeader(samHeader));
    
     // Read the first record.   
     assert(samIn.ReadRecord(samHeader, samRecord));
+}
+
+
+void modify::modifyTags()
+{
+    assert(samIn.OpenForRead(myFilename.c_str()));
+    // Read the sam header.
+    assert(samIn.ReadHeader(samHeader));
+   
+    SamFile samOut;
+    SamFile bamOut;
+
+    std::string inputType = myFilename.substr(myFilename.find_last_of('.'));
+    std::string outFileBase = "results/updateTagFrom";
+    if(inputType == ".bam")
+    {
+        outFileBase += "Bam";
+    }
+    else
+    {
+        outFileBase += "Sam";
+    }
+
+    std::string outFile = outFileBase + ".sam";
+    assert(samOut.OpenForWrite(outFile.c_str()));
+    outFile = outFileBase + ".bam";
+    assert(bamOut.OpenForWrite(outFile.c_str()));
+    assert(samOut.WriteHeader(samHeader));
+    assert(bamOut.WriteHeader(samHeader));
+
+    int count = 0;
+    // Read the records.
+    while(samIn.ReadRecord(samHeader, samRecord))
+    {
+        if((count == 0) || (count == 4))
+        {
+            assert(samRecord.rmTag("MD", 'Z'));
+        }
+        else if(count == 2)
+        {
+            assert(samRecord.rmTags("XT:A;MD:Z;AB:c;NM:i"));
+        }
+
+        assert(bamOut.WriteRecord(samHeader, samRecord));
+        assert(samOut.WriteRecord(samHeader, samRecord));
+        ++count;
+    }
+    
 }

@@ -1,4 +1,12 @@
-This software requires zlib both regular and development versions to be installed on your machine.
+Dependencies
+------------
+
+On debian type systems (including Ubuntu), add the following packages if they are not already installed (or have your admin add them if you do not have permission):
+
+sudo apt-get install g++ libssl-dev libcurses-perl zlib1g-dev
+
+Building
+--------
 
 To compile, from the top level directory, type: make
 To test (after compiling), from the top level directory, type: make test

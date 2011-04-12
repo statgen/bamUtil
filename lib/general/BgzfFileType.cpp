@@ -59,7 +59,7 @@ BgzfFileType::BgzfFileType(const char * filename, const char * mode)
         {
             // Successfully opened a properly formatted file, so get the start
             // position.
-            myStartPos = tell();
+            myStartPos = bgzf_tell(bgzfHandle);
         }
     }
 

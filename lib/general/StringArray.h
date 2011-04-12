@@ -28,6 +28,7 @@ protected:
 
 public:
     static int alloc;
+    static bool lazyMemoryManagement;
 
     StringArray(int startsize = 0);
     StringArray(StringArray & original);
@@ -50,6 +51,10 @@ public:
     // Write all strings to the screen
     void Print();
     void PrintLine();
+
+    // Write all strings to a file
+    void Print(FILE * f);
+    void PrintLine(FILE * f);
 
     void Grow(int newsize);
     void Clear();
@@ -75,6 +80,7 @@ public:
     //
 
     int AddColumns(const String & s, char ch = '\t');
+    int AddColumns(const String & s, char ch, int maxColumns);
     int AddTokens(const String & s, char ch);
     int AddTokens(const String & s, const String & separators = " \t\r\n");
 

@@ -59,6 +59,7 @@ class BamQC
   void Plot(String &, FILE*);
   String GenRscript_EPSvsPhred_Plot();
   String GenRscript_EPSvsCycle_Plot();
+  String GenRscript_Q20vsCycle_Plot();
   String GenRscript_DepthVsGC_Plot();
   String GenRscript_DepthDist_Plot();
   String GenRscript_BaseComp_Plot();
@@ -69,6 +70,7 @@ class BamQC
 
   String GenRscript_EPSvsPhred_Data(int idx);
   String GenRscript_EPSvsCycle_Data(int idx);
+  String GenRscript_Q20vsCycle_Data(int idx);
   String GenRscript_PhredDist_Data(int idx);
   String GenRscript_DepthVsGC_Data(int idx);
   String GenRscript_DepthDist_Data(int idx);

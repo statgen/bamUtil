@@ -17,6 +17,10 @@
 
 #include "PileupElement.h"
 
+
+GenomeSequence* PileupElement::myRefPtr = NULL;
+
+
 PileupElement::PileupElement()
     : myRefPosition(UNSET_POSITION),
       myChromosome("")
@@ -24,16 +28,15 @@ PileupElement::PileupElement()
 }
 
 
-PileupElement::~PileupElement()
-{
-}
-
-
+// NOTE that this method does not actually copy, it just resets.
 PileupElement::PileupElement(const PileupElement& q)
     : myRefPosition(UNSET_POSITION),
       myChromosome("")
 {
+}
 
+PileupElement::~PileupElement()
+{
 }
 
 
@@ -45,8 +48,6 @@ void PileupElement::addEntry(SamRecord& record)
         // First entry, save chromosme name.
         myChromosome = record.getReferenceName();
     }
-
-
 }
 
 
@@ -67,4 +68,11 @@ void PileupElement::reset(int32_t refPosition)
 {
     myChromosome.clear();
     myRefPosition = refPosition;
+}
+
+
+// Resets the entry, setting the new position associated with this element.
+void PileupElement::setReference(GenomeSequence* reference)
+{
+    myRefPtr = reference;
 }

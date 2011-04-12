@@ -77,7 +77,8 @@ class IntParameter : public Parameter
 {
 public:
     IntParameter(char c, const char * desc, int & v)
-            : Parameter(c, desc, &v) {}
+        : Parameter(c, desc, &v)
+    {}
 
     virtual void Status();
 
@@ -90,7 +91,8 @@ class HiddenInteger : public IntParameter
 {
 public:
     HiddenInteger(char c, const char * desc, int & v)
-            : IntParameter(c, desc, v) {}
+        : IntParameter(c, desc, v)
+    {}
 
     virtual void Status() { }
 };
@@ -100,7 +102,8 @@ class SwitchParameter : public Parameter
 {
 public:
     SwitchParameter(char c, const char * desc, bool & v)
-            : Parameter(c, desc, &v) {}
+        : Parameter(c, desc, &v)
+    {}
 
     virtual void Status();
 
@@ -112,7 +115,8 @@ class HiddenSwitch : public SwitchParameter
 {
 public:
     HiddenSwitch(char c, const char * desc, bool & v)
-            : SwitchParameter(c, desc, v) {}
+        : SwitchParameter(c, desc, v)
+    {}
 
     virtual void Status() { }
 };
@@ -124,16 +128,26 @@ public:
 
     virtual void Status();
 
+    DoubleParameter & SetPrecision(int precision)
+    {
+        this->precision = precision;
+
+        return *this;
+    }
+
 protected:
     virtual void Translate(const char * value);
     virtual bool TranslateExtras(const char * value, const char * extras);
+
+    int precision;
 };
 
 class HiddenDouble : public DoubleParameter
 {
 public:
     HiddenDouble(char c, const char * desc, double &v)
-            : DoubleParameter(c, desc, v) {}
+        : DoubleParameter(c, desc, v)
+    {}
 
     virtual void Status() { }
 };
@@ -160,7 +174,8 @@ class HiddenString : public StringParameter
 {
 public:
     HiddenString(char c, const char * desc, String & v)
-            : StringParameter(c, desc, v) {}
+        : StringParameter(c, desc, v)
+    {}
 
     virtual void Status() { }
 };
@@ -235,12 +250,20 @@ public:
 
     virtual void Status();
 
+    LongParameters * SetPrecision(int precision)
+    {
+        this->precision = precision;
+
+        return this;
+    }
+
 protected:
     StringMap index;
     StringMap legacyIndex;
 
     LongParameterList * list;
     int group_len;
+    int precision;
 
     virtual void Translate(const char * value);
     virtual bool TranslateExtras(const char * value, const char * extras);

@@ -20,7 +20,7 @@
 class CigarRollerTest
 {
 public:
-    void test();
+    int test();
 
 
 private:

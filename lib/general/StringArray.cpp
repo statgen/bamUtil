@@ -16,10 +16,14 @@
  */
 
 #include "StringArray.h"
+#include "InputFile.h"
 #include "Sort.h"
 #include "Error.h"
 
-int StringArray::alloc = 32;
+#include <string.h>
+
+int   StringArray::alloc = 32;
+bool  StringArray::lazyMemoryManagement = false;
 
 StringArray::StringArray(int startsize)
 {
@@ -28,6 +32,8 @@ StringArray::StringArray(int startsize)
     strings = new String * [size];
     for (int i = 0; i < count; i++)
         strings[i] = new String;
+    for (int i = count; i < size; i++)
+        strings[i] = NULL;
 };
 
 StringArray::StringArray(StringArray & rhs)
@@ -38,12 +44,18 @@ StringArray::StringArray(StringArray & rhs)
 
     for (int i = 0; i < count; i++)
         strings[i] = new String(rhs[i]);;
+    for (int i = count; i < size; i++)
+        strings[i] = NULL;
 }
 
 StringArray::~StringArray()
 {
-    for (int i = 0; i < count; i++)
-        delete strings[i];
+    for (int i = 0; i < size; i++)
+        if (strings[i] != NULL)
+            delete strings[i];
+        else
+            break;
+
     delete [] strings;
 }
 
@@ -84,7 +96,8 @@ void StringArray::Read(FILE * f)
     while (!feof(f))
     {
         Grow(count + 1);
-        strings[count] = new String;
+        if (strings[count] == NULL)
+            strings[count] = new String;
         strings[count]->ReadLine(f);
         count++;
     }
@@ -108,12 +121,12 @@ void StringArray::Read(IFILE & f)
     while (!ifeof(f))
     {
         Grow(count + 1);
-        strings[count] = new String;
+        if (strings[count] == NULL)
+            strings[count] = new String;
         strings[count]->ReadLine(f);
         if (ifeof(f) && strings[count]->Length()==0)
         {
-            delete strings[count];
-            break;
+            return;
         }
         count++;
     }
@@ -124,6 +137,8 @@ void StringArray::Grow(int newsize)
 {
     if (newsize >= size)
     {
+        int oldsize = size;
+
         if ((newsize >> 1) >= size)
             size = (newsize + alloc) / alloc * alloc;
         else
@@ -133,7 +148,10 @@ void StringArray::Grow(int newsize)
                 size *= 2;
         }
         String ** tmp = new String * [size];
-        for (int i = 0; i < count; i++) tmp[i] = strings[i];
+        for (int i = 0; i < oldsize; i++)
+            tmp[i] = strings[i];
+        for (int i = oldsize; i < size; i++)
+            tmp[i] = NULL;
         delete [] strings;
         strings = tmp;
     }
@@ -141,8 +159,21 @@ void StringArray::Grow(int newsize)
 
 void StringArray::Clear()
 {
-    for (int i = 0; i < count; i++)
-        delete strings[i];
+    if (!lazyMemoryManagement)
+    {
+        for (int i = 0; i < size; i++)
+        {
+            if (strings[i] != NULL)
+            {
+                delete strings[i];
+                strings[i] = NULL;
+            }
+            else
+            {
+                break;
+            }
+        }
+    }
     count = 0;
 }
 
@@ -155,7 +186,34 @@ int StringArray::AddColumns(const String & s, char ch)
             pos = s.FindChar(ch, pos);
             if (pos == -1) pos = s.Length();
             Grow(count + 1);
-            strings[count++] = new String(s.Mid(oldpos, pos - 1));
+
+            if (strings[count] == NULL)
+            {
+                strings[count] = new String(pos - oldpos);
+            }
+            strings[count]->SetLength(pos - oldpos);
+            memcpy((char *) *strings[count++], ((const char *) s) + oldpos, pos - oldpos);
+        }
+
+    return count;
+}
+
+int StringArray::AddColumns(const String & s, char ch, int maxColumns)
+{
+    maxColumns += count;
+
+    if (s.Length() > 0)
+        for (int pos = 0; pos <= s.Length() && maxColumns != count; pos++)
+        {
+            int oldpos = pos;
+            pos = s.FindChar(ch, pos);
+            if (pos == -1) pos = s.Length();
+            Grow(count + 1);
+
+            if (strings[count] == NULL)
+                strings[count] = new String(pos - oldpos);
+            strings[count]->SetLength(pos - oldpos);
+            memcpy((char *) *strings[count++], ((const char *) s) + oldpos, pos - oldpos);
         };
 
     return count;
@@ -173,7 +231,12 @@ int StringArray::AddTokens(const String & s, char ch)
         if (oldpos < s.Length())
         {
             Grow(count + 1);
-            strings[count++] = new String(s.Mid(oldpos, pos - 1));
+            if (strings[count] == NULL)
+            {
+                strings[count] = new String(pos - oldpos);
+            }
+            strings[count]->SetLength(pos - oldpos);
+            memcpy((char *) *strings[count++], (const char *) s + oldpos, pos - oldpos);
         }
     }
 
@@ -192,7 +255,10 @@ int StringArray::AddTokens(const String & s, const String & separators)
         if (oldpos < s.Length())
         {
             Grow(count + 1);
-            strings[count++] = new String(s.Mid(oldpos, pos - 1));
+            if (strings[count] == NULL)
+                strings[count] = new String(pos - oldpos);
+            strings[count]->SetLength(pos - oldpos);
+            memcpy((char *) *strings[count++], ((const char *) s) + oldpos, pos - oldpos);
         }
     }
 
@@ -205,13 +271,31 @@ int StringArray::Dimension(int newcount)
     {
         Grow(newcount);
         for (int i = count; i < newcount; i++)
-            strings[i] = new String;
+        {
+            if (strings[i] == NULL)
+                strings[i] = new String;
+            else
+                strings[i]->Clear();
+        }
         count = newcount;
     }
     else if (newcount < count)
     {
-        for (int i = newcount; i < count; i++)
-            delete strings[i];
+        if (!lazyMemoryManagement)
+        {
+            for (int i = newcount; i < size; i++)
+            {
+                if (strings[i] != NULL)
+                {
+                    delete strings[i];
+                    strings[i] = NULL;
+                }
+                else
+                {
+                    break;
+                }
+            }
+        }
         count = newcount;
     }
 
@@ -245,16 +329,30 @@ int StringArray::SlowFind(const String & s) const
 int StringArray::Add(const String & s)
 {
     Grow(count + 1);
-    strings[count] = new String(s);
+    if (strings[count] == NULL)
+    {
+        strings[count] = new String(s);
+    }
+    else
+    {
+        *strings[count] = s;
+    }
     return ++count;
 }
 
 void StringArray::InsertAt(int position, const String & s)
 {
     Grow(count + 1);
+
+    String * newString = strings[count];
+    if (newString == NULL)
+        newString = new String(s);
+    else
+        *newString = s;
+
     for (int i = count; i > position; i--)
         strings[i] = strings[i - 1];
-    strings[position] = new String(s);
+    strings[position] = newString;
     count++;
 }
 
@@ -266,17 +364,19 @@ String & StringArray::Last() const
 
 void StringArray::Delete(int index)
 {
-    delete strings[index];
+    String * oldString = strings[index];
+
     count--;
     for (; index < count; index++)
         strings[index] = strings[index + 1];
+    strings[count] = oldString;
 }
 
 StringArray & StringArray::operator = (const StringArray & rhs)
 {
-    Clear();
+    Dimension(rhs.count);
     for (int i = 0; i < rhs.count; i++)
-        Push(*rhs.strings[i]);
+        *strings[i] = *rhs.strings[i];
     return *this;
 }
 
@@ -319,14 +419,24 @@ void StringArray::Trim()
 
 void StringArray::Print()
 {
+    Print(stdout);
+}
+
+void StringArray::Print(FILE * output)
+{
     for (int i = 0; i < count; i++)
-        printf("%s\n", (const char *)(*strings[i]));
+        fprintf(output, "%s\n", (const char *)(*strings[i]));
 }
 
 void StringArray::PrintLine()
 {
+    PrintLine(stdout);
+}
+
+void StringArray::PrintLine(FILE * output)
+{
     for (int i = 0; i < count; i++)
-        printf("%s%c", (const char *)(*strings[i]), i == count - 1 ? '\n' : '\t');
+        fprintf(output, "%s%c", (const char *)(*strings[i]), i == count - 1 ? '\n' : '\t');
 }
 
 void StringArray::Swap(StringArray & s)
