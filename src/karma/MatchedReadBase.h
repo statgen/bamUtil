@@ -5,7 +5,6 @@
 #include "ColorSpace.h"
 #include "ReadIndexer.h"
 #include "CigarRoller.h"
-#include <algorithm>
 
 //
 // When we get a match, mutated or not, keep records here

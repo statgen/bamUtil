@@ -1,4 +1,5 @@
-#include <cmath>
+//#include <cmath>
+#include <algorithm>
 #include "Debug.h"
 #include "../bam/SamFlag.h"
 
