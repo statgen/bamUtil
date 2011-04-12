@@ -1531,6 +1531,123 @@ bool SamRecord::rmTag(const char* tag, char type)
 }
 
 
+bool SamRecord::rmTags(const char* tags)
+{
+    const char* currentTagPtr = tags;
+
+    myStatus = SamStatus::SUCCESS;
+    if(myNeedToSetTagsFromBuffer)
+    {
+        if(!setTagsFromBuffer())
+        {
+            // Failed to read the tags from the buffer, so cannot
+            // get tags.
+            return(false);
+        }
+    }
+    
+    bool returnStatus = true;
+
+    int rmBuffSize = 0;
+    while(*currentTagPtr != '\0')
+    {
+
+        // Tags are formatted as: XY:Z
+        // Where X is [A-Za-z], Y is [A-Za-z], and
+        // Z is A,i,f,Z,H (cCsSI are also excepted)
+        if((currentTagPtr[0] == '\0') || (currentTagPtr[1] == '\0') ||
+           (currentTagPtr[2] != ':') || (currentTagPtr[3] == '\0'))
+        {
+            myStatus.setStatus(SamStatus::INVALID, 
+                               "rmTags called with improperly formatted tags.\n");
+            returnStatus = false;
+            break;
+        }
+
+        // Construct the key.
+        int key = MAKEKEY(currentTagPtr[0], currentTagPtr[1], 
+                          currentTagPtr[3]);
+        // Look to see if the key exsists in the hash.
+        int offset = extras.Find(key);
+
+        if(offset >= 0)
+        {
+            // Offset is set, so the key was found.
+            // First if it is an integer, determine the actual type of the int.
+            char vtype;
+            getTypeFromKey(key, vtype);
+            if(vtype == 'i')
+            {
+                vtype = getIntegerType(offset);
+            }
+            
+            // Offset is set, so recalculate the buffer size without this entry.
+            // Do NOT remove from strings, integers, or doubles because then
+            // extras would need to be updated for all entries with the new indexes
+            // into those variables.
+            switch(vtype)
+            {
+                case 'A':
+                case 'c':
+                case 'C':
+                    rmBuffSize += 4;
+                    break;
+                case 's':
+                case 'S':
+                    rmBuffSize += 5;
+                    break;
+                case 'i':
+                case 'I':
+                    rmBuffSize += 7;
+                    break;
+                case 'f':
+                    rmBuffSize += 7;
+                    break;
+                case 'Z':
+                    rmBuffSize += 4 + getString(offset).Length();
+                    break;
+                default:
+                    myStatus.setStatus(SamStatus::INVALID, 
+                                       "rmTag called with unknown type.\n");
+                    returnStatus = false;
+                    break;
+            };
+            
+            // Remove from the hash.
+            extras.Delete(offset);
+        }
+        // Increment to the next tag.
+        if(currentTagPtr[4] == ';')
+        {
+            // Increment once more.
+            currentTagPtr += 5;
+        }
+        else if(currentTagPtr[4] != '\0')
+        {
+            // Invalid tag format. 
+            myStatus.setStatus(SamStatus::INVALID, 
+                               "rmTags called with improperly formatted tags.\n");
+            returnStatus = false;
+            break;
+        }
+        else
+        {
+            // Last Tag.
+            currentTagPtr += 4;
+        }
+    }
+
+    // The buffer tags are now out of sync.
+    myNeedToSetTagsInBuffer = true;
+    myIsTagsBufferValid = false;
+    myIsBufferSynced = false;
+    myTagBufferSize -= rmBuffSize;
+    
+
+    return(returnStatus);
+}
+
+
 // Return the error after a failed SamRecord call.
 const SamStatus& SamRecord::getStatus()
 {

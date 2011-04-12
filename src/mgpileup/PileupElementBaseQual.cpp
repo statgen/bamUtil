@@ -283,10 +283,14 @@ void PileupElementBaseQual::addEntry(SamRecord& record)
         char base = record.getSequence(readIndex);
         int8_t mapQual = record.getMapQuality();
         //-33 to obtain the PHRED base quality
-        char qual = record.getQuality(readIndex) - 33;
+        char qual = record.getQuality(readIndex);
         if(qual == UNSET_QUAL)
         {
             qual = ' ';
+        }
+        else
+        {
+            qual -= 33;
         }
         char strand = (record.getFlag() & 0x0010) ? 'R' : 'F';
         int cycle = strand == 'F' ? readIndex + 1 : record.getReadLength() -  readIndex;

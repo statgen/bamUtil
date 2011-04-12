@@ -25,6 +25,8 @@ class SamTags
 {
 public:
     /// Constants for parsing a tags.
+    static const char* BQ_TAG;
+    static const char BQ_TAG_TYPE;
     static const char* ORIG_POS_TAG;
     static const char ORIG_POS_TAG_TYPE;
     static const char* ORIG_CIGAR_TAG;

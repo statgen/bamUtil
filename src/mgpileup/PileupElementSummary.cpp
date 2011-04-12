@@ -22,7 +22,7 @@
 
 PileupElementSummary::PileupElementSummary()
     : PileupElement(),
-      myRefAllele('N')
+      myRefAllele(' ')
 {
     reset();
 }
@@ -31,7 +31,7 @@ PileupElementSummary::PileupElementSummary()
 // NOTE that this method does not actually copy, it just resets.
 PileupElementSummary::PileupElementSummary(const PileupElementSummary& q)
     : PileupElement(),
-      myRefAllele('N')
+      myRefAllele(' ')
 {
     reset();
 }
@@ -47,6 +47,20 @@ void PileupElementSummary::addEntry(SamRecord& record)
 {
     // Call the base class:
     PileupElement::addEntry(record);
+
+    // Must wait til here to get positions since PileupElement::addEntry is what sets the chromosome.
+    GenomeSequence* refPtr = getReference();
+    if((myRefAllele == ' ') && (refPtr != NULL))
+    {
+        genomeIndex_t markerIndex = refPtr->getGenomePosition(getChromosome(), static_cast<uint32_t>(getRefPosition()+1));
+        myRefAllele = (*refPtr)[markerIndex];
+    }
+
+    if(strcmp(record.getSequence(), "*") == 0)
+    {
+        // no sequence, so just return.
+        return;
+    }
 
     Cigar* cigar = record.getCigarInfo();
     if(cigar == NULL)
@@ -94,14 +108,7 @@ void PileupElementSummary::reset(int refPosition)
     // Call the base class.
     PileupElement::reset(refPosition);
     reset();
- 
-    GenomeSequence* refPtr = getReference();
-    if(refPtr != NULL)
-    {
-        genomeIndex_t markerIndex = refPtr->getGenomePosition(getChromosome(), static_cast<uint32_t>(getRefPosition()+1));
-        myRefAllele = (*refPtr)[markerIndex];
-    }
-}
+ }
 
 void PileupElementSummary::reset()
 {
@@ -111,5 +118,5 @@ void PileupElementSummary::reset()
     }
     myDepth = 0;
     myNumDeletes = 0;
-    myRefAllele = 'N';
+    myRefAllele = ' ';
 }
