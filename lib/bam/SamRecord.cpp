@@ -1200,8 +1200,8 @@ char SamRecord::getQuality(int index)
         // Already have string.
         if((myQuality.Length() == 1) && (myQuality[0] == '*'))
         {
-            // Return 0xFF like it does for BAM.
-            return(0xFF);
+            // Return the unknown quality character.
+            return(BaseUtilities::UNKNOWN_QUALITY_CHAR);
         }
         else
         {

@@ -960,7 +960,7 @@ void validateRead5(SamRecord& samRecord)
     assert(samRecord.getNumOverlaps(0, 19) == 0);
 
     assert(samRecord.getSequence(0) == 'A');
-    char expChar = 0xFF;
+    char expChar = BaseUtilities::UNKNOWN_QUALITY_CHAR;
     assert(samRecord.getQuality(0) == expChar);
     assert(samRecord.getSequence(1) == 'C');
     assert(samRecord.getQuality(1) == expChar);
