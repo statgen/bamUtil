@@ -22,6 +22,7 @@
 
 #include "PileupElementBaseQual.h"
 #include "GenomeSequence.h"
+#include "BaseUtilities.h"
 
 PileupElementBaseQual::PileupElementBaseQual()
     : PileupElement(),
@@ -284,7 +285,7 @@ void PileupElementBaseQual::addEntry(SamRecord& record)
         int8_t mapQual = record.getMapQuality();
         //-33 to obtain the PHRED base quality
         char qual = record.getQuality(readIndex);
-        if(qual == UNSET_QUAL)
+        if(qual == BaseUtilities::UNKNOWN_QUALITY_CHAR)
         {
             qual = ' ';
         }
@@ -394,8 +395,8 @@ void PileupElementBaseQual::analyze()
             tempStr.append(tempCStr);
         }
         
-        tempStr.append("\n");  	
-       	myVcfOutFile->ifwrite(tempStr.c_str(), tempStr.length());
+        tempStr.append("\n");
+       	myVcfOutFile->writeLine(tempStr);
     }
     
     //to ensure this does not print when reflushed
@@ -412,7 +413,7 @@ void PileupElementBaseQual::reset(int refPosition)
 }
 
 
-void PileupElementBaseQual::reset(int refPosition, GenomeSequence* refSeq, InputFile* vcfOutFile, bool addDelAsBase, double*** logGLMatrix)
+void PileupElementBaseQual::reset(int refPosition, GenomeSequence* refSeq, VcfFile& vcfOutFile, bool addDelAsBase, double*** logGLMatrix)
 {
     // Assign pointer to myLogGLMatrix
     if (myLogGLMatrix == NULL)
@@ -429,7 +430,7 @@ void PileupElementBaseQual::reset(int refPosition, GenomeSequence* refSeq, Input
     // Assign pointer to myVcfOutFile
     if (myVcfOutFile == NULL)
     {
-        myVcfOutFile = vcfOutFile;
+        myVcfOutFile = &vcfOutFile;
     }
 	
     myAddDelAsBase = addDelAsBase;	

@@ -88,7 +88,7 @@ protected:
     void addAlignmentPosition(int refPosition, SamRecord& record);
 
 
-    void flushPileup(int refID, int refPosition);
+    virtual void flushPileup(int refID, int refPosition);
     void flushPileup(int refPosition);
     
     // Get the position in the myElements container that is associated
@@ -99,6 +99,7 @@ protected:
     virtual void resetElement(PILEUP_TYPE& element, int position);
     virtual void addElement(PILEUP_TYPE& element, SamRecord& record);
     virtual void analyzeElement(PILEUP_TYPE& element);
+    virtual void analyzeHead();
 
     std::vector<PILEUP_TYPE> myElements;
 
@@ -340,7 +341,7 @@ void Pileup<PILEUP_TYPE, FUNC_CLASS>::flushPileup(int position)
     // pileupHead has not been set.
     while((pileupHead < position) && (pileupHead <= pileupTail))
     {
-        analyzeElement(myElements[pileupHead - pileupStart]);
+        analyzeHead();
 
         pileupHead++;
         
@@ -411,6 +412,11 @@ void Pileup<PILEUP_TYPE, FUNC_CLASS>::analyzeElement(PILEUP_TYPE& element)
 }
 
 
+template <class PILEUP_TYPE, class FUNC_CLASS>
+void Pileup<PILEUP_TYPE, FUNC_CLASS>::analyzeHead()
+{
+    myAnalyzeFuncPtr(myElements[pileupHead - pileupStart]);
+}
 
 
 #endif

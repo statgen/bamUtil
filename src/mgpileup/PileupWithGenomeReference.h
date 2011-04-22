@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2010  Regents of the University of Michigan
+ *  Copyright (C) 2010-2011  Regents of the University of Michigan
  *
  *   This program is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -21,14 +21,15 @@
 #include "Pileup.h"
 #include "GenomeSequence.h"
 #include "InputFile.h"
+#include "PreviousPileup.h"
 
 struct Region
 {
     std::string chrom;
     uint32_t start;
     uint32_t end;
-    vector<uint32_t> *positions;
-    uint32_t currentPosition;
+    vector<int> positions;
+    unsigned int currentPosition;
 };
 
 template <class PILEUP_TYPE, 
@@ -37,15 +38,11 @@ class PileupWithGenomeReference:public Pileup<PILEUP_TYPE, FUNC_CLASS>{
 
 public:
     PileupWithGenomeReference(const std::string& refSeqFileName,
-                              bool addDelAsBase = false, 
-                              bool inputVCFFileIsGZipped = false,
-                              bool outputVCFFileIsGZipped = false, 
+                              bool addDelAsBase = false,
                               const FUNC_CLASS& fp = FUNC_CLASS());
 
     PileupWithGenomeReference(int window, const std::string& refSeqFileName,
-                              bool addDelAsBase = false,  
-                              bool inputVCFFileIsGZipped = false,
-                              bool outputVCFFileIsGZipped = false, 
+                              bool addDelAsBase = false,
                               const FUNC_CLASS& fp = FUNC_CLASS());
            
     virtual int processFile(const std::string& bamFileName,  
@@ -55,36 +52,48 @@ public:
 
     virtual int processFile(const std::string& bamFileName, 
                             const std::string& inputVCFFileName,
+                            const std::string& prevPileupFileName,
                             const std::string& outputVCFFileName,
+                            uint32_t maxStoredPrevPileupLines,
                             uint16_t excludeFlag = 0x0704,
                             uint16_t includeFlag = 0);
                     
-    virtual void processAlignment(SamRecord& record, Region* region);
-    	                                             					                    
+    virtual void processAlignment(SamRecord& record, Region& region);
+
+    virtual void analyzeHead();
+
     void initLogGLMatrix();
     
 private:
+    int processRegion(Region& currentRegion, 
+                      uint16_t excludeFlag,
+                      uint16_t includeFlag);
     void resetElement(PILEUP_TYPE& element, int position);
 
+
     bool myAddDelAsBase;
-    bool inputVCFFileIsGZipped;
-    bool outputVCFFileIsGZipped;
     GenomeSequence myRefSeq;
-    InputFile* myOutputVCFFile;
+    VcfFile myOutputVCFFile;
+
+    SamFile mySamIn;
+    SamFileHeader mySamHeader;
+
+    PreviousPileup myPrevPileup;
+
     double*** myLogGLMatrix;
 };
 
 template <class PILEUP_TYPE, class FUNC_CLASS>
 PileupWithGenomeReference<PILEUP_TYPE, FUNC_CLASS>::PileupWithGenomeReference(const std::string& refSeqFileName,
                                                                               bool addDelAsBase, 
-                                                                              bool inputVCFFileIsGZipped,
-                                                                              bool outputVCFFileIsGZipped, 
                                                                               const FUNC_CLASS& fp)
-    : 	Pileup<PILEUP_TYPE>(),
+    : 	Pileup<PILEUP_TYPE, FUNC_CLASS>(),
         myAddDelAsBase(addDelAsBase),
-        inputVCFFileIsGZipped(inputVCFFileIsGZipped),
-        outputVCFFileIsGZipped(outputVCFFileIsGZipped),
-        myRefSeq(refSeqFileName.c_str(), false)
+        myRefSeq(refSeqFileName.c_str(), false),
+        myOutputVCFFile(),
+        mySamIn(),
+        mySamHeader(),
+        myPrevPileup()
 {
     initLogGLMatrix();
 }
@@ -92,16 +101,15 @@ PileupWithGenomeReference<PILEUP_TYPE, FUNC_CLASS>::PileupWithGenomeReference(co
 template <class PILEUP_TYPE, class FUNC_CLASS>
 PileupWithGenomeReference<PILEUP_TYPE, FUNC_CLASS>::PileupWithGenomeReference(int window, 
                                                                               const std::string& refSeqFileName,
-                                                                              bool addDelAsBase, 
-                                                                              bool inputVCFFileIsGZipped,
-                                                                              bool outputVCFFileIsGZipped, 
+                                                                              bool addDelAsBase,
                                                                               const FUNC_CLASS& fp)
-    :	Pileup<PILEUP_TYPE>(window),
+    :	Pileup<PILEUP_TYPE, FUNC_CLASS>(window),
         myAddDelAsBase(addDelAsBase),
-        inputVCFFileIsGZipped(inputVCFFileIsGZipped),
-        outputVCFFileIsGZipped(outputVCFFileIsGZipped),
         myRefSeq(refSeqFileName.c_str()),
-        myOutputVCFFile(NULL)
+        myOutputVCFFile(),
+        mySamIn(),
+        mySamHeader(),
+        myPrevPileup()
 {
     initLogGLMatrix();
 }
@@ -112,19 +120,16 @@ int PileupWithGenomeReference<PILEUP_TYPE, FUNC_CLASS>::processFile(const std::s
                                                                     uint16_t excludeFlag,
                                                                     uint16_t includeFlag)
 {
-    myOutputVCFFile = new InputFile(outputVCFFileName.c_str(), "w", outputVCFFileIsGZipped?InputFile::GZIP:InputFile::DEFAULT);
-    if ( !myOutputVCFFile->isOpen() ) {
-        std::cerr << "FATAL error : Cannot open file " << outputVCFFileName << std::endl;
+    /////////////////////////////////////
+    // Open the output files.
+    if(!myOutputVCFFile.openForWrite(outputVCFFileName.c_str()))
+    {
         abort();
     }
-    std::string tempStr("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t");
-    tempStr.append(outputVCFFileName.c_str());
-    tempStr.append("\n");
-    myOutputVCFFile->ifwrite(tempStr.c_str(), tempStr.length());
 
-    Pileup<PILEUP_TYPE>::processFile(bamFileName);
+    Pileup<PILEUP_TYPE, FUNC_CLASS>::processFile(bamFileName, excludeFlag, includeFlag);
 
-    myOutputVCFFile->ifclose();
+    myOutputVCFFile.close();
 
     return(0);  
 }
@@ -132,268 +137,236 @@ int PileupWithGenomeReference<PILEUP_TYPE, FUNC_CLASS>::processFile(const std::s
 template <class PILEUP_TYPE, class FUNC_CLASS>
 int PileupWithGenomeReference<PILEUP_TYPE, FUNC_CLASS>::processFile(const std::string& bamFileName, 
                                                                     const std::string& inputVCFFileName, 
+                                                                    const std::string& prevPileupFileName,
                                                                     const std::string& outputVCFFileName, 
+                                                                    uint32_t maxStoredPrevPileupLines,
                                                                     uint16_t excludeFlag,
                                                                     uint16_t includeFlag)
 {
-    myOutputVCFFile = new InputFile(outputVCFFileName.c_str(), "w", outputVCFFileIsGZipped?InputFile::GZIP:InputFile::DEFAULT);
-    if ( !myOutputVCFFile->isOpen() ) {
-        std::cerr << "FATAL error : Cannot open file " << outputVCFFileName << std::endl;
-        abort();
-    }
-    std::string tempStr("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t");
-    tempStr.append(outputVCFFileName.c_str());
-    tempStr.append("\n");
-    myOutputVCFFile->ifwrite(tempStr.c_str(), tempStr.length());
-	    	
-    //read through input VCF file to collect regions
-    InputFile vcfIn(inputVCFFileName.c_str(), "r", inputVCFFileIsGZipped?InputFile::GZIP:InputFile::DEFAULT);
-    if ( !vcfIn.isOpen() ) {
-        std::cerr << "FATAL error : Cannot open file " << inputVCFFileName << std::endl;
+    /////////////////////////////////////
+    // Open the input and output files.
+    if(!myOutputVCFFile.openForWrite(outputVCFFileName.c_str()))
+    {
         abort();
     }
 
-    std::string field;
-    std::string chromosome = "0";
-    uint32_t position = 0;
-    char c = ' ';
-    vector<Region> regions;
-    Region currentRegion;
-    currentRegion.chrom = "0";
-    currentRegion.start = 0;
-    currentRegion.end = 0;
-    currentRegion.positions = new vector<uint32_t>();
-    currentRegion.currentPosition = 0;
-
-    while(!vcfIn.ifeof())
+    VcfFile vcfRegions;
+    if(!vcfRegions.openForRead(inputVCFFileName.c_str()))
     {
-        if((c=vcfIn.ifgetc())!='#')
+        abort();
+    }
+
+    myPrevPileup.open(prevPileupFileName, maxStoredPrevPileupLines);
+
+    // Open the bam file.
+    bool hasBamFile = false;
+
+    if(bamFileName.length() != 0)
+    {
+        // There is a bam file, so open it.
+        if(!mySamIn.OpenForRead(bamFileName.c_str()))
         {
-            field.append(&c, 1);
-
-            //read chromosome
-            while((c=vcfIn.ifgetc())!='\t')
-            {
-                field.append(&c, 1);
-            }
-
-            //std::cout << "chrom:" << field << " ";
-            chromosome = field;
-            field.clear();
-
-            //read position
-            while((c=vcfIn.ifgetc())!='\t')
-            {
-                field.append(&c, 1);
-            }
-
-            //std::cout << " pos:" << field << "\n";
-            position = (uint32_t) atoi(field.c_str());
-            field.clear();
-
-            //std::cout << "X chrom:" << chromosome << " pos:" << position << "\n";
-
-            //decide to include region or not
-            if(chromosome!=currentRegion.chrom)
-            {
-                //add current region
-                Region newRegion;
-                newRegion.chrom = currentRegion.chrom;
-                newRegion.start = currentRegion.start;
-                newRegion.end = currentRegion.end;
-                newRegion.positions = currentRegion.positions;
-                newRegion.currentPosition = currentRegion.currentPosition;
-                regions.push_back(newRegion);
-
-                //create new current region
-                currentRegion.chrom=chromosome;
-                currentRegion.start=position;
-                currentRegion.end=position;
-                currentRegion.positions = new vector<uint32_t>();
-                currentRegion.positions->push_back(position);
-                currentRegion.currentPosition = 0;		
-            }
-            else
-            {
-                //extend region
-                //std::cout << position << " minus " << currentRegion.end << "\n"; 
-                if(position-currentRegion.end<1000)
-                {
-                    currentRegion.end = position;
-                    currentRegion.positions->push_back(position);
-                }
-                else
-                {
-                    //add current region
-                    Region newRegion;
-                    newRegion.chrom = currentRegion.chrom;
-                    newRegion.start = currentRegion.start;
-                    newRegion.end = currentRegion.end;
-                    newRegion.positions = currentRegion.positions;
-                    regions.push_back(newRegion);
-
-                    //create new current region
-                    currentRegion.chrom=chromosome;
-                    currentRegion.start=position;
-                    currentRegion.end=position;
-                    currentRegion.positions = new vector<uint32_t>();
-                    currentRegion.positions->push_back(position);
-
-                }	
-            }		
+            fprintf(stderr, "%s\n", mySamIn.GetStatusMessage());
         }
-
-        //read rest of line
-        while((c=vcfIn.ifgetc())!='\n')
+        else if(!mySamIn.ReadHeader(mySamHeader) || !mySamIn.ReadBamIndex())
         {
-        }
-    }
-
-    // add the last region
-    if(currentRegion.end-currentRegion.start > 0) {
-        Region newRegion;
-        newRegion.chrom = currentRegion.chrom;
-        newRegion.start = currentRegion.start;
-        newRegion.end = currentRegion.end;
-        newRegion.positions = currentRegion.positions;
-        regions.push_back(newRegion);	
-    }
-
-    /*
-    //std::cout << "size " << regions.size()<<"\n";
-    for (uint i=1; i<regions.size(); ++i)
-    //for (uint i=86770; i<86771; ++i)
-    {
-    std::cout << "chr" << regions.at(i).chrom.c_str() << ":" <<  regions.at(i).start << "-" << regions.at(i).end;
-    std::cout << " positions: " ;
-
-    for (uint k=0; k<regions.at(i).positions->size(); ++k)
-    {
-    std::cout << regions.at(i).positions->at(k) << " ";
-    }
-
-    std::cout  << "\n";
-    }
-    */
-    SamFile samIn;
-    SamFileHeader header;
-    SamRecord record;
-
-    if(!samIn.OpenForRead(bamFileName.c_str()))
-    {
-        fprintf(stderr, "%s\n", samIn.GetStatusMessage());
-        return(samIn.GetStatus());
-    }
-    
-    if(!samIn.ReadHeader(header))
-    {
-        fprintf(stderr, "%s\n", samIn.GetStatusMessage());
-        return(samIn.GetStatus());
-    }
-
-    // read index file
-    if (!samIn.ReadBamIndex())
-    {
-        //std::cout << "samin status" << samIn.GetStatus() <<"\n";
-        return(samIn.GetStatus());  	
-    }
-
-    // The file needs to be sorted by coordinate.
-    samIn.setSortedValidation(SamFile::COORDINATE);
-
-    // Iterate over selected regions
-    for (uint i=1; i<regions.size(); ++i)
-        //for (uint i=86770; i<86771; ++i)
-    {
-        int lastReadAlignmentStart = 0;
-        Region currentRegion = regions.at(i);
-        if(!samIn.SetReadSection(header.getReferenceID(currentRegion.chrom.c_str()), currentRegion.start-1, currentRegion.end))
-        {
-            std::cout << "chrom:" << regions.at(i).chrom << ":" <<  regions.at(i).start << "-" << regions.at(i).end << "\n";
+            fprintf(stderr, "%s\n", mySamIn.GetStatusMessage());
+            // Couldn't read, so close the file.
+            mySamIn.Close();
         }
         else
         {
-            //std::cout << "reading chrom:" << regions.at(i).chrom << ":" <<  regions.at(i).start << "-" << regions.at(i).end << "\n";
-
-            //int count = 0;
-            // Iterate over all records
-            while (samIn.ReadRecord(header, record))
-            {
-                uint16_t flag = record.getFlag();
-                if(flag & excludeFlag)
-                {
-                    // This record has an excluded flag set, 
-                    // so continue to the next one.
-                    continue;
-                }
-                if((flag & includeFlag) != includeFlag)
-                {
-                    // This record does not have all required flags set, 
-                    // so continue to the next one.
-                    continue;
-                }
-
-                if(record.get0BasedPosition()>=lastReadAlignmentStart)
-                {
-                    lastReadAlignmentStart = record.get0BasedPosition();
-                    //std::cout << "lastReadAlignmentStart " << lastReadAlignmentStart << "\n";
-                    processAlignment(record, &currentRegion);
-                }
-
-                //++count;
-            }
-
-            //std::cout << " count:" << count << "\n";
+            // The file needs to be sorted by coordinate.
+            mySamIn.setSortedValidation(SamFile::COORDINATE);
+            hasBamFile = true;
         }
-    }	
-   
-    Pileup<PILEUP_TYPE>::flushPileup();
-
-    int returnValue = 0;
-    if(samIn.GetStatus() != SamStatus::NO_MORE_RECS)
-    {
-        // Failed to read a record.
-        fprintf(stderr, "%s\n", samIn.GetStatusMessage());
-        returnValue = samIn.GetStatus();
     }
 
-    myOutputVCFFile->ifclose();
-   
+    //////////////////////////////////////
+    // Now that the files are open, process them.
+    Region currentRegion;
+    currentRegion.chrom = "";
+    currentRegion.start = 0;
+    currentRegion.end = 0;
+    currentRegion.positions.clear();
+    currentRegion.currentPosition = 0;
+
+    std::string currentChrom = "";
+    int currentChromID = -1;
+
+    // Read until there are no more chromosome/position lines in the input vcf position file.
+    VcfFile::VcfDataLine nextPos;
+
+    //////////////////////////////////////////////////////////////
+    // Loop through getting the positions that should be piled-up.
+    int status = 0;
+    while(vcfRegions.getNextDataLine(nextPos) && (status == 0))
+    {
+        // If a region is set, check to see if it is in the same region.
+        // It is not in the same region if:
+        //   a) it is on a different chromosome.
+        //   b) it is 1000 bases or more past the end of this region.
+        if((currentRegion.positions.size() != 0) &&
+           ((nextPos.chromosome!=currentRegion.chrom) ||
+            (nextPos.position-currentRegion.end>=1000)))
+        {
+            // Not in the same region, so process the region.
+            status = processRegion(currentRegion, excludeFlag, includeFlag);
+        }
+        
+        if(nextPos.chromosome != currentChrom)
+        {
+            currentChrom = nextPos.chromosome;
+            currentChromID = mySamHeader.getReferenceID(currentChrom.c_str());
+        }
+        
+        // Determine where the data for this position is to come from.
+        // Check it against the Previous VCF.
+        if(myPrevPileup.findTarget(currentChromID, nextPos.position, mySamHeader))
+        {
+            // Found this position in the previous piluep.
+            if(currentRegion.positions.size() == 0)
+            {
+                // No bam entries yet, so just write this entry.
+                myPrevPileup.writeCurrentLine(myOutputVCFFile);
+            }
+            else
+            {
+                // Store the line for later.
+                if(!myPrevPileup.storeCurrent())
+                {
+                    // The previous pileup has reached its max storage size, 
+                    // so process the region to write those lines.
+                    status = processRegion(currentRegion, excludeFlag, includeFlag);
+                    if(status == 0)
+                    {
+                        // Just wrote any bam entries, so can just write this line.
+                        myPrevPileup.writeCurrentLine(myOutputVCFFile);
+                    }
+                }
+            }
+        }
+        else
+        {
+            // Need to read from the bam file.
+            if(currentRegion.positions.size() == 0)
+            {
+                //create new current region
+                currentRegion.chrom=nextPos.chromosome;
+                currentRegion.start=nextPos.position;
+                currentRegion.currentPosition = 0;
+            }
+            //extend region
+            currentRegion.end = nextPos.position;
+            currentRegion.positions.push_back(nextPos.position);
+        }
+    }
+
+    // If a region was set, process the last region.
+    if(currentRegion.positions.size() != 0)
+    {
+        // process the last region
+        status = processRegion(currentRegion, excludeFlag, includeFlag);
+    }
+    
+    myOutputVCFFile.close();
+    vcfRegions.close();
+
+    return(status);
+}
+
+
+template <class PILEUP_TYPE, class FUNC_CLASS>
+int PileupWithGenomeReference<PILEUP_TYPE, FUNC_CLASS>::processRegion(Region& currentRegion, 
+                                                                      uint16_t excludeFlag,
+                                                                      uint16_t includeFlag)
+{
+    // Set the read section.
+    if(!mySamIn.SetReadSection(mySamHeader.getReferenceID(currentRegion.chrom.c_str()), 
+                             currentRegion.start-1, currentRegion.end))
+    {
+        std::cerr << "chrom:" << currentRegion.chrom << ":" <<  currentRegion.start 
+                  << "-" << currentRegion.end << "\n";
+    }
+    else
+    {
+        // Iterate over all records
+        SamRecord record;
+        while (mySamIn.ReadRecord(mySamHeader, record))
+        {
+            uint16_t flag = record.getFlag();
+            if(flag & excludeFlag)
+            {
+                // This record has an excluded flag set, 
+                // so continue to the next one.
+                continue;
+            }
+            if((flag & includeFlag) != includeFlag)
+            {
+                // This record does not have all required flags set, 
+                // so continue to the next one.
+                continue;
+            }
+            
+            processAlignment(record, currentRegion);
+        }
+    }
+
+    Pileup<PILEUP_TYPE, FUNC_CLASS>::flushPileup();
+    
+    // Flush the rest of the vcf queue.
+    myPrevPileup.writeStored(myOutputVCFFile);
+
+    int returnValue = 0;
+    if(mySamIn.GetStatus() != SamStatus::NO_MORE_RECS)
+    {
+        // Failed to read a record.
+        fprintf(stderr, "%s\n", mySamIn.GetStatusMessage());
+        returnValue = mySamIn.GetStatus();
+    }
+
+    currentRegion.positions.clear();
+
     return(returnValue);  
 }
 
+
 template <class PILEUP_TYPE, class FUNC_CLASS>
-void PileupWithGenomeReference<PILEUP_TYPE, FUNC_CLASS>::processAlignment(SamRecord& record, Region* region)
+void PileupWithGenomeReference<PILEUP_TYPE, FUNC_CLASS>::processAlignment(SamRecord& record, Region& region)
 {
     int refPosition = record.get0BasedPosition();
     int refID = record.getReferenceID();
 
     // Flush any elements from the pileup that are prior to this record
     // since the file is sorted, we are done with those positions.
-    //std::cout << "        flushing before " << refID << ":"<< refPosition << "\n";
-    Pileup<PILEUP_TYPE>::flushPileup(refID, refPosition);
+    Pileup<PILEUP_TYPE, FUNC_CLASS>::flushPileup(refID, refPosition);
     
-    // Loop through for each reference position covered by the record.
-    // It is up to the PILEUP_TYPE to handle insertions/deletions, etc
-    // that are related with the given reference position.
-    //for(; refPosition <= record.get0BasedAlignmentEnd(); ++refPosition)
-    //{
-    //    Pileup<PILEUP_TYPE>::addAlignmentPosition(refPosition, record);
-    //}
-
     //search for first location in region.positions that is >= the start position of the record
-    while (region->positions->at(region->currentPosition)-1< (uint32_t)refPosition)
+    while (region.positions.at(region.currentPosition)-1 < refPosition)
     {
-        ++(region->currentPosition);
+        // Increment the current position because all future records are beyond this position.
+        ++(region.currentPosition);
     }
-    //std::cout << "        currentPosition " << region->currentPosition << "\n";
 
-    for (uint k=region->currentPosition; k<region->positions->size()&& region->positions->at(k)-1<=(uint32_t)record.get0BasedAlignmentEnd(); ++k)	
+    // For each position til the end of the positions or end of the alignment, add this record.
+    for (unsigned int k = region.currentPosition; 
+         ((k < region.positions.size()) &&
+          (region.positions.at(k)-1 <= record.get0BasedAlignmentEnd()));
+         ++k)
     {
-        //std::cout << "            adding Position " << region->positions->at(k) << "\n";
-        Pileup<PILEUP_TYPE>::addAlignmentPosition(region->positions->at(k)-1, record);
+        Pileup<PILEUP_TYPE, FUNC_CLASS>::addAlignmentPosition(region.positions.at(k)-1, record);
     }
 }
+
+
+template <class PILEUP_TYPE, class FUNC_CLASS>
+void PileupWithGenomeReference<PILEUP_TYPE, FUNC_CLASS>::analyzeHead()
+{
+    myPrevPileup.writeStoredUpToPos(Pileup<PILEUP_TYPE, FUNC_CLASS>::pileupHead + 1, myOutputVCFFile);
+    
+    Pileup<PILEUP_TYPE, FUNC_CLASS>::analyzeHead();
+}
+
 
 template <class PILEUP_TYPE, class FUNC_CLASS>
 void PileupWithGenomeReference<PILEUP_TYPE, FUNC_CLASS>::resetElement(PILEUP_TYPE& element,

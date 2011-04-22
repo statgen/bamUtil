@@ -61,11 +61,13 @@ Alignment statistics are written to the VCF file specified, if the file name end
    g. GL        : genotype likelihood scores - AA,AC,AG,AT,CC,CG,CT,GG,GT,TT.\n\
 10. <vcf output file name> : contains data described in FORMAT.\n";
    			
-        std::string version = "0.7";
+        std::string version = "1.0";
         TCLAP::CmdLine cmd(desc, ' ', version);
         TCLAP::ValueArg<std::string> argInputBAMFileName("b", "bam", "BAM file", true, "", "string");
         TCLAP::ValueArg<std::string> argRefSeqFileName("r", "reference", "Reference Sequence file", true, "", "string");
         TCLAP::ValueArg<std::string> argInputVCFFileName("i", "inputvcf", "VCF file listing the loci of interest (can be gzipped), bam index file is automatically assumed to be in the same location as the bam file.", false, "", "string");
+        TCLAP::ValueArg<std::string> argPrevVCFFileName("p", "previousvcf", "VCF file from a prevoius pileup (can be gzipped)", false, "", "string");
+        TCLAP::ValueArg<uint32_t> argMaxStoredLines("l", "maxStoredLines", "Maximum number of previous pileup lines to store before cutting off a bam region to analyze", false, 1000, "integer");
         TCLAP::ValueArg<std::string> argOutputVCFFileName("v", "ouputvcf", "VCF file - if the extension is .gz, the written file will be a gzip file, (default is STDOUT)", false, "-", "string");
         TCLAP::SwitchArg argAddDelAsBase("d", "adddelasbase", "Adds deletions as base", cmd, false);
         TCLAP::SwitchArg argSummarize("s", "summarize", "Just print the summary of the allele counts for each position", cmd, false);
@@ -73,15 +75,19 @@ Alignment statistics are written to the VCF file specified, if the file name end
         cmd.add(argInputBAMFileName);
         cmd.add(argRefSeqFileName);
         cmd.add(argInputVCFFileName);
+        cmd.add(argPrevVCFFileName);
+        cmd.add(argMaxStoredLines);
         cmd.add(argOutputVCFFileName);
         cmd.parse(argc, argv);
 
-        std::cout << "Running mgpileup version " << version << std::endl; 
+        std::cerr << "Running mgpileup version " << version << std::endl; 
         std::string inputBAMFileName = argInputBAMFileName.getValue();
-        std::cout << "bam file                : " << inputBAMFileName << std::endl; 
+        std::cerr << "bam file                : " << inputBAMFileName << std::endl; 
         std::string refSeqFileName = argRefSeqFileName.getValue();	
-        std::cout << "reference sequence file : " << argRefSeqFileName.getValue() << std::endl; 
+        std::cerr << "reference sequence file : " << argRefSeqFileName.getValue() << std::endl; 
         std::string inputVCFFileName = argInputVCFFileName.getValue();
+        uint32_t maxStoredLines = argMaxStoredLines.getValue();
+        std::string prevVCFFileName = argPrevVCFFileName.getValue();
 
         bool summarize = argSummarize.getValue();
 
@@ -95,45 +101,30 @@ Alignment statistics are written to the VCF file specified, if the file name end
         {
             if (inputVCFFileName != "")
             {
-                std::cout << "input VCF file          : " << inputVCFFileName << std::endl; 
+                std::cerr << "input VCF file          : " << inputVCFFileName << std::endl; 
             }
-            std::string outputVCFFileName = argOutputVCFFileName .getValue();
-            
-            bool inputVCFFileIsGZipped = false;
-            if (outputVCFFileName.length()>3 && (outputVCFFileName.substr(outputVCFFileName.length()-3, 3) == ".gz"))
+            if (prevVCFFileName != "")
             {
-                inputVCFFileIsGZipped = true;
+                std::cerr << "previous pileup VCF     : " << prevVCFFileName << std::endl; 
+            }
+            std::string outputVCFFileName = argOutputVCFFileName.getValue();
+            if(outputVCFFileName[0] == '-')
+            {
+                std::cerr << "output VCF file         : STDOUT" << std::endl; 
             }
             else
             {
-                inputVCFFileIsGZipped = false;
+                std::cerr << "output VCF file         : " << outputVCFFileName << std::endl; 
             }
+
+            std::cerr << "add deletions as bases  : " << (argAddDelAsBase.getValue()? "yes" : "no") << std::endl; 
             
-            bool outputVCFFileIsGZipped = false;
-            if (outputVCFFileName.length()>3 && (outputVCFFileName.substr(outputVCFFileName.length()-3, 3) == ".gz"))
-            {
-                std::cout << "output VCF file         : " << outputVCFFileName << " (gzip)" << std::endl; 
-                outputVCFFileIsGZipped = true;
-            }
-            else if (outputVCFFileName=="-")
-            {
-                std::cout << "output VCF file         : STDOUT" << std::endl; 
-                outputVCFFileIsGZipped = false;
-            }
-            else
-            {
-                std::cout << "output VCF file         : " << outputVCFFileName << std::endl; 
-                outputVCFFileIsGZipped = false;
-            }
-            
-            std::cout << "add deletions as bases  : " << (argAddDelAsBase.getValue()? "yes" : "no") << std::endl; 
-            
-            PileupWithGenomeReference<PileupElementBaseQual> pileup(1024, refSeqFileName, argAddDelAsBase.getValue(), inputVCFFileIsGZipped, outputVCFFileIsGZipped);
+            PileupWithGenomeReference<PileupElementBaseQual> pileup(1024, refSeqFileName, argAddDelAsBase.getValue());
             
             //process file with index    	
             if (inputVCFFileName != "")
             {
-                pileup.processFile(inputBAMFileName, inputVCFFileName, outputVCFFileName);
+                pileup.processFile(inputBAMFileName, inputVCFFileName, prevVCFFileName, outputVCFFileName, maxStoredLines);
             }
             else
             {

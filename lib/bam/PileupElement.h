@@ -26,6 +26,8 @@
 class PileupElement
 {
 public:
+    static const int32_t UNSET_POSITION = -1;
+
     PileupElement();
 
     // NOTE that this method does not actually copy, it just resets.
@@ -50,7 +52,6 @@ public:
     static void setReference(GenomeSequence* reference);
 
 protected:
-    static const int32_t UNSET_POSITION = -1;
     static GenomeSequence* getReference() { return(myRefPtr); }
 
 private:

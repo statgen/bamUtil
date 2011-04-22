@@ -21,6 +21,7 @@
 #include <stdint.h>
 #include "PileupElement.h"
 #include "GenomeSequence.h"
+#include "VcfFile.h"
 
 /// This class inherits from the base class and stores base and qualities.
 class PileupElementBaseQual : public PileupElement
@@ -42,15 +43,13 @@ public:
 	void computeGLScores(int index, int16_t* GLScores, char* bases, int8_t* baseQualities);
 
     // Resets the entry, setting the new position associated with this element.
-    virtual void reset(int refPosition, GenomeSequence* refSeq, InputFile* vcfOutFile, bool addDelAsBase, double*** logGLMatrix);
+    virtual void reset(int refPosition, GenomeSequence* refSeq, VcfFile& vcfOutFile, bool addDelAsBase, double*** logGLMatrix);
     virtual void reset(int refPosition);
     		
     // Allows for repeat polymorphisms
     virtual const char* getRefAllele();
     
 private:
-    static const char UNSET_QUAL = 0xFF;
-
     char* myBases;
     int8_t* myMapQualities;
     int8_t* myQualities;
@@ -62,7 +61,7 @@ private:
     bool myAddDelAsBase;
     std::string myRefAllele;
     GenomeSequence* myRefSeq;
-    InputFile* myVcfOutFile;
+    VcfFile* myVcfOutFile;
     double*** myLogGLMatrix;
 };
 

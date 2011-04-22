@@ -1,7 +1,7 @@
 EXE=mgpileup
-TOOLBASE = PileupElementBaseQual PileupElementSummary
+TOOLBASE = PileupElementBaseQual PileupElementSummary VcfFile PreviousPileup
 SRCONLY = Main.cpp
 HDRONLY = PileupWithGenomeReference.h
-USER_LIBS = ../vcfCooker/libvcf/libvcf.a
+#USER_LIBS = ../vcfCooker/libvcf/libvcf.a
 USER_INCLUDES = -I$(TCLAP_PATH)/include
 USER_COMPILE_VARS = -lcrypto
