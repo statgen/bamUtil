@@ -53,7 +53,7 @@ bool InputFile::openFile(const char * filename, const char * mode,
     else
     {
         // Check if reading from stdin.
-        if(strcmp(filename, "-") == 0)
+        if((strcmp(filename, "-") == 0) || (strcmp(filename, "-.gz") == 0))
         {
             // Reading from stdin, open it based on the 
             // compression mode.

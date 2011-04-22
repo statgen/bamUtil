@@ -427,9 +427,15 @@ inline IFILE ifopen(const char * filename, const char * mode,
 
 /// Close the file.
 /// \param file file to be closed - IFILE is a pointer to an InputFile object
-/// \return status of the close (0 is success).
+/// \return status of the close (0 is success or if NULL is passed in).
 inline int ifclose(IFILE file)
 {
+    if(file == NULL)
+    {
+        // NULL Pointer passed in, so return 0, since no file is open, so
+        // does not need to be closed.
+        return(0);
+    }
     int result = file->ifclose();
     delete file;
     file = NULL;
@@ -444,6 +450,11 @@ inline int ifclose(IFILE file)
 /// \return number of bytes read
 inline unsigned int ifread(IFILE file, void * buffer, unsigned int size)
 {
+    if(file == NULL)
+    {
+        // No file was passed in, so 0 bytes were read.
+        return(0);
+    }
     return(file->ifread(buffer, size));
 }
 
@@ -454,6 +465,11 @@ inline unsigned int ifread(IFILE file, void * buffer, unsigned int size)
 /// \return character that was read or EOF.
 inline int ifgetc(IFILE file)
 {
+    if(file == NULL)
+    {
+        // return eof since there is no file.
+        return(EOF);
+    }
     return(file->ifgetc());
 }
 
@@ -461,6 +477,10 @@ inline int ifgetc(IFILE file)
 /// \param file file to be rewound - IFILE is a pointer to an InputFile object
 inline void ifrewind(IFILE file)
 {
+    if(file == NULL)
+    {
+        return;
+    }
     file->ifrewind();
 }
 
@@ -469,6 +489,11 @@ inline void ifrewind(IFILE file)
 /// \return 0 if not EOF, any other value means EOF.
 inline int ifeof(IFILE file)
 {
+    if(file == NULL)
+    {
+        // No file, so that is considered to be EOF, so return 1.
+        return(1);
+    }
     return(file->ifeof());
 }
 
@@ -479,6 +504,11 @@ inline int ifeof(IFILE file)
 /// \return number of bytes written
 inline unsigned int ifwrite(IFILE file, const void * buffer, unsigned int size)
 {
+    if(file == NULL)
+    {
+        // No file specified, so retun 0 bytes written.
+        return(0);
+    }
     return(file->ifwrite(buffer, size));
 }
 
@@ -487,6 +517,10 @@ inline unsigned int ifwrite(IFILE file, const void * buffer, unsigned int size)
 /// \return current position in the file, -1 indicates an error.
 inline long int iftell(IFILE file)
 {
+    if(file == NULL)
+    {
+        return(-1);
+    }
     return (file->iftell());
 }
 
@@ -501,6 +535,11 @@ inline long int iftell(IFILE file)
 /// \return true on successful seek and false on a failed seek.
 inline bool ifseek(IFILE file, long int offset, int origin)
 {
+    if(file == NULL)
+    {
+        // Could not see since no file was specified.
+        return(false);
+    }
     return (file->ifseek(offset, origin));
 }
 
