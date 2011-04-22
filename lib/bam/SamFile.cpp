@@ -629,7 +629,7 @@ bool SamFile::SetReadSection(int32_t refID, int32_t start, int32_t end)
     {
         // There is not a BAM file open for reading.
         myStatus.setStatus(SamStatus::FAIL_ORDER, 
-                           "Canot set section since there is no bam file open");
+                           "Cannot set section since there is no bam file open");
         return(false);
     }
 
@@ -663,7 +663,7 @@ bool SamFile::SetReadSection(const char* refName, int32_t start, int32_t end)
     {
         // There is not a BAM file open for reading.
         myStatus.setStatus(SamStatus::FAIL_ORDER, 
-                           "Canot set section since there is no bam file open");
+                           "Cannot set section since there is no bam file open");
         return(false);
     }
 
@@ -706,7 +706,7 @@ int32_t SamFile::getNumMappedReadsFromIndex(int32_t refID)
     if(myBamIndex == NULL)
     {
         myStatus.setStatus(SamStatus::FAIL_ORDER, 
-                           "Canot get num mapped reads from the index until it has been read.");
+                           "Cannot get num mapped reads from the index until it has been read.");
         return(false);
     }
     return(myBamIndex->getNumMappedReads(refID));
@@ -721,7 +721,7 @@ int32_t SamFile::getNumUnMappedReadsFromIndex(int32_t refID)
     if(myBamIndex == NULL)
     {
         myStatus.setStatus(SamStatus::FAIL_ORDER, 
-                           "Canot get num unmapped reads from the index until it has been read.");
+                           "Cannot get num unmapped reads from the index until it has been read.");
         return(false);
     }
     return(myBamIndex->getNumUnMappedReads(refID));
@@ -737,7 +737,7 @@ int32_t SamFile::getNumMappedReadsFromIndex(const char* refName,
     if(myBamIndex == NULL)
     {
         myStatus.setStatus(SamStatus::FAIL_ORDER, 
-                           "Canot get num mapped reads from the index until it has been read.");
+                           "Cannot get num mapped reads from the index until it has been read.");
         return(false);
     }
     int32_t refID = BamIndex::REF_ID_UNMAPPED;
@@ -759,7 +759,7 @@ int32_t SamFile::getNumUnMappedReadsFromIndex(const char* refName,
     if(myBamIndex == NULL)
     {
         myStatus.setStatus(SamStatus::FAIL_ORDER, 
-                           "Canot get num unmapped reads from the index until it has been read.");
+                           "Cannot get num unmapped reads from the index until it has been read.");
         return(false);
     }
     int32_t refID = BamIndex::REF_ID_UNMAPPED;
@@ -1098,29 +1098,23 @@ bool SamFile::readIndexedRecord(SamFileHeader& header,
         recordFound = true;
 
         // If start/end position are set, verify that the alignment falls
-        // completely within those.
-        if((myStartPos != -1) && (myEndPos != -1))
+        // within those.
+        // If the alignment start is greater than the end of the region,
+        // return NO_MORE_RECS.
+        if((myEndPos != -1) && (record.get0BasedPosition() >= myEndPos))
         {
-            // Start & end are specified, so check if the alignment 
-            // overlaps this section.
-
-            // If the alignment start is greater than the end of the region,
-            // return NO_MORE_RECS.
-            if(record.get0BasedPosition() >= myEndPos)
-            {
-                myStatus = SamStatus::NO_MORE_RECS;
-                return(false);
-            }
-
-            // We know the start is less than the end position, so the alignment
-            // overlaps the region if the alignment end position is greater than the
-            // start of the region.
-            if(record.get0BasedAlignmentEnd() < myStartPos)
-            {
-                // If it does not overlap the region, so go to the next
-                // record...set recordFound back to false.
-                recordFound = false;
-            }
+            myStatus = SamStatus::NO_MORE_RECS;
+            return(false);
+        }
+        
+        // We know the start is less than the end position, so the alignment
+        // overlaps the region if the alignment end position is greater than the
+        // start of the region.
+        if((myStartPos != -1) && (record.get0BasedAlignmentEnd() < myStartPos))
+        {
+            // If it does not overlap the region, so go to the next
+            // record...set recordFound back to false.
+            recordFound = false;
         }
     }
 
@@ -1155,7 +1149,7 @@ bool SamFile::processNewSection(SamFileHeader &header)
     {
         // No bam index has been read.
         myStatus.setStatus(SamStatus::FAIL_ORDER, 
-                           "Canot read section since there is no index file open");
+                           "Cannot read section since there is no index file open");
         throw(std::runtime_error("SOFTWARE BUG: trying to read a BAM record by section prior to opening the BAM Index file."));
         return(false);
     }
@@ -1165,7 +1159,7 @@ bool SamFile::processNewSection(SamFileHeader &header)
     {
         // There is not a BAM file open for reading.
         myStatus.setStatus(SamStatus::FAIL_ORDER, 
-                           "Canot read section since there is no bam file open");
+                           "Cannot read section since there is no bam file open");
         throw(std::runtime_error("SOFTWARE BUG: trying to read a BAM record by section without opening a BAM file."));
         return(false);
     }
