@@ -112,6 +112,11 @@ public:
     /// \param summary whether or not to just print a summary (defaults to false).  The summary just contains summary info for each reference and not every bin/chunk.
     void printIndex(int32_t refID, bool summary = false);
 
+    // Returns the minimum offset of records that cross the 16K block that
+    // contains the specified position for the given reference id.
+    uint64_t getMinOffsetFromLinearIndex(int32_t refID, uint32_t position) const;
+
+    // Number of reference sequences.
     /// The number used for an unknown number of reads.
     static const int32_t UNKNOWN_NUM_READS = -1;
 
@@ -188,10 +193,6 @@ private:
     // Add the bins associated with the specified region to the passed in list.
     // start is incluive, end is exclusive.
     static int getBinsForRegion(uint32_t start, uint32_t end, uint16_t binList[MAX_NUM_BINS]);
-
-    // Returns the minimum offset of records that cross the 16K block that
-    // contains the specified position for the given reference id.
-    uint64_t getMinOffsetFromLinearIndex(int32_t refID, uint32_t position);
 
     // Number of reference sequences.
     int32_t n_ref;

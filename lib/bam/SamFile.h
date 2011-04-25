@@ -277,6 +277,26 @@ public:
     /// \param genStats set to true if statistics should be generated, false if not.
     void GenerateStatistics(bool genStats);
 
+    /// Return the bam index if one has been opened.
+    /// \return const pointer to the bam index, or null if one has not been opened.
+    const BamIndex* GetBamIndex();
+
+    /// Get the current file position.
+    /// \return current position in the file.
+    inline long int GetCurrentPosition()
+    {
+        return(iftell(myFilePtr));
+    }
+    
+    inline void DisableBuffering()
+    {
+        if(myFilePtr != NULL)
+        {
+            myFilePtr->disableBuffering();
+        }
+    }
+
+    
     inline void PrintStatistics() {if(myStatistics != NULL) myStatistics->print();}
 
 protected:

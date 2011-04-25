@@ -813,6 +813,12 @@ void SamFile::GenerateStatistics(bool genStats)
 }
 
 
+const BamIndex* SamFile::GetBamIndex()
+{
+    return(myBamIndex);
+}
+
+
 // initialize.
 void SamFile::init(const char* filename, OpenType mode, SamFileHeader* header)
 {

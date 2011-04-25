@@ -578,42 +578,7 @@ void BamIndex::printIndex(int32_t refID, bool summary)
 
 // Returns the minimum offset of records that cross the 16K block that
 // contains the specified position for the given reference id.
-// The basic logic is from samtools reg2bins and the samtools format specification pdf.
-int BamIndex::getBinsForRegion(uint32_t start, uint32_t end, uint16_t binList[MAX_NUM_BINS])
-{
-	uint32_t binListIndex = 0, binNum;
-	--end;
-
-        // Check if beg/end go too high, set to max position.
-        if(start > MAX_POSITION)
-        {
-            start = MAX_POSITION;
-        }
-        if(end > MAX_POSITION)
-        {
-            end = MAX_POSITION;
-        }
-
-	binList[binListIndex++] = 0;
-	for (binNum =    1 + (start>>26); binNum <=    1 + (end>>26); ++binNum) 
-            binList[binListIndex++] = binNum;
-	for (binNum =    9 + (start>>23); binNum <=    9 + (end>>23); ++binNum) 
-            binList[binListIndex++] = binNum;
-	for (binNum =   73 + (start>>20); binNum <=   73 + (end>>20); ++binNum)
-            binList[binListIndex++] = binNum;
-	for (binNum =  585 + (start>>17); binNum <=  585 + (end>>17); ++binNum)
-            binList[binListIndex++] = binNum;
-	for (binNum = 4681 + (start>>14); binNum <= 4681 + (end>>14); ++binNum)
-            binList[binListIndex++] = binNum;
-
-        // binListIndex contains the number of items added to the list.
-	return binListIndex;
-}
-
-
-// Returns the minimum offset of records that cross the 16K block that
-// contains the specified position for the given reference id.
-uint64_t BamIndex::getMinOffsetFromLinearIndex(int32_t refID, uint32_t position)
+uint64_t BamIndex::getMinOffsetFromLinearIndex(int32_t refID, uint32_t position) const
 {
     int32_t linearIndex = position >> LINEAR_INDEX_SHIFT;
     uint64_t minOffset = 0;
@@ -647,6 +612,41 @@ uint64_t BamIndex::getMinOffsetFromLinearIndex(int32_t refID, uint32_t position)
         }
     }
     return(minOffset);
+}
+
+
+// Returns the minimum offset of records that cross the 16K block that
+// contains the specified position for the given reference id.
+// The basic logic is from samtools reg2bins and the samtools format specification pdf.
+int BamIndex::getBinsForRegion(uint32_t start, uint32_t end, uint16_t binList[MAX_NUM_BINS])
+{
+	uint32_t binListIndex = 0, binNum;
+	--end;
+
+        // Check if beg/end go too high, set to max position.
+        if(start > MAX_POSITION)
+        {
+            start = MAX_POSITION;
+        }
+        if(end > MAX_POSITION)
+        {
+            end = MAX_POSITION;
+        }
+
+	binList[binListIndex++] = 0;
+	for (binNum =    1 + (start>>26); binNum <=    1 + (end>>26); ++binNum) 
+            binList[binListIndex++] = binNum;
+	for (binNum =    9 + (start>>23); binNum <=    9 + (end>>23); ++binNum) 
+            binList[binListIndex++] = binNum;
+	for (binNum =   73 + (start>>20); binNum <=   73 + (end>>20); ++binNum)
+            binList[binListIndex++] = binNum;
+	for (binNum =  585 + (start>>17); binNum <=  585 + (end>>17); ++binNum)
+            binList[binListIndex++] = binNum;
+	for (binNum = 4681 + (start>>14); binNum <= 4681 + (end>>14); ++binNum)
+            binList[binListIndex++] = binNum;
+
+        // binListIndex contains the number of items added to the list.
+	return binListIndex;
 }
 
 
