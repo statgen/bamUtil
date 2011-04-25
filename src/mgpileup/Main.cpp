@@ -67,7 +67,8 @@ Alignment statistics are written to the VCF file specified, if the file name end
         TCLAP::ValueArg<std::string> argRefSeqFileName("r", "reference", "Reference Sequence file", true, "", "string");
         TCLAP::ValueArg<std::string> argInputVCFFileName("i", "inputvcf", "VCF file listing the loci of interest (can be gzipped), bam index file is automatically assumed to be in the same location as the bam file.", false, "", "string");
         TCLAP::ValueArg<std::string> argPrevVCFFileName("p", "previousvcf", "VCF file from a prevoius pileup (can be gzipped)", false, "", "string");
-        TCLAP::ValueArg<uint32_t> argMaxStoredLines("l", "maxStoredLines", "Maximum number of previous pileup lines to store before cutting off a bam region to analyze", false, 1000, "integer");
+        TCLAP::ValueArg<uint32_t> argMaxStoredLines("l", "maxStoredLines", "Maximum number of previous pileup lines to store before cutting off a bam region to analyze", false, 16000, "integer");
+        TCLAP::ValueArg<uint32_t> argMaxRegionGap("g", "maxRegionGap", "Maximum gap between requested positions prior to breaking off a region", false, 16000, "integer");
         TCLAP::ValueArg<std::string> argOutputVCFFileName("v", "ouputvcf", "VCF file - if the extension is .gz, the written file will be a gzip file, (default is STDOUT)", false, "-", "string");
         TCLAP::SwitchArg argAddDelAsBase("d", "adddelasbase", "Adds deletions as base", cmd, false);
         TCLAP::SwitchArg argSummarize("s", "summarize", "Just print the summary of the allele counts for each position", cmd, false);
@@ -77,6 +78,7 @@ Alignment statistics are written to the VCF file specified, if the file name end
         cmd.add(argInputVCFFileName);
         cmd.add(argPrevVCFFileName);
         cmd.add(argMaxStoredLines);
+        cmd.add(argMaxRegionGap);
         cmd.add(argOutputVCFFileName);
         cmd.parse(argc, argv);
 
@@ -87,6 +89,7 @@ Alignment statistics are written to the VCF file specified, if the file name end
         std::cerr << "reference sequence file : " << argRefSeqFileName.getValue() << std::endl; 
         std::string inputVCFFileName = argInputVCFFileName.getValue();
         uint32_t maxStoredLines = argMaxStoredLines.getValue();
+        uint32_t maxRegionGap = argMaxRegionGap.getValue();
         std::string prevVCFFileName = argPrevVCFFileName.getValue();
 
         bool summarize = argSummarize.getValue();
@@ -124,7 +127,7 @@ Alignment statistics are written to the VCF file specified, if the file name end
             //process file with index    	
             if (inputVCFFileName != "")
             {
-                pileup.processFile(inputBAMFileName, inputVCFFileName, prevVCFFileName, outputVCFFileName, maxStoredLines);
+                pileup.processFile(inputBAMFileName, inputVCFFileName, prevVCFFileName, outputVCFFileName, maxStoredLines, maxRegionGap);
             }
             else
             {

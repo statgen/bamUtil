@@ -55,6 +55,7 @@ public:
                             const std::string& prevPileupFileName,
                             const std::string& outputVCFFileName,
                             uint32_t maxStoredPrevPileupLines,
+                            uint32_t maxRegionGap,
                             uint16_t excludeFlag = 0x0704,
                             uint16_t includeFlag = 0);
                     
@@ -81,6 +82,8 @@ private:
     PreviousPileup myPrevPileup;
 
     double*** myLogGLMatrix;
+
+    int numCallsToRegion;
 };
 
 template <class PILEUP_TYPE, class FUNC_CLASS>
@@ -140,6 +143,7 @@ int PileupWithGenomeReference<PILEUP_TYPE, FUNC_CLASS>::processFile(const std::s
                                                                     const std::string& prevPileupFileName,
                                                                     const std::string& outputVCFFileName, 
                                                                     uint32_t maxStoredPrevPileupLines,
+                                                                    uint32_t maxRegionGap,
                                                                     uint16_t excludeFlag,
                                                                     uint16_t includeFlag)
 {
@@ -159,28 +163,20 @@ int PileupWithGenomeReference<PILEUP_TYPE, FUNC_CLASS>::processFile(const std::s
     myPrevPileup.open(prevPileupFileName, maxStoredPrevPileupLines);
 
     // Open the bam file.
-    bool hasBamFile = false;
-
-    if(bamFileName.length() != 0)
+    if(!mySamIn.OpenForRead(bamFileName.c_str()))
     {
-        // There is a bam file, so open it.
-        if(!mySamIn.OpenForRead(bamFileName.c_str()))
-        {
-            fprintf(stderr, "%s\n", mySamIn.GetStatusMessage());
-        }
-        else if(!mySamIn.ReadHeader(mySamHeader) || !mySamIn.ReadBamIndex())
-        {
-            fprintf(stderr, "%s\n", mySamIn.GetStatusMessage());
-            // Couldn't read, so close the file.
-            mySamIn.Close();
-        }
-        else
-        {
-            // The file needs to be sorted by coordinate.
-            mySamIn.setSortedValidation(SamFile::COORDINATE);
-            hasBamFile = true;
-        }
+        fprintf(stderr, "%s\n", mySamIn.GetStatusMessage());
+        abort();
     }
+    else if(!mySamIn.ReadHeader(mySamHeader) || !mySamIn.ReadBamIndex())
+    {
+        fprintf(stderr, "%s\n", mySamIn.GetStatusMessage());
+        // Couldn't read, so close the file.
+        mySamIn.Close();
+        abort();
+    }
+    // The file needs to be sorted by coordinate.
+    mySamIn.setSortedValidation(SamFile::COORDINATE);
 
     //////////////////////////////////////
     // Now that the files are open, process them.
@@ -197,6 +193,12 @@ int PileupWithGenomeReference<PILEUP_TYPE, FUNC_CLASS>::processFile(const std::s
     // Read until there are no more chromosome/position lines in the input vcf position file.
     VcfFile::VcfDataLine nextPos;
 
+    int vcfCount = 0;
+    int bamCount = 0;
+    numCallsToRegion = 0;
+
+
+
     //////////////////////////////////////////////////////////////
     // Loop through getting the positions that should be piled-up.
     int status = 0;
@@ -205,10 +207,10 @@ int PileupWithGenomeReference<PILEUP_TYPE, FUNC_CLASS>::processFile(const std::s
         // If a region is set, check to see if it is in the same region.
         // It is not in the same region if:
         //   a) it is on a different chromosome.
-        //   b) it is 1000 bases or more past the end of this region.
+        //   b) it is maxRegionGap bases or more past the end of this region.
         if((currentRegion.positions.size() != 0) &&
            ((nextPos.chromosome!=currentRegion.chrom) ||
-            (nextPos.position-currentRegion.end>=1000)))
+            (nextPos.position-currentRegion.end>=maxRegionGap)))
         {
             // Not in the same region, so process the region.
             status = processRegion(currentRegion, excludeFlag, includeFlag);
@@ -224,6 +226,8 @@ int PileupWithGenomeReference<PILEUP_TYPE, FUNC_CLASS>::processFile(const std::s
         // Check it against the Previous VCF.
         if(myPrevPileup.findTarget(currentChromID, nextPos.position, mySamHeader))
         {
+
+            ++vcfCount;
             // Found this position in the previous piluep.
             if(currentRegion.positions.size() == 0)
             {
@@ -248,6 +252,8 @@ int PileupWithGenomeReference<PILEUP_TYPE, FUNC_CLASS>::processFile(const std::s
         }
         else
         {
+            ++bamCount;
+
             // Need to read from the bam file.
             if(currentRegion.positions.size() == 0)
             {
@@ -272,6 +278,10 @@ int PileupWithGenomeReference<PILEUP_TYPE, FUNC_CLASS>::processFile(const std::s
     myOutputVCFFile.close();
     vcfRegions.close();
 
+    std::cerr << "# from BAM = " << bamCount << "\n";
+    std::cerr << "# from VCF = " << vcfCount << "\n";
+    std::cerr << "#CallsToRegion = " << numCallsToRegion << "\n";
+
     return(status);
 }
 
@@ -281,6 +291,8 @@ int PileupWithGenomeReference<PILEUP_TYPE, FUNC_CLASS>::processRegion(Region& cu
                                                                       uint16_t excludeFlag,
                                                                       uint16_t includeFlag)
 {
+    ++numCallsToRegion;
+
     // Set the read section.
     if(!mySamIn.SetReadSection(mySamHeader.getReferenceID(currentRegion.chrom.c_str()), 
                              currentRegion.start-1, currentRegion.end))
