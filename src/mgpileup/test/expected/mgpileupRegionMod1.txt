@@ -1,0 +1,10 @@
+Running mgpileup version 1.0
+bam file                : testFiles/shortSorted.bam
+reference sequence file : ../../bam/test/testFiles/chr1_partial.fa
+input VCF file          : testFiles/regionMod.vcf
+previous pileup VCF     : testFiles/prevPileup.vcf
+output VCF file         : STDOUT
+add deletions as bases  : no
+# from BAM = 5
+# from VCF = 8
+#CallsToRegion = 4
