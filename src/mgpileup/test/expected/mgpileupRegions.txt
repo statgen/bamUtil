@@ -4,3 +4,6 @@ reference sequence file : ../../bam/test/testFiles/chr1_partial.fa
 input VCF file          : testFiles/regions.vcf
 output VCF file         : STDOUT
 add deletions as bases  : no
+# from BAM = 20
+# from VCF = 0
+#CallsToRegion = 3

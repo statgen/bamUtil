@@ -42,7 +42,7 @@ diff results/mgpileupSum.txt expected/mgpileupSum.txt
  && \
 diff results/mgpileupRegionMod.vcf expected/mgpileupRegionMod.vcf \
 && \
-diff results/mgpileupRegionMod.txt expected/mgpileupRegionMod.txt \
+diff results/mgpileupRegionMod.txt expected/mgpileupRegionMod1.txt \
 && \
 
 ../../bin/mgpileup -s -r ../../bam/test/testFiles/chr1_partial.fa -b testFiles/shortSorted.sam > results/mgpileupSum.vcf 2> results/mgpileupSum.txt \
