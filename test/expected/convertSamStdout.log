@@ -2,7 +2,7 @@
 The following parameters are available.  Ones with "[]" are in effect:
 
 Input Parameters
- --in [testFiles/testSam.sam], --out [-.bam], --refFile [], --noeof,
+ --in [testFilesLibBam/testSam.sam], --out [-.bam], --refFile [], --noeof,
                         --params [ON]
    SequenceConversion : --useBases, --useEquals, --useOrigSeq [ON]
 
