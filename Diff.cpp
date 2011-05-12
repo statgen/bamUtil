@@ -205,6 +205,12 @@ int Diff::execute(int argc, char **argv)
         // Error.
         return(myFile2.file.GetStatus());
     }
+
+    if(myDiffFile != NULL)
+    {
+        ifclose(myDiffFile);
+    }
+
     return(0);
 }
 //     int currentRecordChromID = -2;
@@ -478,24 +484,34 @@ bool Diff::writeDiffs(SamRecord* rec1, SamRecord* rec2)
 
 bool Diff::writeReadNameFrag(SamRecord& record)
 {
-    ifwrite(myDiffFile, record.getReadName(),
-            record.getReadNameLength());
+    uint8_t nameLen = record.getReadNameLength();
+    if(nameLen > 0)
+    {
+        // it has a read name, so write it.
+        // Subtract 1 since the length includes the null.
+        --nameLen;
+        if(ifwrite(myDiffFile, record.getReadName(), nameLen) != nameLen)
+        {
+            // Failed to write the entire read name.
+            return(false);
+        }
+    }
     uint16_t flag = record.getFlag();
     if(SamFlag::isFirstFragment(flag))
     {
-        myTempBuffer = ": First Fragment\n";
+        myTempBuffer = "\tFirst Fragment\n";
     }
     else if(SamFlag::isLastFragment(flag))
     {
-        myTempBuffer = ": Last Fragment\n";
+        myTempBuffer = "\tLast Fragment\n";
     }
     else if(SamFlag::isMidFragment(flag))
     {
-        myTempBuffer = ": Not First/Last Fragment\n";
+        myTempBuffer = "\tNot First/Last Fragment\n";
     }
     else
     {
-        myTempBuffer = ": Unknown Fragment\n";
+        myTempBuffer = "\tUnknown Fragment\n";
     }
     return(ifwrite(myDiffFile, myTempBuffer.c_str(), myTempBuffer.Length()) == 
            (unsigned int)myTempBuffer.Length());
