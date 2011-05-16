@@ -32,6 +32,7 @@ class Diff : public BamExecutable
 {
 public:
     Diff();
+    ~Diff();
     static void diffDescription();
     void description();
     void usage();
@@ -43,8 +44,6 @@ private:
     public:
         SamFile file;
         SamFileHeader  header;
-        SamRecord* lastRecord;
-        
     };
     
     
@@ -57,24 +56,54 @@ private:
               myUnmatchedFileIter()
         {
         }
+
+        // Return the number of elements in this unmatched record container.
+        inline int size() { return(myListUnmatched.size()); }
+        
+        // Add the specified record to the list of unmatched records.
+        void addUnmatchedRecord(SamRecord& record);
+
         // Get and remove the record that matches the specified record's
         // query(read) name and fragment (first/last/mid/unknown).
         // If no match is found, return NULL.
         SamRecord* removeFragmentMatch(SamRecord& record);
         
+        // Remove the first entry from this unmatched file container, returning a pointer
+        // to the record.
+        SamRecord* removeFirst();
+        // Get the first entry from this unmatched file container, returning a pointer
+        // to the record without removing it.
+        SamRecord* getFirst();
+
     private:
-        typedef std::map<std::string, std::list<SamRecord*>::reverse_iterator> mapType;
+        typedef std::map<std::string, std::list<SamRecord*>::iterator> mapType;
         std::list<SamRecord*> myListUnmatched;
         std::vector<mapType> myFragmentMaps;
-        std::map<std::string,std::list<SamRecord*>::reverse_iterator>::iterator myUnmatchedFileIter;
+        std::map<std::string,std::list<SamRecord*>::iterator>::iterator myUnmatchedFileIter;
     };
 
-    //    void writeDiff(IFILE file, SamRecord& record);
+
+    // Check to see if the two records are a match - same read name & fragment.
+    // Return true if they match, false if not.
+    bool matchingRecs(SamRecord* rec1, SamRecord* rec2);
+
+    // Compare two records.  Returns true if the first record chrom/pos are less than or
+    // equal to record2's chrom/pos, false if rec2 is less than rec1.
+    // Threshold is a value to be added to rec1's position before comparing to rec2.  It is
+    // a way to determine if rec1 is more than a certain number of positions less than rec2.
+    // Threshold is defaulted to 0, so the excact positions are compared.
+    // If they are on different chromosomes, threshold is not used.
+    bool lessThan(SamRecord* rec1, SamRecord* rec2, int threshold = 0);
+
     bool writeDiffs(SamRecord* rec1, SamRecord* rec2);
     bool writeReadNameFrag(SamRecord& record);
-    bool checkDiffFile();
     SamRecord* getSamRecord();
+    // If record is not NULL, adds it back to the free list.  If record is NULL, nothing is done.
+    void releaseSamRecord(SamRecord* record);
 
+    bool checkDiffFile();
+
+    
     std::stack<SamRecord*> myFreeSamRecords;
 
     UnmatchedRecords myFile1Unmatched;
@@ -86,6 +115,7 @@ private:
 
     int myMaxAllowedRecs;
     int myAllocatedRecs;
+    int myThreshold;
 
     FileInfo myFile1;
     FileInfo myFile2;
@@ -96,9 +126,5 @@ private:
     String myDiff2;
     String myTempBuffer;
 };
-
-
-
-
 
 #endif

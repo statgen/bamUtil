@@ -36,6 +36,7 @@ Diff::Diff()
       myCompBaseQual(false),
       myMaxAllowedRecs(100),
       myAllocatedRecs(0),
+      myThreshold(1000),
       myFile1(),
       myFile2(),
       myDiffFileName("-"),
@@ -44,6 +45,16 @@ Diff::Diff()
       myDiff2("")
 {
 }
+
+
+Diff::~Diff()
+{
+    if(myDiffFile != NULL)
+    {
+        ifclose(myDiffFile);
+    }
+}
+
 
 void Diff::diffDescription()
 {
@@ -70,6 +81,7 @@ void Diff::usage()
     std::cerr << "\t\t--noCigar     : do not diff the the cigars." << std::endl;
     std::cerr << "\t\t--noPos       : do not diff the positions." << std::endl;
     std::cerr << "\t\t--recPoolSize : number of records to allow to be stored at a time" << std::endl;
+    std::cerr << "\t\t--posDiff     : max base pair difference between possibly matching records" << std::endl;
     std::cerr << "\t\t--noeof       : do not expect an EOF block on a bam file." << std::endl;
     std::cerr << "\t\t--params      : print the parameter settings" << std::endl;
     std::cerr << std::endl;
@@ -97,6 +109,7 @@ int Diff::execute(int argc, char **argv)
         LONG_PARAMETER("noCigar", &noCigar)
         LONG_PARAMETER("noPos", &noPos)
         LONG_INTPARAMETER("recPoolSize", &myMaxAllowedRecs)
+        LONG_INTPARAMETER("posDiff", &myThreshold)
         LONG_PARAMETER("noeof", &noeof)
         LONG_PARAMETER("params", &params)
         END_LONG_PARAMETERS();
@@ -109,7 +122,6 @@ int Diff::execute(int argc, char **argv)
 
     inputParameters.Read(argc-1, &(argv[1]));
     
-
     // If no eof block is required for a bgzf file, set the bgzf file type to 
     // not look for it.
     if(noeof)
@@ -152,49 +164,163 @@ int Diff::execute(int argc, char **argv)
     myFile1.file.ReadHeader(myFile1.header);
     myFile2.file.ReadHeader(myFile2.header);
 
-    myFile1.lastRecord = getSamRecord();
-    myFile2.lastRecord = getSamRecord();
+    SamRecord* tempRecord = NULL;
 
-    if((myFile1.lastRecord == NULL) || (myFile2.lastRecord == NULL))
+    bool need1 = true;
+    bool need2 = true;
+
+    SamRecord* rec1 = getSamRecord();
+    SamRecord* rec2 = getSamRecord();
+
+    if((rec1 == NULL) || (rec2 == NULL))
     {
         fprintf(stderr, "Failed to allocate initial records, exiting!");
         return(-1);
     }
 
-    while(myFile1.file.ReadRecord(myFile1.header, *myFile1.lastRecord))
+    // While one of the files still has records.
+    while((rec1 != NULL) || (rec2 != NULL))
     {
-        // Read from the 2nd file.
-        if(!myFile2.file.ReadRecord(myFile2.header, *myFile2.lastRecord))
+        if(need1 && (rec1 != NULL))
         {
-            // Failed to read from the 2nd file, so record the first one
-            // as a difference.
-            writeDiffs(myFile1.lastRecord, NULL);
-        }
-        else
-        {
-            // In both files, so compare them.
-            if((SamFlag::getFragmentType(myFile1.lastRecord->getFlag()) == 
-                SamFlag::getFragmentType(myFile2.lastRecord->getFlag())) &&
-               (strcmp(myFile1.lastRecord->getReadName(),
-                       myFile2.lastRecord->getReadName()) == 0))
+            // Read from the 1st file.
+            if(!myFile1.file.ReadRecord(myFile1.header, *rec1))
             {
-                // Same fragment and read name.
-                writeDiffs(myFile1.lastRecord, myFile2.lastRecord);
+                // Failed to read from file1, so at the end of the file.
+                releaseSamRecord(rec1);
+                rec1 = NULL;
+
+                // Don't need file2's unmatched list anymore since there will
+                // be no more records from file 1, so flush list.
+                tempRecord = myFile2Unmatched.removeFirst();
+                while(tempRecord != NULL)
+                {
+                    writeDiffs(NULL, tempRecord);
+                    releaseSamRecord(tempRecord);
+                    tempRecord = myFile2Unmatched.removeFirst();
+                }
+            }
+            need1 = false;
+        }
+        if(need2 && (rec2 != NULL))
+        {
+            // Read from the 2nd file.
+            if(!myFile2.file.ReadRecord(myFile2.header, *rec2))
+            {
+                // Failed to read from the 2nd file, so at the end of the file.
+                releaseSamRecord(rec2);
+                rec2 = NULL;
+                // Don't need file1's unmatched list anymore since there will
+                // be no more records from file 2, so flush list.
+                tempRecord = myFile1Unmatched.removeFirst();
+                while(tempRecord != NULL)
+                {
+                    writeDiffs(tempRecord, NULL);
+                    releaseSamRecord(tempRecord);
+                    tempRecord = myFile1Unmatched.removeFirst();
+                }
+            }
+            need2 = false;
+        }
+        if((rec1 == NULL) && (rec2 == NULL))
+        {
+            // Both records are null, so break.
+            break;
+        }
+
+        // Prune the unmatched lists for any records that are further from
+        // the current record than the threshold.
+        tempRecord = myFile2Unmatched.getFirst();
+        // Do not need to check for null, because less than returns false if tempRecord is null
+        while(lessThan(tempRecord, rec1, myThreshold))
+        {
+            // this record is more than the specified distance, so remove it
+            // and write it.
+            tempRecord = myFile2Unmatched.removeFirst();
+            writeDiffs(NULL, tempRecord);
+            releaseSamRecord(tempRecord);
+            tempRecord = myFile2Unmatched.getFirst();
+        }
+        
+        // Prune the unmatched lists for any records that are further from
+        // the current record than the threshold.
+        tempRecord = myFile1Unmatched.getFirst();
+        // Do not need to check for null, because less than returns false if tempRecord is null
+        while(lessThan(tempRecord, rec2, myThreshold))
+        {
+            // this record is more than the specified distance, so remove it
+            // and write it.
+            tempRecord = myFile1Unmatched.removeFirst();
+            writeDiffs(tempRecord, NULL);
+            releaseSamRecord(tempRecord);
+            tempRecord = myFile1Unmatched.getFirst();
+       }
+
+        if(matchingRecs(rec1, rec2))
+        {
+            // Same fragment and read name.
+            writeDiffs(rec1, rec2);
+            need1 = true;
+            need2 = true;
+        }
+        else if(lessThan(rec1, rec2))
+        {
+            // Rec1 is smaller or equal to rec2, so process rec1.
+            // Look up rec1 in file2's unmatched list.            
+            tempRecord = 
+                myFile2Unmatched.removeFragmentMatch(*rec1);
+
+            if((tempRecord == NULL) && (rec2 != NULL))
+            {
+                // Didn't find the match in the previous file2 records, 
+                // and there are more records in file2 that will need
+                // to compare against this one, so store this record.
+                myFile1Unmatched.addUnmatchedRecord(*rec1);
+                
+                // Need to get a new record since this one is stored for later use.
+                rec1 = getSamRecord();
             }
             else
             {
-                // Different fragment and read name.
-                writeDiffs(myFile1.lastRecord, NULL);
-                writeDiffs(NULL, myFile2.lastRecord);
+                // Either a match was found or there was no need to store the record,
+                // so write out the diffs.
+                writeDiffs(rec1, tempRecord);
+                // Release SamRecord ignores a call with NULL.
+                releaseSamRecord(tempRecord);
             }
+            need1 = true;
+            need2 = false;
+        }
+        else
+        {
+            // Rec2 is smaller than rec1, so process rec2.
+             // Look up rec2 in file1's unmatched list.            
+            tempRecord = 
+                myFile1Unmatched.removeFragmentMatch(*rec2);
+
+            if((tempRecord == NULL) && (rec1 != NULL))
+            {
+                // Didn't find the match in the previous file1 records, 
+                // and there are more records in file1 that will need
+                // to compare against this one, so store this record.
+                myFile2Unmatched.addUnmatchedRecord(*rec2);
+                
+                // Need to get a new record.
+                rec2 = getSamRecord();
+            }
+            else
+            {
+                // Either a match was found or there was no need to store the record,
+                // so write out the diffs.
+                writeDiffs(tempRecord, rec2);
+                // Release SamRecord ignores a call with NULL.
+                releaseSamRecord(tempRecord);
+            }
+            need1 = false;
+            need2 = true;
         }
     }
-    // Check for any extra file 2 records.
-    while(myFile2.file.ReadRecord(myFile2.header, *myFile2.lastRecord))
-    {
-        // Not in file1.
-        writeDiffs(NULL, myFile2.lastRecord);
-    }
+
     if(myFile1.file.GetStatus() != SamStatus::NO_MORE_RECS)
     {
         // Error.
@@ -206,167 +332,72 @@ int Diff::execute(int argc, char **argv)
         return(myFile2.file.GetStatus());
     }
 
-    if(myDiffFile != NULL)
-    {
-        ifclose(myDiffFile);
-    }
-
     return(0);
 }
-//     int currentRecordChromID = -2;
-//     int prevRecordChromID = -2;
-//     uint32_t currentPosRec1 = -2;
-//     uint32_t currentPosRec2 = -2;
-
-//     // Set returnStatus to success.  It will be changed to the
-//     // failure reason if any of the writes or updates fail.
-//     SamStatus::Status returnStatus = SamStatus::SUCCESS;
-
-//     // Keep reading records until ReadRecord returns false - no
-//     // more records to read.
-//     while(samIn1.ReadRecord(samHeader1, myFile1.lastRecord))
-//     {
-//         bool matchFound = false;
-
-//         // Prune based on positions, writing to the file that
-//         // contains mismatches that are just in file2.
-//         myFile2Unmatched.pruneUnmatchedByPos(myFile1.lastRecord, mismatchFile2);
-
-//         SamRecord* matchRecord = 
-//             myFile2Unmatched.removeFragmentMatch(myFile1.lastRecord);
-//         if(matchRecord != NULL)
-//         {
-//             // Print the diffs for the matching records.
-//             printDiffs(record1, returnRecord);
-//         }
-//         else
-//         {
-//             // Did not find a match, so read from file 2 until a match
-//             // is found or until 
-
-//         }
-//         if(!lookupInFile2(myFile1.lastRecord))
-//         {
-//             // Not yet found in file2, so add it to the file1 list.
-//             file1UnMatched.add(myFile1.lastRecord);
-//             myFile1.lastRecord = getSamRecord();
-//         }
-//         // Get the chromosome id of this record.
-//         chromIDFile1 = myFile1.lastRecord.getReferenceID();
-//         if(chromIDFile1 != chromIDFile2)
-//         {
-//             flushCurrent();
-
-//         }
-
-        
-//         // Get the position of this record.
-//         currentPosRec1 = get0BasedPosition();
-//         while(currentPosRec1 >= currentPosRec2)
-//         {
-//             // Read File2.
-//             if(!samIn2.ReadRecord(samHeader2, myFile2.lastRecord))
-//             {
-//                 if(samIn.GetStatus() != SamStatus::NO_MORE_RECS)
-//                 {
-//                     // FAILED to read from file 2.
-//                     fprintf(stderr, "%s\n", samIn.GetStatusMessage());
-//                     returnStatus = samIn.GetStatus();
-//                     // Try reading the next record from file 2.
-//                     continue;
-//                 }
-//                 else
-//                 {
-//                     // Done reading from file 2, so just flush file 1.
-//                     flushFile1();
-//                     // Stop reading file 2.
-//                     break;
-//                 }
-//             }
-//             // Successfully read a record.
-//             // Get the chromsome id & position
-//             chromIDFile2 = myFile2.lastRecord.getReferenceID();
-//             currentPosRec2 = 
-//             if(chromIDFile2 != chromIDFile1)
-//             {
-//                 flushCurrentChrom();
-//             }
-//             else
-//             {
-//                 ...matchFound = true;
-//             }
-//         }
-//         if(!matchFound)
-//         {
-//             // Didn't find a match for this record read from file 1, so
-//             // store it.
-//             myFile1Unmatched[samRecord.getReadName()] = myFile1.lastRecord;
-//         }
-//     }
-    
-//     // Finished reading file 1, so flush the rest of file 2.
-//     flushFile2();
 
 
-//     return(returnStatus);
-// }
+bool Diff::matchingRecs(SamRecord* rec1, SamRecord* rec2)
+{
+    if((rec1 == NULL) || (rec2 == NULL))
+    {
+        // one or both of the records is NULL, so return false.
+        return(false);
+    }
 
-// {
-//     while(samCurrent->file.ReadRecord(samCurrent->header, currentRecord))
-//     {
-//         // Read a record from the currently being processed file.
-//         // Compare it with the last record from the other file.
-//         // Compare the flags and read names
-//         if((SamFlag::getFragmentType(lastRecord.getFlag()) == 
-//             SamFlag::getFragmentType(currentRecord.getFlag())) &&
-//            (samPrev->lastRecord.getReadName() == currentRecord.getReadName()))
-//         {
-//             // Found a match.
-//             processMatch(samPrev->lastRecord, currentRecord);
-//         }
-//         else
-//         {
-//             // Does not match.
-//             // First check to see if it is in the list for the current file.
-//             SamRecord* match = samPrev->unmatchedRecs.removeFragmentMatch(currentRecord);
-//             // Check to see if the match was found.
-//             if(match != NULL)
-//             {
-//                 // Found a match.
-//                 processMatch();
-//             }
-//         }
-//     }
-// }
+    // Have 2 records, so compare them.
+    if((SamFlag::getFragmentType(rec1->getFlag()) == 
+        SamFlag::getFragmentType(rec2->getFlag())) &&
+       (strcmp(rec1->getReadName(),
+               rec2->getReadName()) == 0))
+    {
+        // Same fragment and read name.
+        return(true);
+    }
+    return(false);
+}
+ 
+bool Diff::lessThan(SamRecord* rec1, SamRecord* rec2, int threshold)
+{
+    if(rec1 == NULL)
+    {
+        return(false);
+    }
+    if(rec2 == NULL)
+    {
+        return(true);
+    }
 
-// void Diff::writeDiff(IFILE file, SamRecord& record)
-// {
-//     myTempBuffer = '<';
-//     if(myCompCigar)
-//     {
-//         myTempBuffer += "\tCIGAR:";
-//         myTempBuffer += record.getCigar();
-//     }
-//     if(myCompPos)
-//     {
-//         myTempBuffer += "\tPos:";
-//         myTempBuffer += record.get1BasedPosition();
-//     }
-//     if(myCompBaseQual)
-//     {
-//         myTempBuffer += "\tBaseQual:";
-//         myTempBuffer += record.getQuality();
-//     }
-//     // TODO Loop through user specified tags.
-    
-//     if(checkDiffFile())
-//     {
-//         writeReadNameFrag(file, record);
-        
-//         ifwrite(file, "<", 1);
-//         ifwrite(file, myTempBuffer, myTempBuffer.Length());
-//     }
-// }
+    int32_t rec1ChromID = rec1->getReferenceID();
+    int32_t rec2ChromID = rec2->getReferenceID();
+    // The records are different reads, so check which record has the lower
+    // chrom id/position to determine what to return.
+    if(rec1ChromID < rec2ChromID)
+    {
+        // The record from file1 has a lower chromosome id, so return true.
+        return(true);
+    }
+    else if(rec1ChromID > rec2ChromID)
+    {
+        // The record from file2 has a lower chromosome id, so return false.
+        return(false);
+    }
+    else
+    {
+        // Same chromosome, so see which record has a lower position.
+        int32_t rec1Pos = rec1->get1BasedPosition();
+        int32_t rec2Pos = rec2->get1BasedPosition();
+        if((rec1Pos + threshold) <= rec2Pos)
+        {
+            // The record from file1 has a lower or equal position, so return true.
+            return(true);
+        }
+        else
+        {
+            // The record from file2 has a lower position, so return false.
+            return(false);
+        }
+    }
+}
 
 
 bool Diff::writeDiffs(SamRecord* rec1, SamRecord* rec2)
@@ -409,6 +440,15 @@ bool Diff::writeDiffs(SamRecord* rec1, SamRecord* rec2)
     }
     if(myCompPos)
     {
+        // Check if different chromosomes.
+        if(both && rec1->getReferenceID() != rec2->getReferenceID())
+        {
+            // It moved chromosomes.
+            myDiff1 += "\tChromID:";
+            myDiff1 += rec1->getReferenceID();
+            myDiff2 += "\tChromID:";
+            myDiff2 += rec2->getReferenceID();
+        }
         bool posDiff = false;
         if(both &&
            (rec1->get1BasedPosition() != rec2->get1BasedPosition()))
@@ -518,21 +558,6 @@ bool Diff::writeReadNameFrag(SamRecord& record)
 }
 
 
-bool Diff::checkDiffFile()
-{
-    if(myDiffFile == NULL)
-    {
-        myDiffFile = ifopen(myDiffFileName, "w");
-
-        return(myDiffFile != NULL);
-    }
-    else
-    {
-        // File is opened.
-        return(true);
-    }
-}
-
 SamRecord* Diff::getSamRecord()
 {
     // Get new samRecord.
@@ -558,94 +583,133 @@ SamRecord* Diff::getSamRecord()
     else
     {
         // There are no more free ones and we have already hit the
-        // max number allowed to be allocated, so flush the oldest one.
-        //TODO  free somehow determine if free from file1 or file2...
+        // max number allowed to be allocated, so flush the first record from
+        // the larger list.
+        if(myFile1Unmatched.size() <= myFile2Unmatched.size())
+        {
+            // remove from file1.
+            returnSam = myFile1Unmatched.removeFirst();
+            // write out the record as unmatched.
+            writeDiffs(returnSam, NULL);
+        }
+        else
+        {
+            // remove from file2.
+            returnSam = myFile2Unmatched.removeFirst();
+            // write out the record as unmatched.
+            writeDiffs(NULL, returnSam);
+        }
     }
     return(returnSam);
 }
 
 
+void Diff::releaseSamRecord(SamRecord* record)
+{
+    if(record == NULL)
+    {
+        // Nothing to release, so just return.
+        return;
+    }
+
+    // Release the samRecord to be reused.
+    myFreeSamRecords.push(record);
+}
 
 
-// SamRecord* Diff::UnmatchedRecords::removeFragmentMatch(SamRecord& record)
-// {
-//     // Lookup which read this is, first, last, or intermediate
-//     uint16_t flag = record.getFlag();
+bool Diff::checkDiffFile()
+{
+    if(myDiffFile == NULL)
+    {
+        myDiffFile = ifopen(myDiffFileName, "w");
 
-//     UnmatchedRecords::mapType* mapPtr =
-//         &(myFragmentMaps[SamFlag::getFragmentType(flag)]);
-
-//     SamRecord* returnRecord = NULL;
-
-//     // Check to see if it was found.
-//     myUnmatchedFileIter = mapPtr->find(record.getReadName());
-//     if(myUnmatchedFileIter != mapPtr->end())
-//     {
-//         // Found a match.  Iter->second is an iterator into the list.
-//         returnRecord = *(myUnmatchedFileIter->second);
-//         // Remove it from the list and map.
-//         myListUnmatched.erase(myUnmatchedFileIter->second);
-//         mapPtr->erase(myUnmatchedFileIter);
-//     }
-
-//     return(returnRecord);
-// }
-
-//  so read from file 2 until we get past this
-//         // position.
-//         // Get the position of this record.
-//         currentPosRec1 = get0BasedPosition();
-//         while(currentPosRec1 >= currentPosRec2)
-//         {
-//             // Read File2.
-//             if(!samIn2.ReadRecord(samHeader2, samRecord2))
-//             {
-//                 if(samIn.GetStatus() != SamStatus::NO_MORE_RECS)
-//                 {
-//                     // FAILED to read from file 2.
-//                     fprintf(stderr, "%s\n", samIn.GetStatusMessage());
-//                     returnStatus = samIn.GetStatus();
-//                     // Try reading the next record from file 2.
-//                     continue;
-//                 }
-//                 else
-//                 {
-//                     // Done reading from file 2, so just flush file 1.
-//                     flushFile1();
-//                     // Stop reading file 2.
-//                     break;
-//                 }
-//             }
-//             // Successfully read a record.
-//             // Get the chromsome id & position
-//             chromIDFile2 = samRecord2.getReferenceID();
-//             currentPosRec2 = 
-//             if(chromIDFile2 != chromIDFile1)
-//             {
-//                 flushCurrentChrom();
-//             }
-//             else
-//             {
-//                 // Check the read name.
-//                 if(readName Match)
-//                 {
-//                     ...matchFound = true;
-//                 }
-//                 else
-//                 {
-//                     // Store 
-//                 }
-//             }
-//         }
-//         if(!matchFound)
-//         {
-//             // Didn't find a match for this record read from file 1, so
-//             // store it.
-//             myFile1Unmatched[samRecord.getReadName()] = samRecord1;
-//         }
-//     }
-     
-//     }
-// }
+        return(myDiffFile != NULL);
+    }
+    else
+    {
+        // File is opened.
+        return(true);
+    }
+}
 
 
+void Diff::UnmatchedRecords::addUnmatchedRecord(SamRecord& record)
+{
+    // Lookup which read this is, first, last, or intermediate
+    uint16_t flag = record.getFlag();
+
+    UnmatchedRecords::mapType* mapPtr =
+        &(myFragmentMaps[SamFlag::getFragmentType(flag)]);
+
+    // Add the record to the unmatched list, and add the position of this record
+    // in the list to the map.
+    (*mapPtr)[record.getReadName()] = myListUnmatched.insert(myListUnmatched.end(), &record);
+}
+
+
+SamRecord* Diff::UnmatchedRecords::removeFragmentMatch(SamRecord& record)
+{
+    // Lookup which read this is, first, last, or intermediate
+    uint16_t flag = record.getFlag();
+    
+    UnmatchedRecords::mapType* mapPtr =
+        &(myFragmentMaps[SamFlag::getFragmentType(flag)]);
+    
+    SamRecord* returnRecord = NULL;
+    
+    // Check to see if it was found.
+    myUnmatchedFileIter = mapPtr->find(record.getReadName());
+    if(myUnmatchedFileIter != mapPtr->end())
+    {
+        // Found a match.  Iter->second is an iterator into the list.
+        returnRecord = *(myUnmatchedFileIter->second);
+        // Remove it from the list and map.
+        myListUnmatched.erase(myUnmatchedFileIter->second);
+        mapPtr->erase(myUnmatchedFileIter);
+    }
+
+    return(returnRecord);
+}
+
+
+SamRecord* Diff::UnmatchedRecords::removeFirst()
+{
+    if(myListUnmatched.empty())
+    {
+        // The list is empty, so return NULL.
+        return(NULL);
+    }
+
+    // Get the first entry from the list.
+    SamRecord* returnRec = myListUnmatched.front();
+    
+    // Remove the record from the map, by first looking up which read this is, 
+    // first, last, or intermediate
+    uint16_t flag = returnRec->getFlag();
+
+    UnmatchedRecords::mapType* mapPtr =
+        &(myFragmentMaps[SamFlag::getFragmentType(flag)]);
+
+    // Remove it from the map.
+    mapPtr->erase(returnRec->getReadName());
+
+    // Remove it from the list.
+    myListUnmatched.pop_front();
+    
+    return(returnRec);
+}
+
+
+SamRecord* Diff::UnmatchedRecords::getFirst()
+{
+    if(myListUnmatched.empty())
+    {
+        // The list is empty, so return NULL.
+        return(NULL);
+    }
+
+    // Get the first entry from the list.
+    SamRecord* returnRec = myListUnmatched.front();
+    
+    return(returnRec);
+}
