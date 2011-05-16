@@ -1,0 +1,12 @@
+1	Last Fragment
+<	CIGAR:3S1M1S	Pos:70	BaseQual:;46>>
+2	Last Fragment
+<	CIGAR:3S1M1S	Pos:72	BaseQual:;47>>
+18:462+29M5I3M:F:295	Last Fragment
+<	CIGAR:3S1M1S	Pos:74	BaseQual:;45>>
+18:462+29M5I3M:F:295	Last Fragment
+>	CIGAR:3S1M1S	Pos:78	BaseQual:;45>>
+ABC	Not First/Last Fragment
+<	CIGAR:*	Pos:0	BaseQual:*
+DEF	Not First/Last Fragment
+<	CIGAR:*	Pos:0	BaseQual:*
