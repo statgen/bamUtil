@@ -2,7 +2,7 @@
 ../bin/bam diff --in1 testFiles/testDiff1.sam --in2 testFiles/testDiff1.bam --seq --baseQual --tags "OP:i;MD:Z" > results/diffSameSamBam.log 2> results/empty.log && diff results/diffSameSamBam.log expected/diffSameSamBam.log && diff results/empty.log expected/empty.txt \
 && \
 # Different order/pos on one of the records.
-../bin/bam diff --in1 testFiles/testDiff1.sam --in2 testFiles/testDiff2.sam --seq --baseQual --tags "OP:i;MD:Z" --out results/diffOrderSam.log 2> results/empty.log && diff results/diffOrderSam.log expected/diffOrderSam.log && diff results/empty.log expected/empty.txt \
+../bin/bam diff --in1 testFiles/testDiff1.sam --in2 testFiles/testDiff2.sam --seq --baseQual --tags "OP:i;MD:Z" --onlyDiffs --out results/diffOrderSam.log 2> results/empty.log && diff results/diffOrderSam.log expected/diffOrderSam.log && diff results/empty.log expected/empty.txt \
 && \
 # Diff order/pos but no threshold for pos.
 ../bin/bam diff --in1 testFiles/testDiff1.sam --in2 testFiles/testDiff2.sam --seq --baseQual --tags "OP:i;MD:Z" --posDiff 1 --out results/diffNoThresh.log 2> results/empty.log && diff results/diffNoThresh.log expected/diffNoThresh.log && diff results/empty.log expected/empty.txt \

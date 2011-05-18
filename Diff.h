@@ -114,6 +114,7 @@ private:
     bool myCompBaseQual;
     bool myCompSeq;
     String myTags;
+    bool myOnlyDiffs;
 
     int myMaxAllowedRecs;
     int myAllocatedRecs;

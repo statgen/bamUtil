@@ -36,6 +36,7 @@ Diff::Diff()
       myCompBaseQual(false),
       myCompSeq(false),
       myTags(""),
+      myOnlyDiffs(false),
       myMaxAllowedRecs(1000000),
       myAllocatedRecs(0),
       myThreshold(100000),
@@ -75,7 +76,7 @@ void Diff::description()
 void Diff::usage()
 {
     BamExecutable::usage();
-    std::cerr << "\t./bam diff --in1 <inputFile> --in2 <inputFile> [--out <outputFile>] [--baseQual] [--tags <Tag:Type[;Tag:Type]*>] [--noCigar] [--noPos] [--recPoolSize <int>] [--posDiff <int>] [--noeof] [--params]" << std::endl;
+    std::cerr << "\t./bam diff --in1 <inputFile> --in2 <inputFile> [--out <outputFile>] [--baseQual] [--tags <Tag:Type[;Tag:Type]*>] [--noCigar] [--noPos] [--onlyDiffs] [--recPoolSize <int>] [--posDiff <int>] [--noeof] [--params]" << std::endl;
     std::cerr << "\tRequired Parameters:" << std::endl;
     std::cerr << "\t\t--in1         : first SAM/BAM file to be diffed" << std::endl;
     std::cerr << "\t\t--in2         : second SAM/BAM file to be diffed" << std::endl;
@@ -85,6 +86,7 @@ void Diff::usage()
     std::cerr << "\t\t--tags        : diff the specified Tags formatted as Tag:Type;Tag:Type;Tag:Type..." << std::endl;
     std::cerr << "\t\t--noCigar     : do not diff the the cigars." << std::endl;
     std::cerr << "\t\t--noPos       : do not diff the positions." << std::endl;
+    std::cerr << "\t\t--onlyDiffs   : only print the fields that are different, otherwise for any diff all the fields that are compared are printed." << std::endl;
     std::cerr << "\t\t--recPoolSize : number of records to allow to be stored at a time, default value: " << myMaxAllowedRecs << std::endl;
     std::cerr << "\t\t--posDiff     : max base pair difference between possibly matching records" << myThreshold << std::endl;
     std::cerr << "\t\t--noeof       : do not expect an EOF block on a bam file." << std::endl;
@@ -113,6 +115,7 @@ int Diff::execute(int argc, char **argv)
         LONG_STRINGPARAMETER("tags", &myTags)
         LONG_PARAMETER("noCigar", &noCigar)
         LONG_PARAMETER("noPos", &noPos)
+        LONG_PARAMETER("onlyDiffs", &myOnlyDiffs)
         LONG_INTPARAMETER("recPoolSize", &myMaxAllowedRecs)
         LONG_INTPARAMETER("posDiff", &myThreshold)
         LONG_PARAMETER("noeof", &noeof)
@@ -413,7 +416,7 @@ bool Diff::writeDiffs(SamRecord* rec1, SamRecord* rec2)
         // No records to compare, so no diffs
         return(false);
     }
-
+    
     // Check to see if there are any diffs:
     myDiff1.Clear();
     myDiff2.Clear();
@@ -424,92 +427,11 @@ bool Diff::writeDiffs(SamRecord* rec1, SamRecord* rec2)
     bool only2 = ((rec1 == NULL) && (rec2 != NULL));
     bool both = ((rec1 != NULL) && (rec2 != NULL));
 
-    if(myCompPos)
-    {
-        // Check if different chromosomes or positions.
-        bool posDiff = false;
-        if(both && 
-           ((rec1->getReferenceID() != rec2->getReferenceID()) ||
-            (rec1->get1BasedPosition() != rec2->get1BasedPosition())))
-        {
-            // It moved chromosome/position.
-            posDiff = true;
-        }
-        if(only1 || posDiff)
-        {
-            myDiff1 += '\t';
-            myDiff1 += rec1->getReferenceName();
-            myDiff1 += ':';
-            myDiff1 += rec1->get1BasedPosition();
-        }
-        if(only2 || posDiff)
-        {
-            myDiff2 += '\t';
-            myDiff2 += rec2->getReferenceName();
-            myDiff2 += ':';
-            myDiff2 += rec2->get1BasedPosition();
-        }
-    }
-
-    if(myCompCigar)
-    {
-        bool cigarDiff = false;
-        if(both && (strcmp(rec1->getCigar(), rec2->getCigar()) != 0))
-        {
-            cigarDiff = true;
-        }
-
-        if(only1 || cigarDiff)
-        {
-            // Get the info for rec1's cigar.
-            myDiff1 += "\t";
-            myDiff1 += rec1->getCigar();
-        }
-        if(only2 || cigarDiff)
-        {
-            // Get the infor for rec2's cigar
-            myDiff2 += "\t";
-            myDiff2 += rec2->getCigar();
-        }
-    }
-
-    if(myCompSeq)
-    {
-        bool seqDiff = false;
-        if(both && (strcmp(rec1->getSequence(), rec2->getSequence()) != 0))
-        {
-            seqDiff = true;
-        }
-        if(only1 || seqDiff)
-        {
-            myDiff1 += "\t";
-            myDiff1 += rec1->getSequence();
-        }
-        if(only2 || seqDiff)
-        {
-            myDiff2 += "\t";
-            myDiff2 += rec2->getSequence();
-        }
-    }
-
-    if(myCompBaseQual)
-    {
-        bool qualDiff = false;
-        if(both && (strcmp(rec1->getQuality(), rec2->getQuality()) != 0))
-        {
-            qualDiff = true;
-        }
-        if(only1 || qualDiff)
-        {
-            myDiff1 += "\t";
-            myDiff1 += rec1->getQuality();
-        }
-        if(only2 || qualDiff)
-        {
-            myDiff2 += "\t";
-            myDiff2 += rec2->getQuality();
-        }
-    }
+    bool posDiff = false;
+    bool cigarDiff = false;
+    bool seqDiff = false;
+    bool qualDiff = false;
+    bool tagsDiff = false;
 
     if(!myTags.IsEmpty())
     {
@@ -520,28 +442,114 @@ bool Diff::writeDiffs(SamRecord* rec1, SamRecord* rec2)
             // Failure reading tags.
             std::cerr << "Failed to search for tags: " << myTags.c_str() << std::endl;
         }
-        else
+    }
+    
+    // Check if there are any differences.
+    bool bothDiff = false;
+    if(both)
+    {
+        // Have both files, so need to compare.
+        // Check if different chromosomes or positions.
+        if(myCompPos && 
+           ((rec1->getReferenceID() != rec2->getReferenceID()) ||
+            (rec1->get1BasedPosition() != rec2->get1BasedPosition())))
         {
-            bool tagsDiff = false;
-            if(both && myTags1 != myTags2)
-            {
-                tagsDiff = true;
-            }
-            if((only1 || tagsDiff) && !myTags1.IsEmpty())
-            {
-                myDiff1 += "\t";
-                myDiff1 += myTags1;
-            }
-            if((only2 || tagsDiff) && !myTags2.IsEmpty())
-            {
-                myDiff2 += "\t";
-                myDiff2 += myTags2;
-            }
+            // It moved chromosome/position.
+            posDiff = true;
+        }
+        if(myCompCigar && (strcmp(rec1->getCigar(), rec2->getCigar()) != 0))
+        {
+            cigarDiff = true;
+        }
+        if(myCompSeq && (strcmp(rec1->getSequence(), rec2->getSequence()) != 0))
+        {
+            seqDiff = true;
+        }
+        if(myCompBaseQual && (strcmp(rec1->getQuality(), rec2->getQuality()) != 0))
+        {
+            qualDiff = true;
+        }
+        if(myTags1 != myTags2)
+        {
+            tagsDiff = true;
+        }
+        bothDiff = posDiff || cigarDiff || seqDiff || qualDiff || tagsDiff;
+    }
+    else if(only1 || only2)
+    {
+        // Only 1 or 2, so set which ones are diff.
+        posDiff = myCompPos;
+        cigarDiff = myCompCigar;
+        seqDiff = myCompSeq;
+        qualDiff = myCompBaseQual;
+        tagsDiff = !myTags.IsEmpty();
+    }
+    
+    if(only1 || bothDiff)
+    {
+        // If print all values on any diff or if there is a pos diff
+        if(!myOnlyDiffs || posDiff)
+        {
+            myDiff1 += '\t';
+            myDiff1 += rec1->getReferenceName();
+            myDiff1 += ':';
+            myDiff1 += rec1->get1BasedPosition();
+        }
+        if(!myOnlyDiffs || cigarDiff)
+        {
+            // Get the info for rec1's cigar.
+             myDiff1 += "\t";
+             myDiff1 += rec1->getCigar();
+        }
+        if(!myOnlyDiffs || seqDiff)
+        {
+            myDiff1 += "\t";
+            myDiff1 += rec1->getSequence();
+        }
+        if(!myOnlyDiffs || qualDiff)
+        {
+            myDiff1 += "\t";
+            myDiff1 += rec1->getQuality();
+        }
+        if((!myOnlyDiffs || tagsDiff) && !myTags1.IsEmpty())
+        {
+            myDiff1 += "\t";
+            myDiff1 += myTags1;
+        }
+    }
+    if(only2 || bothDiff)
+    {
+        // If print all values on any diff or if there is a pos diff
+        if(!myOnlyDiffs || posDiff)
+        {
+            myDiff2 += '\t';
+            myDiff2 += rec2->getReferenceName();
+            myDiff2 += ':';
+            myDiff2 += rec2->get1BasedPosition();
+        }
+        if(!myOnlyDiffs || cigarDiff)
+        {
+            // Get the info for rec2's cigar.
+             myDiff2 += "\t";
+             myDiff2 += rec2->getCigar();
+        }
+        if(!myOnlyDiffs || seqDiff)
+        {
+            myDiff2 += "\t";
+            myDiff2 += rec2->getSequence();
+        }
+        if(!myOnlyDiffs || qualDiff)
+        {
+            myDiff2 += "\t";
+            myDiff2 += rec2->getQuality();
+        }
+        if((!myOnlyDiffs || tagsDiff) && !myTags2.IsEmpty())
+        {
+            myDiff2 += "\t";
+            myDiff2 += myTags2;
         }
     }
 
-    // TODO Loop through user specified tags.
-    
     if(!myDiff1.IsEmpty())
     {
         if(checkDiffFile())
