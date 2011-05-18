@@ -34,15 +34,19 @@ Diff::Diff()
       myCompCigar(true),
       myCompPos(true),
       myCompBaseQual(false),
-      myMaxAllowedRecs(100),
+      myCompSeq(false),
+      myTags(""),
+      myMaxAllowedRecs(1000000),
       myAllocatedRecs(0),
-      myThreshold(1000),
+      myThreshold(100000),
       myFile1(),
       myFile2(),
       myDiffFileName("-"),
       myDiffFile(NULL),
       myDiff1(""),
-      myDiff2("")
+      myDiff2(""),
+      myTags1(""),
+      myTags2("")
 {
 }
 
@@ -71,17 +75,18 @@ void Diff::description()
 void Diff::usage()
 {
     BamExecutable::usage();
-    std::cerr << "\t./bam diff --in1 <inputFile> --in2 <inputFile> [--cigar] [--qual] [--keepTags] [--rmBQ] [--rmTags <Tag:Type[;Tag:Type]*>] [--noeof] [--params]" << std::endl;
+    std::cerr << "\t./bam diff --in1 <inputFile> --in2 <inputFile> [--out <outputFile>] [--baseQual] [--tags <Tag:Type[;Tag:Type]*>] [--noCigar] [--noPos] [--recPoolSize <int>] [--posDiff <int>] [--noeof] [--params]" << std::endl;
     std::cerr << "\tRequired Parameters:" << std::endl;
     std::cerr << "\t\t--in1         : first SAM/BAM file to be diffed" << std::endl;
     std::cerr << "\t\t--in2         : second SAM/BAM file to be diffed" << std::endl;
     std::cerr << "\tOptional Parameters:" << std::endl;
+    std::cerr << "\t\t--seq         : diff the sequence bases." << std::endl;
     std::cerr << "\t\t--baseQual    : diff the base qualities." << std::endl;
     std::cerr << "\t\t--tags        : diff the specified Tags formatted as Tag:Type;Tag:Type;Tag:Type..." << std::endl;
     std::cerr << "\t\t--noCigar     : do not diff the the cigars." << std::endl;
     std::cerr << "\t\t--noPos       : do not diff the positions." << std::endl;
-    std::cerr << "\t\t--recPoolSize : number of records to allow to be stored at a time" << std::endl;
-    std::cerr << "\t\t--posDiff     : max base pair difference between possibly matching records" << std::endl;
+    std::cerr << "\t\t--recPoolSize : number of records to allow to be stored at a time, default value: " << myMaxAllowedRecs << std::endl;
+    std::cerr << "\t\t--posDiff     : max base pair difference between possibly matching records" << myThreshold << std::endl;
     std::cerr << "\t\t--noeof       : do not expect an EOF block on a bam file." << std::endl;
     std::cerr << "\t\t--params      : print the parameter settings" << std::endl;
     std::cerr << std::endl;
@@ -93,7 +98,6 @@ int Diff::execute(int argc, char **argv)
     // Extract command line arguments.
     String inFile1 = "";
     String inFile2 = "";
-    String tags = "";
     bool noCigar = false;
     bool noPos = false;
     bool noeof = false;
@@ -104,8 +108,9 @@ int Diff::execute(int argc, char **argv)
         LONG_STRINGPARAMETER("in1", &inFile1)
         LONG_STRINGPARAMETER("in2", &inFile2)
         LONG_STRINGPARAMETER("out",&myDiffFileName)
+        LONG_PARAMETER("seq", &myCompSeq)
         LONG_PARAMETER("baseQual", &myCompBaseQual)
-        LONG_STRINGPARAMETER("tags", &tags)
+        LONG_STRINGPARAMETER("tags", &myTags)
         LONG_PARAMETER("noCigar", &noCigar)
         LONG_PARAMETER("noPos", &noPos)
         LONG_INTPARAMETER("recPoolSize", &myMaxAllowedRecs)
@@ -412,10 +417,39 @@ bool Diff::writeDiffs(SamRecord* rec1, SamRecord* rec2)
     // Check to see if there are any diffs:
     myDiff1.Clear();
     myDiff2.Clear();
+    myTags1.Clear();
+    myTags2.Clear();
 
     bool only1 = ((rec2 == NULL) && (rec1 != NULL));
     bool only2 = ((rec1 == NULL) && (rec2 != NULL));
     bool both = ((rec1 != NULL) && (rec2 != NULL));
+
+    if(myCompPos)
+    {
+        // Check if different chromosomes or positions.
+        bool posDiff = false;
+        if(both && 
+           ((rec1->getReferenceID() != rec2->getReferenceID()) ||
+            (rec1->get1BasedPosition() != rec2->get1BasedPosition())))
+        {
+            // It moved chromosome/position.
+            posDiff = true;
+        }
+        if(only1 || posDiff)
+        {
+            myDiff1 += '\t';
+            myDiff1 += rec1->getReferenceName();
+            myDiff1 += ':';
+            myDiff1 += rec1->get1BasedPosition();
+        }
+        if(only2 || posDiff)
+        {
+            myDiff2 += '\t';
+            myDiff2 += rec2->getReferenceName();
+            myDiff2 += ':';
+            myDiff2 += rec2->get1BasedPosition();
+        }
+    }
 
     if(myCompCigar)
     {
@@ -428,44 +462,36 @@ bool Diff::writeDiffs(SamRecord* rec1, SamRecord* rec2)
         if(only1 || cigarDiff)
         {
             // Get the info for rec1's cigar.
-            myDiff1 += "\tCIGAR:";
+            myDiff1 += "\t";
             myDiff1 += rec1->getCigar();
         }
         if(only2 || cigarDiff)
         {
             // Get the infor for rec2's cigar
-            myDiff2 += "\tCIGAR:";
+            myDiff2 += "\t";
             myDiff2 += rec2->getCigar();
         }
     }
-    if(myCompPos)
+
+    if(myCompSeq)
     {
-        // Check if different chromosomes.
-        if(both && rec1->getReferenceID() != rec2->getReferenceID())
+        bool seqDiff = false;
+        if(both && (strcmp(rec1->getSequence(), rec2->getSequence()) != 0))
         {
-            // It moved chromosomes.
-            myDiff1 += "\tChromID:";
-            myDiff1 += rec1->getReferenceID();
-            myDiff2 += "\tChromID:";
-            myDiff2 += rec2->getReferenceID();
+            seqDiff = true;
         }
-        bool posDiff = false;
-        if(both &&
-           (rec1->get1BasedPosition() != rec2->get1BasedPosition()))
+        if(only1 || seqDiff)
         {
-            posDiff = true;
+            myDiff1 += "\t";
+            myDiff1 += rec1->getSequence();
         }
-        if(only1 || posDiff)
+        if(only2 || seqDiff)
         {
-            myDiff1 += "\tPos:";
-            myDiff1 += rec1->get1BasedPosition();
-        }
-        if(only2 || posDiff)
-        {
-            myDiff2 += "\tPos:";
-            myDiff2 += rec2->get1BasedPosition();
+            myDiff2 += "\t";
+            myDiff2 += rec2->getSequence();
         }
     }
+
     if(myCompBaseQual)
     {
         bool qualDiff = false;
@@ -475,24 +501,54 @@ bool Diff::writeDiffs(SamRecord* rec1, SamRecord* rec2)
         }
         if(only1 || qualDiff)
         {
-            myDiff1 += "\tBaseQual:";
+            myDiff1 += "\t";
             myDiff1 += rec1->getQuality();
         }
         if(only2 || qualDiff)
         {
-            myDiff2 += "\tBaseQual:";
+            myDiff2 += "\t";
             myDiff2 += rec2->getQuality();
         }
     }
+
+    if(!myTags.IsEmpty())
+    {
+        // Compare the tags.
+        if(((rec1 != NULL) && !rec1->getTagsString(myTags.c_str(), myTags1)) ||
+           ((rec2 != NULL) && !rec2->getTagsString(myTags.c_str(), myTags2)))
+        {
+            // Failure reading tags.
+            std::cerr << "Failed to search for tags: " << myTags.c_str() << std::endl;
+        }
+        else
+        {
+            bool tagsDiff = false;
+            if(both && myTags1 != myTags2)
+            {
+                tagsDiff = true;
+            }
+            if((only1 || tagsDiff) && !myTags1.IsEmpty())
+            {
+                myDiff1 += "\t";
+                myDiff1 += myTags1;
+            }
+            if((only2 || tagsDiff) && !myTags2.IsEmpty())
+            {
+                myDiff2 += "\t";
+                myDiff2 += myTags2;
+            }
+        }
+    }
+
     // TODO Loop through user specified tags.
     
     if(!myDiff1.IsEmpty())
     {
         if(checkDiffFile())
         {
-            writeStatus &= writeReadNameFrag(*rec1);
+            writeStatus &= writeReadName(*rec1);
             myDiff1 += '\n';
-            if((ifwrite(myDiffFile, "<", 1) != 1) || 
+            if((ifprintf(myDiffFile, "\n<\t%x", rec1->getFlag()) < 2) || 
                (ifwrite(myDiffFile, myDiff1, myDiff1.Length()) != 
                 (unsigned int)myDiff1.Length()))
             {
@@ -507,10 +563,14 @@ bool Diff::writeDiffs(SamRecord* rec1, SamRecord* rec2)
             if(myDiff1.IsEmpty())
             {
                 // Only diff2, so write the readname/fragment.
-                writeStatus &= writeReadNameFrag(*rec2);
+                writeStatus &= writeReadName(*rec2);
+                if(ifwrite(myDiffFile, "\n", 1) != 1)
+                {
+                    writeStatus = false;
+                }
             }
             myDiff2 += '\n';
-            if((ifwrite(myDiffFile, ">", 1) != 1) || 
+            if((ifprintf(myDiffFile, ">\t%x", rec2->getFlag()) < 2) || 
                (ifwrite(myDiffFile, myDiff2, myDiff2.Length()) != 
                         (unsigned int)myDiff2.Length()))
             {
@@ -522,7 +582,7 @@ bool Diff::writeDiffs(SamRecord* rec1, SamRecord* rec2)
 }
 
 
-bool Diff::writeReadNameFrag(SamRecord& record)
+bool Diff::writeReadName(SamRecord& record)
 {
     uint8_t nameLen = record.getReadNameLength();
     if(nameLen > 0)
@@ -535,26 +595,8 @@ bool Diff::writeReadNameFrag(SamRecord& record)
             // Failed to write the entire read name.
             return(false);
         }
-    }
-    uint16_t flag = record.getFlag();
-    if(SamFlag::isFirstFragment(flag))
-    {
-        myTempBuffer = "\tFirst Fragment\n";
-    }
-    else if(SamFlag::isLastFragment(flag))
-    {
-        myTempBuffer = "\tLast Fragment\n";
-    }
-    else if(SamFlag::isMidFragment(flag))
-    {
-        myTempBuffer = "\tNot First/Last Fragment\n";
-    }
-    else
-    {
-        myTempBuffer = "\tUnknown Fragment\n";
-    }
-    return(ifwrite(myDiffFile, myTempBuffer.c_str(), myTempBuffer.Length()) == 
-           (unsigned int)myTempBuffer.Length());
+    }  
+    return(true);
 }
 
 

@@ -96,7 +96,7 @@ private:
     bool lessThan(SamRecord* rec1, SamRecord* rec2, int threshold = 0);
 
     bool writeDiffs(SamRecord* rec1, SamRecord* rec2);
-    bool writeReadNameFrag(SamRecord& record);
+    bool writeReadName(SamRecord& record);
     SamRecord* getSamRecord();
     // If record is not NULL, adds it back to the free list.  If record is NULL, nothing is done.
     void releaseSamRecord(SamRecord* record);
@@ -112,6 +112,8 @@ private:
     bool myCompCigar;
     bool myCompPos;
     bool myCompBaseQual;
+    bool myCompSeq;
+    String myTags;
 
     int myMaxAllowedRecs;
     int myAllocatedRecs;
@@ -124,6 +126,8 @@ private:
     IFILE myDiffFile;
     String myDiff1;
     String myDiff2;
+    String myTags1;
+    String myTags2;
     String myTempBuffer;
 };
 
