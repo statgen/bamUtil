@@ -63,7 +63,7 @@ Diff::~Diff()
 
 void Diff::diffDescription()
 {
-    std::cerr << " diff - Diff 2 SAM/BAM files." << std::endl;
+    std::cerr << " diff - Diff 2 coordinate sorted SAM/BAM files." << std::endl;
 }
 
 
@@ -78,8 +78,8 @@ void Diff::usage()
     BamExecutable::usage();
     std::cerr << "\t./bam diff --in1 <inputFile> --in2 <inputFile> [--out <outputFile>] [--baseQual] [--tags <Tag:Type[;Tag:Type]*>] [--noCigar] [--noPos] [--onlyDiffs] [--recPoolSize <int>] [--posDiff <int>] [--noeof] [--params]" << std::endl;
     std::cerr << "\tRequired Parameters:" << std::endl;
-    std::cerr << "\t\t--in1         : first SAM/BAM file to be diffed" << std::endl;
-    std::cerr << "\t\t--in2         : second SAM/BAM file to be diffed" << std::endl;
+    std::cerr << "\t\t--in1         : first coordinate sorted SAM/BAM file to be diffed" << std::endl;
+    std::cerr << "\t\t--in2         : second coordinate sorted SAM/BAM file to be diffed" << std::endl;
     std::cerr << "\tOptional Parameters:" << std::endl;
     std::cerr << "\t\t--seq         : diff the sequence bases." << std::endl;
     std::cerr << "\t\t--baseQual    : diff the base qualities." << std::endl;
