@@ -154,16 +154,6 @@ int SplitChromosome::execute(int argc, char **argv)
     {
         String outputName = outFileBase;
         outputName += "_";
-        outputName += (i+1);
-        // Append the extension.
-        if(bamOut)
-        {
-            outputName += ".bam";
-        }
-        else
-        {
-            outputName += ".sam";
-        }
 
         int numSectionRecords = 0;
         samIn.SetReadSection(i);
@@ -174,6 +164,24 @@ int SplitChromosome::execute(int argc, char **argv)
             // open the file and write the header.
             if(numSectionRecords == 0)
             {
+                const char* refName = samRecord.getReferenceName();
+                if(strcmp(refName, "*") == 0)
+                {
+                    outputName += "unknownChrom";
+                }
+                else
+                {
+                    outputName += refName;
+                }
+                // Append the extension.
+                if(bamOut)
+                {
+                    outputName += ".bam";
+                }
+                else
+                {
+                    outputName += ".sam";
+                }
                 outFile.OpenForWrite(outputName.c_str());
                 outFile.WriteHeader(samHeader);
             }
@@ -184,8 +192,11 @@ int SplitChromosome::execute(int argc, char **argv)
             outFile.WriteRecord(samHeader, samRecord);
         }
 
-        std::cerr << "Reference ID " << i << " has " << numSectionRecords 
-                  << " records" << std::endl;
+        if(numSectionRecords != 0)
+        {
+            std::cerr << "Reference Name: " << samRecord.getReferenceName() << " has " << numSectionRecords 
+                      << " records" << std::endl;
+        }
     }
    
     std::cerr << "Number of records = " << samIn.GetCurrentRecordCount() 
