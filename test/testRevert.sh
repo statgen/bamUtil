@@ -44,27 +44,33 @@
 ../bin/bam revert --in testFiles/testRevert.bam --out results/revertKeepTagsBam.sam --qual --cigar --keepTags 2> results/revertKeepTagsBam.sam.log && diff results/revertKeepTagsBam.sam expected/revertKeepTagsBam.sam && diff results/revertKeepTagsBam.sam.log expected/revert.log \
 && \
 # Bam To Bam, Reverting cigar & Qual without deleting them
-../bin/bam revert --in testFiles/testRevert.bam --out results/revertKeepTagsBam.bam --qual --cigar --keepTags 2> results/revertKeepTagsBam.bam.log && diff results/revertKeepTagsBam.bam expected/revertKeepTagsBam.bam && diff results/revertKeepTagsBam.bam.log expected/revert.log 
-
+../bin/bam revert --in testFiles/testRevert.bam --out results/revertKeepTagsBam.bam --qual --cigar --keepTags 2> results/revertKeepTagsBam.bam.log && diff results/revertKeepTagsBam.bam expected/revertKeepTagsBam.bam && diff results/revertKeepTagsBam.bam.log expected/revert.log \
+&& \
+\
 # Sam To Sam, Reverting cigar & Qual, and deleting BQ
-../bin/bam revert --in testFiles/testRevert.sam --out results/revertRmBQSam.sam --qual --cigar --rmBQ 2> results/revertRmBQSam.sam.log && diff results/revertRmBQSam.sam expected/revertRmBQSam.sam && diff results/revertRmBQSam.sam.log expected/revert.log 
+../bin/bam revert --in testFiles/testRevert.sam --out results/revertRmBQSam.sam --qual --cigar --rmBQ 2> results/revertRmBQSam.sam.log && diff results/revertRmBQSam.sam expected/revertRmBQSam.sam && diff results/revertRmBQSam.sam.log expected/revert.log \
+&& \
 # Bam To Sam, Reverting cigar & Qual, and deleting BQ
-../bin/bam revert --in testFiles/testRevert.bam --out results/revertRmBQBam.sam --qual --cigar --rmBQ 2> results/revertRmBQBam.sam.log && diff results/revertRmBQBam.sam expected/revertRmBQBam.sam && diff results/revertRmBQBam.sam.log expected/revert.log 
+../bin/bam revert --in testFiles/testRevert.bam --out results/revertRmBQBam.sam --qual --cigar --rmBQ 2> results/revertRmBQBam.sam.log && diff results/revertRmBQBam.sam expected/revertRmBQBam.sam && diff results/revertRmBQBam.sam.log expected/revert.log \
+&& \
 # Sam To Bam, Reverting cigar & Qual, and deleting BQ
-../bin/bam revert --in testFiles/testRevert.sam --out results/revertRmBQSam.bam --qual --cigar --rmBQ 2> results/revertRmBQSam.bam.log && diff results/revertRmBQSam.bam expected/revertRmBQSam.bam && diff results/revertRmBQSam.bam.log expected/revert.log 
+../bin/bam revert --in testFiles/testRevert.sam --out results/revertRmBQSam.bam --qual --cigar --rmBQ 2> results/revertRmBQSam.bam.log && diff results/revertRmBQSam.bam expected/revertRmBQSam.bam && diff results/revertRmBQSam.bam.log expected/revert.log \
+&& \
 # Bam To Bam, Reverting cigar & Qual, and deleting BQ
-../bin/bam revert --in testFiles/testRevert.bam --out results/revertRmBQBam.bam --qual --cigar --rmBQ 2> results/revertRmBQBam.bam.log && diff results/revertRmBQBam.bam expected/revertRmBQBam.bam && diff results/revertRmBQBam.bam.log expected/revert.log 
-
-
+../bin/bam revert --in testFiles/testRevert.bam --out results/revertRmBQBam.bam --qual --cigar --rmBQ 2> results/revertRmBQBam.bam.log && diff results/revertRmBQBam.bam expected/revertRmBQBam.bam && diff results/revertRmBQBam.bam.log expected/revert.log \
+&& \
+\
 # Sam To Sam, Reverting cigar & Qual, and deleting MD:Z;AM:i
-../bin/bam revert --in testFiles/testRevert.sam --out results/revertRmTagsSam.sam --qual --cigar --rmTags "MD:Z;AM:i" 2> results/revertRmTagsSam.sam.log && diff results/revertRmTagsSam.sam expected/revertRmTagsSam.sam && diff results/revertRmTagsSam.sam.log expected/revert.log 
+../bin/bam revert --in testFiles/testRevert.sam --out results/revertRmTagsSam.sam --qual --cigar --rmTags "MD:Z;AM:i" 2> results/revertRmTagsSam.sam.log && diff results/revertRmTagsSam.sam expected/revertRmTagsSam.sam && diff results/revertRmTagsSam.sam.log expected/revert.log \
+&& \
 # Bam To Sam, Reverting cigar & Qual, and deleting MD:Z;AM:i;
-../bin/bam revert --in testFiles/testRevert.bam --out results/revertRmTagsBam.sam --qual --cigar --rmTags "MD:Z;AM:i" 2> results/revertRmTagsBam.sam.log && diff results/revertRmTagsBam.sam expected/revertRmTagsBam.sam && diff results/revertRmTagsBam.sam.log expected/revert.log 
+../bin/bam revert --in testFiles/testRevert.bam --out results/revertRmTagsBam.sam --qual --cigar --rmTags "MD:Z;AM:i" 2> results/revertRmTagsBam.sam.log && diff results/revertRmTagsBam.sam expected/revertRmTagsBam.sam && diff results/revertRmTagsBam.sam.log expected/revert.log \
+&& \
 # Sam To Bam, Reverting cigar & Qual, and deleting MD:Z;AM:i;
-../bin/bam revert --in testFiles/testRevert.sam --out results/revertRmTagsSam.bam --qual --cigar --rmTags "MD:Z;AM:i" 2> results/revertRmTagsSam.bam.log && diff results/revertRmTagsSam.bam expected/revertRmTagsSam.bam && diff results/revertRmTagsSam.bam.log expected/revert.log 
+../bin/bam revert --in testFiles/testRevert.sam --out results/revertRmTagsSam.bam --qual --cigar --rmTags "MD:Z;AM:i" 2> results/revertRmTagsSam.bam.log && diff results/revertRmTagsSam.bam expected/revertRmTagsSam.bam && diff results/revertRmTagsSam.bam.log expected/revert.log \
+&& \
 # Bam To Bam, Reverting cigar & Qual, and deleting MD:Z;AM:i
-../bin/bam revert --in testFiles/testRevert.bam --out results/revertRmTagsBam.bam --qual --cigar --rmTags "MD:Z;AM:i" 2> results/revertRmTagsBam.bam.log && diff results/revertRmTagsBam.bam expected/revertRmTagsBam.bam && diff results/revertRmTagsBam.bam.log expected/revert.log 
-
+../bin/bam revert --in testFiles/testRevert.bam --out results/revertRmTagsBam.bam --qual --cigar --rmTags "MD:Z;AM:i" 2> results/revertRmTagsBam.bam.log && diff results/revertRmTagsBam.bam expected/revertRmTagsBam.bam && diff results/revertRmTagsBam.bam.log expected/revert.log \
 
 
 if [ $? -ne 0 ]
