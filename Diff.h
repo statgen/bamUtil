@@ -39,11 +39,20 @@ public:
     int execute(int argc, char **argv);
 
 private:
+    struct diffStruct
+    {
+        bool posDiff;
+        bool cigarDiff;
+        bool seqDiff;
+        bool qualDiff;
+        bool tagsDiff;
+    } myDiffStruct;
+                   
     class FileInfo
     {
     public:
         SamFile file;
-        SamFileHeader  header;
+        SamFileHeader header;
     };
     
     
@@ -76,12 +85,13 @@ private:
         SamRecord* getFirst();
 
     private:
+
         typedef std::map<std::string, std::list<SamRecord*>::iterator> mapType;
         std::list<SamRecord*> myListUnmatched;
         std::vector<mapType> myFragmentMaps;
         std::map<std::string,std::list<SamRecord*>::iterator>::iterator myUnmatchedFileIter;
-    };
 
+    };
 
     // Check to see if the two records are a match - same read name & fragment.
     // Return true if they match, false if not.
@@ -95,15 +105,27 @@ private:
     // If they are on different chromosomes, threshold is not used.
     bool lessThan(SamRecord* rec1, SamRecord* rec2, int threshold = 0);
 
-    bool writeDiffs(SamRecord* rec1, SamRecord* rec2);
+    void writeBamDiffs(SamRecord* rec1, SamRecord* rec2);
+    void writeDiffDiffs(SamRecord* rec1, SamRecord* rec2);
+    void writeDiffs(SamRecord* rec1, SamRecord* rec2);
+    bool getDiffs(SamRecord* rec1, SamRecord* rec2);
     bool writeReadName(SamRecord& record);
     SamRecord* getSamRecord();
     // If record is not NULL, adds it back to the free list.  If record is NULL, nothing is done.
     void releaseSamRecord(SamRecord* record);
 
     bool checkDiffFile();
-
     
+    static const char* POS_DIFF_TAG;
+    static const char* CIGAR_DIFF_TAG;
+    static const char* SEQ_DIFF_TAG;
+    static const char* QUAL_DIFF_TAG;
+    static const char* TAGS_DIFF_TAG;
+    static const char CIGAR_DIFF_TYPE = 'Z';
+    static const char SEQ_DIFF_TYPE = 'Z';
+    static const char QUAL_DIFF_TYPE = 'Z';
+    static const char TAGS_DIFF_TYPE = 'Z';
+
     std::stack<SamRecord*> myFreeSamRecords;
 
     UnmatchedRecords myFile1Unmatched;
@@ -115,6 +137,7 @@ private:
     bool myCompSeq;
     String myTags;
     bool myOnlyDiffs;
+    bool myBamOut;
 
     int myMaxAllowedRecs;
     int myAllocatedRecs;
@@ -124,7 +147,13 @@ private:
     FileInfo myFile2;
 
     String myDiffFileName;
+    String myBamOnly1Name;
+    String myBamOnly2Name;
+    String myBamDiffName;
     IFILE myDiffFile;
+    SamFile myBamOnly1;
+    SamFile myBamOnly2;
+    SamFile myBamDiff;
     String myDiff1;
     String myDiff2;
     String myTags1;
