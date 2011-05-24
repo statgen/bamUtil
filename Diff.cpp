@@ -27,6 +27,7 @@
 #include "SamTags.h"
 #include "SamFlag.h"
 
+const char* Diff::FLAG_DIFF_TAG = "ZF";
 const char* Diff::POS_DIFF_TAG = "ZP";
 const char* Diff::CIGAR_DIFF_TAG = "ZC";
 const char* Diff::SEQ_DIFF_TAG = "ZS";
@@ -505,6 +506,10 @@ void Diff::writeBamDiffs(SamRecord* rec1, SamRecord* rec2)
         }
 
         //  Add the fields from rec2.
+        if(rec1->getFlag() != rec2->getFlag())
+        {
+            rec1->addIntTag(FLAG_DIFF_TAG, rec2->getFlag());
+        }
         if(!myOnlyDiffs || myDiffStruct.posDiff)
         {
             rec1->addIntTag(POS_DIFF_TAG,rec2->get1BasedPosition());

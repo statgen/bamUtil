@@ -116,6 +116,7 @@ private:
 
     bool checkDiffFile();
     
+    static const char* FLAG_DIFF_TAG;
     static const char* POS_DIFF_TAG;
     static const char* CIGAR_DIFF_TAG;
     static const char* SEQ_DIFF_TAG;
