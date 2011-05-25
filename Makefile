@@ -19,5 +19,7 @@ $(LIB_PATH_BAM_UTIL)/Makefiles/Makefile.src:
 	@echo Use make download if you have git and want to download the current libStatGen to that location
 
 download:
-	git clone git://github.com/statgen/libStatGen.git $(LIB_PATH_BAM_UTIL)
-#	if test -d $(LIB_PATH_BAM_UTIL); then echo found; else echo not found; fi
+	@if test -d $(LIB_PATH_BAM_UTIL); \
+	then echo $(LIB_PATH_BAM_UTIL) already exists; \
+	else git clone git://github.com/statgen/libStatGen.git $(LIB_PATH_BAM_UTIL); fi
+	$(MAKE) -C $(LIB_PATH_BAM_UTIL) --no-print-directory all; \
