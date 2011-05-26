@@ -1,0 +1,1 @@
+Wrote results/regionRead2.sam with 1 records.

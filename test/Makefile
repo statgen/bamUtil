@@ -2,7 +2,7 @@ TEST_COMMAND = ln -sfT $(TEST_LIB_PATH_BAM_UTIL)/bam/test/testFiles testFilesLib
                mkdir -p results; ./samTests.sh && \
                ./testFilter.sh && ./testSeq.sh && \
                ./testRevert.sh && ./testDiff.sh && \
-               ./splitChromosome.sh
+               ./splitChromosome.sh && ./writeRegion.sh
 
 TEST_CLEAN = rm -f testFilesLibBam
 

@@ -45,10 +45,20 @@ void WriteRegion::usage()
     std::cerr << "\t\t--noeof  : do not expect an EOF block on a bam file." << std::endl;
     std::cerr << "\t\t--bamIndex : the path/name of the bam index file" << std::endl;
     std::cerr << "\t\t             (if not specified, uses the --in value + \".bai\")" << std::endl;
-    std::cerr << "\t\t--refName  : the BAM reference Name to read (either this or refID can be specified)" << std::endl;
-    std::cerr << "\t\t--refID    : the BAM reference ID to read (defaults to -1: unmapped)" << std::endl;
-    std::cerr << "\t\t--start    : inclusive 0-based start position (defaults to -1)" << std::endl;
-    std::cerr << "\t\t--end      : exclusive 0-based end position (defaults to -1: meaning til the end of the reference)" << std::endl;
+    std::cerr << "\t\t--refName  : the BAM reference Name to read" << std::endl;
+    std::cerr << "\t\t             Either this or refID can be specified." << std::endl;
+    std::cerr << "\t\t             Defaults to all references." << std::endl;
+    std::cerr << "\t\t--refID    : the BAM reference ID to read." << std::endl;
+    std::cerr << "\t\t             Either this or refName can be specified." << std::endl;
+    std::cerr << "\t\t             Defaults to all references." << std::endl;
+    std::cerr << "\t\t             Specify -1 for unmapped" << std::endl;
+    std::cerr << "\t\t--start    : inclusive 0-based start position." << std::endl;
+    std::cerr << "\t\t             Defaults to -1: meaning from the start of the reference." << std::endl;
+    std::cerr << "\t\t             Only applicable if refName/refID is set." << std::endl;
+    std::cerr << "\t\t--end      : exclusive 0-based end position." << std::endl;
+    std::cerr << "\t\t             Defaults to -1: meaning til the end of the reference." << std::endl;
+    std::cerr << "\t\t             Only applicable if refName/refID is set." << std::endl;
+    std::cerr << "\t\t--readName : print only reads with this name." << std::endl;
     std::cerr << "\t\t--params   : print the parameter settings" << std::endl;
     std::cerr << std::endl;
 }
@@ -58,11 +68,13 @@ int WriteRegion::execute(int argc, char **argv)
 {
     // Extract command line arguments.
     static const int UNSPECIFIED_INT = -1;
+    static const int UNSET_REF = -2;
     String inFile = "";
     String outFile = "";
     String indexFile = "";
     String refName = "";
-    int refID = UNSPECIFIED_INT;
+    String readName = "";
+    int refID = UNSET_REF;
     int start = UNSPECIFIED_INT;
     int end = UNSPECIFIED_INT;
     bool noeof = false;
@@ -77,6 +89,7 @@ int WriteRegion::execute(int argc, char **argv)
         LONG_INTPARAMETER("refID", &refID)
         LONG_INTPARAMETER("start", &start)
         LONG_INTPARAMETER("end", &end)
+        LONG_STRINGPARAMETER("readName", &readName)
         LONG_PARAMETER("noeof", &noeof)
         LONG_PARAMETER("params", &params)
         END_LONG_PARAMETERS();
@@ -119,7 +132,7 @@ int WriteRegion::execute(int argc, char **argv)
         indexFile = inFile + ".bai";
     }
 
-    if(refID != -1 && refName.Length() != 0)
+    if(refID != UNSET_REF && refName.Length() != 0)
     {
         std::cerr << "Can't specify both refID and refName" << std::endl;
         inputParameters.Status();
@@ -141,7 +154,7 @@ int WriteRegion::execute(int argc, char **argv)
         // Use Reference Name.
         samIn.SetReadSection(refName.c_str(), start, end);
     }
-    else
+    else if(refID != UNSET_REF)
     {
         // Use Reference ID
         samIn.SetReadSection(refID, start, end);
@@ -171,6 +184,16 @@ int WriteRegion::execute(int argc, char **argv)
     // Keep reading records until they aren't anymore.
     while(samIn.ReadRecord(samHeader, samRecord))
     {
+        if(!readName.IsEmpty())
+        {
+            // Check for readname.
+            if(strcmp(samRecord.getReadName(), readName.c_str()) != 0)
+            {
+                // not a matching read name, so continue to the next record.
+                continue;
+            }
+        }
+        
         // Successfully read a record from the file, so write it.
         samOut.WriteRecord(samHeader, samRecord);
         ++numSectionRecords;
