@@ -1,6 +1,6 @@
 ERROR=false
 
-../bin/bam validate --params --in testFiles/testInvalid.sam  --v 2> results/validateInvalid.txt
+../bin/bam validate --params --in testFiles/testInvalid.sam --refFile testFilesLibBam/chr1_partial.fa --v 2> results/validateInvalid.txt
 diff results/validateInvalid.txt expected/invalid.txt
 if [ $? -ne 0 ]
 then

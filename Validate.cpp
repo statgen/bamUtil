@@ -46,6 +46,7 @@ void Validate::usage()
     std::cerr << "\t\t--in : the SAM/BAM file to be validated" << std::endl;
     std::cerr << "\tOptional Parameters:" << std::endl;
     std::cerr << "\t\t--noeof             : do not expect an EOF block on a bam file." << std::endl;
+    std::cerr << "\t\t--refFile           : the reference file" << std::endl;
     std::cerr << "\t\t--so_flag           : validate the file is sorted based on the header's @HD SO flag." << std::endl;
     std::cerr << "\t\t--so_coord          : validate the file is sorted based on the coordinate." << std::endl;
     std::cerr << "\t\t--so_query          : validate the file is sorted based on the query name." << std::endl;
@@ -67,6 +68,7 @@ int Validate::execute(int argc, char **argv)
 {
     // Extract command line arguments.
     String inFile = "";
+    String refFile = "";
     int maxErrors = -1;
     int printableErrors = 100;
     bool so_flag = false;
@@ -81,6 +83,7 @@ int Validate::execute(int argc, char **argv)
     BEGIN_LONG_PARAMETERS(longParameterList)
         LONG_STRINGPARAMETER("in", &inFile)
         LONG_PARAMETER("noeof", &noeof)
+        LONG_STRINGPARAMETER("refFile", &refFile)
         LONG_INTPARAMETER("maxErrors", &maxErrors)
         LONG_PARAMETER("verbose", &verbose)
         LONG_INTPARAMETER("printableErrors", &printableErrors)
@@ -131,6 +134,14 @@ int Validate::execute(int argc, char **argv)
         return(-1);
     }
 
+    // Check to see if the ref file was specified.
+    // Open the reference.
+    GenomeSequence* refPtr = NULL;
+    if(refFile != "")
+    {
+        refPtr = new GenomeSequence(refFile);
+    }
+
     if(params)
     {
         inputParameters.Status();
@@ -145,6 +156,9 @@ int Validate::execute(int argc, char **argv)
         fprintf(stderr, "%s\n", samIn.GetStatusMessage());
         return(samIn.GetStatus());
     }
+
+    // Set the reference.
+    samIn.SetReference(refPtr);
 
     // Set the sorting validation type.
     samIn.setSortedValidation(sortType);

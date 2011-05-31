@@ -2,19 +2,23 @@
 The following parameters are available.  Ones with "[]" are in effect:
 
 Input Parameters
- --in [testFiles/testInvalid.sam], --noeof, --maxErrors [-1], --verbose [ON],
-               --printableErrors [100], --disableStatistics, --params [ON]
+ --in [testFiles/testInvalid.sam], --noeof,
+               --refFile [testFilesLibBam/chr1_partial.fa], --maxErrors [-1],
+               --verbose [ON], --printableErrors [100], --disableStatistics,
+               --params [ON]
    SortOrder : --so_flag, --so_coord, --so_query
 
 Record 1
 INVALID_QNAME (ERROR) : Invalid Query Name - the string length (256) does not match the specified query name length (0).
 INVALID_QNAME (WARNING) : Invalid Query Name (QNAME) length: 256.  Length with the terminating null must be between 2 & 255.
+INVALID_TAG (WARNING) : Incorrect MD Tag, 37, should be NNNNN^NN0.
 
 Record 2
 INVALID: 0 length Query Name.
 
 Record 3
 INVALID_QNAME (WARNING) : Invalid character in the Query Name (QNAME): ' ' at position 2.
+INVALID_TAG (WARNING) : Incorrect MD Tag, 30A0C5, should be 2T1N0.
 
 Record 4
 FAIL_PARSE: flag, 29M5I3M:F:295, is not an integer.
@@ -22,6 +26,9 @@ FAIL_PARSE: Invalid Tag Format: *, should be cc:c:x*.
 
 Record 5
 FAIL_PARSE: Too few columns (1) in the Record, expected at least 11.
+
+Record 6
+INVALID_TAG (WARNING) : Incorrect MD Tag, 30A0C5, should be UNKNOWN.
 
 Record 7
 FAIL_PARSE: flag, 9K7, is not an integer.
@@ -106,7 +113,7 @@ INVALID_CIGAR (WARNING) : CIGAR does not evaluate to the same length as SEQ, (3 
 
 
 Number of records read = 32
-Number of valid records = 2
+Number of valid records = 1
 
 Error Counts:
 	FAIL_PARSE: 17
@@ -116,6 +123,7 @@ Error Counts:
 	INVALID_POS: 2
 	INVALID_CIGAR: 2
 	INVALID_QUAL: 2
+	INVALID_TAG: 3
 
 TotalReads	14.00
 MappedReads	14.00
