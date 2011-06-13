@@ -95,11 +95,11 @@ void Diff::usage()
     std::cerr << "\t\t--in1         : first coordinate sorted SAM/BAM file to be diffed" << std::endl;
     std::cerr << "\t\t--in2         : second coordinate sorted SAM/BAM file to be diffed" << std::endl;
     std::cerr << "\tOptional Parameters:" << std::endl;
-    std::cerr << "\t\t--out         : output filename, use .bam extension to output in BAM format instead of diff format." << std::endl;
-    std::cerr << "\t\t                In BAM format there will be 3 output files:" << std::endl;
+    std::cerr << "\t\t--out         : output filename, use .bam extension to output in SAM/BAM format instead of diff format." << std::endl;
+    std::cerr << "\t\t                In SAM/BAM format there will be 3 output files:" << std::endl;
     std::cerr << "\t\t                    1) the specified name with record diffs" << std::endl;
-    std::cerr << "\t\t                    2) specified name with _only_<in1>.bam with records only in the in1 file" << std::endl;
-    std::cerr << "\t\t                    3) specified name with _only_<in2>.bam with records only in the in2 file" << std::endl;
+    std::cerr << "\t\t                    2) specified name with _only_<in1>.sam/bam with records only in the in1 file" << std::endl;
+    std::cerr << "\t\t                    3) specified name with _only_<in2>.sam/bam with records only in the in2 file" << std::endl;
     std::cerr << "\t\t--seq         : diff the sequence bases." << std::endl;
     std::cerr << "\t\t--baseQual    : diff the base qualities." << std::endl;
     std::cerr << "\t\t--tags        : diff the specified Tags formatted as Tag:Type;Tag:Type;Tag:Type..." << std::endl;
