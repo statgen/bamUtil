@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2010  Regents of the University of Michigan
+ *  Copyright (C) 2010-2011  Regents of the University of Michigan
  *
  *   This program is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@
 #include "ReadReference.h"
 #include "Revert.h"
 #include "Diff.h"
+#include "Squeeze.h"
 
 void Usage()
 {
@@ -49,6 +50,7 @@ void Usage()
     ReadReference::readReferenceDescription();
     Revert::revertDescription();
     Diff::diffDescription();
+    Squeeze::squeezeDescription();
     std::cerr << std::endl;
     std::cerr << "Usage: " << std::endl;
     std::cerr << "\tbam <tool> [<tool arguments>]" << std::endl;
@@ -111,6 +113,10 @@ int main(int argc, char ** argv)
     else if(strcmp(argv[1], "diff") == 0)
     {
         bamExe = new Diff();
+    }
+    else if(strcmp(argv[1], "squeeze") == 0)
+    {
+        bamExe = new Squeeze();
     }
     else if(strcmp(argv[1], "convert") == 0)
     {
