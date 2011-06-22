@@ -1,1 +1,0 @@
-contains the object files built from the source code in the above directory.
