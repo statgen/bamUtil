@@ -1,4 +1,4 @@
-#SUBDIRS = src
+SUBDIRS = src
 #
 #.PHONY: subdirs $(SUBDIRS)
 #
@@ -8,6 +8,10 @@
 #	$(MAKE) -C $@
 #
 #all:
-%:
-	@$(MAKE) OPTFLAG="$(OPTFLAG)" -C src $@
+
+PARENT_MAKE := Makefile.tool
+include Makefile.inc
+
+#%:
+#	@$(MAKE) OPTFLAG="$(OPTFLAG)" -C src $@
 #include src/Makefile
