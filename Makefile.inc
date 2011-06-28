@@ -10,6 +10,8 @@ LIB_PATH_BAM_UTIL ?= $(LIB_PATH_GENERAL)
 INCLUDE_MAKE = $(LIB_PATH_BAM_UTIL)/Makefiles/$(PARENT_MAKE)
 include $(INCLUDE_MAKE)
 
+.phony: libStatGen
+
 $(INCLUDE_MAKE):
 	@echo Unable to locate: $(INCLUDE_MAKE)
 	@echo To change the location, set LIB_PATH_GENERAL or LIB_PATH_BAM_UTIL to the appropriate path to libStatGen.  Or specify \"make LIB_PATH_GENERAL=yourPath\" or \"make LIB_PATH_BAM_UTIL=yourPath\"
