@@ -5,9 +5,12 @@
 VERSION=0.1.1
 
 CURRENT_PATH := $(dir $(lastword $(MAKEFILE_LIST)))
-LIB_PATH_GENERAL ?=$(CURRENT_PATH)/../libStatGen
+LIB_PATH_GENERAL ?=../libStatGen
 LIB_PATH_BAM_UTIL ?= $(LIB_PATH_GENERAL)
-INCLUDE_MAKE = $(LIB_PATH_BAM_UTIL)/Makefiles/$(PARENT_MAKE)
+
+# add any additional ../ as necessary if it is a relative path
+ACTUAL_PATH := $(patsubst ../%, $(CURRENT_PATH)../%, $(LIB_PATH_BAM_UTIL))
+INCLUDE_MAKE := $(ACTUAL_PATH)/Makefiles/$(PARENT_MAKE)
 include $(INCLUDE_MAKE)
 
 .phony: libStatGen
