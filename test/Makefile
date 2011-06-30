@@ -1,4 +1,4 @@
-TEST_COMMAND = ln -sfT $(LIB_PATH_BAM_UTIL)/bam/test/testFiles testFilesLibBam; \
+TEST_COMMAND = ln -sfT $(ACTUAL_PATH)/bam/test/testFiles testFilesLibBam; \
                mkdir -p results; ./samTests.sh && \
                ./testFilter.sh && ./testSeq.sh && \
                ./testRevert.sh && ./testDiff.sh && \
