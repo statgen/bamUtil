@@ -261,7 +261,7 @@ int Validate::execute(int argc, char **argv)
     }
 
     if( (samIn.GetStatus() != SamStatus::NO_MORE_RECS) &&
-        (totalErrorRecords < maxErrors) )
+        ((totalErrorRecords < maxErrors) || (maxErrors < 0)))
     {
         // The last read call had a failure, so report it.
         // If the number of errors is >= ,maxErrors we don't
