@@ -25,10 +25,17 @@ ERROR=false
 && diff results/regionRead7.sam expected/regionReadNone.sam && diff results/regionRead7.txt expected/regionRead7.txt \
 && \
 ../bin/bam writeRegion --in testFilesLibBam/sortedBam.bam --out results/regionRead8.sam --bed testFiles/bedFile.bed --withinReg 2> results/regionRead8.txt \
-&& diff results/regionRead8.sam expected/regionRead.sam && diff results/regionRead8.txt expected/regionRead8.txt \
+&& diff results/regionRead8.sam expected/regionRead8.sam && diff results/regionRead8.txt expected/regionRead8.txt \
 && \
 ../bin/bam writeRegion --in testFilesLibBam/sortedBam.bam --out results/regionRead9.sam --bed testFiles/bedFile.bed 2> results/regionRead9.txt \
-&& diff results/regionRead9.sam expected/regionRead.sam && diff results/regionRead9.txt expected/regionRead9.txt
+&& diff results/regionRead9.sam expected/regionRead9.sam && diff results/regionRead9.txt expected/regionRead9.txt \
+&& \
+../bin/bam writeRegion --in testFilesLibBam/sortedBam.bam --out results/regionRead10.sam --bed testFiles/bedFile2.bed --withinReg 2> results/regionRead10.txt \
+&& diff results/regionRead10.sam expected/regionRead8.sam && diff results/regionRead10.txt expected/regionRead10.txt \
+&& \
+../bin/bam writeRegion --in testFilesLibBam/sortedBam.bam --out results/regionRead11.sam --bed testFiles/bedFile2.bed 2> results/regionRead11.txt \
+&& diff results/regionRead11.sam expected/regionRead9.sam && diff results/regionRead11.txt expected/regionRead11.txt
+
 
 if [ $? -ne 0 ]
 then

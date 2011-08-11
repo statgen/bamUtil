@@ -52,12 +52,14 @@ private:
     String myRefName;
 
     String myPrevRefName;
+    int myBedRefID;
 
     IFILE       myBedFile;
     String      myBedBuffer;
     StringArray myBedColumn;
 
     SamFile mySamIn;
+    SamFileHeader mySamHeader;
 };
 
 #endif

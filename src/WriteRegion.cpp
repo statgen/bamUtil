@@ -35,6 +35,7 @@ WriteRegion::WriteRegion()
       myRefID(UNSPECIFIED_INT),
       myRefName(),
       myPrevRefName(),
+      myBedRefID(SamReferenceInfo::NO_REF_ID),
       myBedFile(NULL)
 {
     
@@ -97,6 +98,7 @@ int WriteRegion::execute(int argc, char **argv)
     myRefID = UNSET_REF;
     myRefName.Clear();
     myPrevRefName.Clear();
+    myBedRefID = SamReferenceInfo::NO_REF_ID;
     bool noeof = false;
     bool params = false;
     myWithinReg = false;
@@ -196,9 +198,8 @@ int WriteRegion::execute(int argc, char **argv)
     mySamIn.ReadBamIndex(indexFile);
 
     // Read & write the sam header.
-    SamFileHeader samHeader;
-    mySamIn.ReadHeader(samHeader);
-    samOut.WriteHeader(samHeader);
+    mySamIn.ReadHeader(mySamHeader);
+    samOut.WriteHeader(mySamHeader);
 
     // Read the sam records.
     SamRecord samRecord;
@@ -212,7 +213,7 @@ int WriteRegion::execute(int argc, char **argv)
     while(getNextSection())
     {
         // Keep reading records until they aren't anymore.
-        while(mySamIn.ReadRecord(samHeader, samRecord))
+        while(mySamIn.ReadRecord(mySamHeader, samRecord))
         {
             if(!readName.IsEmpty())
             {
@@ -245,7 +246,7 @@ int WriteRegion::execute(int argc, char **argv)
             }
 
             // Successfully read a record from the file, so write it.
-            samOut.WriteRecord(samHeader, samRecord);
+            samOut.WriteRecord(mySamHeader, samRecord);
             ++numSectionRecords;
         }
         myWroteReg = true;
@@ -310,13 +311,50 @@ bool WriteRegion::getNextSection()
             }
             else
             {
-                // Store the previous positions before overwriting them.
-                myPrevStart = myStart;
-                if(myPrevEnd < myEnd)
+                // Check the reference name.
+                if(myPrevRefName != myBedColumn[0])
                 {
-                    // The last section ends later than the previous one,
-                    // So update the previous latest end.
-                    myPrevEnd = myEnd;
+                    // New reference name (chromosome), so clear the previous
+                    // start/end.
+                    myPrevStart = UNSPECIFIED_INT;
+                    myPrevEnd = UNSPECIFIED_INT;
+                    myPrevRefName = myBedColumn[0];
+
+                    // Get the reference ID for the reference name.
+                    myBedRefID = mySamHeader.getReferenceID(myPrevRefName);
+                    
+                    // Check to see if the reference ID is found.
+                    if(myBedRefID == SamReferenceInfo::NO_REF_ID)
+                    {
+                        // Thes specified Reference ID is not in the file,
+                        // so check to see if it has chr.
+                        // Check to see if it is the same except for 'chr' appended.
+                        if((myPrevRefName[0] == 'c') && 
+                           (myPrevRefName[1] == 'h') && 
+                           (myPrevRefName[2] == 'r'))
+                        {
+                            // It starts with chr, so look up with out the chr
+                            myBedRefID = mySamHeader.getReferenceID(myPrevRefName.c_str() + 3);
+                        }
+                    }
+                }
+                else
+                {
+                    // Not a new reference name.
+                    // Store the previous positions before overwriting them.
+                    myPrevStart = myStart;
+                    if(myPrevEnd < myEnd)
+                    {
+                        // The last section ends later than the previous one,
+                        // So update the previous latest end.
+                        myPrevEnd = myEnd;
+                    }
+                }
+
+                // If the refID is still NO_REF_ID, just continue to the next bed line.
+                if(myBedRefID == SamReferenceInfo::NO_REF_ID)
+                {
+                    continue;
                 }
 
                 // Correct number of columns, check the columns.
@@ -343,16 +381,6 @@ bool WriteRegion::getNextSection()
                               << myBedColumn[2]
                               << "; Skipping to the next line.\n";         
                 }
-                else if(myPrevRefName != myBedColumn[0])
-                {
-                    // New reference name (chromosome), so clear the previous start/end
-                    // and this section is valid.
-                    myPrevStart = UNSPECIFIED_INT;
-                    myPrevEnd = UNSPECIFIED_INT;
-                    myPrevRefName = myBedColumn[0];
-                    anotherSection = true;
-                    mySamIn.SetReadSection(myBedColumn[0].c_str(), myStart, myEnd, !myWithinReg);
-                }
                 else if(myPrevStart > myStart)
                 {
                     // Same reference name, but the position goes backwards.
@@ -366,7 +394,7 @@ bool WriteRegion::getNextSection()
                 else
                 {
                     anotherSection = true;
-                    mySamIn.SetReadSection(myBedColumn[0].c_str(), myStart, myEnd, !myWithinReg);
+                    mySamIn.SetReadSection(myBedRefID, myStart, myEnd, !myWithinReg);
                 }
             }
         }

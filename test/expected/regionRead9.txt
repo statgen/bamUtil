@@ -3,4 +3,4 @@ Improperly formatted bed, the start position is < the previous start (bed is ass
 Improperly formatted bed line, start position (2nd column) is not an integer: 1900a; Skipping to the next line.
 Improperly formatted bed line, end position (3rd column) is not an integer: s15555; Skipping to the next line.
 Improperly formatted bed line: 1	1999	15555	1900; Skipping to the next line.
-Wrote results/regionRead9.sam with 2 records.
+Wrote results/regionRead9.sam with 4 records.
