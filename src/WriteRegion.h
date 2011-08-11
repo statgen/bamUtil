@@ -23,14 +23,41 @@
 #define __WRITE_REGION_H__
 
 #include "BamExecutable.h"
+#include "SamFile.h"
 
 class WriteRegion : public BamExecutable
 {
 public:
+    WriteRegion();
     static void writeRegionDescription();
     void description();
     void usage();
     int execute(int argc, char **argv);
+
+private:
+    bool getNextSection();
+
+    static const int UNSPECIFIED_INT = -1;
+    static const int UNSET_REF = -2;
+
+    bool myWithinReg;
+    bool myWroteReg;
+
+    int myStart;
+    int myEnd;
+    int myPrevStart;
+    int myPrevEnd;
+
+    int myRefID;
+    String myRefName;
+
+    String myPrevRefName;
+
+    IFILE       myBedFile;
+    String      myBedBuffer;
+    StringArray myBedColumn;
+
+    SamFile mySamIn;
 };
 
 #endif
