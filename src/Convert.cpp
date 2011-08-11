@@ -212,11 +212,11 @@ int Convert::execute(int argc, char **argv)
             }
             break;
         } catch (std::runtime_error e) {
+            std::cerr << "Caught runtime error: " << e.what() << "\n";
             if(!recover) {
-                std::cerr << "Corrupted BAM file detected - consider --recover option.\n";
+                std::cerr << "Corrupted BAM file detected - consider using --recover option.\n";
                 break;
             }
-            std::cerr << "Caught runtime error: " << e.what() << "\n";
             std::cerr << "Attempting to resync at next good BGZF block and BAM record.\n";
             // XXX need to resync SamFile stream here
             bool rc = samIn.attemptRecoverySync(checkSignature, SIGNATURE_LENGTH);
