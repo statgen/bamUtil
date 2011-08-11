@@ -57,6 +57,29 @@ void Convert::usage()
     std::cerr << "\t\t--useEquals  : Convert any bases that match the reference to '=' (requires --ref)." << std::endl;
 }
 
+#define SIGNATURE_LENGTH (sizeof(bamRecordStruct))
+static bool checkSignature(void *data)
+{
+    bamRecordStruct *record = (bamRecordStruct *) data;
+
+    if(record->myBlockSize > 60000) return false;
+
+    if(record->myReferenceID < -1 || record->myReferenceID > 1000) return false;
+
+    if(record->myCigarLength > 100) return false;
+
+    if(record->myReadLength > 1000) return false;
+
+    if(record->myMateReferenceID < -1 || record->myMateReferenceID > 1000) return false;
+
+    if(record->myMatePosition < -1) return false;
+
+    if(record->myInsertSize > 100000) return false;
+
+    return true;
+}
+
+
 
 int Convert::execute(int argc, char **argv)
 {
@@ -70,6 +93,8 @@ int Convert::execute(int argc, char **argv)
     bool useBases = false;
     bool useEquals = false;
     bool useOrigSeq = false;
+
+    bool recover = false;
     
     ParameterList inputParameters;
     BEGIN_LONG_PARAMETERS(longParameterList)
@@ -77,6 +102,7 @@ int Convert::execute(int argc, char **argv)
         LONG_STRINGPARAMETER("out", &outFile)
         LONG_STRINGPARAMETER("refFile", &refFile)
         LONG_PARAMETER("noeof", &noeof)
+        LONG_PARAMETER("recover", &recover)
         LONG_PARAMETER("params", &params)
         LONG_PARAMETER_GROUP("SequenceConversion")
             EXCLUSIVE_PARAMETER("useBases", &useBases)
@@ -149,6 +175,7 @@ int Convert::execute(int argc, char **argv)
 
     // Open the input file for reading.
     SamFile samIn;
+    if(recover) samIn.setAttemptRecovery(true);
     samIn.OpenForRead(inFile);
 
     // Open the output file for writing.
@@ -170,15 +197,31 @@ int Convert::execute(int argc, char **argv)
     // to the failure reason if any of the writes fail.
     SamStatus::Status returnStatus = SamStatus::SUCCESS;
 
-    // Keep reading records until ReadRecord returns false.
-    while(samIn.ReadRecord(samHeader, samRecord))
-    {
-        // Successfully read a record from the file, so write it.
-        if(!samOut.WriteRecord(samHeader, samRecord))
-        {
-            // Failed to write a record.
-            fprintf(stderr, "%s\n", samOut.GetStatusMessage());
-            returnStatus = samOut.GetStatus();
+    while(1) {
+        try {
+            // Keep reading records until ReadRecord returns false.
+            while(samIn.ReadRecord(samHeader, samRecord))
+            {
+                // Successfully read a record from the file, so write it.
+                if(!samOut.WriteRecord(samHeader, samRecord))
+                {
+                    // Failed to write a record.
+                    fprintf(stderr, "%s\n", samOut.GetStatusMessage());
+                    returnStatus = samOut.GetStatus();
+                }
+            }
+            break;
+        } catch (std::runtime_error e) {
+            std::cerr << "Caught runtime error: " << e.what() << "\n";
+            std::cerr << "Attempting to resync at next good BGZF block and BAM record.\n";
+            // XXX need to resync SamFile stream here
+            bool rc = samIn.attemptRecoverySync(checkSignature, SIGNATURE_LENGTH);
+            if(rc) {
+                std::cerr << "Successful resync - some data lost.\n";
+                continue;    // succeeded
+            }
+            std::cerr << "Failed to re-sync on data stream.\n";
+            break;              // failed to resync
         }
     }
 
