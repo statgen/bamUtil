@@ -37,19 +37,19 @@ void Stats::description()
 void Stats::usage()
 {
     BamExecutable::usage();
-    std::cerr << "\t./bam stats --in <inputFile> [--disableStatistics] [--noeof] [--params] [--qual] [--maxNumReads <maxNum>] [--unmapped] [--bamIndex <bamIndexFile>]" << std::endl;
+    std::cerr << "\t./bam stats --in <inputFile> [--basic] [--qual] [--maxNumReads <maxNum>] [--unmapped] [--bamIndex <bamIndexFile>] [--noeof] [--params]" << std::endl;
     std::cerr << "\tRequired Parameters:" << std::endl;
     std::cerr << "\t\t--in : the SAM/BAM file to be statsd" << std::endl;
     std::cerr << "\tOptional Parameters:" << std::endl;
-    std::cerr << "\t\t--disableStatistics : Turn off statistic generation" << std::endl;
-    std::cerr << "\t\t--qual              : Generate a count for each quality" << std::endl;
-    std::cerr << "\t\t--maxNumReads       : Maximum number of reads to process" << std::endl;
-    std::cerr << "\t\t                      Defaults to -1 to indicate all reads." << std::endl;
-    std::cerr << "\t\t--unmapped          : Only process unmapped reads (requires a bamIndex file)" << std::endl;
-    std::cerr << "\t\t--bamIndex          : the path/name of the bam index file" << std::endl;
-    std::cerr << "\t\t                      (if required and not specified, uses the --in value + \".bai\")" << std::endl;
-    std::cerr << "\t\t--noeof             : do not expect an EOF block on a bam file." << std::endl;
-    std::cerr << "\t\t--params            : Print the parameter settings" << std::endl;
+    std::cerr << "\t\t--basic       : Turn on basic statistic generation" << std::endl;
+    std::cerr << "\t\t--qual        : Generate a count for each quality" << std::endl;
+    std::cerr << "\t\t--maxNumReads : Maximum number of reads to process" << std::endl;
+    std::cerr << "\t\t                Defaults to -1 to indicate all reads." << std::endl;
+    std::cerr << "\t\t--unmapped    : Only process unmapped reads (requires a bamIndex file)" << std::endl;
+    std::cerr << "\t\t--bamIndex    : The path/name of the bam index file" << std::endl;
+    std::cerr << "\t\t                (if required and not specified, uses the --in value + \".bai\")" << std::endl;
+    std::cerr << "\t\t--noeof       : Do not expect an EOF block on a bam file." << std::endl;
+    std::cerr << "\t\t--params      : Print the parameter settings" << std::endl;
     std::cerr << std::endl;
 }
 
@@ -59,7 +59,7 @@ int Stats::execute(int argc, char **argv)
     // Extract command line arguments.
     String inFile = "";
     String indexFile = "";
-    bool disableStatistics = false;
+    bool basic = false;
     bool noeof = false;
     bool params = false;
     bool qual = false;
@@ -69,7 +69,7 @@ int Stats::execute(int argc, char **argv)
     ParameterList inputParameters;
     BEGIN_LONG_PARAMETERS(longParameterList)
         LONG_STRINGPARAMETER("in", &inFile)
-        LONG_PARAMETER("disableStatistics", &disableStatistics)
+        LONG_PARAMETER("basic", &basic)
         LONG_PARAMETER("qual", &qual)
         LONG_INTPARAMETER("maxNumReads", &maxNumReads)
         LONG_PARAMETER("unmapped", &unmapped)
@@ -123,8 +123,8 @@ int Stats::execute(int argc, char **argv)
         return(samIn.GetStatus());
     }
 
-    // Set that statistics should be generated.
-    samIn.GenerateStatistics(!disableStatistics);
+    // Set whether or not basic statistics should be generated.
+    samIn.GenerateStatistics(basic);
 
     // Read the sam header.
     SamFileHeader samHeader;
@@ -195,23 +195,23 @@ int Stats::execute(int argc, char **argv)
     }
 
     std::cerr << "Number of records read = " << 
-        samIn.GetCurrentRecordCount() << std::endl << std::endl;
+        samIn.GetCurrentRecordCount() << std::endl;
 
-    if(!disableStatistics)
+    if(basic)
     {
-        samIn.PrintStatistics();
         std::cerr << std::endl;
+        samIn.PrintStatistics();
     }
 
     // Print the histogram.
     if(qual)
     {
+        std::cerr << std::endl;
         std::cerr << "Quality\tNum\n";
         for(int i = START_QUAL; i <= MAX_QUAL; i++)
         {
             std::cerr << i << "\t" << hist[i] << std::endl;
         }
-        std::cerr << std::endl;
     }
 
     SamStatus::Status status = samIn.GetStatus();
@@ -221,7 +221,6 @@ int Stats::execute(int argc, char **argv)
         status = SamStatus::SUCCESS;
     }
 
-    fprintf(stderr, "Returning: %d (%s)\n", status, SamStatus::getStatusString(status));
     return(status);
 }
 

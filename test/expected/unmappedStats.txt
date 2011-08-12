@@ -15,5 +15,3 @@ QCFailRate(%)	0.00
 
 TotalBases	4.00
 BasesInMappedReads	0.00
-
-Returning: 0 (SUCCESS)

@@ -95,5 +95,3 @@ Quality	Num
 124	0
 125	0
 126	0
-
-Returning: 0 (SUCCESS)
