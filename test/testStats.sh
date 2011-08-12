@@ -4,24 +4,28 @@
 ../bin/bam stats --in testFilesLibBam/testSam.sam --qual 2> results/qualStats.txt \
 && diff results/qualStats.txt expected/qualStats.txt \
 && \
-../bin/bam stats --in testFilesLibBam/testBam.bam --unmappedQual 2> results/unmappedQualStats.txt \
-&& diff results/unmappedQualStats.txt expected/unmappedQualStats.txt \
+../bin/bam stats --in testFilesLibBam/testBam.bam --qual 2> results/qualStats2.txt \
+&& diff results/qualStats2.txt expected/qualStats.txt \
+&& \
+../bin/bam stats --in testFilesLibBam/sortedBam.bam 2> results/sortedStats.txt \
+&& diff results/sortedStats.txt expected/sortedStats.txt \
 && \
 ../bin/bam stats --disableStatistics --in testFilesLibBam/sortedBam.bam --qual 2> results/sortedQualStats.txt \
 && diff results/sortedQualStats.txt expected/sortedQualStats.txt \
 && \
-../bin/bam stats --in testFilesLibBam/sortedBam.bam --unmappedQual 2> results/sortedUnmappedQualStats.txt \
-&& diff results/sortedUnmappedQualStats.txt expected/sortedUnmappedQualStats.txt \
+../bin/bam stats --in testFilesLibBam/sortedBam.bam --unmapped 2> results/unmappedStats.txt \
+&& diff results/unmappedStats.txt expected/unmappedStats.txt \
 && \
-../bin/bam stats --in testFilesLibBam/sortedBam.bam --unmappedQual --refFile testFilesLibBam/sortedBam.bam.bai 2> results/sortedUnmappedQualStats1.txt \
-&& diff results/sortedUnmappedQualStats1.txt expected/sortedUnmappedQualStats.txt \
+../bin/bam stats --in testFilesLibBam/sortedBam.bam --unmapped --qual 2> results/unmappedQualStats.txt \
+&& diff results/unmappedQualStats.txt expected/unmappedQualStats.txt \
 && \
-../bin/bam stats --in testFilesLibBam/testSam.sam --qual --maxNumQuals 3 2> results/qualStatsMaxNum.txt \
+../bin/bam stats --in testFilesLibBam/sortedBam.bam --unmapped --qual --refFile testFilesLibBam/sortedBam.bam.bai 2> results/unmappedQualStats1.txt \
+&& diff results/unmappedQualStats1.txt expected/unmappedQualStats.txt \
+&& \
+../bin/bam stats --in testFilesLibBam/testSam.sam --qual --maxNumReads 3 2> results/qualStatsMaxNum.txt \
 && diff results/qualStatsMaxNum.txt expected/qualStatsMaxNum.txt \
 && \
-../bin/bam stats --in testFilesLibBam/testBam.bam --unmappedQual --maxNumQuals 3 2> results/unmappedQualStatsMaxNum.txt \
+../bin/bam stats --in testFilesLibBam/sortedBam.bam --disableStatistics --unmapped --qual --maxNumReads 1 2> results/unmappedQualStatsMaxNum.txt \
 && diff results/unmappedQualStatsMaxNum.txt expected/unmappedQualStatsMaxNum.txt \
-&& \
-../bin/bam stats --in testFilesLibBam/sortedBam.bam --unmappedQual --maxNumQuals 3 2> results/sortedUnmappedQualStatsMaxNum.txt \
-&& diff results/sortedUnmappedQualStatsMaxNum.txt expected/sortedUnmappedQualStatsMaxNum.txt \
+
 

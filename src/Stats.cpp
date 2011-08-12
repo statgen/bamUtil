@@ -37,21 +37,19 @@ void Stats::description()
 void Stats::usage()
 {
     BamExecutable::usage();
-    std::cerr << "\t./bam stats --in <inputFile> [--disableStatistics] [--noeof] [--params] [--qual] [--maxNumQuals <maxNum>] [--unmappedQual] [--bamIndex <bamIndexFile>]" << std::endl;
+    std::cerr << "\t./bam stats --in <inputFile> [--disableStatistics] [--noeof] [--params] [--qual] [--maxNumReads <maxNum>] [--unmapped] [--bamIndex <bamIndexFile>]" << std::endl;
     std::cerr << "\tRequired Parameters:" << std::endl;
     std::cerr << "\t\t--in : the SAM/BAM file to be statsd" << std::endl;
     std::cerr << "\tOptional Parameters:" << std::endl;
     std::cerr << "\t\t--disableStatistics : Turn off statistic generation" << std::endl;
+    std::cerr << "\t\t--qual              : Generate a count for each quality" << std::endl;
+    std::cerr << "\t\t--maxNumReads       : Maximum number of reads to process" << std::endl;
+    std::cerr << "\t\t                      Defaults to -1 to indicate all reads." << std::endl;
+    std::cerr << "\t\t--unmapped          : Only process unmapped reads (requires a bamIndex file)" << std::endl;
+    std::cerr << "\t\t--bamIndex          : the path/name of the bam index file" << std::endl;
+    std::cerr << "\t\t                      (if required and not specified, uses the --in value + \".bai\")" << std::endl;
     std::cerr << "\t\t--noeof             : do not expect an EOF block on a bam file." << std::endl;
     std::cerr << "\t\t--params            : Print the parameter settings" << std::endl;
-    std::cerr << "\tQuality Statistics Parameters" << std::endl;
-    std::cerr << "\t\t--qual              : Generate a count for each quality" << std::endl;
-    std::cerr << "\t\t--maxNumQuals       : Maximum number of qualities to include in the counts" << std::endl;
-    std::cerr << "\t\t                      Defaults to 100,000.  Use -1 to indicate all qualities." << std::endl;
-    std::cerr << "\t\t--unmappedQual      : Only count qualities in unmapped reads" << std::endl;
-    std::cerr << "\t\t                      Automatically sets qual & disableStatistics" << std::endl;
-    std::cerr << "\t\t--bamIndex          : the path/name of the bam index file" << std::endl;
-    std::cerr << "\t\t                      (if not specified, uses the --in value + \".bai\")" << std::endl;
     std::cerr << std::endl;
 }
 
@@ -65,33 +63,25 @@ int Stats::execute(int argc, char **argv)
     bool noeof = false;
     bool params = false;
     bool qual = false;
-    int maxNumQuals = 100000;
-    bool unmappedQual = false;
+    int maxNumReads = -1;
+    bool unmapped = false;
 
     ParameterList inputParameters;
     BEGIN_LONG_PARAMETERS(longParameterList)
         LONG_STRINGPARAMETER("in", &inFile)
         LONG_PARAMETER("disableStatistics", &disableStatistics)
+        LONG_PARAMETER("qual", &qual)
+        LONG_INTPARAMETER("maxNumReads", &maxNumReads)
+        LONG_PARAMETER("unmapped", &unmapped)
+        LONG_STRINGPARAMETER("bamIndex", &indexFile)
         LONG_PARAMETER("noeof", &noeof)
         LONG_PARAMETER("params", &params)
-        LONG_PARAMETER_GROUP("Quality Histogram")
-        LONG_PARAMETER("qual", &qual)
-        LONG_INTPARAMETER("maxNumQuals", &maxNumQuals)
-        LONG_PARAMETER("unmappedQual", &unmappedQual)
-        LONG_STRINGPARAMETER("bamIndex", &indexFile)
         END_LONG_PARAMETERS();
    
     inputParameters.Add(new LongParameters ("Input Parameters", 
                                             longParameterList));
 
     inputParameters.Read(argc-1, &(argv[1]));
-
-    if(unmappedQual)
-    {
-        // If unmappedQual was set, set qual to true.
-        qual = true;
-        disableStatistics = true;
-    }
 
     // If no eof block is required for a bgzf file, set the bgzf file type to 
     // not look for it.
@@ -112,8 +102,8 @@ int Stats::execute(int argc, char **argv)
         return(-1);
     }
 
-    // IndexFile is only used if unmappedQual is specified
-    if(unmappedQual && (indexFile == ""))
+    // IndexFile is only used if unmapped is specified
+    if(unmapped && (indexFile == ""))
     {
         // In file was not specified, so set it to the in file
         // + ".bai"
@@ -144,28 +134,18 @@ int Stats::execute(int argc, char **argv)
         return(samIn.GetStatus());
     }
 
-    // Since the bamIndex file is not requried, only open
-    // if necessary and catch if there is a failure.
-    // Open the bam index file for reading.
-    if(unmappedQual)
+    // Open the bam index file for reading if we are
+    // doing unmapped reads (also set the read section).
+    if(unmapped)
     {
-        try
-        {
-            samIn.ReadBamIndex(indexFile);
-            samIn.SetReadSection(-1);
-            // Reset unmappedQual since nothing special needs
-            // to be done from here on out.
-            unmappedQual = false;
-        }
-        catch(std::exception& e)
-        {
-        }
+        samIn.ReadBamIndex(indexFile);
+        samIn.SetReadSection(-1);
     }
 
     // Read the sam records.
-    SamRecord samRecord(ErrorHandler::RETURN);
+    SamRecord samRecord;
 
-    int numQual = 0;
+    int numReads = 0;
 
     // Quality histogram.
     const int MAX_QUAL = 126;
@@ -178,16 +158,13 @@ int Stats::execute(int argc, char **argv)
 
     // Keep reading records from the file until SamFile::ReadRecord
     // indicates to stop (returns false).
-    while(samIn.ReadRecord(samHeader, samRecord))
+    while(((maxNumReads < 0) || (numReads < maxNumReads)) && samIn.ReadRecord(samHeader, samRecord))
     {
+        // Another record was read, so increment the number of reads.
+        ++numReads;
         // See if the quality histogram should be genereated.
-        if(qual && ((maxNumQuals < 0) || (numQual < maxNumQuals)))
+        if(qual)
         {
-            // Check if we need to check for unmapped.
-            if(unmappedQual && (samRecord.getReferenceID() != -1))
-            {
-                continue;
-            }
             // Get the quality.
             const char* qual = samRecord.getQuality();
             int index = 0;
@@ -198,9 +175,8 @@ int Stats::execute(int argc, char **argv)
                 continue;
             }
 
-            while(((maxNumQuals < 0) || (numQual < maxNumQuals)) && (qual[index] != 0))
+            while(qual[index] != 0)
             {
-                ++numQual;
                 // Check for valid quality.
                 if((qual[index] < START_QUAL) || (qual[index] > MAX_QUAL))
                 {
@@ -215,11 +191,6 @@ int Stats::execute(int argc, char **argv)
                 ++(hist[(int)(qual[index])]);
                 ++index;
             }
-        }
-        if(disableStatistics && qual && (numQual >= maxNumQuals) && (maxNumQuals > 0))
-        {
-            // No more stats, so quit.
-            break;
         }
     }
 

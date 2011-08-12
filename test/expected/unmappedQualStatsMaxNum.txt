@@ -1,4 +1,4 @@
-Number of records read = 8
+Number of records read = 1
 
 Quality	Num
 33	0
@@ -27,7 +27,7 @@ Quality	Num
 56	0
 57	0
 58	0
-59	1
+59	2
 60	0
 61	2
 62	0
