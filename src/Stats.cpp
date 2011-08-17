@@ -37,12 +37,13 @@ void Stats::description()
 void Stats::usage()
 {
     BamExecutable::usage();
-    std::cerr << "\t./bam stats --in <inputFile> [--basic] [--qual] [--maxNumReads <maxNum>] [--unmapped] [--bamIndex <bamIndexFile>] [--noeof] [--params]" << std::endl;
+    std::cerr << "\t./bam stats --in <inputFile> [--basic] [--qual] [--phred] [--maxNumReads <maxNum>] [--unmapped] [--bamIndex <bamIndexFile>] [--noeof] [--params]" << std::endl;
     std::cerr << "\tRequired Parameters:" << std::endl;
     std::cerr << "\t\t--in : the SAM/BAM file to be statsd" << std::endl;
     std::cerr << "\tOptional Parameters:" << std::endl;
     std::cerr << "\t\t--basic       : Turn on basic statistic generation" << std::endl;
-    std::cerr << "\t\t--qual        : Generate a count for each quality" << std::endl;
+    std::cerr << "\t\t--qual        : Generate a count for each quality (displayed as non-phred quality)" << std::endl;
+    std::cerr << "\t\t--phred       : Generate a count for each quality (displayed as phred quality)" << std::endl;
     std::cerr << "\t\t--maxNumReads : Maximum number of reads to process" << std::endl;
     std::cerr << "\t\t                Defaults to -1 to indicate all reads." << std::endl;
     std::cerr << "\t\t--unmapped    : Only process unmapped reads (requires a bamIndex file)" << std::endl;
@@ -63,6 +64,7 @@ int Stats::execute(int argc, char **argv)
     bool noeof = false;
     bool params = false;
     bool qual = false;
+    bool phred = false;
     int maxNumReads = -1;
     bool unmapped = false;
 
@@ -71,6 +73,7 @@ int Stats::execute(int argc, char **argv)
         LONG_STRINGPARAMETER("in", &inFile)
         LONG_PARAMETER("basic", &basic)
         LONG_PARAMETER("qual", &qual)
+        LONG_PARAMETER("phred", &phred)
         LONG_INTPARAMETER("maxNumReads", &maxNumReads)
         LONG_PARAMETER("unmapped", &unmapped)
         LONG_STRINGPARAMETER("bamIndex", &indexFile)
@@ -150,10 +153,19 @@ int Stats::execute(int argc, char **argv)
     // Quality histogram.
     const int MAX_QUAL = 126;
     const int START_QUAL = 33;
-    int hist[MAX_QUAL+1];
+    int qualCount[MAX_QUAL+1];
     for(int i = 0; i <= MAX_QUAL; i++)
     {
-        hist[i] = 0;
+        qualCount[i] = 0;
+    }
+
+    const int MAX_PHRED = 93;
+    const int START_PHRED = 0;
+    const int PHRED_DIFF = START_QUAL - START_PHRED;
+    int phredCount[MAX_PHRED+1];
+    for(int i = 0; i <= MAX_PHRED; i++)
+    {
+        phredCount[i] = 0;
     }
 
     // Keep reading records from the file until SamFile::ReadRecord
@@ -163,7 +175,7 @@ int Stats::execute(int argc, char **argv)
         // Another record was read, so increment the number of reads.
         ++numReads;
         // See if the quality histogram should be genereated.
-        if(qual)
+        if(qual || phred)
         {
             // Get the quality.
             const char* qual = samRecord.getQuality();
@@ -178,17 +190,26 @@ int Stats::execute(int argc, char **argv)
             while(qual[index] != 0)
             {
                 // Check for valid quality.
-                if((qual[index] < START_QUAL) || (qual[index] > MAX_QUAL))
+                if(qual && ((qual[index] < START_QUAL) || (qual[index] > MAX_QUAL)))
                 {
                     std::cerr << "Invalid Quality found: " << qual[index] 
-                              << ".  Must be between 0 and " << MAX_QUAL
-                              << ".\n";
+                              << ".  Must be between "
+                              << START_QUAL << " and " << MAX_QUAL << ".\n";
+                    ++index;
+                    continue;
+                }
+                if(phred && ((qual[index] < START_PHRED) || (qual[index] > MAX_PHRED)))
+                {
+                    std::cerr << "Invalid Quality found: " << qual[index] 
+                              << ".  Must be between "
+                              << START_PHRED << " and " << MAX_PHRED << ".\n";
                     ++index;
                     continue;
                 }
                 
                 // Increment the count for this quality.
-                ++(hist[(int)(qual[index])]);
+                ++(qualCount[(int)(qual[index])]);
+                ++(phredCount[(int)(qual[index]) - PHRED_DIFF]);
                 ++index;
             }
         }
@@ -203,14 +224,24 @@ int Stats::execute(int argc, char **argv)
         samIn.PrintStatistics();
     }
 
-    // Print the histogram.
+    // Print the quality stats.
     if(qual)
     {
         std::cerr << std::endl;
-        std::cerr << "Quality\tNum\n";
+        std::cerr << "Quality\tCount\n";
         for(int i = START_QUAL; i <= MAX_QUAL; i++)
         {
-            std::cerr << i << "\t" << hist[i] << std::endl;
+            std::cerr << i << "\t" << qualCount[i] << std::endl;
+        }
+    }
+    // Print the phred quality stats.
+    if(phred)
+    {
+        std::cerr << std::endl;
+        std::cerr << "Phred\tCount\n";
+        for(int i = START_PHRED; i <= MAX_PHRED; i++)
+        {
+            std::cerr << i << "\t" << phredCount[i] << std::endl;
         }
     }
 

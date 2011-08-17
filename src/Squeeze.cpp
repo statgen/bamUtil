@@ -23,7 +23,13 @@
 #include "SamFlag.h"
 
 Squeeze::Squeeze()
+    : myBinMid(false),
+      myBinHigh(false)
 {
+    for(int i = 0; i <= MAX_QUAL_CHAR; i++)
+    {
+        myQualBinMap[i] = 0;
+    }
 }
 
 Squeeze::~Squeeze()
@@ -32,7 +38,7 @@ Squeeze::~Squeeze()
 
 void Squeeze::squeezeDescription()
 {
-    std::cerr << " squeeze -  reduces files size by dropping OQ fields, duplicates, specified tags, using '=' when a base matches the reference." << std::endl;
+    std::cerr << " squeeze -  reduces files size by dropping OQ fields, duplicates, specified tags, using '=' when a base matches the reference, binning quality scores." << std::endl;
 }
 
 
@@ -46,7 +52,7 @@ void Squeeze::description()
 void Squeeze::usage()
 {
     BamExecutable::usage();
-    std::cerr << "\t./bam squeeze --in <inputFile> --out <outputFile.sam/bam/ubam (ubam is uncompressed bam)> [--cigar] [--qual] [--keepTags] [--rmBQ] [--rmTags <Tag:Type[;Tag:Type]*>] [--noeof] [--params]" << std::endl;
+    std::cerr << "\t./bam squeeze --in <inputFile> --out <outputFile.sam/bam/ubam (ubam is uncompressed bam)> [--refFile <refFilePath/Name>] [--keepOQ] [--keepDups] [--binQualS <minQualBin2>,<minQualBin3><...>] [--binQualF <filename>] [--rmTags <Tag:Type[;Tag:Type]*>] [--noeof] [--params]" << std::endl;
     std::cerr << "\tRequired Parameters:" << std::endl;
     std::cerr << "\t\t--in         : the SAM/BAM file to be read" << std::endl;
     std::cerr << "\t\t--out        : the SAM/BAM file to be written" << std::endl;
@@ -55,6 +61,15 @@ void Squeeze::usage()
     std::cerr << "\t\t--keepOQ     : keep the OQ tag rather than removing it.  Default is to remove it." << std::endl;
     std::cerr << "\t\t--keepDups   : keep duplicates rather than removing records marked duplicate.  Default is to remove them." << std::endl;
     std::cerr << "\t\t--rmTags     : Remove the specified Tags formatted as Tag:Type;Tag:Type;Tag:Type..." << std::endl;
+    std::cerr << "\tQuality Binning Parameters (optional):" << std::endl;
+    std::cerr << "\t  Bin qualities by phred score, into the ranges specified by binQualS or binQualF (both cannot be used)" << std::endl;
+    std::cerr << "\t  Ranges are specified by comma separated minimum phred score for the bin, example: 1,17,20,30,40,50,70" << std::endl;
+    std::cerr << "\t  The first bin always starts at 0, so does not need to be specified." << std::endl;
+    std::cerr << "\t  By default, the bin value is the low end of the range." << std::endl;
+    std::cerr << "\t\t--binQualS   : Bin the Qualities as specified (phred): minQualOfBin2, minQualofBin3..." << std::endl;
+    std::cerr << "\t\t--binQualF   : Bin the Qualities based on the specified file" << std::endl;
+    std::cerr << "\t\t--binMid     : Use the mid point of the quality bin range for the quality value of the bin." << std::endl;
+    std::cerr << "\t\t--binHigh    : Use the high end of the quality bin range for the quality value of the bin." << std::endl;
     std::cerr << "\t\t--noeof      : do not expect an EOF block on a bam file." << std::endl;
     std::cerr << "\t\t--params     : print the parameter settings" << std::endl;
     std::cerr << std::endl;
@@ -70,7 +85,12 @@ int Squeeze::execute(int argc, char ** argv)
     bool params = false;
     bool keepOQ = false;
     bool keepDups =  false;
+    String binQualS = "";
+    String binQualF = "";
+    myBinMid = false;
+    myBinHigh = false;
     String rmTags = "";
+    String qual = "";
 
     ParameterList inputParameters;
     BEGIN_LONG_PARAMETERS(longParameterList)
@@ -82,6 +102,11 @@ int Squeeze::execute(int argc, char ** argv)
         LONG_STRINGPARAMETER("rmTags", &rmTags)
         LONG_PARAMETER("noeof", &noeof)
         LONG_PARAMETER("params", &params)
+        LONG_PARAMETER_GROUP("Quality Bin Parameters")        
+        LONG_STRINGPARAMETER("binQualS", &binQualS)
+        LONG_STRINGPARAMETER("binQualF", &binQualF)
+        LONG_PARAMETER("binMid", &myBinMid)
+        LONG_PARAMETER("binHigh", &myBinHigh)
         END_LONG_PARAMETERS();
     
 
@@ -120,9 +145,63 @@ int Squeeze::execute(int argc, char ** argv)
         return(-1);
     }
 
+    if(!binQualS.IsEmpty() && !binQualF.IsEmpty())
+    {
+        usage();
+        inputParameters.Status();
+        std::cerr << "ERROR: --binQualS and --binQualF cannot both be specified\n";
+    }
+
     if(params)
     {
         inputParameters.Status();
+    }
+
+    if(!binQualF.IsEmpty())
+    {
+        // Read the quality bins from the file.
+        IFILE qualBinFile = ifopen(binQualF, "r");
+        if(qualBinFile == NULL)
+        {
+            std::cerr << "ERROR: failed to open the quality bin file (" 
+                      << qualBinFile << ")." << std::endl;
+            return(-1);
+        }
+
+        if(binQualS.ReadLine(qualBinFile) <= 0)
+        {
+            std::cerr << "ERROR: failed to read the quality bin file (" 
+                      << qualBinFile << ")." << std::endl;
+            return(-1);
+        }
+    }
+
+    if(!binQualS.IsEmpty())
+    {
+        // Determine the bins.
+        StringArray bins;
+        bins.ReplaceColumns(binQualS, ',');
+        int binStart = 0;
+        int nextBinStart = 0;
+
+        // Fill the bins, by reading the starting bin positions.
+        // The previous bin ends just before the next one starts.
+        for(int i = 0; i < bins.Length(); i++)
+        {
+            // The previous bin ends just before this one starts.
+            if(!bins[i].AsInteger(nextBinStart))
+            {
+                // bad format, could not turn quality value to integer.
+                std::cerr << "Quality Bin Range not an integer: " << bins[i] << std::endl;
+                return(-1);
+            }
+            // Setup this bin.
+            binPhredQuals(binStart, nextBinStart - 1);
+            // Set the start for the next bin.
+            binStart = nextBinStart;
+        }
+        // Call for the last bin from the last specified start to the MAX_PHRED_QUAL.
+        binPhredQuals(nextBinStart, MAX_PHRED_QUAL);
     }
 
     // Open the input file for reading.
@@ -194,6 +273,24 @@ int Squeeze::execute(int argc, char ** argv)
             }
         }
 
+        // Bin the qualities.
+        if(!binQualS.IsEmpty())
+        {
+            qual = samRecord.getQuality();
+            
+            if(qual != "*")
+            {
+                // Only bin set qualities.
+                for(int i = 0; i < qual.Length(); i++)
+                {
+                    // Update the quality by looking its value up
+                    // in the quality bin map.
+                    qual[i] = (char)(myQualBinMap[(int)(qual[i])]);
+                }
+                samRecord.setQuality(qual);
+            }
+        }
+
         if(!samOut.WriteRecord(samHeader, samRecord))
         {
             // Failed to write a record.
@@ -221,3 +318,32 @@ int Squeeze::execute(int argc, char ** argv)
     samOut.Close();
     return returnStatus;
 }
+
+
+void Squeeze::binPhredQuals(int binStartPhred, int binEndPhred)
+{
+    // Convert the bin qualities to non-phred.
+    int binStart = binStartPhred + QUAL_CONVERT;
+    int binEnd = binEndPhred + QUAL_CONVERT;
+
+    if(binEnd > MAX_QUAL_CHAR)
+    {
+        binEnd = MAX_QUAL_CHAR;
+    } 
+    // Determine the value for this bin.
+    int binValue  = binStart;
+    if(myBinMid)
+    {
+        binValue = (binStart + binEnd)/2;
+    }
+    else if(myBinHigh)
+    {
+        binValue = binEnd;
+    }
+
+    for(int i = binStart; i <= binEnd; i++)
+    {
+        myQualBinMap[i] = binValue;
+    }
+}
+

@@ -1,6 +1,6 @@
 Number of records read = 10
 
-Quality	Num
+Quality	Count
 33	0
 34	0
 35	0

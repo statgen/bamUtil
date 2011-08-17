@@ -16,7 +16,7 @@ QCFailRate(%)	0.00
 TotalBases	14.00
 BasesInMappedReads	10.00
 
-Quality	Num
+Quality	Count
 33	0
 34	0
 35	0

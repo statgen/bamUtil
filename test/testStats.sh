@@ -7,6 +7,9 @@
 ../bin/bam stats --basic --in testFilesLibBam/testSam.sam --qual 2> results/qualStats.txt \
 && diff results/qualStats.txt expected/qualStats.txt \
 && \
+../bin/bam stats --basic --in testFilesLibBam/testSam.sam --phred 2> results/phredStats.txt \
+&& diff results/phredStats.txt expected/phredStats.txt \
+&& \
 ../bin/bam stats --basic --in testFilesLibBam/testBam.bam --qual 2> results/qualStats2.txt \
 && diff results/qualStats2.txt expected/qualStats.txt \
 && \
