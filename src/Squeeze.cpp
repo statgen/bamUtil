@@ -52,7 +52,7 @@ void Squeeze::description()
 void Squeeze::usage()
 {
     BamExecutable::usage();
-    std::cerr << "\t./bam squeeze --in <inputFile> --out <outputFile.sam/bam/ubam (ubam is uncompressed bam)> [--refFile <refFilePath/Name>] [--keepOQ] [--keepDups] [--binQualS <minQualBin2>,<minQualBin3><...>] [--binQualF <filename>] [--rmTags <Tag:Type[;Tag:Type]*>] [--noeof] [--params]" << std::endl;
+    std::cerr << "\t./bam squeeze --in <inputFile> --out <outputFile.sam/bam/ubam (ubam is uncompressed bam)> [--refFile <refFilePath/Name>] [--keepOQ] [--keepDups] [--readName <readNameMapFile.txt>] [--sReadName <readNameMapFile.txt>] [--binQualS <minQualBin2>,<minQualBin3><...>] [--binQualF <filename>] [--rmTags <Tag:Type[;Tag:Type]*>] [--noeof] [--params]" << std::endl;
     std::cerr << "\tRequired Parameters:" << std::endl;
     std::cerr << "\t\t--in         : the SAM/BAM file to be read" << std::endl;
     std::cerr << "\t\t--out        : the SAM/BAM file to be written" << std::endl;
@@ -60,6 +60,13 @@ void Squeeze::usage()
     std::cerr << "\t\t--refFile    : reference file name used to convert any bases that match the reference to '-'" << std::endl;
     std::cerr << "\t\t--keepOQ     : keep the OQ tag rather than removing it.  Default is to remove it." << std::endl;
     std::cerr << "\t\t--keepDups   : keep duplicates rather than removing records marked duplicate.  Default is to remove them." << std::endl;
+    std::cerr << "\t\t--sReadName  : Replace read names with unique integers and write the mapping to the specified file." << std::endl;
+    std::cerr << "                   This version requires the input file to have been presorted by readname, but" << std::endl;
+    std::cerr << "                   no validation is done to ensure this.  If it is not sorted, a readname will" << std::endl;
+    std::cerr << "                   get mapped to multiple new values." << std::endl;
+    std::cerr << "\t\t--readName   : Replace read names with unique integers and write the mapping to the specified file." << std::endl; 
+    std::cerr << "                   This version does not require the input file to have been presorted by readname," << std::endl;
+    std::cerr << "                   but uses a lot of memory since it stores all the read names." << std::endl;
     std::cerr << "\t\t--rmTags     : Remove the specified Tags formatted as Tag:Type;Tag:Type;Tag:Type..." << std::endl;
     std::cerr << "\tQuality Binning Parameters (optional):" << std::endl;
     std::cerr << "\t  Bin qualities by phred score, into the ranges specified by binQualS or binQualF (both cannot be used)" << std::endl;
@@ -85,6 +92,9 @@ int Squeeze::execute(int argc, char ** argv)
     bool params = false;
     bool keepOQ = false;
     bool keepDups =  false;
+    String readName = "";
+    String sReadName = "";
+    IFILE readNameFile = NULL;
     String binQualS = "";
     String binQualF = "";
     myBinMid = false;
@@ -99,6 +109,8 @@ int Squeeze::execute(int argc, char ** argv)
         LONG_STRINGPARAMETER("refFile", &refFile)
         LONG_PARAMETER("keepOQ", &keepOQ)
         LONG_PARAMETER("keepDups", &keepDups)
+        LONG_STRINGPARAMETER("readName", &readName)
+        LONG_STRINGPARAMETER("sReadName", &sReadName)
         LONG_STRINGPARAMETER("rmTags", &rmTags)
         LONG_PARAMETER("noeof", &noeof)
         LONG_PARAMETER("params", &params)
@@ -150,6 +162,32 @@ int Squeeze::execute(int argc, char ** argv)
         usage();
         inputParameters.Status();
         std::cerr << "ERROR: --binQualS and --binQualF cannot both be specified\n";
+        return(-1);
+    }
+
+    // Check that both readName and sortedRN aren't specified since
+    // they mean the same thing, except the one indicates that the input file is sorted by read name.
+    if(!readName.IsEmpty() && !sReadName.IsEmpty())
+    {
+        usage();
+        inputParameters.Status();
+        std::cerr << "ERROR: --readName and --sReadName cannot both be specified\n";
+        return(-1);
+    }
+
+    // Setup the read name map file.
+    if(!sReadName.IsEmpty())
+    {
+        readName = sReadName;
+    }
+    if(!readName.IsEmpty())
+    {
+        readNameFile = ifopen(readName, "w");
+        if(readNameFile == NULL)
+        {
+            std::cerr << "Failed to open the readName File for write: " << readName << std::endl;
+            return(-1);
+        }
     }
 
     if(params)
@@ -232,6 +270,14 @@ int Squeeze::execute(int argc, char ** argv)
 
     SamRecord samRecord;
 
+    // Create the hash for readnames.
+    StringIntHash rnHash;
+    // Track the next read name to assign.
+    int32_t nextRn = 0;
+    int32_t numHashEntries = rnHash.Entries();
+    String newRn = "";
+    String prevRn = "";
+
     // Set returnStatus to success.  It will be changed to the
     // failure reason if any of the writes or updates fail.
     SamStatus::Status returnStatus = SamStatus::SUCCESS;
@@ -248,6 +294,57 @@ int Squeeze::execute(int argc, char ** argv)
             // Duplicate, so do not write it to the output
             // file and just continue to the next record.
             continue;
+        }
+
+        if(readNameFile != NULL)
+        {
+            // Shorten the readname.
+            // Check the hash for the readname.
+            const char* readName = samRecord.getReadName();
+            
+            if(sReadName.IsEmpty())
+            {
+                // Lookup the readname in the hash.
+                int index = rnHash.Find(readName, nextRn);
+                
+                // Check to see if the nextRn was added to the hash.
+                if(rnHash.Entries() != numHashEntries)
+                {
+                    // New Read Name was added to the hash.
+                    numHashEntries = rnHash.Entries();
+                    newRn = nextRn;
+                    
+                    // Write it to the file.
+                    ifprintf(readNameFile, "%s\t%d\n", readName, nextRn);
+                    
+                    // Update the next read name.
+                    ++nextRn;
+                }
+                else
+                {
+                    // Found the read name, so use that value.
+                    newRn = rnHash.Integer(index);
+                }
+            }
+            else
+            {
+                // the read is sorted, so check if it is the same as the previous
+                // read name.
+                if(prevRn != readName)
+                {
+                    // New read name 
+                    newRn = nextRn;
+                    
+                    // Write it to the file.
+                    ifprintf(readNameFile, "%s\t%d\n", readName, nextRn);
+                    
+                    // Update the next read name.
+                    ++nextRn;
+                    prevRn = readName;
+                }
+                
+            }
+            samRecord.setReadName(newRn.c_str());
         }
 
         // Remove the OQ tag if we are not supposed to remove OQ tags.

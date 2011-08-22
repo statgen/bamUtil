@@ -74,6 +74,54 @@ then
     ERROR=true
 fi
 
+# squeeze sam to sam, just reducing read names (keep OQ, keep dups).
+../bin/bam squeeze --in testFilesLibBam/testSam.sam --out results/squeezeReadName.sam --readName results/squeezeReadNameMap.txt --keepDups --keepOQ 2> results/squeezeReadName.log && \
+diff results/squeezeReadName.sam expected/squeezeReadName.sam && diff results/squeezeReadName.log expected/squeezeReadName.log && diff results/squeezeReadNameMap.txt expected/squeezeReadNameMap.txt
+if [ $? -ne 0 ]
+then
+    ERROR=true
+fi
+
+# squeeze bam to bam, just reducing read names (keep OQ, keep dups).
+../bin/bam squeeze --in testFilesLibBam/testBam.bam --out results/squeezeReadName.bam --readName results/squeezeReadNameMapBam.txt --keepDups --keepOQ 2> results/squeezeReadNameBam.log && \
+diff results/squeezeReadName.bam expected/squeezeReadName.bam && diff results/squeezeReadNameBam.log expected/squeezeReadName.log && diff results/squeezeReadNameMapBam.txt expected/squeezeReadNameMap.txt
+if [ $? -ne 0 ]
+then
+    ERROR=true
+fi
+
+# squeeze sorted by readname bam to sam, just reducing read names (keep OQ, keep dups).
+../bin/bam squeeze --in testFiles/sortedReadName.sam --out results/squeezeReadNameSorted.sam --sreadName results/squeezeReadNameMapSamSorted.txt --keepDups --keepOQ 2> results/squeezeReadNameSamSorted.log && \
+diff results/squeezeReadNameSorted.sam expected/squeezeReadNameSorted.sam && diff results/squeezeReadNameSamSorted.log expected/squeezeReadName.log && diff results/squeezeReadNameMapSamSorted.txt expected/squeezeReadNameMapSorted.txt
+if [ $? -ne 0 ]
+then
+    ERROR=true
+fi
+
+# squeeze unsorted by read name bam to sam using the sorted method, just reducing read names (keep OQ, keep dups).
+../bin/bam squeeze --in testFilesLibBam/testBam.bam --out results/squeezeReadNameUnsorted.sam --sreadName results/squeezeReadNameMapSamUnsorted.txt --keepDups --keepOQ 2> results/squeezeReadNameSamUnsorted.log && \
+diff results/squeezeReadNameUnsorted.sam expected/squeezeReadNameUnsorted.sam && diff results/squeezeReadNameSamUnsorted.log expected/squeezeReadName.log && diff results/squeezeReadNameMapSamUnsorted.txt expected/squeezeReadNameMapUnsorted.txt
+if [ $? -ne 0 ]
+then
+    ERROR=true
+fi
+
+# squeeze sorted by readname bam to bam, just reducing read names (keep OQ, keep dups).
+../bin/bam squeeze --in testFiles/sortedReadName.bam --out results/squeezeReadNameSorted.bam --sreadName results/squeezeReadNameMapBamSorted.txt --keepDups --keepOQ 2> results/squeezeReadNameBamSorted.log && \
+diff results/squeezeReadNameSorted.bam expected/squeezeReadNameSorted.bam && diff results/squeezeReadNameBamSorted.log expected/squeezeReadName.log && diff results/squeezeReadNameMapBamSorted.txt expected/squeezeReadNameMapSorted.txt
+if [ $? -ne 0 ]
+then
+    ERROR=true
+fi
+
+# squeeze unsorted by read name bam to bam using the sorted method, just reducing read names (keep OQ, keep dups).
+../bin/bam squeeze --in testFilesLibBam/testBam.bam --out results/squeezeReadNameUnsorted.bam --sreadName results/squeezeReadNameMapBamUnsorted.txt --keepDups --keepOQ 2> results/squeezeReadNameBamUnsorted.log && \
+diff results/squeezeReadNameUnsorted.bam expected/squeezeReadNameUnsorted.bam && diff results/squeezeReadNameBamUnsorted.log expected/squeezeReadName.log && diff results/squeezeReadNameMapBamUnsorted.txt expected/squeezeReadNameMapUnsorted.txt
+if [ $? -ne 0 ]
+then
+    ERROR=true
+fi
+
 if($ERROR == true)
 then
   exit 1
