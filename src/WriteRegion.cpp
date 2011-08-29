@@ -326,7 +326,7 @@ bool WriteRegion::getNextSection()
                     // Check to see if the reference ID is found.
                     if(myBedRefID == SamReferenceInfo::NO_REF_ID)
                     {
-                        // Thes specified Reference ID is not in the file,
+                        // The specified Reference ID is not in the file,
                         // so check to see if it has chr.
                         // Check to see if it is the same except for 'chr' appended.
                         if((myPrevRefName[0] == 'c') && 
