@@ -21,6 +21,8 @@
 #include "Stats.h"
 #include "SamFile.h"
 #include "BgzfFileType.h"
+#include "Pileup.h"
+#include "PileupElementBaseQCStats.h"
 
 void Stats::statsDescription()
 {
@@ -37,18 +39,23 @@ void Stats::description()
 void Stats::usage()
 {
     BamExecutable::usage();
-    std::cerr << "\t./bam stats --in <inputFile> [--basic] [--qual] [--phred] [--maxNumReads <maxNum>] [--unmapped] [--bamIndex <bamIndexFile>] [--noeof] [--params]" << std::endl;
+    std::cerr << "\t./bam stats --in <inputFile> [--basic] [--qual] [--phred] [--baseQC <outputFileName>] [--maxNumReads <maxNum>] [--unmapped] [--bamIndex <bamIndexFile>] [--noeof] [--params]" << std::endl;
     std::cerr << "\tRequired Parameters:" << std::endl;
-    std::cerr << "\t\t--in : the SAM/BAM file to be statsd" << std::endl;
-    std::cerr << "\tOptional Parameters:" << std::endl;
+    std::cerr << "\t\t--in : the SAM/BAM file to calculate stats for" << std::endl;
+    std::cerr << "\tTypes of Statistics that can be generated:" << std::endl;
     std::cerr << "\t\t--basic       : Turn on basic statistic generation" << std::endl;
     std::cerr << "\t\t--qual        : Generate a count for each quality (displayed as non-phred quality)" << std::endl;
     std::cerr << "\t\t--phred       : Generate a count for each quality (displayed as phred quality)" << std::endl;
+    std::cerr << "\t\t--baseQC      : Write per base statistics to the specified file." << std::endl;
+    std::cerr << "\tOptional Parameters:" << std::endl;
     std::cerr << "\t\t--maxNumReads : Maximum number of reads to process" << std::endl;
     std::cerr << "\t\t                Defaults to -1 to indicate all reads." << std::endl;
     std::cerr << "\t\t--unmapped    : Only process unmapped reads (requires a bamIndex file)" << std::endl;
     std::cerr << "\t\t--bamIndex    : The path/name of the bam index file" << std::endl;
     std::cerr << "\t\t                (if required and not specified, uses the --in value + \".bai\")" << std::endl;
+    std::cerr << "\t\t--regionList  : File containing the region list chr<tab>start_pos<tab>end<pos>." << std::endl;
+    std::cerr << "\t\t                Positions are 0 based and the end_pos is not included in the region." << std::endl;
+    std::cerr << "\t\t                Uses bamIndex." << std::endl;
     std::cerr << "\t\t--noeof       : Do not expect an EOF block on a bam file." << std::endl;
     std::cerr << "\t\t--params      : Print the parameter settings" << std::endl;
     std::cerr << std::endl;
@@ -67,16 +74,24 @@ int Stats::execute(int argc, char **argv)
     bool phred = false;
     int maxNumReads = -1;
     bool unmapped = false;
+    String baseQC = "";
+    String regionList = "";
+
 
     ParameterList inputParameters;
     BEGIN_LONG_PARAMETERS(longParameterList)
+        LONG_PARAMETER_GROUP("Required Parameters")
         LONG_STRINGPARAMETER("in", &inFile)
+        LONG_PARAMETER_GROUP("Types of Statistics")
         LONG_PARAMETER("basic", &basic)
         LONG_PARAMETER("qual", &qual)
         LONG_PARAMETER("phred", &phred)
+        LONG_STRINGPARAMETER("baseQC", &baseQC)
+        LONG_PARAMETER_GROUP("Optional Parameters")
         LONG_INTPARAMETER("maxNumReads", &maxNumReads)
         LONG_PARAMETER("unmapped", &unmapped)
         LONG_STRINGPARAMETER("bamIndex", &indexFile)
+        LONG_STRINGPARAMETER("regionList", &regionList)
         LONG_PARAMETER("noeof", &noeof)
         LONG_PARAMETER("params", &params)
         END_LONG_PARAMETERS();
@@ -105,12 +120,30 @@ int Stats::execute(int argc, char **argv)
         return(-1);
     }
 
-    // IndexFile is only used if unmapped is specified
-    if(unmapped && (indexFile == ""))
+    // Use the index file if unmapped or regionList is not empty.
+    bool useIndex = (unmapped|| (!regionList.IsEmpty()));
+
+    // IndexFile is required, so check to see if it has been set.
+    if(useIndex && (indexFile == ""))
     {
         // In file was not specified, so set it to the in file
         // + ".bai"
         indexFile = inFile + ".bai";
+    }
+    ////////////////////////////////////////
+    // Setup in case pileup is used.
+    Pileup<PileupElementBaseQCStats> pileup;
+    // Initialize start/end positions.
+    myStartPos = 0;
+    myEndPos = -1;
+    
+    // Open the output qc file if applicable.
+    IFILE baseQCPtr = NULL;
+    if(!baseQC.IsEmpty())
+    {
+        baseQCPtr = ifopen(baseQC, "w");
+        PileupElementBaseQCStats::setOutputFile(baseQCPtr);
+        PileupElementBaseQCStats::printHeader();
     }
 
     if(params)
@@ -139,10 +172,19 @@ int Stats::execute(int argc, char **argv)
 
     // Open the bam index file for reading if we are
     // doing unmapped reads (also set the read section).
-    if(unmapped)
+    if(useIndex)
     {
         samIn.ReadBamIndex(indexFile);
-        samIn.SetReadSection(-1);
+
+        if(unmapped)
+        {
+            samIn.SetReadSection(-1);
+        }
+
+        if(!regionList.IsEmpty())
+        {
+            myRegionList = ifopen(regionList, "r");
+        }
     }
 
     // Read the sam records.
@@ -150,6 +192,8 @@ int Stats::execute(int argc, char **argv)
 
     int numReads = 0;
 
+    //////////////////////
+    // Setup in case doing a quality count.
     // Quality histogram.
     const int MAX_QUAL = 126;
     const int START_QUAL = 33;
@@ -158,7 +202,7 @@ int Stats::execute(int argc, char **argv)
     {
         qualCount[i] = 0;
     }
-
+    
     const int MAX_PHRED = 93;
     const int START_PHRED = 0;
     const int PHRED_DIFF = START_QUAL - START_PHRED;
@@ -167,52 +211,81 @@ int Stats::execute(int argc, char **argv)
     {
         phredCount[i] = 0;
     }
-
-    // Keep reading records from the file until SamFile::ReadRecord
-    // indicates to stop (returns false).
-    while(((maxNumReads < 0) || (numReads < maxNumReads)) && samIn.ReadRecord(samHeader, samRecord))
+    
+    
+    //////////////////////////////////
+    // When not reading by sections, getNextSection returns true
+    // the first time, then false the next time.
+    while(getNextSection(samIn))
     {
-        // Another record was read, so increment the number of reads.
-        ++numReads;
-        // See if the quality histogram should be genereated.
-        if(qual || phred)
+        // Keep reading records from the file until SamFile::ReadRecord
+        // indicates to stop (returns false).
+        while(((maxNumReads < 0) || (numReads < maxNumReads)) && samIn.ReadRecord(samHeader, samRecord))
         {
-            // Get the quality.
-            const char* qual = samRecord.getQuality();
-            int index = 0;
-            // Check for no quality ('*').
-            if((qual[0] == '*') && (qual[1] == 0))
+            // Another record was read, so increment the number of reads.
+            ++numReads;
+            // See if the quality histogram should be genereated.
+            if(qual || phred)
             {
-                // This record does not have a quality string.
-                continue;
+                // Get the quality.
+                const char* qual = samRecord.getQuality();
+                // Check for no quality ('*').
+                if((qual[0] == '*') && (qual[1] == 0))
+                {
+                    // This record does not have a quality string, so no 
+                    // quality processing is necessary.
+                }
+                else
+                {
+                    int index = 0;
+                    while(qual[index] != 0)
+                    {
+                        // Check for valid quality.
+                        if(qual && ((qual[index] < START_QUAL) || (qual[index] > MAX_QUAL)))
+                        {
+                            std::cerr << "Invalid Quality found: " << qual[index] 
+                                      << ".  Must be between "
+                                      << START_QUAL << " and " << MAX_QUAL << ".\n";
+                            ++index;
+                            continue;
+                        }
+                        if(phred && ((qual[index] < START_PHRED) || (qual[index] > MAX_PHRED)))
+                        {
+                            std::cerr << "Invalid Quality found: " << qual[index] 
+                                      << ".  Must be between "
+                                      << START_PHRED << " and " << MAX_PHRED << ".\n";
+                            ++index;
+                            continue;
+                        }
+                        
+                        // Increment the count for this quality.
+                        ++(qualCount[(int)(qual[index])]);
+                        ++(phredCount[(int)(qual[index]) - PHRED_DIFF]);
+                        ++index;
+                    }
+                }
             }
 
-            while(qual[index] != 0)
+            // Check the next thing to do for the read.
+            if(baseQCPtr != NULL)
             {
-                // Check for valid quality.
-                if(qual && ((qual[index] < START_QUAL) || (qual[index] > MAX_QUAL)))
-                {
-                    std::cerr << "Invalid Quality found: " << qual[index] 
-                              << ".  Must be between "
-                              << START_QUAL << " and " << MAX_QUAL << ".\n";
-                    ++index;
-                    continue;
-                }
-                if(phred && ((qual[index] < START_PHRED) || (qual[index] > MAX_PHRED)))
-                {
-                    std::cerr << "Invalid Quality found: " << qual[index] 
-                              << ".  Must be between "
-                              << START_PHRED << " and " << MAX_PHRED << ".\n";
-                    ++index;
-                    continue;
-                }
-                
-                // Increment the count for this quality.
-                ++(qualCount[(int)(qual[index])]);
-                ++(phredCount[(int)(qual[index]) - PHRED_DIFF]);
-                ++index;
+                // Pileup the bases for this read.
+                pileup.processAlignmentRegion(samRecord, myStartPos, myEndPos);
             }
         }
+
+        // Done with a section, move on to the next one.
+
+        // New section, so flush the pileup.
+        pileup.flushPileup();
+    }
+
+    // Flush the rest of the pileup.
+    if(baseQCPtr != NULL)
+    {
+        // Pileup the bases.
+        pileup.processAlignmentRegion(samRecord, myStartPos, myEndPos);
+        ifclose(baseQCPtr);
     }
 
     std::cerr << "Number of records read = " << 
@@ -254,4 +327,93 @@ int Stats::execute(int argc, char **argv)
 
     return(status);
 }
+
+
+bool Stats::getNextSection(SamFile &samIn)
+{
+    static bool alreadyRead = false;
+    if(myRegionList == NULL)
+    {
+        // no region list is set, so just read once.
+        if(alreadyRead)
+        {
+            // No regions and it has already been read, so
+            // return false, no more to read.
+            return(false);
+        }
+        // Return true that there is more to read, but
+        // set the flag that it has already been read
+        // so the next call will return false.
+        alreadyRead = true;
+        return(true);
+    }
+    else
+    {
+        // There is a region list, so read process that.
+        // Track whether or not a section has been found.
+        bool sectionFound = false;
+        myStartPos = 0;
+        myEndPos = 0;
+
+        // Loop until the end of the file or the end of the file or 
+        // a section is found.
+        while(!sectionFound && !ifeof(myRegionList))
+        {
+            myRegBuffer.Clear();
+            myRegBuffer.ReadLine(myRegionList);
+            if(myRegBuffer.IsEmpty())
+            {
+                // Nothing read, so continue to the next line.
+                continue;
+            }
+        
+            // A line was read, so parse it.
+            myRegColumn.ReplaceColumns(myRegBuffer, '\t');
+            if(myRegColumn.Length() < 3)
+            {
+                // Incorrectly formatted line.
+                std::cerr << "Improperly formatted reg line: "
+                          << myRegBuffer
+                          << "; Skipping to the next line.\n";
+                continue;
+            }
+            
+            // Check the columns.
+            if(!myRegColumn[1].AsInteger(myStartPos))
+            {
+                // The start position (2nd column) is not an integer.
+                std::cerr << "Improperly formatted region line, start position "
+                          << "(2nd column) is not an integer: "
+                          << myRegColumn[1]
+                          << "; Skipping to the next line.\n";         
+            }
+            else if(!myRegColumn[2].AsInteger(myEndPos))
+            {
+                // The end position (3rd column) is not an integer.
+                std::cerr << "Improperly formatted region line, end position "
+                          << "(3rd column) is not an integer: "
+                          << myRegColumn[2]
+                          << "; Skipping to the next line.\n";         
+            }
+            else if(myStartPos >= myEndPos)
+            {
+                // The start position is >= the end position
+                std::cerr << "Improperly formatted region line, the start position "
+                          << "is >= end position: "
+                          << myRegColumn[1]
+                          << " >= "
+                          << myRegColumn[2]
+                          << "; Skipping to the next line.\n";         
+            }
+            else
+            {
+                sectionFound = true;
+                samIn.SetReadSection(myRegColumn[0].c_str(), myStartPos, myEndPos);
+            }
+        }
+        return(sectionFound);
+    }
+}
+
+
 

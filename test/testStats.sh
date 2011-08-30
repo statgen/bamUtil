@@ -33,5 +33,13 @@
 && \
 ../bin/bam stats --in testFilesLibBam/sortedBam.bam --unmapped --qual --maxNumReads 1 2> results/unmappedQualStatsMaxNum.txt \
 && diff results/unmappedQualStatsMaxNum.txt expected/unmappedQualStatsMaxNum.txt \
-
+&& \
+../bin/bam stats --in testFiles/testStatsBaseQC.sam --baseQC results/statsBaseQCsam.txt 2> results/statsBaseQCsam.log \
+&& diff results/statsBaseQCsam.txt expected/statsBaseQC.txt && diff results/statsBaseQCsam.log expected/statsBaseQC.log \
+&& \
+../bin/bam stats --in testFiles/testStatsBaseQC.bam --baseQC results/statsBaseQCbam.txt 2> results/statsBaseQCbam.log \
+&& diff results/statsBaseQCbam.txt expected/statsBaseQC.txt && diff results/statsBaseQCbam.log expected/statsBaseQC.log \
+&& \
+../bin/bam stats --in testFiles/testStatsBaseQCSorted.bam --baseQC results/statsBaseQCreg.txt --regionList testFiles/region.txt 2> results/statsBaseQCreg.log \
+&& diff results/statsBaseQCreg.txt expected/statsBaseQCreg.txt && diff results/statsBaseQCreg.log expected/statsBaseQCreg.log \
 

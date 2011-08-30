@@ -23,6 +23,7 @@
 #define __STATS_H__
 
 #include "BamExecutable.h"
+#include "SamFile.h"
 
 class Stats : public BamExecutable
 {
@@ -31,6 +32,20 @@ public:
     void description();
     void usage();
     int execute(int argc, char **argv);
+
+private:
+    bool getNextSection(SamFile& samIn);
+
+    // Pointer to the region list file
+    IFILE  myRegionList;
+
+    int myStartPos;
+    int myEndPos;
+
+    String myRegBuffer;
+    StringArray myRegColumn;
+
+    bool myWithinRegion;
 };
 
 #endif
