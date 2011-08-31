@@ -56,6 +56,7 @@ void Stats::usage()
     std::cerr << "\t\t--regionList  : File containing the region list chr<tab>start_pos<tab>end<pos>." << std::endl;
     std::cerr << "\t\t                Positions are 0 based and the end_pos is not included in the region." << std::endl;
     std::cerr << "\t\t                Uses bamIndex." << std::endl;
+    std::cerr << "\t\t--minMapQual  : The minimum mapping quality for filtering reads in the baseQC stats." << std::endl;
     std::cerr << "\t\t--noeof       : Do not expect an EOF block on a bam file." << std::endl;
     std::cerr << "\t\t--params      : Print the parameter settings" << std::endl;
     std::cerr << std::endl;
@@ -76,6 +77,7 @@ int Stats::execute(int argc, char **argv)
     bool unmapped = false;
     String baseQC = "";
     String regionList = "";
+    int minMapQual = 0;
 
 
     ParameterList inputParameters;
@@ -92,6 +94,7 @@ int Stats::execute(int argc, char **argv)
         LONG_PARAMETER("unmapped", &unmapped)
         LONG_STRINGPARAMETER("bamIndex", &indexFile)
         LONG_STRINGPARAMETER("regionList", &regionList)
+        LONG_INTPARAMETER("minMapQual", &minMapQual)
         LONG_PARAMETER("noeof", &noeof)
         LONG_PARAMETER("params", &params)
         END_LONG_PARAMETERS();
@@ -144,6 +147,7 @@ int Stats::execute(int argc, char **argv)
         baseQCPtr = ifopen(baseQC, "w");
         PileupElementBaseQCStats::setOutputFile(baseQCPtr);
         PileupElementBaseQCStats::printHeader();
+        PileupElementBaseQCStats::setMapQualFilter(minMapQual);
     }
 
     if(params)

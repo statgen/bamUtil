@@ -113,6 +113,12 @@ void PileupElementBaseQCStats::addEntry(SamRecord& record)
                 ++numZeroMapQ;
             }
         }
+
+        // Check for map fileter.
+        if(record.getMapQuality() < ourMinMapQuality)
+        {
+            numMapQFilter++;
+        }
     }
     else
     {
@@ -129,19 +135,12 @@ void PileupElementBaseQCStats::addEntry(SamRecord& record)
     }
 
     // Prior to doing any more analysis, check to see if it is filtered out.
-    // Always filter out unmapped, and based on the options, filter out 
-    // duplicates and QC failures.
-    if(!SamFlag::isMapped(flag) || (ourFilterDups && SamFlag::isDuplicate(flag)) ||
+    // Always filter out unmapped and mapped with lower than minimum mapping quality,
+    // and based on the options, filter out duplicates and QC failures.
+    if(!SamFlag::isMapped(flag) || (record.getMapQuality() < ourMinMapQuality) || (ourFilterDups && SamFlag::isDuplicate(flag)) ||
        (ourFilterQCFail && SamFlag::isQCFailure(flag)))
     {
         // filtered read, so do no more analysis on it.
-        return;
-    }
-
-    if(record.getMapQuality() < ourMinMapQuality)
-    {
-        // This read is filtered out due to low mapping quality.
-        ++numMapQFilter;
         return;
     }
 

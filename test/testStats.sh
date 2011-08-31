@@ -42,4 +42,13 @@
 && \
 ../bin/bam stats --in testFiles/testStatsBaseQCSorted.bam --baseQC results/statsBaseQCreg.txt --regionList testFiles/region.txt 2> results/statsBaseQCreg.log \
 && diff results/statsBaseQCreg.txt expected/statsBaseQCreg.txt && diff results/statsBaseQCreg.log expected/statsBaseQCreg.log \
+&& \
+../bin/bam stats --in testFiles/testStatsBaseQCSorted.bam --baseQC results/statsBaseQCregQual2.txt --regionList testFiles/region.txt --minMapQual 2 2> results/statsBaseQCregQual2.log \
+&& diff results/statsBaseQCregQual2.txt expected/statsBaseQCregQual2.txt && diff results/statsBaseQCregQual2.log expected/statsBaseQCreg.log \
+&& \
+../bin/bam stats --in testFiles/testStatsBaseQCSorted.bam --baseQC results/statsBaseQCregQual20.txt --regionList testFiles/region.txt --minMapQual 20 2> results/statsBaseQCregQual20.log \
+&& diff results/statsBaseQCregQual20.txt expected/statsBaseQCregQual20.txt && diff results/statsBaseQCregQual20.log expected/statsBaseQCreg.log \
+&& \
+../bin/bam stats --in testFiles/testStatsBaseQCSorted.bam --baseQC results/statsBaseQCregQual40.txt --regionList testFiles/region.txt --minMapQual 40 2> results/statsBaseQCregQual40.log \
+&& diff results/statsBaseQCregQual40.txt expected/statsBaseQCregQual40.txt && diff results/statsBaseQCregQual40.log expected/statsBaseQCreg.log \
 
