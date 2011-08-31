@@ -167,7 +167,8 @@ void PileupElementBaseQCStats::addEntry(SamRecord& record)
 // has been fully populated by all records that cover the reference position.
 void PileupElementBaseQCStats::analyze()
 {
-    if(getRefPosition() != UNSET_POSITION)
+    // Only output if the position is covered.
+    if(numEntries != 0)
     {
         int32_t startPos = getRefPosition();
         myOutputString = getChromosome();

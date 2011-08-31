@@ -39,7 +39,8 @@ void Stats::description()
 void Stats::usage()
 {
     BamExecutable::usage();
-    std::cerr << "\t./bam stats --in <inputFile> [--basic] [--qual] [--phred] [--baseQC <outputFileName>] [--maxNumReads <maxNum>] [--unmapped] [--bamIndex <bamIndexFile>] [--noeof] [--params]" << std::endl;
+    std::cerr << "\t./bam stats --in <inputFile> [--basic] [--qual] [--phred] [--baseQC <outputFileName>] [--maxNumReads <maxNum>] "
+              << "[--unmapped] [--bamIndex <bamIndexFile>] [--regionList <regFileName>] [--minMapQual <minMapQ>] [--dbsnp <dbsnpFile>] [--noeof] [--params]" << std::endl;
     std::cerr << "\tRequired Parameters:" << std::endl;
     std::cerr << "\t\t--in : the SAM/BAM file to calculate stats for" << std::endl;
     std::cerr << "\tTypes of Statistics that can be generated:" << std::endl;
@@ -53,10 +54,11 @@ void Stats::usage()
     std::cerr << "\t\t--unmapped    : Only process unmapped reads (requires a bamIndex file)" << std::endl;
     std::cerr << "\t\t--bamIndex    : The path/name of the bam index file" << std::endl;
     std::cerr << "\t\t                (if required and not specified, uses the --in value + \".bai\")" << std::endl;
-    std::cerr << "\t\t--regionList  : File containing the region list chr<tab>start_pos<tab>end<pos>." << std::endl;
+    std::cerr << "\t\t--regionList  : File containing the regions to be processed chr<tab>start_pos<tab>end<pos>." << std::endl;
     std::cerr << "\t\t                Positions are 0 based and the end_pos is not included in the region." << std::endl;
     std::cerr << "\t\t                Uses bamIndex." << std::endl;
     std::cerr << "\t\t--minMapQual  : The minimum mapping quality for filtering reads in the baseQC stats." << std::endl;
+    std::cerr << "\t\t--dbsnp       : The dbSnp file of positions to exclude from baseQC analysis." << std::endl;
     std::cerr << "\t\t--noeof       : Do not expect an EOF block on a bam file." << std::endl;
     std::cerr << "\t\t--params      : Print the parameter settings" << std::endl;
     std::cerr << std::endl;
@@ -78,6 +80,8 @@ int Stats::execute(int argc, char **argv)
     String baseQC = "";
     String regionList = "";
     int minMapQual = 0;
+    String dbsnp = "";
+    PosList *dbsnpListPtr = NULL;
 
 
     ParameterList inputParameters;
@@ -95,6 +99,7 @@ int Stats::execute(int argc, char **argv)
         LONG_STRINGPARAMETER("bamIndex", &indexFile)
         LONG_STRINGPARAMETER("regionList", &regionList)
         LONG_INTPARAMETER("minMapQual", &minMapQual)
+        LONG_STRINGPARAMETER("dbsnp", &dbsnp)
         LONG_PARAMETER("noeof", &noeof)
         LONG_PARAMETER("params", &params)
         END_LONG_PARAMETERS();
@@ -191,6 +196,85 @@ int Stats::execute(int argc, char **argv)
         }
     }
 
+    //////////////////////////
+    // Read dbsnp if specified and doing baseQC
+    if((baseQCPtr != NULL) && (!dbsnp.IsEmpty()))
+    {
+        // Read the dbsnp file.
+        IFILE fdbSnp;
+        fdbSnp = ifopen(dbsnp,"r");
+        // Determine how many entries.
+        const SamReferenceInfo* refInfo = samHeader.getReferenceInfo();
+        if(refInfo != NULL)
+        {
+            int maxRefLen = 0;
+            for(int i = 0; i < refInfo->getNumEntries(); i++)
+            {
+                int refLen = refInfo->getReferenceLength(i);
+                if(refLen >= maxRefLen)
+                {
+                    maxRefLen = refLen + 1;
+                }
+            }
+
+            dbsnpListPtr = new PosList(refInfo->getNumEntries(),maxRefLen);
+        }
+
+        if(fdbSnp==NULL)
+        {
+            std::cerr << "Open dbSNP file " << dbsnp.c_str() << " failed!\n";
+        }
+        else if(dbsnpListPtr == NULL)
+        {
+            std::cerr << "Failed to init the memory allocation for the dbsnpList.\n";
+        }
+        else if(refInfo == NULL)
+        {
+            std::cerr << "Failed to get the reference information from the bam file.\n";
+        }
+        else
+        {
+            // Read the dbsnp file.
+            StringArray tokens;
+            String buffer;
+            int position = 0;
+            int refID = 0;
+
+            // Loop til the end of the file.
+            while (!ifeof(fdbSnp))
+            {
+                // Read the next line.
+                buffer.ReadLine(fdbSnp);
+                // If it does not have at least 2 columns, 
+                // continue to the next line.
+                if (buffer.IsEmpty() || buffer[0] == '#') continue;
+                tokens.AddTokens(buffer);
+                if(tokens.Length() < 2) continue;
+
+                if(!tokens[1].AsInteger(position))
+                {
+                    std::cerr << "Improperly formatted region line, start position "
+                              << "(2nd column) is not an integer: "
+                              << tokens[1]
+                              << "; Skipping to the next line.\n";         
+                    continue;
+                }
+
+                // Look up the reference name.
+                refID = samHeader.getReferenceID(tokens[0]);
+                if(refID != SamReferenceInfo::NO_REF_ID)
+                {
+                    // Reference id was found, so add it to the dbsnp
+                    dbsnpListPtr->addPosition(refID, position);
+                }
+        
+                tokens.Clear();
+                buffer.Clear();
+            }
+        }
+        ifclose(fdbSnp);
+    }
+
     // Read the sam records.
     SamRecord samRecord;
 
@@ -274,7 +358,7 @@ int Stats::execute(int argc, char **argv)
             if(baseQCPtr != NULL)
             {
                 // Pileup the bases for this read.
-                pileup.processAlignmentRegion(samRecord, myStartPos, myEndPos);
+                pileup.processAlignmentRegion(samRecord, myStartPos, myEndPos, dbsnpListPtr);
             }
         }
 
@@ -288,7 +372,7 @@ int Stats::execute(int argc, char **argv)
     if(baseQCPtr != NULL)
     {
         // Pileup the bases.
-        pileup.processAlignmentRegion(samRecord, myStartPos, myEndPos);
+        pileup.processAlignmentRegion(samRecord, myStartPos, myEndPos, dbsnpListPtr);
         ifclose(baseQCPtr);
     }
 
