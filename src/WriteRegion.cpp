@@ -54,12 +54,14 @@ void WriteRegion::description()
 void WriteRegion::usage()
 {
     BamExecutable::usage();
-    std::cerr << "\t./bam writeRegion --in <inputFilename>  --out <outputFilename> [--bamIndex <bamIndexFile>] [--noeof] [--refName <reference Name> | --refID <reference ID>] [--start <0-based start pos>] [--end <0-based end psoition>] [--params]" << std::endl;
+    std::cerr << "\t./bam writeRegion --in <inputFilename>  --out <outputFilename> [--bamIndex <bamIndexFile>] "
+              << "[--refName <reference Name> | --refID <reference ID>] [--start <0-based start pos>] "
+              << "[--end <0-based end psoition>] [--bed <bed filename>] [--withinRegion] [--readName <readName>] "
+              << "[--params] [--noeof]" << std::endl;
     std::cerr << "\tRequired Parameters:" << std::endl;
     std::cerr << "\t\t--in        : the BAM file to be read" << std::endl;
     std::cerr << "\t\t--out       : the SAM/BAM file to write to" << std::endl;
     std::cerr << "\tOptional Parameters:" << std::endl;
-    std::cerr << "\t\t--noeof     : do not expect an EOF block on a bam file." << std::endl;
     std::cerr << "\t\t--bamIndex  : the path/name of the bam index file" << std::endl;
     std::cerr << "\t\t              (if not specified, uses the --in value + \".bai\")" << std::endl;
     std::cerr << "\t\t--refName   : the BAM reference Name to read" << std::endl;
@@ -75,10 +77,11 @@ void WriteRegion::usage()
     std::cerr << "\t\t--end       : exclusive 0-based end position." << std::endl;
     std::cerr << "\t\t              Defaults to -1: meaning til the end of the reference." << std::endl;
     std::cerr << "\t\t              Only applicable if refName/refID is set." << std::endl;
-    std::cerr << "\t\t--bed       : Use the specified bed file for regions." << std::endl;
-    std::cerr << "\t\t--withinReg : Only prints reads fully enclosed within the region." << std::endl;
-    std::cerr << "\t\t--readName  : print only reads with this name." << std::endl;
+    std::cerr << "\t\t--bed       : use the specified bed file for regions." << std::endl;
+    std::cerr << "\t\t--withinReg : only print reads fully enclosed within the region." << std::endl;
+    std::cerr << "\t\t--readName  : only print reads with this read name." << std::endl;
     std::cerr << "\t\t--params    : print the parameter settings" << std::endl;
+    std::cerr << "\t\t--noeof     : do not expect an EOF block on a bam file." << std::endl;
     std::cerr << std::endl;
 }
 
