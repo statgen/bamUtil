@@ -41,11 +41,11 @@ void ReadReference::usage()
     std::cerr << "\tRequired Parameters:\n"
               << "\t\t--refFile  : the reference\n"
               << "\t\t--refName  : the SAM/BAM reference Name to read\n"
-              << "\t\t--start    : inclusive 0-based start position (defaults to -1)\n"
+              << "\t\t--start    : inclusive 0-based start position\n"
+              << "\t\t--params   : print the parameter settings\n"
               << "\tRequired Length Parameter (one but not both needs to be specified):\n"
               << "\t\t--end      : exclusive 0-based end position\n"
               << "\t\t--numBases : number of bases from start to display\n"
-              << "\t\t--params   : print the parameter settings\n"
               << std::endl;
 }
 
