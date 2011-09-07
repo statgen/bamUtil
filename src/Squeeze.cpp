@@ -38,7 +38,7 @@ Squeeze::~Squeeze()
 
 void Squeeze::squeezeDescription()
 {
-    std::cerr << " squeeze -  reduces files size by dropping OQ fields, duplicates, specified tags, using '=' when a base matches the reference, binning quality scores." << std::endl;
+    std::cerr << " squeeze -  reduces files size by dropping OQ fields, duplicates, & specified tags, using '=' when a base matches the reference, binning quality scores, and replacing readNames with unique integers" << std::endl;
 }
 
 

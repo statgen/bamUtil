@@ -43,7 +43,7 @@ WriteRegion::WriteRegion()
 
 void WriteRegion::writeRegionDescription()
 {
-    std::cerr << " writeRegion - Write a file with reads in the specified region" << std::endl;
+    std::cerr << " writeRegion - Write a file with reads in the specified region and/or have the specified read name" << std::endl;
 }
 
 void WriteRegion::description()
