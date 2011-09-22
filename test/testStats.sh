@@ -54,3 +54,6 @@
 && \
 ../bin/bam stats --in testFiles/testStatsBaseQCSorted.bam --baseQC results/statsBaseQCregDB.txt --dbsnp testFiles/dbsnp.txt --regionList testFiles/region.txt 2> results/statsBaseQCregDB.log \
 && diff results/statsBaseQCregDB.txt expected/statsBaseQCregDB.txt && diff results/statsBaseQCregDB.log expected/statsBaseQCreg.log \
+&& \
+../bin/bam stats --in testFiles/testStatsBaseQC255.sam --baseQC results/statsBaseQCsam255.txt 2> results/statsBaseQCsam255.log \
+&& diff results/statsBaseQCsam255.txt expected/statsBaseQC255.txt && diff results/statsBaseQCsam255.log expected/statsBaseQC.log \

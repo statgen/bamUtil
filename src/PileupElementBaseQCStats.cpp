@@ -55,8 +55,8 @@ void PileupElementBaseQCStats::setOutputFile(IFILE outputPtr)
 
 void PileupElementBaseQCStats::printHeader()
 {
-    ifprintf(ourOutputFile, "chrom\tchromStart\tchromEnd\tDepth\tQ20Bases\tQ20BasesPct(%)\tTotalReads\tMappedBases\tMappingRate(%)\tMapRate_MQPass(%)\tZeroMapQual(%)\tMapQual<10(%)\tPairedReads(%)\tProperPaired(%)\tDupRate(%)\tQCFailRate(%)\n");
-    //    ifprintf(ourOutputFile, "chrom\tchromStart\tchromEnd\tDepth\tQ20Bases(e9)\tQ20BasesPct(%)\tTotalReads(e6)\tMappedBases(e9)\tMappingRate(%)\tMapRate_MQPass(%)\tZeroMapQual(%)\tMapQual<10(%)\tPairedReads(%)\tProperPaired(%)\tDupRate(%)\tQCFailRate(%)\n");
+    ifprintf(ourOutputFile, "chrom\tchromStart\tchromEnd\tDepth\tQ20Bases\tQ20BasesPct(%)\tTotalReads\tMappedBases\tMappingRate(%)\tMapRate_MQPass(%)\tZeroMapQual(%)\tMapQual<10(%)\tPairedReads(%)\tProperPaired(%)\tDupRate(%)\tQCFailRate(%)\tAverageMapQuality\tAverageMapQualCount\n");
+    //    ifprintf(ourOutputFile, "chrom\tchromStart\tchromEnd\tDepth\tQ20Bases(e9)\tQ20BasesPct(%)\tTotalReads(e6)\tMappedBases(e9)\tMappingRate(%)\tMapRate_MQPass(%)\tZeroMapQual(%)\tMapQual<10(%)\tPairedReads(%)\tProperPaired(%)\tDupRate(%)\tQCFailRate(%)\tAverageMapQuality\tAverageMapQualCount(e9)\n");
 }
 
 
@@ -135,24 +135,57 @@ void PileupElementBaseQCStats::addEntry(SamRecord& record)
     }
 
     // Prior to doing any more analysis, check to see if it is filtered out.
-    // Always filter out unmapped and mapped with lower than minimum mapping quality,
-    // and based on the options, filter out duplicates and QC failures.
-    if(!SamFlag::isMapped(flag) || (record.getMapQuality() < ourMinMapQuality) || (ourFilterDups && SamFlag::isDuplicate(flag)) ||
+    // Always filter out:
+    //   * unmapped
+    //   * deletions/skips
+    //   * duplicates if specified in the options
+    //   * QC failures if specified in the options
+    if(!SamFlag::isMapped(flag) ||
+       (readIndex == CigarRoller::INDEX_NA) ||
+       (ourFilterDups && SamFlag::isDuplicate(flag)) ||
        (ourFilterQCFail && SamFlag::isQCFailure(flag)))
     {
         // filtered read, so do no more analysis on it.
         return;
     }
 
-    // If the readPosition is N/A, this is a deletion.
-    if(readIndex == CigarRoller::INDEX_NA)
+    // Store the mapping quality for calculating the average mapping quality
+    // if it is not 255 (unknown).
+    // Also store the number of entries used for calculating the mapping
+    // quality.
+    if(record.getMapQuality() != 255)
     {
-        // Do nothing unless this read has a base at this position.
+        // Store this for overflow check.
+        uint32_t prevMapQ = sumMapQ;
+        sumMapQ += record.getMapQuality();
+        // Increment the number of entries in the mapping quality sum.
+        ++averageMapQCount;
+        
+        // Check for overflow.
+        if(prevMapQ > sumMapQ)
+        {
+            std::cerr << "Mapping Quality Overflow for chromosome: "
+                      << getChromosome() << ", Position: " << getRefPosition() 
+                      << "\n";
+            // So just calculate the previous average, then start adding to that.
+            // This is not a good indicator, but it really shouldn't overflow.
+            --averageMapQCount;
+            sumMapQ = prevMapQ / averageMapQCount;
+            sumMapQ += record.getMapQuality();
+            averageMapQCount = 2;
+        }
+    }
+
+    // Now that we have added the mapping quality for the average calculation,
+    // filter out lower than minimum mapping quality,
+    if(record.getMapQuality() < ourMinMapQuality)
+    {
         return;
     }
 
     ++depth;
 
+ 
     // Check for Q20 base.
     if(record.getQuality(readIndex) >= Q20_CHAR_VAL)
     {
@@ -199,7 +232,7 @@ void PileupElementBaseQCStats::analyze()
         myOutputString += "\t";
         if(numEntries == 0)
         {
-            myOutputString += "0.000\t0.000\t0.000\t0.000\t0.000\t0.000\t0.000\t0.000\n";
+            myOutputString += "0.000\t0.000\t0.000\t0.000\t0.000\t0.000\t0.000\t0.000";
         }
         else
         {
@@ -221,8 +254,22 @@ void PileupElementBaseQCStats::analyze()
             myOutputString += 100 * ((double)numDups)/numEntries;
             myOutputString += "\t";
             myOutputString += 100 * ((double)numQCFail)/numEntries;
-            myOutputString += "\n";
         }
+
+        myOutputString += "\t";
+        if(averageMapQCount != 0)
+        {
+            myOutputString += ((double)sumMapQ)/averageMapQCount;
+        }
+        else
+        {
+            myOutputString += "0.000";
+        }
+        myOutputString += "\t";
+        myOutputString += averageMapQCount;
+        // myOutputString += ((double)averageMapQCount)/E9_CALC;
+        myOutputString += "\n";
+        
         ifprintf(ourOutputFile, myOutputString.c_str());
     }
 }
@@ -251,6 +298,8 @@ void PileupElementBaseQCStats::initVars()
     numPaired = 0;
     numProperPaired = 0;
     numQCFail = 0;
+    sumMapQ = 0;
+    averageMapQCount = 0;
     myOutputString.Clear();
 }
 

@@ -80,6 +80,8 @@ private:
     int numPaired;
     int numProperPaired;
     int numQCFail;
+    uint64_t sumMapQ;
+    int averageMapQCount;
 
     String myOutputString;
 };
