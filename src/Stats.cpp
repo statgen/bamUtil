@@ -483,7 +483,7 @@ bool Stats::getNextSection(SamFile &samIn)
                           << myRegColumn[2]
                           << "; Skipping to the next line.\n";         
             }
-            else if(myStartPos >= myEndPos)
+            else if((myStartPos >= myEndPos) && (myEndPos != -1))
             {
                 // The start position is >= the end position
                 std::cerr << "Improperly formatted region line, the start position "
