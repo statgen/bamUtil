@@ -57,7 +57,7 @@ void Squeeze::usage()
     std::cerr << "\t\t--in         : the SAM/BAM file to be read" << std::endl;
     std::cerr << "\t\t--out        : the SAM/BAM file to be written" << std::endl;
     std::cerr << "\tOptional Parameters:" << std::endl;
-    std::cerr << "\t\t--refFile    : reference file name used to convert any bases that match the reference to '-'" << std::endl;
+    std::cerr << "\t\t--refFile    : reference file name used to convert any bases that match the reference to '='" << std::endl;
     std::cerr << "\t\t--keepOQ     : keep the OQ tag rather than removing it.  Default is to remove it." << std::endl;
     std::cerr << "\t\t--keepDups   : keep duplicates rather than removing records marked duplicate.  Default is to remove them." << std::endl;
     std::cerr << "\t\t--sReadName  : Replace read names with unique integers and write the mapping to the specified file." << std::endl;

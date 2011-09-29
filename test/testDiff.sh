@@ -32,7 +32,16 @@
 && \
 # Diff order/pos but no threshold for pos reverse the order.
 ../bin/bam diff --in1 testFiles/testDiff2.sam --in2 testFiles/testDiff1.sam --seq --baseQual --tags "OP:i;MD:Z" --posDiff 1 --out results/diffNoThresh2.sam 2> results/empty.log \
-&& diff results/diffNoThresh2_only1_testDiff2.sam expected/diffNoThresh2_only1_testDiff2.sam && diff results/diffNoThresh2_only2_testDiff1.sam expected/diffNoThresh2_only2_testDiff1.sam && diff results/empty.log expected/empty.txt 
+&& diff results/diffNoThresh2_only1_testDiff2.sam expected/diffNoThresh2_only1_testDiff2.sam && diff results/diffNoThresh2_only2_testDiff1.sam expected/diffNoThresh2_only2_testDiff1.sam && diff results/empty.log expected/empty.txt \
+&& \
+################ Test for ASHG poster 2011
+# Diff semi-real example diff output.
+../bin/bam diff --in1 testFiles/testDiff3.sam --in2 testFiles/testDiff4.sam --seq --baseQual --tags "NM:i;OQ:Z;OP:i;OC:Z" --out results/diffAshg.log 2> results/empty.log \
+&& diff results/diffAshg.log expected/diffAshg.log && diff results/empty.log expected/empty.txt \
+#&& \
+# Diff semi-real example sam output.
+../bin/bam diff --in1 testFiles/testDiff3.sam --in2 testFiles/testDiff4.sam --seq --baseQual --tags "NM:i;OQ:Z;OP:i;OC:Z" --out results/diffAshg.sam 2> results/empty.log \
+&& diff results/diffAshg.sam expected/diffAshg.sam && diff results/diffAshg_only1_testDiff3.sam expected/diffAshg_only1_testDiff3.sam && diff results/diffAshg_only2_testDiff4.sam expected/diffAshg_only2_testDiff4.sam && diff results/empty.log expected/empty.txt \
 
 if [ $? -ne 0 ]
 then
