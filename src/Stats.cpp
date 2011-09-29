@@ -61,6 +61,8 @@ void Stats::usage()
     std::cerr << "\t\t--dbsnp       : The dbSnp file of positions to exclude from baseQC analysis." << std::endl;
     std::cerr << "\t\t--noeof       : Do not expect an EOF block on a bam file." << std::endl;
     std::cerr << "\t\t--params      : Print the parameter settings" << std::endl;
+    std::cerr << "\tOptional Base QC Only Parameters:" << std::endl;
+    std::cerr << "\t\t--sumStats    : Alternate summary output." << std::endl;
     std::cerr << std::endl;
 }
 
@@ -75,6 +77,7 @@ int Stats::execute(int argc, char **argv)
     bool params = false;
     bool qual = false;
     bool phred = false;
+    bool sumStats = false;
     int maxNumReads = -1;
     bool unmapped = false;
     String baseQC = "";
@@ -100,6 +103,8 @@ int Stats::execute(int argc, char **argv)
         LONG_STRINGPARAMETER("regionList", &regionList)
         LONG_INTPARAMETER("minMapQual", &minMapQual)
         LONG_STRINGPARAMETER("dbsnp", &dbsnp)
+        LONG_PARAMETER_GROUP("Optional BaseQC Only Parameters")
+        LONG_PARAMETER("sumStats", &sumStats)
         LONG_PARAMETER("noeof", &noeof)
         LONG_PARAMETER("params", &params)
         END_LONG_PARAMETERS();
@@ -151,8 +156,9 @@ int Stats::execute(int argc, char **argv)
     {
         baseQCPtr = ifopen(baseQC, "w");
         PileupElementBaseQCStats::setOutputFile(baseQCPtr);
-        PileupElementBaseQCStats::printHeader();
         PileupElementBaseQCStats::setMapQualFilter(minMapQual);
+        PileupElementBaseQCStats::setSumStats(sumStats);
+        PileupElementBaseQCStats::printHeader();
     }
 
     if(params)
