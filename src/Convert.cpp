@@ -50,6 +50,7 @@ void Convert::usage()
     std::cerr << "\t\t--refFile    : reference file name" << std::endl;
     std::cerr << "\t\t--noeof      : do not expect an EOF block on a bam file." << std::endl;
     std::cerr << "\t\t--params     : print the parameter settings" << std::endl;
+    std::cerr << "\t\t--recover    : attempt error recovery while reading a bam file." << std::endl;
     std::cerr << std::endl;
     std::cerr << "\tOptional Sequence Parameters (only specify one):" << std::endl;
     std::cerr << "\t\t--useOrigSeq : Leave the sequence as is (default & used if reference is not specified)." << std::endl;
