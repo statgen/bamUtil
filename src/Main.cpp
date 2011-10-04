@@ -33,6 +33,7 @@
 #include "Diff.h"
 #include "Squeeze.h"
 #include "FindCigars.h"
+#include "Stats.h"
 
 void Usage()
 {
@@ -53,6 +54,7 @@ void Usage()
     Diff::diffDescription();
     Squeeze::squeezeDescription();
     FindCigars::findCigarsDescription();
+    Stats::statsDescription();
     std::cerr << std::endl;
     std::cerr << "Usage: " << std::endl;
     std::cerr << "\tbam <tool> [<tool arguments>]" << std::endl;
@@ -123,6 +125,10 @@ int main(int argc, char ** argv)
     else if(strcmp(argv[1], "findCigars") == 0)
     {
         bamExe = new FindCigars();
+    }
+    else if(strcmp(argv[1], "stats") == 0)
+    {
+        bamExe = new Stats();
     }
     else if(strcmp(argv[1], "convert") == 0)
     {

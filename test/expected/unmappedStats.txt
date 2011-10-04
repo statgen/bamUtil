@@ -1,0 +1,17 @@
+Number of records read = 2
+
+TotalReads	2.00
+MappedReads	0.00
+PairedReads	2.00
+ProperPair	0.00
+DuplicateReads	0.00
+QCFailureReads	0.00
+
+MappingRate(%)	0.00
+PairedReads(%)	100.00
+ProperPair(%)	0.00
+DupRate(%)	0.00
+QCFailRate(%)	0.00
+
+TotalBases	4.00
+BasesInMappedReads	0.00

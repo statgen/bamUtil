@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2010  Regents of the University of Michigan
+ *  Copyright (C) 2011  Regents of the University of Michigan
  *
  *   This program is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -16,50 +16,36 @@
  */
 
 //////////////////////////////////////////////////////////////////////////
-// This file contains the processing for the executable option "writeRegion"
-// which writes a file with the reads in the specified region.
+// This file contains the processing for the executable option "stats"
+// which generates some statistics for SAM/BAM files.
 
-#ifndef __WRITE_REGION_H__
-#define __WRITE_REGION_H__
+#ifndef __STATS_H__
+#define __STATS_H__
 
 #include "BamExecutable.h"
 #include "SamFile.h"
 
-class WriteRegion : public BamExecutable
+class Stats : public BamExecutable
 {
 public:
-    WriteRegion();
-    static void writeRegionDescription();
+    static void statsDescription();
     void description();
     void usage();
     int execute(int argc, char **argv);
 
 private:
-    bool getNextSection();
+    bool getNextSection(SamFile& samIn);
 
-    static const int UNSPECIFIED_INT = -1;
-    static const int UNSET_REF = -2;
+    // Pointer to the region list file
+    IFILE  myRegionList;
 
-    bool myWithinReg;
-    bool myWroteReg;
+    int myStartPos;
+    int myEndPos;
 
-    int myStart;
-    int myEnd;
-    int myPrevStart;
-    int myPrevEnd;
+    String myRegBuffer;
+    StringArray myRegColumn;
 
-    int myRefID;
-    String myRefName;
-
-    String myPrevRefName;
-    int myBedRefID;
-
-    IFILE       myBedFile;
-    String      myBedBuffer;
-    StringArray myBedColumn;
-
-    SamFile mySamIn;
-    SamFileHeader mySamHeader;
+    bool myWithinRegion;
 };
 
 #endif

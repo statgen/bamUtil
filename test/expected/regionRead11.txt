@@ -1,0 +1,6 @@
+Improperly formatted bed line, the start position is >= end position: 75 >= 74; Skipping to the next line.
+Improperly formatted bed, the start position is < the previous start (bed is assumed to be sorted): 1009 < 1010; Skipping to the next line.
+Improperly formatted bed line, start position (2nd column) is not an integer: 1900a; Skipping to the next line.
+Improperly formatted bed line, end position (3rd column) is not an integer: s15555; Skipping to the next line.
+Improperly formatted bed line: chr1	1999	15555	1900; Skipping to the next line.
+Wrote results/regionRead11.sam with 4 records.

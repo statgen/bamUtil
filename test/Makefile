@@ -3,7 +3,7 @@ TEST_COMMAND = ln -sfT $(ACTUAL_PATH)/bam/test/testFiles testFilesLibBam; \
                ./testFilter.sh && ./testSeq.sh && \
                ./testRevert.sh && ./testDiff.sh && \
                ./splitChromosome.sh && ./writeRegion.sh && \
-               ./testSqueeze.sh && ./testCigars.sh
+               ./testSqueeze.sh && ./testCigars.sh && ./testStats.sh
 
 TEST_CLEAN = rm -f testFilesLibBam
 

@@ -34,7 +34,7 @@ Revert::Revert()
 
 void Revert::revertDescription()
 {
-    std::cerr << " revert - Revert SAM/BAM replacing the specified fields with their previous values (if known)." << std::endl;
+    std::cerr << " revert - Revert SAM/BAM replacing the specified fields with their previous values (if known) and removes specified tags" << std::endl;
 }
 
 

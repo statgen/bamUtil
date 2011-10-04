@@ -40,6 +40,16 @@ public:
     int execute(int argc, char **argv);
 
 private:
+    void binPhredQuals(int binStartPhred, int binEndPhred);
+
+    // Non-phred max
+    static const int MAX_QUAL_CHAR = 126;
+    static const int MAX_PHRED_QUAL = 93;
+    static const int QUAL_CONVERT = 33;
+    bool myBinMid;
+    bool myBinHigh;
+    // Non-phred indices
+    int myQualBinMap[MAX_QUAL_CHAR+1];
 };
 
 #endif
