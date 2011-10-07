@@ -39,8 +39,8 @@ void Stats::description()
 void Stats::usage()
 {
     BamExecutable::usage();
-    std::cerr << "\t./bam stats --in <inputFile> [--basic] [--qual] [--phred] [--baseQC <outputFileName>] [--maxNumReads <maxNum>] "
-              << "[--unmapped] [--bamIndex <bamIndexFile>] [--regionList <regFileName>] [--minMapQual <minMapQ>] [--dbsnp <dbsnpFile>] [--noeof] [--params]" << std::endl;
+    std::cerr << "\t./bam stats --in <inputFile> [--basic] [--qual] [--phred] [--baseQC <outputFileName>] [--maxNumReads <maxNum>]"
+              << "[--unmapped] [--bamIndex <bamIndexFile>] [--regionList <regFileName>] [--minMapQual <minMapQ>] [--dbsnp <dbsnpFile>] [--sumStats] [--noeof] [--params]" << std::endl;
     std::cerr << "\tRequired Parameters:" << std::endl;
     std::cerr << "\t\t--in : the SAM/BAM file to calculate stats for" << std::endl;
     std::cerr << "\tTypes of Statistics that can be generated:" << std::endl;
