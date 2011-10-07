@@ -39,8 +39,12 @@ public:
     /// Set the output file to the already opened file.
     static void setOutputFile(IFILE outputPtr);
 
-    // Print the output format.
+    // Print the output format, make sure you call after setSumStats
+    // if you want summary statistics or your output file
+    // will have the wrong header..
     static void printHeader();
+
+    static void setSumStats(bool sumStats);
 
     PileupElementBaseQCStats();
 
@@ -64,6 +68,7 @@ private:
     static bool ourFilterQCFail;
     static int ourMinMapQuality;
     static IFILE ourOutputFile;
+    static bool ourSumStats;
     static const int Q20_CHAR_VAL = 53;
     static const int E9_CALC = 1000000000;
     static const int E6_CALC = 1000000;
@@ -74,12 +79,13 @@ private:
     int numDups;
     int numReads;
     int numMapped;
-    int numMapQFilter;
+    int numMapQPass;
     int numZeroMapQ;
     int numLT10MapQ;
     int numPaired;
     int numProperPaired;
     int numQCFail;
+    int numMapQ255;
     uint64_t sumMapQ;
     int averageMapQCount;
 
