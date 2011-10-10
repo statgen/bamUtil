@@ -3,7 +3,7 @@ The following parameters are available.  Ones with "[]" are in effect:
 
 Input Parameters
  --in [testFilesLibBam/testBam.bam], --out [-], --refFile [], --noeof,
-                        --params [ON]
+                        --recover, --params [ON]
    SequenceConversion : --useBases, --useEquals, --useOrigSeq [ON]
 
 
