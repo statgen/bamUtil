@@ -32,6 +32,7 @@ bool PileupElementBaseQCStats::ourFilterDups = true;
 bool PileupElementBaseQCStats::ourFilterQCFail = true;
 int PileupElementBaseQCStats::ourMinMapQuality = 0;
 IFILE PileupElementBaseQCStats::ourOutputFile = 0;
+bool PileupElementBaseQCStats::ourSumStats = false;
 
 void PileupElementBaseQCStats::filterDups(bool filterDups)
 {
@@ -55,8 +56,21 @@ void PileupElementBaseQCStats::setOutputFile(IFILE outputPtr)
 
 void PileupElementBaseQCStats::printHeader()
 {
-    ifprintf(ourOutputFile, "chrom\tchromStart\tchromEnd\tDepth\tQ20Bases\tQ20BasesPct(%)\tTotalReads\tMappedBases\tMappingRate(%)\tMapRate_MQPass(%)\tZeroMapQual(%)\tMapQual<10(%)\tPairedReads(%)\tProperPaired(%)\tDupRate(%)\tQCFailRate(%)\tAverageMapQuality\tAverageMapQualCount\n");
-    //    ifprintf(ourOutputFile, "chrom\tchromStart\tchromEnd\tDepth\tQ20Bases(e9)\tQ20BasesPct(%)\tTotalReads(e6)\tMappedBases(e9)\tMappingRate(%)\tMapRate_MQPass(%)\tZeroMapQual(%)\tMapQual<10(%)\tPairedReads(%)\tProperPaired(%)\tDupRate(%)\tQCFailRate(%)\tAverageMapQuality\tAverageMapQualCount(e9)\n");
+    if(!ourSumStats)
+    {
+        ifprintf(ourOutputFile, "chrom\tchromStart\tchromEnd\tDepth\tQ20Bases\tQ20BasesPct(%)\tTotalReads\tMappedBases\tMappingRate(%)\tMapRate_MQPass(%)\tZeroMapQual(%)\tMapQual<10(%)\tPairedReads(%)\tProperPaired(%)\tDupRate(%)\tQCFailRate(%)\tAverageMapQuality\tAverageMapQualCount\n");
+        //    ifprintf(ourOutputFile, "chrom\tchromStart\tchromEnd\tDepth\tQ20Bases(e9)\tQ20BasesPct(%)\tTotalReads(e6)\tMappedBases(e9)\tMappingRate(%)\tMapRate_MQPass(%)\tZeroMapQual(%)\tMapQual<10(%)\tPairedReads(%)\tProperPaired(%)\tDupRate(%)\tQCFailRate(%)\tAverageMapQuality\tAverageMapQualCount(e9)\n");
+    }
+    else
+    {
+        ifprintf(ourOutputFile, "chrom\tchromStart\tchromEnd\tTotalReads\tDups\tQCFail\tMapped\tPaired\tProperPaired\tZeroMapQual\tMapQual<10\tMapQual255\tPassMapQual\tAverageMapQuality\tAverageMapQualCount\tDepth\tQ20Bases\n");
+    }
+}
+
+
+void PileupElementBaseQCStats::setSumStats(bool sumStats)
+{
+    ourSumStats = sumStats;
 }
 
 
@@ -88,43 +102,11 @@ void PileupElementBaseQCStats::addEntry(SamRecord& record)
 
     int32_t readIndex = 
         cigar->getQueryIndex(getRefPosition(), record.get0BasedPosition());
-    
+
     // Increment the counts
     ++numEntries;
     uint16_t flag = record.getFlag();
-
-    if(SamFlag::isPaired(flag))
-    {
-        ++numPaired;
-        if(SamFlag::isProperPair(flag))
-        {
-            ++numProperPaired;
-        }
-    }
-    if(SamFlag::isMapped(flag))
-    {
-        ++numMapped;
-        // It is mapped, so check the mapping quality.
-        if(record.getMapQuality() < 10)
-        {
-            ++numLT10MapQ;
-            if(record.getMapQuality() == 0)
-            {
-                ++numZeroMapQ;
-            }
-        }
-
-        // Check for map fileter.
-        if(record.getMapQuality() < ourMinMapQuality)
-        {
-            numMapQFilter++;
-        }
-    }
-    else
-    {
-        // Unmapped, so increment the unmapped/filtered reads
-        ++numMapQFilter;
-    }
+    
     if(SamFlag::isDuplicate(flag))
     {
         ++numDups;
@@ -134,27 +116,60 @@ void PileupElementBaseQCStats::addEntry(SamRecord& record)
         ++numQCFail;
     }
 
-    // Prior to doing any more analysis, check to see if it is filtered out.
-    // Always filter out:
-    //   * unmapped
-    //   * deletions/skips
-    //   * duplicates if specified in the options
-    //   * QC failures if specified in the options
-    if(!SamFlag::isMapped(flag) ||
-       (readIndex == CigarRoller::INDEX_NA) ||
-       (ourFilterDups && SamFlag::isDuplicate(flag)) ||
+    if((ourFilterDups && SamFlag::isDuplicate(flag)) ||
        (ourFilterQCFail && SamFlag::isQCFailure(flag)))
     {
-        // filtered read, so do no more analysis on it.
+        // Filtered for duplicate/QC
         return;
     }
 
-    // Store the mapping quality for calculating the average mapping quality
-    // if it is not 255 (unknown).
-    // Also store the number of entries used for calculating the mapping
-    // quality.
-    if(record.getMapQuality() != 255)
+    // Check if it mapped.
+    if(!SamFlag::isMapped(flag))
     {
+        // Not mapped, so filter.
+        return;
+    }
+
+    ++numMapped;
+
+    // It is mapped, so check pairing.
+    if(SamFlag::isPaired(flag))
+    {
+        ++numPaired;
+        if(SamFlag::isProperPair(flag))
+        {
+            ++numProperPaired;
+        }
+    }
+
+    // It is mapped, so check the mapping quality.
+    if(record.getMapQuality() < 10)
+    {
+        ++numLT10MapQ;
+        if(record.getMapQuality() == 0)
+        {
+            ++numZeroMapQ;
+        }
+    }
+    
+    // Check for map filter.
+    if(record.getMapQuality() >= ourMinMapQuality)
+    {
+        numMapQPass++;
+    }
+
+    if(record.getMapQuality() == 255)
+    {
+        // Do not include mapping quality greater than 255.
+        ++numMapQ255;
+        return;
+    }
+    else
+    {
+        // Store the mapping quality for calculating the average mapping quality
+        // if it is not 255 (unknown).
+        // Also store the number of entries used for calculating the mapping
+        // quality.
         // Store this for overflow check.
         uint32_t prevMapQ = sumMapQ;
         sumMapQ += record.getMapQuality();
@@ -183,8 +198,14 @@ void PileupElementBaseQCStats::addEntry(SamRecord& record)
         return;
     }
 
-    ++depth;
+    // Skip deletion for q20/depth since it does not have a base quality.
+    if(readIndex == CigarRoller::INDEX_NA)
+    {
+        // filtered read, so do no more analysis on it.
+        return;      
+    }
 
+    ++depth;
  
     // Check for Q20 base.
     if(record.getQuality(readIndex) >= Q20_CHAR_VAL)
@@ -203,74 +224,122 @@ void PileupElementBaseQCStats::analyze()
     // Only output if the position is covered.
     if(numEntries != 0)
     {
-        int32_t startPos = getRefPosition();
-        myOutputString = getChromosome();
-        myOutputString += "\t";
-        myOutputString += startPos;
-        myOutputString += "\t";
-        myOutputString += startPos + 1;
-        myOutputString += "\t";
-        myOutputString += depth;
-        myOutputString += "\t";
-        myOutputString += numQ20;
-        //        myOutputString += (double(numQ20))/E9_CALC;
-        myOutputString += "\t";
-        if(depth == 0)
+        if(!ourSumStats)
         {
-            myOutputString += (double)0;
-        }
-        else
-        {
-            myOutputString += 100 * (double(numQ20))/depth;
-        }
-        myOutputString += "\t";
-        myOutputString += numEntries;
-        //        myOutputString += numEntries/E6_CALC;
-        myOutputString += "\t";
-        myOutputString += numMapped;
-        //        myOutputString += ((double)numMapped)/E9_CALC;
-        myOutputString += "\t";
-        if(numEntries == 0)
-        {
-            myOutputString += "0.000\t0.000\t0.000\t0.000\t0.000\t0.000\t0.000\t0.000";
-        }
-        else
-        {
-            myOutputString += 100 * ((double)numMapped)/numEntries;
+            int32_t startPos = getRefPosition();
+            myOutputString = getChromosome();
             myOutputString += "\t";
-            // calc % unmapped/filtered out due to mapquality
-            // then subtract from 100 to get % that are mapped and pass
-            // the quality filter.
-            myOutputString += 100 - (100 * ((double)numMapQFilter)/numEntries);
+            myOutputString += startPos;
             myOutputString += "\t";
-            myOutputString += 100 * ((double)numZeroMapQ)/numEntries;
+            myOutputString += startPos + 1;
             myOutputString += "\t";
-            myOutputString += 100 * ((double)numLT10MapQ)/numEntries;
+            myOutputString += depth;
             myOutputString += "\t";
-            myOutputString += 100 * ((double)numPaired)/numEntries;
+            myOutputString += numQ20;
+            //        myOutputString += (double(numQ20))/E9_CALC;
             myOutputString += "\t";
-            myOutputString += 100 * ((double)numProperPaired)/numEntries;
+            if(depth == 0)
+            {
+                myOutputString += (double)0;
+            }
+            else
+            {
+                myOutputString += 100 * (double(numQ20))/depth;
+            }
             myOutputString += "\t";
-            myOutputString += 100 * ((double)numDups)/numEntries;
+            myOutputString += numEntries;
+            //        myOutputString += numEntries/E6_CALC;
             myOutputString += "\t";
-            myOutputString += 100 * ((double)numQCFail)/numEntries;
-        }
+            myOutputString += numMapped;
+            //        myOutputString += ((double)numMapped)/E9_CALC;
+            myOutputString += "\t";
+            if(numEntries == 0)
+            {
+                myOutputString += "0.000\t0.000\t0.000\t0.000\t0.000\t0.000\t0.000\t0.000";
+            }
+            else
+            {
+                myOutputString += 100 * ((double)numMapped)/numEntries;
+                myOutputString += "\t";
+                myOutputString += 100 * ((double)numMapQPass)/numEntries;
+                myOutputString += "\t";
+                myOutputString += 100 * ((double)numZeroMapQ)/numEntries;
+                myOutputString += "\t";
+                myOutputString += 100 * ((double)numLT10MapQ)/numEntries;
+                myOutputString += "\t";
+                myOutputString += 100 * ((double)numPaired)/numEntries;
+                myOutputString += "\t";
+                myOutputString += 100 * ((double)numProperPaired)/numEntries;
+                myOutputString += "\t";
+                myOutputString += 100 * ((double)numDups)/numEntries;
+                myOutputString += "\t";
+                myOutputString += 100 * ((double)numQCFail)/numEntries;
+            }
 
-        myOutputString += "\t";
-        if(averageMapQCount != 0)
-        {
-            myOutputString += ((double)sumMapQ)/averageMapQCount;
+            myOutputString += "\t";
+            if(averageMapQCount != 0)
+            {
+                myOutputString += ((double)sumMapQ)/averageMapQCount;
+            }
+            else
+            {
+                myOutputString += "0.000";
+            }
+            myOutputString += "\t";
+            myOutputString += averageMapQCount;
+            // myOutputString += ((double)averageMapQCount)/E9_CALC;
+            myOutputString += "\n";
+        
+            ifprintf(ourOutputFile, myOutputString.c_str());
         }
         else
         {
-            myOutputString += "0.000";
-        }
-        myOutputString += "\t";
-        myOutputString += averageMapQCount;
-        // myOutputString += ((double)averageMapQCount)/E9_CALC;
-        myOutputString += "\n";
+            // Summary stats.
+            int32_t startPos = getRefPosition();
+            myOutputString = getChromosome();
+            myOutputString += "\t";
+            myOutputString += startPos;
+            myOutputString += "\t";
+            myOutputString += startPos + 1;
+            myOutputString += "\t";
+            myOutputString += numEntries;
+            myOutputString += "\t";
+            myOutputString += numDups;
+            myOutputString += "\t";
+            myOutputString += numQCFail;
+            myOutputString += "\t";
+            myOutputString += numMapped;
+            myOutputString += "\t";
+            myOutputString += numPaired;
+            myOutputString += "\t";
+            myOutputString += numProperPaired;
+            myOutputString += "\t";
+            myOutputString += numZeroMapQ;
+            myOutputString += "\t";
+            myOutputString += numLT10MapQ;
+            myOutputString += "\t";
+            myOutputString += numMapQ255;
+            myOutputString += "\t";
+            myOutputString += numMapQPass;
+            myOutputString += "\t";
+            if(averageMapQCount != 0)
+            {
+                myOutputString += ((double)sumMapQ)/averageMapQCount;
+            }
+            else
+            {
+                myOutputString += "0.000";
+            }
+            myOutputString += "\t";
+            myOutputString += averageMapQCount;
+            myOutputString += "\t";
+            myOutputString += depth;
+            myOutputString += "\t";
+            myOutputString += numQ20;
+            myOutputString += "\n";
         
-        ifprintf(ourOutputFile, myOutputString.c_str());
+            ifprintf(ourOutputFile, myOutputString.c_str());
+        }
     }
 }
 
@@ -292,12 +361,13 @@ void PileupElementBaseQCStats::initVars()
     numDups = 0;
     numReads = 0;
     numMapped = 0;
-    numMapQFilter = 0;
+    numMapQPass = 0;
     numZeroMapQ = 0;
     numLT10MapQ = 0;
     numPaired = 0;
     numProperPaired = 0;
     numQCFail = 0;
+    numMapQ255 = 0;
     sumMapQ = 0;
     averageMapQCount = 0;
     myOutputString.Clear();
