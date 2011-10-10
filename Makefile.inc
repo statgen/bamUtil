@@ -2,7 +2,7 @@
 # the Makefile it should include from libStatGen/Makefiles/$(PARENT_MAKE)
 
 #Update version as necessary.
-VERSION=0.1.1
+VERSION=1.0.0
 
 CURRENT_PATH := $(dir $(lastword $(MAKEFILE_LIST)))
 LIB_PATH_GENERAL ?=../libStatGen
