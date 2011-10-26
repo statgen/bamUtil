@@ -54,8 +54,10 @@ void Convert::usage()
     std::cerr << std::endl;
     std::cerr << "\tOptional Sequence Parameters (only specify one):" << std::endl;
     std::cerr << "\t\t--useOrigSeq : Leave the sequence as is (default & used if reference is not specified)." << std::endl;
-    std::cerr << "\t\t--useBases   : Convert any '=' in the sequence to the appropriate base using the reference (requires --ref)." << std::endl;
-    std::cerr << "\t\t--useEquals  : Convert any bases that match the reference to '=' (requires --ref)." << std::endl;
+    std::cerr << "\t\t--useBases   : Convert any '=' in the sequence to the appropriate base using the reference (requires --refFile)." << std::endl;
+    std::cerr << "\t\t--useEquals  : Convert any bases that match the reference to '=' (requires --refFile)." << std::endl;
+    std::cerr << "\tOptional Region Specifier Parameters:" << std::endl;
+
 }
 
 #define SIGNATURE_LENGTH (sizeof(bamRecordStruct))
