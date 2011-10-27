@@ -173,7 +173,8 @@ int ClipOverlap::execute(int argc, char **argv)
             uint32_t prevAlignmentStart = prevSamRecord->get0BasedPosition();
             uint32_t prevAlignmentEnd = prevSamRecord->get0BasedAlignmentEnd();
             uint32_t alignmentStart = samRecord->get0BasedPosition();
-            if((alignmentStart >= prevAlignmentStart) && 
+            if((prevSamRecord->getReferenceID() == samRecord->getReferenceID()) && 
+               (alignmentStart >= prevAlignmentStart) && 
                (alignmentStart <= prevAlignmentEnd))
             {
                 // overlap, determine how much needs to be clipped.
