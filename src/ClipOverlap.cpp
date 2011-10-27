@@ -166,7 +166,7 @@ int ClipOverlap::execute(int argc, char **argv)
         }
 
         // Check if the read name matches the previous read name.
-        if(samRecord->getReadName() == prevSamRecord->getReadName())
+        if(strcmp(samRecord->getReadName(), prevSamRecord->getReadName()) == 0)
         {
             // Read name match, so check for overlap, this one
             // starts between the previous records start & end.
