@@ -170,24 +170,25 @@ int ClipOverlap::execute(int argc, char **argv)
         {
             // Read name match, so check for overlap, this one
             // starts between the previous records start & end.
-            uint32_t prevAlignmentStart = prevSamRecord->get0BasedPosition();
-            uint32_t prevAlignmentEnd = prevSamRecord->get0BasedAlignmentEnd();
-            uint32_t alignmentStart = samRecord->get0BasedPosition();
-            if((prevSamRecord->getReferenceID() == samRecord->getReferenceID()) && 
-               (alignmentStart >= prevAlignmentStart) && 
-               (alignmentStart <= prevAlignmentEnd))
+            if(prevSamRecord->getReferenceID() == samRecord->getReferenceID())
             {
-                // overlap, determine how much needs to be clipped.
-                // Clip from the 
-                if(alignmentStart < prevAlignmentStart)
+                uint32_t prevAlignmentStart = prevSamRecord->get0BasedPosition();
+                uint32_t prevAlignmentEnd = prevSamRecord->get0BasedAlignmentEnd();
+                uint32_t alignmentStart = samRecord->get0BasedPosition();
+                uint32_t alignmentEnd = samRecord->get0BasedAlignmentEnd();
+                // Determine if there is an overlap
+                if((alignmentStart >= prevAlignmentStart) && 
+                   (alignmentStart <= prevAlignmentEnd))
+                {
+                    // This read starts within the other read, so clip the
+                    // previous read. 
+                    clipFromRecord(*prevSamRecord, alignmentStart, storeOrig);
+                }
+                else if((prevAlignmentStart >= alignmentStart) && 
+                        (prevAlignmentStart <= alignmentEnd))
                 {
                     // This clip starts first, so clip from the end of it.
                     clipFromRecord(*samRecord, prevAlignmentStart, storeOrig);
-                }
-                else
-                {
-                    // The previous record starts first, so clip from the end of it.
-                    clipFromRecord(*prevSamRecord, alignmentStart, storeOrig);
                 }
             }
 
