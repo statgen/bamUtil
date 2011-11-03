@@ -36,8 +36,28 @@ public:
     int execute(int argc, char **argv);
 
 private:
+    // Clip overlapping reads and strands that extend past the other strand.
+    void clip(SamRecord& firstRecord, SamRecord& secondRecord);
 
-    void clipFromRecord(SamRecord& record, int32_t refPos, const String& storeOrig);
+    // Clip an entire read.
+    void clipEntire(SamRecord& record);
+
+    // Calculate the sum of the qualities at read positions starting at 
+    // startPos and ending with endPos (included).  Stops reading if a 0 is
+    // found, indicating the end of the string.
+    int32_t getSumQual(SamRecord& record, int32_t startPos, int32_t endPos);
+
+    String myStoreOrig;
+
+//     // Clip the end of the forward strand if it extends past the end of the
+//     // reverse strand.
+//     // Clip the beginning of the reverse strand if it extends starts before the
+//     // forward strand.
+//     void clipStrandGarbage(SamRecord& forwardRecord, int32_t forwardStartPos, 
+//                            int32_t forwardEndPos, SamRecord& reverseRecord,
+//                            int32_t reverseStartPos, int32_t reverseEndPos);
+//     void clip(SamRecord& firstRecord, int32_t firstEndPos,
+//               SamRecord& secondRecord, int32_t secondStartPos);
 };
 
 #endif
