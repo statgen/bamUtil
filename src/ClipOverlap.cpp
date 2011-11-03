@@ -162,7 +162,14 @@ int ClipOverlap::execute(int argc, char **argv)
         if(!SamFlag::isMapped(flag))
         {
             // This record is not mapped, no clipping will be done, so
-            // just move onto the next record without storing this one.
+            // just write this record and move onto the next record without
+            // storing this one.
+            if(!samOut.WriteRecord(samHeader, *samRecord))
+            {
+                // Failed to write a record.
+                fprintf(stderr, "%s\n", samOut.GetStatusMessage());
+                returnStatus = samOut.GetStatus();
+            }
             continue;
         }
 
@@ -183,10 +190,6 @@ int ClipOverlap::execute(int argc, char **argv)
             // starts between the previous records start & end.
             if(prevSamRecord->getReferenceID() == samRecord->getReferenceID())
             {
-//                 int32_t prevAlignmentStart = 
-//                     prevSamRecord->get0BasedPosition();
-//                 int32_t alignmentStart = samRecord->get0BasedPosition();
-
                 // Determine which read starts first.
                 if(prevSamRecord->get0BasedPosition() <= 
                    samRecord->get0BasedPosition())
@@ -199,66 +202,6 @@ int ClipOverlap::execute(int argc, char **argv)
                     // The current read starts before the previous one.
                     clip(*samRecord, *prevSamRecord);
                 }
-
-//                 int32_t prevAlignmentEnd = 
-//                     prevSamRecord->get0BasedAlignmentEnd();
-//                 int32_t alignmentEnd = samRecord->get0BasedAlignmentEnd();
-
-
-
-//                 // Determine if there is an overlap
-//                 if((alignmentStart >= prevAlignmentStart) && 
-//                    (alignmentStart <= prevAlignmentEnd))
-//                 {
-//                     // This read starts within the other read
-//                     clip(*prevSamRecord, prevAlignmentEnd,
-//                          *samRecord, alignmentStart);
-//                 }
-//                 else if((prevAlignmentStart >= alignmentStart) && 
-//                         (prevAlignmentStart <= alignmentEnd))
-//                 {
-//                     // The previous read starts within this read.
-//                     clip(*samRecord, alignmentEnd,
-//                          *prevSamRecord, prevAlignmentStart);
-//                 }
-
-
-//                 // Determine which is the forward and which is the reverse.
-//                 mateFlag = prevSamRecord->getFlag();            
-//                 if(SamFlag::isReverse(flag) && !SamFlag::isReverse(mateFlag))
-//                 {
-//                     // This record is the reverse and the mate is forward.
-//                     clipStrandGarbage(*prevSamRecord, prevAlignmentStart,
-//                                       prevAlignmentEnd, *samRecord,
-//                                       alignmentStart, alignmentEnd);
-//                 }
-//                 else if(!SamFlag::isReverse(flag) && SamFlag::isReverse(mateFlag))
-//                 {
-//                     // This record is forward, and the mate is reverse.
-//                     clipStrandGarbage(*samRecord, alignmentStart, 
-//                                       alignmentEnd, *prevSamRecord, 
-//                                       prevAlignmentStart, prevAlignmentEnd);
-//                 }
-
-                 
-//                 if(!storeOrig.IsEmpty())
-//                 {
-//                     // Write original cigars if the cigar has changed.
-//                     if(origCigar != samRecord->getCigar())
-//                         //                    if(strcmp(samRecord->getCigar(), origCigar) != 0)
-//                     {
-//                         // The current record's cigar string has changed so write
-//                         // the original one.
-//                         samRecord->addTag(storeOrig, 'Z', origCigar.c_str());
-//                     }
-//                     if(prevOrigCigar != prevSamRecord->getCigar())
-//                         //                    if(strcmp(prevSamRecord->getCigar(), prevOrigCigar) != 0)
-//                     {
-//                         // The previous record's cigar string has changed so write
-//                         // the original one.
-//                         prevSamRecord->addTag(storeOrig, 'Z', prevOrigCigar.c_str());
-//                     }
-//                 }
             }
 
             // Found a read pair, so write both records.
@@ -319,124 +262,6 @@ int ClipOverlap::execute(int argc, char **argv)
 
     return(returnStatus);
 }
-
-
-// void ClipOverlap::clipStrandGarbage(SamRecord& forwardRecord, 
-//                                     int32_t forwardStartPos, 
-//                                     int32_t forwardEndPos,
-//                                     SamRecord& reverseRecord,
-//                                     int32_t reverseStartPos,
-//                                     int32_t reverseEndPos)
-// {
-//     static CigarRoller newCigar; // holds updated cigar.
-
-//     // Check if the reverse strand starts before the forward strand.
-//     if((reverseStartPos < forwardStartPos) && (reverseStartPos >= 0))
-//     {
-//         // The reverse strand starts before the forward strand so clip that.
-//         int32_t newPos;
-//         int32_t clipPos;
-//         // subtract 1 from the forwardStartPos because we only want to clip 
-//         // before the start position.
-//         clipPos = forwardStartPos - 1;
-//         if(clipPos > reverseEndPos)
-//         {
-//             // The entire reverse strand is before the forward strand, 
-//             // so set the clip position to the end of the reverse strand
-//             // so that the entire reverse strand is clipped.
-//             clipPos = reverseEndPos;
-//         }
-//         if(CigarHelper::softClipBeginByRefPos(reverseRecord, clipPos, newCigar,
-//                                               newPos) != CigarHelper::NO_CLIP)
-//         { 
-//             // Update the cigar and position.
-//             reverseRecord.set0BasedPosition(newPos);
-//             reverseRecord.setCigar(newCigar);
-//         }
-//     }
-
-//     // Check if the forward strand finishes after the reverse strand, if so, 
-//     // clip it.
-//     if(forwardEndPos > reverseEndPos)
-//     {
-//         int32_t clipPos;
-//         // The forward strand ends after the reverse strand so clip that.
-//         // The last clip position is just past the reverse end.
-//         clipPos = reverseEndPos + 1;
-//         if(clipPos < forwardStartPos)
-//         {
-//             // The entire forward strand is after the reverse strand, so
-//             // set the clip position to the start of the forward strand
-//             // so the entire forward strand is clipped.
-//             clipPos = forwardStartPos;
-//         }
-//         if(CigarHelper::softClipEndByRefPos(forwardRecord, clipPos, newCigar)
-//            != CigarHelper::NO_CLIP)
-//         { 
-//             // Update the cigar.
-//             forwardRecord.setCigar(newCigar);
-//         }
-//     }
-// }
-
-
-// void ClipOverlap::clip(SamRecord& firstRecord, int32_t firstEndPos,
-//                        SamRecord& secondRecord, int32_t secondStartPos)
-// {
-//     static CigarRoller newFirstCigar; // holds updated cigar.
-//     static CigarRoller newSecondCigar; // holds updated cigar.
-    
-//     const char* firstQual = firstRecord.getQuality();
-//     const char* secondQual = secondRecord.getQuality();
-//     int32_t firstQualSum = 0;
-//     int32_t secondQualSum = 0;
-//     int32_t firstClip = 0;
-//     int32_t secondClip = 0;
-//     int32_t newSecondPos = 0;
-
-//     // Determine the clipping on the 1st record at the start of the 2nd.
-//     firstClip = 
-//         CigarHelper::softClipEndByRefPos(firstRecord, secondStartPos, newFirstCigar);
-//     // Loop through counting the quality of the clipped bases.
-//     // They run from the firstClip to the length of the read.
-//     for(int i = firstClip; i < firstRecord.getReadLength(); i++)
-//     {
-//         firstQualSum += firstQual[i];
-//         if(firstQual[i] == 0)
-//         {
-//             // Qual is shorter than the read, so break.
-//             break;
-//         }
-//     }
-
-//     secondClip = 
-//         CigarHelper::softClipBeginByRefPos(secondRecord, firstEndPos, 
-//                                            newSecondCigar, newSecondPos);
-//     // Loop through counting the quality of the clipped bases.
-//     // They run from the beginning until the secondClip(included).
-//     for(int i = 0; i <= secondClip; i++)
-//     {
-//         secondQualSum += secondQual[i];
-//         if(secondQual[i] == 0)
-//         {
-//             // Qual is shorter than the read, so break.
-//             break;
-//         }
-//     }
-   
-//     if(firstQualSum <= secondQualSum)
-//     {
-//         // First clip has lower or equal quality, so clip that.
-//         firstRecord.setCigar(newFirstCigar);
-//     }
-//     else
-//     {
-//         // The 2nd clip has lower quality, so clip that.
-//         secondRecord.set0BasedPosition(newSecondPos);
-//         secondRecord.setCigar(newSecondCigar);
-//     }
-
-// }
 
 
 void ClipOverlap::clip(SamRecord& firstRecord, SamRecord& secondRecord)

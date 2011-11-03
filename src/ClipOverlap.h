@@ -48,16 +48,6 @@ private:
     int32_t getSumQual(SamRecord& record, int32_t startPos, int32_t endPos);
 
     String myStoreOrig;
-
-//     // Clip the end of the forward strand if it extends past the end of the
-//     // reverse strand.
-//     // Clip the beginning of the reverse strand if it extends starts before the
-//     // forward strand.
-//     void clipStrandGarbage(SamRecord& forwardRecord, int32_t forwardStartPos, 
-//                            int32_t forwardEndPos, SamRecord& reverseRecord,
-//                            int32_t reverseStartPos, int32_t reverseEndPos);
-//     void clip(SamRecord& firstRecord, int32_t firstEndPos,
-//               SamRecord& secondRecord, int32_t secondStartPos);
 };
 
 #endif
