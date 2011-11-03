@@ -148,6 +148,7 @@ int ClipOverlap::execute(int argc, char **argv)
     SamRecord* samRecord = new SamRecord;
     SamRecord* tmpRecord = new SamRecord;
     uint16_t flag = 0;
+    uint16_t prevFlag = 0;
     if((samRecord == NULL) || (tmpRecord == NULL))
     {
         std::cerr << "Failed to allocate a SamRecord, so exit.\n";
@@ -157,22 +158,6 @@ int ClipOverlap::execute(int argc, char **argv)
     // Keep reading records until ReadRecord returns false.
     while(samIn.ReadRecord(samHeader, *samRecord))
     {
-        // Determine if the read is mapped.
-        flag = samRecord->getFlag();
-        if(!SamFlag::isMapped(flag))
-        {
-            // This record is not mapped, no clipping will be done, so
-            // just write this record and move onto the next record without
-            // storing this one.
-            if(!samOut.WriteRecord(samHeader, *samRecord))
-            {
-                // Failed to write a record.
-                fprintf(stderr, "%s\n", samOut.GetStatusMessage());
-                returnStatus = samOut.GetStatus();
-            }
-            continue;
-        }
-
         if(prevSamRecord == NULL)
         {
             // Nothing to compare this record to, so set this record to the
@@ -186,9 +171,15 @@ int ClipOverlap::execute(int argc, char **argv)
         // Check if the read name matches the previous read name.
         if(strcmp(samRecord->getReadName(), prevSamRecord->getReadName()) == 0)
         {
-            // Read name match, so check for overlap, this one
-            // starts between the previous records start & end.
-            if(prevSamRecord->getReferenceID() == samRecord->getReferenceID())
+            // Determine if the reads are mapped.
+            flag = samRecord->getFlag();
+            prevFlag = prevSamRecord->getFlag();
+            
+            // Read name match, so check if both reads are mapped and there
+            // is an overlap, this one starts between the previous record's
+            // start & end.
+            if((SamFlag::isMapped(flag) && SamFlag::isMapped(prevFlag)) && 
+               (prevSamRecord->getReferenceID() == samRecord->getReferenceID()))
             {
                 // Determine which read starts first.
                 if(prevSamRecord->get0BasedPosition() <= 
