@@ -42,10 +42,10 @@ private:
     // Clip an entire read.
     void clipEntire(SamRecord& record);
 
-    // Calculate the sum of the qualities at read positions starting at 
+    // Calculate the average of the qualities at read positions starting at 
     // startPos and ending with endPos (included).  Stops reading if a 0 is
     // found, indicating the end of the string.
-    int32_t getSumQual(SamRecord& record, int32_t startPos, int32_t endPos);
+    double getAvgQual(SamRecord& record, int32_t startPos, int32_t endPos);
 
     String myStoreOrig;
 };

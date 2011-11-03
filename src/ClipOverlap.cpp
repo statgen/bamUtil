@@ -282,8 +282,8 @@ void ClipOverlap::clip(SamRecord& firstRecord, SamRecord& secondRecord)
                                              newFirstCigar);
         // Loop through counting the quality of the clipped bases.
         // They run from the firstClip to the length of the read.
-        int32_t firstQualSum = getSumQual(firstRecord, firstClipPos, 
-                                  firstRecord.getReadLength()-1);
+        double firstQualAvg = getAvgQual(firstRecord, firstClipPos, 
+                                         firstRecord.getReadLength()-1);
 
         int32_t newPos = 0;
         int32_t secondClipPos =
@@ -291,11 +291,11 @@ void ClipOverlap::clip(SamRecord& firstRecord, SamRecord& secondRecord)
                                                newSecondCigar, newPos);
         // Loop through counting the quality of the clipped bases.
         // They run from the beginning until the secondClip(included).
-        int32_t secondQualSum = getSumQual(secondRecord, 0, secondClipPos);
-
+        double secondQualAvg = getAvgQual(secondRecord, 0, secondClipPos);
+        
         // Check to see whether the 1st record or the 2nd one should be clipped
         // based on which has the lower quality.
-        if(firstQualSum <= secondQualSum)
+        if(firstQualAvg <= secondQualAvg)
         {
             // First clip has lower or equal quality, so clip that.
             // Check to see if the entire read should be clipped by
@@ -420,20 +420,23 @@ void ClipOverlap::clipEntire(SamRecord& record)
 }
 
 
-int32_t ClipOverlap::getSumQual(SamRecord& record, 
+double ClipOverlap::getAvgQual(SamRecord& record, 
                                 int32_t startPos, int32_t endPos)
 {
     int32_t qualSum = 0;
     const char* quality = record.getQuality();
+    int numVals = 0;
     for(int i = startPos; i <= endPos; i++)
     {
-        qualSum += quality[i];
         // Check for the null terminator at the end of the quality string.
         if(quality[i] == 0)
         {
             // Qual is shorter than the read, so break.
             break;
         }
+        qualSum += quality[i];
+        // increment the number of values.
+        ++numVals;
     }
-    return(qualSum);
+    return(qualSum/(double)numVals);
 }    
