@@ -24,6 +24,8 @@
 
 #include "BamExecutable.h"
 #include "SamFile.h"
+#include "MateMapByCoord.h"
+#include "SamCoordOutput.h"
 
 class ClipOverlap : public BamExecutable
 {
@@ -36,6 +38,22 @@ public:
     int execute(int argc, char **argv);
 
 private:
+    static const int DEFAULT_POOL_SIZE = 500;
+
+    int clipSortedByReadName(SamFile& samIn, SamFile& outFile);
+
+    int clipSortedByCoord(SamFile& samIn, SamFile& outFile, int poolSize);
+    
+    void handleCoordRead(SamRecord& record, 
+                         MateMapByCoord& mateMap,
+                         SamCoordOutput& outputBuffer);
+
+    // Flush up to the specified chromID/position, or if chromID is -1, flush
+    // everything.
+    bool coordFlush(int32_t chromID, int32_t position,
+                    MateMapByCoord& mateMap, SamCoordOutput& outputBuffer);
+
+
     // Clip overlapping reads and strands that extend past the other strand.
     void clip(SamRecord& firstRecord, SamRecord& secondRecord);
 
@@ -48,6 +66,8 @@ private:
     double getAvgQual(SamRecord& record, int32_t startPos, int32_t endPos);
 
     String myStoreOrig;
+
+    int myNumMateFailures;
 };
 
 #endif

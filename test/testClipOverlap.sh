@@ -1,3 +1,2 @@
-../bin/bam clipOverlap --in testFiles/testClipOverlap.sam --out results/testClipOverlap.sam --storeOrig XC 2> results/testClipOverlap.log && diff results/testClipOverlap.sam expected/testClipOverlap.sam && diff results/testClipOverlap.log expected/testClipOverlap.log
-
-
+../bin/bam clipOverlap --readName --in testFiles/testClipOverlapReadName.sam --out results/testClipOverlapReadName.sam --storeOrig XC 2> results/testClipOverlapReadName.log && diff results/testClipOverlapReadName.sam expected/testClipOverlapReadName.sam && diff results/testClipOverlapReadName.log expected/testClipOverlapReadName.log && \
+../bin/bam clipOverlap --in testFiles/testClipOverlapCoord.sam --out results/testClipOverlapCoord.sam --storeOrig XC 2> results/testClipOverlapCoord.log && diff results/testClipOverlapCoord.sam expected/testClipOverlapCoord.sam && diff results/testClipOverlapCoord.log expected/testClipOverlapCoord.log
