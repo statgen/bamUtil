@@ -84,7 +84,7 @@ int ClipOverlap::execute(int argc, char **argv)
         LONG_PARAMETER_GROUP("Optional Parameters")
         LONG_STRINGPARAMETER("storeOrig", &myStoreOrig)
         LONG_PARAMETER("readName", &readName)
-        LONG_PARAMETER("poolSize", &poolSize)
+        LONG_INTPARAMETER("poolSize", &poolSize)
         LONG_PARAMETER("noeof", &noeof)
         LONG_PARAMETER("params", &params)
         END_LONG_PARAMETERS();
