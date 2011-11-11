@@ -365,6 +365,7 @@ void ClipOverlap::clip(SamRecord& firstRecord, SamRecord& secondRecord)
                                             firstRecord.getCigar());
                     }
                     firstRecord.setCigar(newFirstCigar);
+                    secondRecord.set0BasedMatePosition(newPos);
                     firstRecord.set0BasedPosition(newPos);
                  }
             }
@@ -380,6 +381,7 @@ void ClipOverlap::clip(SamRecord& firstRecord, SamRecord& secondRecord)
                                          secondRecord.getCigar());
                 }
                 secondRecord.set0BasedPosition(newPos);
+                firstRecord.set0BasedMatePosition(newPos);
                 secondRecord.setCigar(newSecondCigar);
             }
         }
