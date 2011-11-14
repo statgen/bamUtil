@@ -36,7 +36,7 @@ SamRecord* MateMapByCoord::getMate(SamRecord& record)
     const char* readName = record.getReadName();
 
     // Get the key for finding this mate (its chrom/pos).
-    uint32_t mateKey =
+    uint64_t mateKey =
         SamHelper::combineChromPos(record.getMateReferenceID(), 
                                    record.get0BasedMatePosition());
 
