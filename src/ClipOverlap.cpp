@@ -270,6 +270,7 @@ int ClipOverlap::clipSortedByReadName(SamFile& samIn, SamFile& samOut)
         delete tmpRecord;
     }
 
+    std::cerr << "Completed ClipOverlap.\n";
     return(returnStatus);
 }
 
@@ -345,6 +346,7 @@ int ClipOverlap::clipSortedByCoord(SamFile& samIn, SamFile& samOut, int poolSize
     {
         returnStatus = SamStatus::SUCCESS;
     }
+    std::cerr << "Completed ClipOverlap.\n";
     return(returnStatus);
 }
 
@@ -670,11 +672,19 @@ void ClipOverlap::clipEntire(SamRecord& record)
 
 
 double ClipOverlap::getAvgQual(SamRecord& record, 
-                                int32_t startPos, int32_t endPos)
+                               int32_t startPos, int32_t endPos)
 {
     int32_t qualSum = 0;
     const char* quality = record.getQuality();
     int numVals = 0;
+
+    // Check for invalid start position.
+    if((startPos < 0) || ((uint32_t)startPos > strlen(quality)))
+    {
+        // Invalid start position, just return 0.
+        return(0);
+    }
+
     for(int i = startPos; i <= endPos; i++)
     {
         // Check for the null terminator at the end of the quality string.
@@ -687,5 +697,12 @@ double ClipOverlap::getAvgQual(SamRecord& record,
         // increment the number of values.
         ++numVals;
     }
-    return(qualSum/(double)numVals);
+    if(numVals != 0)
+    {
+        return(qualSum/(double)numVals);
+    }
+    else
+    {
+        return(0);
+    }
 }    
