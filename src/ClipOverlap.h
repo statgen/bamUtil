@@ -53,6 +53,9 @@ private:
     bool coordFlush(int32_t chromID, int32_t position,
                     MateMapByCoord& mateMap, SamCoordOutput& outputBuffer);
 
+    // Flush the first record from the mate map if there is one and flush the output buffer
+    // up to and including that position (if there was nothing in the mateMap, flush everything).
+    bool forceRecordFlush(MateMapByCoord& mateMap, SamCoordOutput& outputBuffer);
 
     // Clip overlapping reads and strands that extend past the other strand.
     void clip(SamRecord& firstRecord, SamRecord& secondRecord);
@@ -68,6 +71,8 @@ private:
     String myStoreOrig;
 
     int myNumMateFailures;
+    int myNumPoolFail;
+    bool myPoolSkipClip;
 };
 
 #endif

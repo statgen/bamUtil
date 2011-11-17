@@ -28,3 +28,5 @@
 11	147	1	11	0	3H3S3M18S	=	10	0	gggAATTTCCCTTTGGGAAAGggg	325wregkl90923<>><><>,.<	XZ:Z:1st Read ends after 2nd
 13	99	4	11	0	24M	=	30	0	gggAATTTCCCTTTGGGAAAGggg	325wregkl90923<>><><>,.<	XZ:Z:clipOverlapAllMatch
 13	147	4	30	0	24M	=	11	0	gggAATTTCCCTTTGGGAAAGggg	325wregkl90923<>><><>,.<	XZ:Z:clipOverlapAllMatch
+14	99	*	0	0	24M	*	0	0	gggAATTTCCCTTTGGGAAAGggg	325wregkl90923<>><><>,.<	XZ:Z:*chrom/Pos
+14	147	*	0	0	24M	5	13	0	gggAATTTCCCTTTGGGAAAGggg	325wregkl90923<>><><>,.<	XZ:Z:*chrom/Pos

@@ -1,0 +1,3 @@
+Failed to find expected overlapping mates for 2 records.
+Due to hitting the max record poolSize, had to default clip 6 records.
+Completed ClipOverlap.
