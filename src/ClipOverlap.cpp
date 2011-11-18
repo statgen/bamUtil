@@ -63,8 +63,8 @@ void ClipOverlap::usage()
     std::cerr << "\tClipping By Coordinate Optional Parameters:" << std::endl;
     std::cerr << "\t\t--poolSize    : Maximum number of records the program is allowed to allocate" << std::endl;
     std::cerr << "\t\t                for clipping on Coordinate sorted files. (Default: " << DEFAULT_POOL_SIZE << ")" << std::endl;
-    std::cerr << "\t\t--poolSkipClip : Skip clipping reads to free of usable records when the";
-    std::cerr << "\t\t                 poolSize is hit. The default action is to just clip the";
+    std::cerr << "\t\t--poolSkipClip : Skip clipping reads to free of usable records when the" << std::endl;
+    std::cerr << "\t\t                 poolSize is hit. The default action is to just clip the" << std::endl;
     std::cerr << "\t\t                 first read in a pair to free up the record." << std::endl;
     std::cerr << std::endl;
 }
