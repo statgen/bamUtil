@@ -29,7 +29,13 @@
 10	99	1	100	0	3H24S3H	=	8	0	gggAAATTTCCCTTTGGGAAAggg	<>,.<egkl90923<>><><>,-<	XZ:Z:forward/reverseEntireClip	XC:Z:3H3S3M3D3M3I3M3P3M3D3M3S3H
 3	147	2	11	0	3H3S2M3D3M3I3M3P3M3D4M3S3H	1	10	0	gggAATTTCCCTTTGGGAAAGggg	325wregkl90923<>><><>,.<	XZ:Z:DifferChrom
 12	147	2	12	0	3H3S2M3D3M3I3M3P3M3D4M3S3H	=	15	0	gggAATTTCCCTTTGGGAAAGggg	325wregkl90923<>><><>,.<	XZ:Z:DifferChrom
-13	99	4	11	0	19M5S	=	30	0	gggAATTTCCCTTTGGGAAAGggg	325wregkl90923<>><><>,.<	XZ:Z:clipOverlapAllMatch	XC:Z:24M
+16	99	4	1	0	24M	=	25	0	gggAATTTCCCTTTGGGAAAGggg	325wregkl90923<>><><>,.1	XZ:Z:clipOverlapAllMatch
+17	99	4	4	0	24M	=	28	0	gggAATTTCCCTTTGGGAAAGggg	325wregkl90923<>><><>,.1	XZ:Z:clipOverlapAllMatch
+18	99	4	7	0	24M	=	8	0	gggAATTTCCCTTTGGGAAAGggg	325wregkl90923<>><><>,.1	XZ:Z:clipOverlapAllMatch
+18	147	4	8	0	24M	=	7	0	gggAATTTCCCTTTGGGAAAGggg	25wregkl90923<>><><>,.00	XZ:Z:clipOverlapAllMatch
+13	99	4	11	0	24M	=	30	0	gggAATTTCCCTTTGGGAAAGggg	325wregkl90923<>><><>,.<	XZ:Z:clipOverlapAllMatch
+16	147	4	25	0	23S1M	=	1	0	gggAATTTCCCTTTGGGAAAGggg	25wregkl90923<>><><>,.00	XZ:Z:clipOverlapAllMatch	XC:Z:24M
+17	147	4	28	0	23S1M	=	4	0	gggAATTTCCCTTTGGGAAAGggg	25wregkl90923<>><><>,.00	XZ:Z:clipOverlapAllMatch	XC:Z:24M
 13	147	4	30	0	24M	=	11	0	gggAATTTCCCTTTGGGAAAGggg	325wregkl90923<>><><>,.<	XZ:Z:clipOverlapAllMatch
 14	99	*	0	0	24M	*	0	0	gggAATTTCCCTTTGGGAAAGggg	325wregkl90923<>><><>,.<	XZ:Z:*chrom/Pos
 14	147	*	0	0	24M	5	13	0	gggAATTTCCCTTTGGGAAAGggg	325wregkl90923<>><><>,.<	XZ:Z:*chrom/Pos
