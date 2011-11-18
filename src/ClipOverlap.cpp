@@ -298,6 +298,7 @@ int ClipOverlap::clipSortedByCoord(SamFile& samIn, SamFile& samOut, int poolSize
     SamFileHeader samHeader;
     SamRecord* recordPtr;
     MateMapByCoord mateMap;
+    int32_t pos = 0;
 
     myNumMateFailures = 0;
     myNumPoolFail = 0;
@@ -343,12 +344,14 @@ int ClipOverlap::clipSortedByCoord(SamFile& samIn, SamFile& samOut, int poolSize
             continue;
         }
 
-        // Process this record.
+        // Process this record, get the position before any potential clipping.
+        // Chromosome ID will not be affected by clipping.
+        pos = recordPtr->get0BasedPosition();
         handleCoordRead(*recordPtr, mateMap, outputBuffer);
 
         // Read a new record, cleanup/flush based on this read.
         if(!coordFlush(recordPtr->getReferenceID(),
-                       recordPtr->get0BasedPosition(),
+                       pos,
                        mateMap, outputBuffer))
         {
             returnStatus = SamStatus::FAIL_IO;
