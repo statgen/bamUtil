@@ -38,7 +38,7 @@ public:
     int execute(int argc, char **argv);
 
 private:
-    static const int DEFAULT_POOL_SIZE = 5000;
+    static const int DEFAULT_POOL_SIZE = 1000000;
 
     int clipSortedByReadName(SamFile& samIn, SamFile& outFile);
 
