@@ -35,6 +35,7 @@
 #include "FindCigars.h"
 #include "Stats.h"
 #include "ClipOverlap.h"
+#include "IndelDiscordance.h"
 
 void Usage()
 {
@@ -57,6 +58,7 @@ void Usage()
     FindCigars::findCigarsDescription();
     Stats::statsDescription();
     ClipOverlap::clipOverlapDescription();
+    IndelDiscordance::indelDiscordanceDescription();
     std::cerr << std::endl;
     std::cerr << "Usage: " << std::endl;
     std::cerr << "\tbam <tool> [<tool arguments>]" << std::endl;
@@ -135,6 +137,10 @@ int main(int argc, char ** argv)
     else if(strcmp(argv[1], "clipOverlap") == 0)
     {
         bamExe = new ClipOverlap();
+    }
+    else if(strcmp(argv[1], "indelDiscordance") == 0)
+    {
+        bamExe = new IndelDiscordance();
     }
     else if(strcmp(argv[1], "convert") == 0)
     {
