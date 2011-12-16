@@ -25,6 +25,7 @@
 #include "BaseAsciiMap.h"
 
 
+const String IndelDiscordance::DEFAULT_UM_REF_LOC = "/data/local/ref/karma.ref/human.g1k.v37.umfa";
 GenomeSequence* IndelDiscordance::PileupElementIndelDiscordance::ourReference = NULL;
 uint32_t IndelDiscordance::PileupElementIndelDiscordance::numDepth2Plus = 0;
 uint32_t IndelDiscordance::PileupElementIndelDiscordance::numDepth3Plus = 0;
@@ -63,6 +64,12 @@ void IndelDiscordance::usage()
     std::cerr << "\tOptional Parameters:" << std::endl;
     std::cerr << "\t\t--bamIndex    : The path/name of the bam index file" << std::endl;
     std::cerr << "\t\t                (if required and not specified, uses the --in value + \".bai\")" << std::endl;
+    std::cerr << "\t\t--refFile     : reference file for determining repeat counts" << std::endl;
+    std::cerr << "\t\t--umRef       : use the reference at the default UofM location, "
+              << "\t\t                " << DEFAULT_UM_REF_LOC << std::endl;
+    std::cerr << "\t\t--chrom       : chromosome name other than X" << std::endl;
+    std::cerr << "\t\t--start       : use a 0-based inclusive start position other than the default, " << DEFAULT_START_POS << std::endl;
+    std::cerr << "\t\t--end         : use a 0-based exclusive end position other than the default, " << DEFAULT_END_POS << std::endl;
     std::cerr << "\t\t--noeof       : Do not expect an EOF block on a bam file." << std::endl;
     std::cerr << "\t\t--params      : Print the parameter settings" << std::endl;
     std::cerr << std::endl;
@@ -74,6 +81,11 @@ int IndelDiscordance::execute(int argc, char **argv)
     // Extract command line arguments.
     String inFile = "";
     String indexFile = "";
+    String refFile = "";
+    String chrom = "X";
+    bool defaultUMRef = false;
+    int startPos0Based = DEFAULT_START_POS;
+    int endPos0Based = DEFAULT_END_POS;
     bool noeof = false;
     bool params = false;
 
@@ -83,6 +95,11 @@ int IndelDiscordance::execute(int argc, char **argv)
         LONG_STRINGPARAMETER("in", &inFile)
         LONG_PARAMETER_GROUP("Optional Parameters")
         LONG_STRINGPARAMETER("bamIndex", &indexFile)
+        LONG_STRINGPARAMETER("refFile", &refFile)
+        LONG_PARAMETER("umRef", &defaultUMRef)
+        LONG_STRINGPARAMETER("chrom", &chrom)
+        LONG_INTPARAMETER("start", &startPos0Based)
+        LONG_INTPARAMETER("end", &endPos0Based)
         LONG_PARAMETER("noeof", &noeof)
         LONG_PARAMETER("params", &params)
         END_LONG_PARAMETERS();
@@ -118,6 +135,12 @@ int IndelDiscordance::execute(int argc, char **argv)
         indexFile = inFile + ".bai";
     }
 
+
+    if(defaultUMRef)
+    {
+        refFile = DEFAULT_UM_REF_LOC;
+    }
+
     ////////////////////////////////////////
     // Setup in case pileup is used.
     Pileup<PileupElementIndelDiscordance> pileup;
@@ -146,12 +169,18 @@ int IndelDiscordance::execute(int argc, char **argv)
     // Open the bam index file for reading and set the read section.
     samIn.ReadBamIndex(indexFile);
     
-    samIn.SetReadSection("X", 2699520, 154931044);
+    samIn.SetReadSection(chrom.c_str(), startPos0Based, endPos0Based);
 
-    String refFile = "/data/local/ref/karma.ref/human.g1k.v37.umfa";
-    GenomeSequence reference(refFile);
+    GenomeSequence* refPtr = NULL;
+    if(refFile.Length() != 0)
+    {
+        refPtr = new GenomeSequence(refFile.c_str());
+        if(refPtr != NULL)
+        {
+            PileupElementIndelDiscordance::setReference(*refPtr);
+        }
+    }
 
-    PileupElementIndelDiscordance::setReference(reference);
 
     // Read the sam records.
     SamRecord record;
@@ -162,7 +191,7 @@ int IndelDiscordance::execute(int argc, char **argv)
     {
         // Pileup the bases for this read.
         // This expects 0-based positions.
-        pileup.processAlignmentRegion(record, 2699520, 154931044);
+        pileup.processAlignmentRegion(record, startPos0Based, endPos0Based);
     }
 
     // Flush the rest of the pileup.
@@ -211,6 +240,8 @@ int IndelDiscordance::execute(int argc, char **argv)
                   << (*iter).first << ": "
                   << (*iter).second << std::endl;
     }
+
+    delete refPtr;
     return(status);
 }
 

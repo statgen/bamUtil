@@ -36,6 +36,12 @@ public:
     int execute(int argc, char **argv);
 
 private:
+    static const String DEFAULT_UM_REF_LOC;
+    // 0-based start of non-pseudo-autosomal
+    static const int DEFAULT_START_POS = 2699520;
+    // 0-based exclusive end of non-pseudo-autosomal
+    static const int DEFAULT_END_POS = 154931043;
+
     class PileupElementIndelDiscordance : public PileupElement
     {
     public:
