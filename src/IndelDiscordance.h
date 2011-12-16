@@ -23,7 +23,6 @@
 #define __INDEL_DISCORDANCE_H__
 
 #include "BamExecutable.h"
-#include "SamRecordPool.h"
 #include "PileupElement.h"
 
 class IndelDiscordance : public BamExecutable
@@ -40,10 +39,19 @@ private:
     class PileupElementIndelDiscordance : public PileupElement
     {
     public:
-        /// Set record pool.
-        static void setRecordPool(SamRecordPool& pool)
+        static uint32_t numDepth2Plus;
+        static uint32_t numDepth3Plus;
+        static uint32_t numDiscordant2Plus;
+        static uint32_t numDiscordant3Plus;
+        static std::map<uint32_t, uint32_t> numDiscordantRepeats2Plus;
+        static std::map<uint32_t, uint32_t> numDiscordantRepeats3Plus;
+        static std::map<uint32_t, uint32_t> numRepeats2Plus;
+        static std::map<uint32_t, uint32_t> numRepeats3Plus;
+
+        /// Set reference.
+        static void setReference(GenomeSequence& reference)
         {
-            ourPool = &pool;
+            ourReference = &reference;
         }
 
         PileupElementIndelDiscordance();
@@ -67,9 +75,12 @@ private:
         void releaseRecords();
 
         int depth;
+        int numDeletion;
+        int numMatch;
+        int numInsertions;
+        int numRepeats;
 
-        static SamRecordPool* ourPool;
-        std::vector<SamRecord*> myRecords;
+        static GenomeSequence* ourReference;
     };
 };
 

@@ -25,7 +25,16 @@
 #include "BaseAsciiMap.h"
 
 
-SamRecordPool* IndelDiscordance::PileupElementIndelDiscordance::ourPool = NULL;
+GenomeSequence* IndelDiscordance::PileupElementIndelDiscordance::ourReference = NULL;
+uint32_t IndelDiscordance::PileupElementIndelDiscordance::numDepth2Plus = 0;
+uint32_t IndelDiscordance::PileupElementIndelDiscordance::numDepth3Plus = 0;
+uint32_t IndelDiscordance::PileupElementIndelDiscordance::numDiscordant2Plus = 0;
+uint32_t IndelDiscordance::PileupElementIndelDiscordance::numDiscordant3Plus = 0;
+std::map<uint32_t, uint32_t> IndelDiscordance::PileupElementIndelDiscordance::numDiscordantRepeats2Plus;
+std::map<uint32_t, uint32_t> IndelDiscordance::PileupElementIndelDiscordance::numDiscordantRepeats3Plus;
+std::map<uint32_t, uint32_t> IndelDiscordance::PileupElementIndelDiscordance::numRepeats2Plus;
+std::map<uint32_t, uint32_t> IndelDiscordance::PileupElementIndelDiscordance::numRepeats3Plus;
+
 
 IndelDiscordance::IndelDiscordance()
     : BamExecutable()
@@ -139,18 +148,21 @@ int IndelDiscordance::execute(int argc, char **argv)
     
     samIn.SetReadSection("X", 2699520, 154931044);
 
-    SamRecordPool pool(-1);
+    String refFile = "/data/local/ref/karma.ref/human.g1k.v37.umfa";
+    GenomeSequence reference(refFile);
+
+    PileupElementIndelDiscordance::setReference(reference);
 
     // Read the sam records.
-    SamRecord* recordPtr = pool.getRecord();
+    SamRecord record;
     
     // Keep reading records from the file until SamFile::ReadRecord
     // indicates to stop (returns false).
-    while((recordPtr != NULL) && samIn.ReadRecord(samHeader, *recordPtr))
+    while(samIn.ReadRecord(samHeader, record))
     {
         // Pileup the bases for this read.
         // This expects 0-based positions.
-        pileup.processAlignmentRegion(*recordPtr, 2699520, 154931044);
+        pileup.processAlignmentRegion(record, 2699520, 154931044);
     }
 
     // Flush the rest of the pileup.
@@ -163,18 +175,48 @@ int IndelDiscordance::execute(int argc, char **argv)
         status = SamStatus::SUCCESS;
     }
 
-    if(recordPtr == NULL)
+    std::cerr << "SUMMARY\n";
+    std::cerr << "numDepth >= 2: " << PileupElementIndelDiscordance::numDepth2Plus << std::endl;
+    std::cerr << "numDepth >  2: " << PileupElementIndelDiscordance::numDepth3Plus << std::endl;
+    std::cerr << "num discordant CIGAR, Depth >= 2: " 
+              << PileupElementIndelDiscordance::numDiscordant2Plus << std::endl;
+    std::cerr << "num discordant CIGAR, Depth >  2: " 
+              << PileupElementIndelDiscordance::numDiscordant3Plus << std::endl;
+    std::map<uint32_t, uint32_t>::iterator iter;
+    for(iter = PileupElementIndelDiscordance::numDiscordantRepeats2Plus.begin(); 
+        iter != PileupElementIndelDiscordance::numDiscordantRepeats2Plus.end(); iter++)
     {
-        std::cerr << "FAILED TO ALLOCATE A RECORD!!!";
-        exit(-1);
+        std::cerr << "num discordant CIGAR, Depth >= 2 with repeats = " 
+                  << (*iter).first << ": "
+                  << (*iter).second << std::endl;
+    }
+    for(iter = PileupElementIndelDiscordance::numDiscordantRepeats3Plus.begin(); 
+        iter != PileupElementIndelDiscordance::numDiscordantRepeats3Plus.end(); iter++)
+    {
+        std::cerr << "num discordant CIGAR, Depth >  2 with repeats = " 
+                  << (*iter).first << ": "
+                  << (*iter).second << std::endl;
+    }
+    for(iter = PileupElementIndelDiscordance::numRepeats2Plus.begin(); 
+        iter != PileupElementIndelDiscordance::numRepeats2Plus.end(); iter++)
+    {
+        std::cerr << "num Depth >= 2 with repeats = " 
+                  << (*iter).first << ": "
+                  << (*iter).second << std::endl;
+    }
+    for(iter = PileupElementIndelDiscordance::numRepeats3Plus.begin(); 
+        iter != PileupElementIndelDiscordance::numRepeats3Plus.end(); iter++)
+    {
+        std::cerr << "num Depth >  2 with repeats = " 
+                  << (*iter).first << ": "
+                  << (*iter).second << std::endl;
     }
     return(status);
 }
 
 
 IndelDiscordance::PileupElementIndelDiscordance::PileupElementIndelDiscordance()
-    : PileupElement(),
-      myRecords()
+    : PileupElement()
 {
     initVars();
 }
@@ -182,7 +224,6 @@ IndelDiscordance::PileupElementIndelDiscordance::PileupElementIndelDiscordance()
 
 IndelDiscordance::PileupElementIndelDiscordance::~PileupElementIndelDiscordance()
 {
-    releaseRecords();
 }
 
 
@@ -192,8 +233,33 @@ void IndelDiscordance::PileupElementIndelDiscordance::addEntry(SamRecord& record
     // Call the base class:
     PileupElement::addEntry(record);
 
-    // Store the element.
-    myRecords.push_back(&record);
+    ++depth;
+    
+    // Analyze the record.
+    Cigar* cigar = record.getCigarInfo();
+    if(cigar == NULL)
+    {
+        std::cerr << "Failed to retrieve cigar.\n";
+        return;
+    }
+    if(cigar->size() == 0)
+    {
+        // Cigar not set, so continue.
+        return;
+    }
+
+    // Get the query index for this position.
+    int queryIndex = 
+        cigar->getQueryIndex(getRefPosition(),
+                             record.get0BasedPosition());
+    if(queryIndex == -1)
+    {
+        ++numDeletion;
+    }
+    else
+    {
+        ++numMatch;
+    }
 }
 
 
@@ -203,48 +269,85 @@ void IndelDiscordance::PileupElementIndelDiscordance::addEntry(SamRecord& record
 void IndelDiscordance::PileupElementIndelDiscordance::analyze()
 {
     // Check the size of the records.
-    if(myRecords.size() > 2)
+    if(depth >= 2)
     {
-        // Have enough records to analyze.
-        // Check to see if there is a mismatch in the cigar for this position.
-        Cigar* cigar = NULL;
-        
-        int numDeletion = 0;
-        int numMatch = 0;
-
-        for(unsigned int i = 0; i < myRecords.size(); i++)
+        ++numDepth2Plus;
+        if(depth > 2)
         {
-            // Get the cigar.
-            cigar = myRecords[i]->getCigarInfo();
-            if(cigar == NULL)
+            ++numDepth3Plus;
+        }
+        if(ourReference != NULL)
+        {
+            // Add one to ref position since genome position takes 1-based
+            uint32_t refPos = 
+                ourReference->getGenomePosition(getChromosome(),
+                                                getRefPosition()+1);
+            uint32_t tempRefPos = refPos - 1;
+            char refChar = (*ourReference)[refPos];
+            while(tempRefPos > 0)
             {
-                std::cerr << "Failed to retrieve cigar.\n";
-                continue;
+                if((*ourReference)[tempRefPos] == refChar)
+                {
+                    ++numRepeats;
+                }
+                else
+                {
+                    // Not a repeat.
+                    break;
+                }
+                --tempRefPos;
             }
-            // Get the query index for this position.
-            int queryIndex = 
-                cigar->getQueryIndex(getRefPosition(),
-                                     myRecords[i]->get0BasedPosition());
-            if(queryIndex == -1)
+            // Loop in the other direction.
+            tempRefPos = refPos + 1;
+            while(tempRefPos < ourReference->getNumberBases())
             {
-                ++numDeletion;
+                if((*ourReference)[tempRefPos] == refChar)
+                {
+                    ++numRepeats;
+                }
+                else
+                {
+                    // Not a repeat.
+                    break;
+                }
+                ++tempRefPos;
             }
-            else
+            if(numRepeats > 0)
             {
-                ++numMatch;
+                ++numRepeats2Plus[numRepeats];
+
+                if(depth > 2)
+                {
+                    ++numRepeats3Plus[numRepeats];
+                }
             }
         }
         
         if((numDeletion != 0) && (numMatch != 0))
         {
-            std::cerr << "Position: " << getRefPosition() 
+            ++numDiscordant2Plus;
+            if(depth > 2)
+            {
+                ++numDiscordant3Plus;
+            }
+            std::cerr << "Position " << getRefPosition() 
                       << " has " << numDeletion << " deletions and " 
-                      << numMatch << " matches.\n";
+                      << numMatch << " matches.  ";
+
+            if(numRepeats > 0)
+            {
+                std:: cerr << numRepeats << " repeats.";
+
+                ++numDiscordantRepeats2Plus[numRepeats];
+
+                if(depth > 2)
+                {
+                    ++numDiscordantRepeats3Plus[numRepeats];
+                }
+            }
+            std::cerr << "\n";
         }
     }
-
-    // Release the records.
-    releaseRecords();
 }
 
 
@@ -260,20 +363,9 @@ void IndelDiscordance::PileupElementIndelDiscordance::reset(int32_t refPosition)
 
 void IndelDiscordance::PileupElementIndelDiscordance::initVars()
 {
-    releaseRecords();
+    depth = 0;
+    numDeletion = 0;
+    numMatch = 0;
+    numInsertions = 0;
+    numRepeats = 0;
 }
-
-
-void IndelDiscordance::PileupElementIndelDiscordance::releaseRecords()
-{
-    if(ourPool != NULL)
-    {
-        // Return the records to the pool.
-        for(unsigned int i = 0; i < myRecords.size(); i++)
-        {
-            ourPool->releaseRecord(myRecords[i]);
-        }
-    }
-    myRecords.clear();
-}
-
