@@ -41,24 +41,35 @@ private:
     static const int DEFAULT_START_POS = 2699520;
     // 0-based exclusive end of non-pseudo-autosomal
     static const int DEFAULT_END_POS = 154931043;
+    static const int DEFAULT_MIN_DEPTH = 3;
+    static const int DEFAULT_MIN_REPEAT = 1;
+    static const int DEFAULT_SUM_REPEAT = 5;
 
     class PileupElementIndelDiscordance : public PileupElement
     {
     public:
-        static uint32_t numDepth2Plus;
-        static uint32_t numDepth3Plus;
-        static uint32_t numDiscordant2Plus;
-        static uint32_t numDiscordant3Plus;
-        static std::map<uint32_t, uint32_t> numDiscordantRepeats2Plus;
-        static std::map<uint32_t, uint32_t> numDiscordantRepeats3Plus;
-        static std::map<uint32_t, uint32_t> numRepeats2Plus;
-        static std::map<uint32_t, uint32_t> numRepeats3Plus;
+        static uint32_t ourTotalMinDepth;
+        static uint32_t ourTotalDiscordant;
+        // Map indexed by number of repeats that gives the number of discordant cigars with
+        // this number of repeats.
+        static std::map<uint32_t, uint32_t> ourTotalDiscordantRepeats;
+        // Map indexed by number of repeats that gives the total number of positions with
+        // this number of repeats.
+        static std::map<uint32_t, uint32_t> ourTotalRepeats;
+        // Map indexed by depth, that gives the number of positions with this depth.
+        static std::map<uint32_t, uint32_t> ourDepthCounts;
+        // Map indexed by depth, that gives the number of positions with discordant cigars 
+        // that have this depth.
+        static std::map<uint32_t, uint32_t> ourDepthDiscordantCounts;
 
         /// Set reference.
         static void setReference(GenomeSequence& reference)
         {
             ourReference = &reference;
         }
+
+        static void setMinDepth(int minDepth) {ourMinDepth = minDepth;}
+        static void setPrintPos(bool printPos) {ourPrintPos = printPos;}
 
         PileupElementIndelDiscordance();
         
@@ -80,11 +91,13 @@ private:
         void initVars();
         void releaseRecords();
 
-        int depth;
-        int numDeletion;
-        int numMatch;
-        int numInsertions;
-        int numRepeats;
+        static int ourMinDepth;
+        static bool ourPrintPos;
+
+        int myDepth;
+        int myNumDeletion;
+        int myNumMatch;
+        int myNumInsertions;
 
         static GenomeSequence* ourReference;
     };

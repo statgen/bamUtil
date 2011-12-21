@@ -18,23 +18,24 @@
 //////////////////////////////////////////////////////////////////////////
 // This file contains the processing for the executable option "indelDiscordance"
 // which generates some statistics for SAM/BAM files.
+#include <math.h>
 #include "IndelDiscordance.h"
 #include "SamFile.h"
 #include "BgzfFileType.h"
 #include "Pileup.h"
 #include "BaseAsciiMap.h"
-
+#include "BaseUtilities.h"
 
 const String IndelDiscordance::DEFAULT_UM_REF_LOC = "/data/local/ref/karma.ref/human.g1k.v37.umfa";
 GenomeSequence* IndelDiscordance::PileupElementIndelDiscordance::ourReference = NULL;
-uint32_t IndelDiscordance::PileupElementIndelDiscordance::numDepth2Plus = 0;
-uint32_t IndelDiscordance::PileupElementIndelDiscordance::numDepth3Plus = 0;
-uint32_t IndelDiscordance::PileupElementIndelDiscordance::numDiscordant2Plus = 0;
-uint32_t IndelDiscordance::PileupElementIndelDiscordance::numDiscordant3Plus = 0;
-std::map<uint32_t, uint32_t> IndelDiscordance::PileupElementIndelDiscordance::numDiscordantRepeats2Plus;
-std::map<uint32_t, uint32_t> IndelDiscordance::PileupElementIndelDiscordance::numDiscordantRepeats3Plus;
-std::map<uint32_t, uint32_t> IndelDiscordance::PileupElementIndelDiscordance::numRepeats2Plus;
-std::map<uint32_t, uint32_t> IndelDiscordance::PileupElementIndelDiscordance::numRepeats3Plus;
+int IndelDiscordance::PileupElementIndelDiscordance::ourMinDepth = 2;
+bool IndelDiscordance::PileupElementIndelDiscordance::ourPrintPos = false;
+uint32_t IndelDiscordance::PileupElementIndelDiscordance::ourTotalMinDepth = 0;
+uint32_t IndelDiscordance::PileupElementIndelDiscordance::ourTotalDiscordant = 0;
+std::map<uint32_t, uint32_t> IndelDiscordance::PileupElementIndelDiscordance::ourTotalDiscordantRepeats;
+std::map<uint32_t, uint32_t> IndelDiscordance::PileupElementIndelDiscordance::ourTotalRepeats;
+std::map<uint32_t, uint32_t> IndelDiscordance::PileupElementIndelDiscordance::ourDepthCounts;
+std::map<uint32_t, uint32_t> IndelDiscordance::PileupElementIndelDiscordance::ourDepthDiscordantCounts;
 
 
 IndelDiscordance::IndelDiscordance()
@@ -58,20 +59,29 @@ void IndelDiscordance::description()
 void IndelDiscordance::usage()
 {
     BamExecutable::usage();
-    std::cerr << "\t./bam indelDiscordance --in <inputFile> [--bamIndex <bamIndexFile] [--noeof] [--params]" << std::endl;
+    std::cerr << "\t./bam indelDiscordance --in <inputFile> [--bamIndex <bamIndexFile] [--refFile <filename>] [--umRef] [--depth minDepth] [--minRepeatLen len] [--sumRepeatLen len] [--printPos] [--chrom <name>] [--start 0basedPos] [--end 0basedPos] [--noeof] [--params]" << std::endl;
     std::cerr << "\tRequired Parameters:" << std::endl;
     std::cerr << "\t\t--in : the SAM/BAM file to calculate indelDiscordance for" << std::endl;
     std::cerr << "\tOptional Parameters:" << std::endl;
-    std::cerr << "\t\t--bamIndex    : The path/name of the bam index file" << std::endl;
-    std::cerr << "\t\t                (if required and not specified, uses the --in value + \".bai\")" << std::endl;
-    std::cerr << "\t\t--refFile     : reference file for determining repeat counts" << std::endl;
-    std::cerr << "\t\t--umRef       : use the reference at the default UofM location, "
-              << "\t\t                " << DEFAULT_UM_REF_LOC << std::endl;
-    std::cerr << "\t\t--chrom       : chromosome name other than X" << std::endl;
-    std::cerr << "\t\t--start       : use a 0-based inclusive start position other than the default, " << DEFAULT_START_POS << std::endl;
-    std::cerr << "\t\t--end         : use a 0-based exclusive end position other than the default, " << DEFAULT_END_POS << std::endl;
-    std::cerr << "\t\t--noeof       : Do not expect an EOF block on a bam file." << std::endl;
-    std::cerr << "\t\t--params      : Print the parameter settings" << std::endl;
+    std::cerr << "\t\t--bamIndex     : The path/name of the bam index file" << std::endl;
+    std::cerr << "\t\t                 (if required and not specified, uses the --in value + \".bai\")" << std::endl;
+    std::cerr << "\t\t--refFile      : reference file for determining repeat counts" << std::endl;
+    std::cerr << "\t\t--umRef        : use the reference at the default UofM location, "
+              << "\t\t                 " << DEFAULT_UM_REF_LOC << std::endl;
+    std::cerr << "\t\t--depth        : min depth at which to report indel discordance, DEFAULT >= "
+              << DEFAULT_MIN_DEPTH << std::endl;
+    std::cerr << "\t\t--minRepeatLen : min repeat length for printing repeat info, DEFAULT = "
+              << DEFAULT_MIN_REPEAT << std::endl;
+    std::cerr << "\t\t--sumRepeatLen : all repeats this length and longer will be accumulated,\n"
+              << "\t\t                 DEFAULT = " << DEFAULT_SUM_REPEAT << std::endl;
+    std::cerr << "\t\t--printPos     : print details for each position" << std::endl;
+    std::cerr << "\t\t--chrom        : chromosome name other than X" << std::endl;
+    std::cerr << "\t\t--start        : use a 0-based inclusive start position other than the default, "
+              << DEFAULT_START_POS << std::endl;
+    std::cerr << "\t\t--end          : use a 0-based exclusive end position other than the default, "
+              << DEFAULT_END_POS << std::endl;
+    std::cerr << "\t\t--noeof        : Do not expect an EOF block on a bam file." << std::endl;
+    std::cerr << "\t\t--params       : Print the parameter settings" << std::endl;
     std::cerr << std::endl;
 }
 
@@ -84,6 +94,10 @@ int IndelDiscordance::execute(int argc, char **argv)
     String refFile = "";
     String chrom = "X";
     bool defaultUMRef = false;
+    int minDepth = DEFAULT_MIN_DEPTH;
+    int minRepeatLen = DEFAULT_MIN_REPEAT;
+    int sumRepeatLen = DEFAULT_SUM_REPEAT;
+    bool printPos = false;
     int startPos0Based = DEFAULT_START_POS;
     int endPos0Based = DEFAULT_END_POS;
     bool noeof = false;
@@ -97,6 +111,10 @@ int IndelDiscordance::execute(int argc, char **argv)
         LONG_STRINGPARAMETER("bamIndex", &indexFile)
         LONG_STRINGPARAMETER("refFile", &refFile)
         LONG_PARAMETER("umRef", &defaultUMRef)
+        LONG_INTPARAMETER("depth", &minDepth)
+        LONG_INTPARAMETER("minRepeatLen", &minRepeatLen)
+        LONG_INTPARAMETER("sumRepeatLen", &sumRepeatLen)
+        LONG_PARAMETER("printPos", &printPos)
         LONG_STRINGPARAMETER("chrom", &chrom)
         LONG_INTPARAMETER("start", &startPos0Based)
         LONG_INTPARAMETER("end", &endPos0Based)
@@ -181,6 +199,9 @@ int IndelDiscordance::execute(int argc, char **argv)
         }
     }
 
+    PileupElementIndelDiscordance::setMinDepth(minDepth);
+    PileupElementIndelDiscordance::setPrintPos(printPos);
+
 
     // Read the sam records.
     SamRecord record;
@@ -205,41 +226,45 @@ int IndelDiscordance::execute(int argc, char **argv)
     }
 
     std::cerr << "SUMMARY\n";
-    std::cerr << "numDepth >= 2: " << PileupElementIndelDiscordance::numDepth2Plus << std::endl;
-    std::cerr << "numDepth >  2: " << PileupElementIndelDiscordance::numDepth3Plus << std::endl;
-    std::cerr << "num discordant CIGAR, Depth >= 2: " 
-              << PileupElementIndelDiscordance::numDiscordant2Plus << std::endl;
-    std::cerr << "num discordant CIGAR, Depth >  2: " 
-              << PileupElementIndelDiscordance::numDiscordant3Plus << std::endl;
+    std::cerr << "numDepth >= " << minDepth << ": " 
+              << PileupElementIndelDiscordance::ourTotalMinDepth << std::endl;
+    std::cerr << "num discordant CIGAR, Depth >= " << minDepth << ": " 
+              << PileupElementIndelDiscordance::ourTotalDiscordant << std::endl;
     std::map<uint32_t, uint32_t>::iterator iter;
-    for(iter = PileupElementIndelDiscordance::numDiscordantRepeats2Plus.begin(); 
-        iter != PileupElementIndelDiscordance::numDiscordantRepeats2Plus.end(); iter++)
+    for(iter = PileupElementIndelDiscordance::ourTotalDiscordantRepeats.begin(); 
+        iter != PileupElementIndelDiscordance::ourTotalDiscordantRepeats.end(); iter++)
     {
-        std::cerr << "num discordant CIGAR, Depth >= 2 with repeats = " 
+        std::cerr << "num discordant CIGAR, Depth >= " << minDepth << " with repeats = " 
                   << (*iter).first << ": "
                   << (*iter).second << std::endl;
     }
-    for(iter = PileupElementIndelDiscordance::numDiscordantRepeats3Plus.begin(); 
-        iter != PileupElementIndelDiscordance::numDiscordantRepeats3Plus.end(); iter++)
+    for(iter = PileupElementIndelDiscordance::ourTotalRepeats.begin(); 
+        iter != PileupElementIndelDiscordance::ourTotalRepeats.end(); iter++)
     {
-        std::cerr << "num discordant CIGAR, Depth >  2 with repeats = " 
+        std::cerr << "num Depth >= " << minDepth << " with repeats = " 
                   << (*iter).first << ": "
                   << (*iter).second << std::endl;
     }
-    for(iter = PileupElementIndelDiscordance::numRepeats2Plus.begin(); 
-        iter != PileupElementIndelDiscordance::numRepeats2Plus.end(); iter++)
+
+    // Calculate the error rate for each depth that has discordance.
+    for(iter = PileupElementIndelDiscordance::ourDepthDiscordantCounts.begin(); 
+        iter != PileupElementIndelDiscordance::ourDepthDiscordantCounts.end(); iter++)
     {
-        std::cerr << "num Depth >= 2 with repeats = " 
-                  << (*iter).first << ": "
-                  << (*iter).second << std::endl;
+        // discordant sites with this depth/total sites with this depth
+        int n = (*iter).first;
+        int count = PileupElementIndelDiscordance::ourDepthCounts[n];
+        int numDiscordant = (*iter).second;
+        if(count != 0)
+        {
+            double p_discordant = numDiscordant/(double)count;
+            double errorRate = 1. - pow(1. - p_discordant, 1./n);
+            std::cerr << "For Depth = " << n << ", total num = " << count
+                      << ", num discordant = " << numDiscordant
+                      << ", p_discordant = " << p_discordant 
+                      << ", and Error Rate = " << errorRate << std::endl;
+        }
     }
-    for(iter = PileupElementIndelDiscordance::numRepeats3Plus.begin(); 
-        iter != PileupElementIndelDiscordance::numRepeats3Plus.end(); iter++)
-    {
-        std::cerr << "num Depth >  2 with repeats = " 
-                  << (*iter).first << ": "
-                  << (*iter).second << std::endl;
-    }
+
 
     delete refPtr;
     return(status);
@@ -264,8 +289,8 @@ void IndelDiscordance::PileupElementIndelDiscordance::addEntry(SamRecord& record
     // Call the base class:
     PileupElement::addEntry(record);
 
-    ++depth;
-    
+    ++myDepth;
+
     // Analyze the record.
     Cigar* cigar = record.getCigarInfo();
     if(cigar == NULL)
@@ -285,11 +310,11 @@ void IndelDiscordance::PileupElementIndelDiscordance::addEntry(SamRecord& record
                              record.get0BasedPosition());
     if(queryIndex == -1)
     {
-        ++numDeletion;
+        ++myNumDeletion;
     }
     else
     {
-        ++numMatch;
+        ++myNumMatch;
     }
 }
 
@@ -299,14 +324,14 @@ void IndelDiscordance::PileupElementIndelDiscordance::addEntry(SamRecord& record
 // has been fully populated by all records that cover the reference position.
 void IndelDiscordance::PileupElementIndelDiscordance::analyze()
 {
-    // Check the size of the records.
-    if(depth >= 2)
+    // Check the depth for this position.
+    if(myDepth >= ourMinDepth)
     {
-        ++numDepth2Plus;
-        if(depth > 2)
-        {
-            ++numDepth3Plus;
-        }
+        // Update the number of occurrances of this depth.
+        ++ourDepthCounts[myDepth];
+
+        ++ourTotalMinDepth;
+        int numRepeats = 0;
         if(ourReference != NULL)
         {
             // Add one to ref position since genome position takes 1-based
@@ -315,68 +340,67 @@ void IndelDiscordance::PileupElementIndelDiscordance::analyze()
                                                 getRefPosition()+1);
             uint32_t tempRefPos = refPos - 1;
             char refChar = (*ourReference)[refPos];
-            while(tempRefPos > 0)
+            if(!BaseUtilities::isAmbiguous(refChar))
             {
-                if((*ourReference)[tempRefPos] == refChar)
+                // Found an actual base, so check for repeats.
+                while(tempRefPos > 0)
                 {
-                    ++numRepeats;
+                    if((*ourReference)[tempRefPos] == refChar)
+                    {
+                        ++numRepeats;
+                    }
+                    else
+                    {
+                        // Not a repeat.
+                        break;
+                    }
+                    --tempRefPos;
                 }
-                else
+                // Loop in the other direction.
+                tempRefPos = refPos + 1;
+                while(tempRefPos < ourReference->getNumberBases())
                 {
-                    // Not a repeat.
-                    break;
+                    if((*ourReference)[tempRefPos] == refChar)
+                    {
+                        ++numRepeats;
+                    }
+                    else
+                    {
+                        // Not a repeat.
+                        break;
+                    }
+                    ++tempRefPos;
                 }
-                --tempRefPos;
-            }
-            // Loop in the other direction.
-            tempRefPos = refPos + 1;
-            while(tempRefPos < ourReference->getNumberBases())
-            {
-                if((*ourReference)[tempRefPos] == refChar)
+                if(numRepeats > 0)
                 {
-                    ++numRepeats;
-                }
-                else
-                {
-                    // Not a repeat.
-                    break;
-                }
-                ++tempRefPos;
-            }
-            if(numRepeats > 0)
-            {
-                ++numRepeats2Plus[numRepeats];
-
-                if(depth > 2)
-                {
-                    ++numRepeats3Plus[numRepeats];
+                    ++ourTotalRepeats[numRepeats];
                 }
             }
         }
-        
-        if((numDeletion != 0) && (numMatch != 0))
+        if((myNumDeletion != 0) && (myNumMatch != 0))
         {
-            ++numDiscordant2Plus;
-            if(depth > 2)
+            // Discordant, so update counts.
+            ++ourTotalDiscordant;
+            ++ourDepthDiscordantCounts[myDepth];
+            if(ourPrintPos)
             {
-                ++numDiscordant3Plus;
+                std::cerr << "Position " << getRefPosition() 
+                          << " has " << myNumDeletion << " deletions and " 
+                          << myNumMatch << " matches.  ";
             }
-            std::cerr << "Position " << getRefPosition() 
-                      << " has " << numDeletion << " deletions and " 
-                      << numMatch << " matches.  ";
-
             if(numRepeats > 0)
             {
-                std:: cerr << numRepeats << " repeats.";
-
-                ++numDiscordantRepeats2Plus[numRepeats];
-
-                if(depth > 2)
+                if(ourPrintPos)
                 {
-                    ++numDiscordantRepeats3Plus[numRepeats];
+                    std:: cerr << numRepeats << " repeats.";
                 }
+
+                ++ourTotalDiscordantRepeats[numRepeats];
             }
-            std::cerr << "\n";
+            if(ourPrintPos)
+            {
+                std::cerr << "\n";
+            }
         }
     }
 }
@@ -394,9 +418,8 @@ void IndelDiscordance::PileupElementIndelDiscordance::reset(int32_t refPosition)
 
 void IndelDiscordance::PileupElementIndelDiscordance::initVars()
 {
-    depth = 0;
-    numDeletion = 0;
-    numMatch = 0;
-    numInsertions = 0;
-    numRepeats = 0;
+    myDepth = 0;
+    myNumDeletion = 0;
+    myNumMatch = 0;
+    myNumInsertions = 0;
 }
