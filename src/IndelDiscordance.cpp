@@ -30,12 +30,11 @@ const String IndelDiscordance::DEFAULT_UM_REF_LOC = "/data/local/ref/karma.ref/h
 GenomeSequence* IndelDiscordance::PileupElementIndelDiscordance::ourReference = NULL;
 int IndelDiscordance::PileupElementIndelDiscordance::ourMinDepth = 2;
 bool IndelDiscordance::PileupElementIndelDiscordance::ourPrintPos = false;
+RunningStat IndelDiscordance::PileupElementIndelDiscordance::ourRunningDepthStat;
 uint32_t IndelDiscordance::PileupElementIndelDiscordance::ourTotalMinDepth = 0;
 uint32_t IndelDiscordance::PileupElementIndelDiscordance::ourTotalDiscordant = 0;
-std::map<uint32_t, uint32_t> IndelDiscordance::PileupElementIndelDiscordance::ourTotalDiscordantRepeats;
-std::map<uint32_t, uint32_t> IndelDiscordance::PileupElementIndelDiscordance::ourTotalRepeats;
-std::map<uint32_t, uint32_t> IndelDiscordance::PileupElementIndelDiscordance::ourDepthCounts;
-std::map<uint32_t, uint32_t> IndelDiscordance::PileupElementIndelDiscordance::ourDepthDiscordantCounts;
+std::map<uint32_t, IndelDiscordance::PileupElementIndelDiscordance::RepeatInfo> IndelDiscordance::PileupElementIndelDiscordance::ourRepeatInfo;
+std::map<uint32_t, IndelDiscordance::PileupElementIndelDiscordance::DepthInfo> IndelDiscordance::PileupElementIndelDiscordance::ourDepthInfo;
 
 
 IndelDiscordance::IndelDiscordance()
@@ -230,40 +229,96 @@ int IndelDiscordance::execute(int argc, char **argv)
               << PileupElementIndelDiscordance::ourTotalMinDepth << std::endl;
     std::cerr << "num discordant CIGAR, Depth >= " << minDepth << ": " 
               << PileupElementIndelDiscordance::ourTotalDiscordant << std::endl;
-    std::map<uint32_t, uint32_t>::iterator iter;
-    for(iter = PileupElementIndelDiscordance::ourTotalDiscordantRepeats.begin(); 
-        iter != PileupElementIndelDiscordance::ourTotalDiscordantRepeats.end(); iter++)
-    {
-        std::cerr << "num discordant CIGAR, Depth >= " << minDepth << " with repeats = " 
-                  << (*iter).first << ": "
-                  << (*iter).second << std::endl;
-    }
-    for(iter = PileupElementIndelDiscordance::ourTotalRepeats.begin(); 
-        iter != PileupElementIndelDiscordance::ourTotalRepeats.end(); iter++)
-    {
-        std::cerr << "num Depth >= " << minDepth << " with repeats = " 
-                  << (*iter).first << ": "
-                  << (*iter).second << std::endl;
-    }
 
-    // Calculate the error rate for each depth that has discordance.
-    for(iter = PileupElementIndelDiscordance::ourDepthDiscordantCounts.begin(); 
-        iter != PileupElementIndelDiscordance::ourDepthDiscordantCounts.end(); iter++)
+    
+
+    std::map<uint32_t, 
+        IndelDiscordance::PileupElementIndelDiscordance::RepeatInfo>::iterator repeatIter;
+    for(repeatIter = PileupElementIndelDiscordance::ourRepeatInfo.begin(); 
+        repeatIter != PileupElementIndelDiscordance::ourRepeatInfo.end(); repeatIter++)
     {
-        // discordant sites with this depth/total sites with this depth
-        int n = (*iter).first;
-        int count = PileupElementIndelDiscordance::ourDepthCounts[n];
-        int numDiscordant = (*iter).second;
-        if(count != 0)
+        if((*repeatIter).second.discordantCount != 0)
         {
-            double p_discordant = numDiscordant/(double)count;
-            double errorRate = 1. - pow(1. - p_discordant, 1./n);
-            std::cerr << "For Depth = " << n << ", total num = " << count
-                      << ", num discordant = " << numDiscordant
-                      << ", p_discordant = " << p_discordant 
-                      << ", and Error Rate = " << errorRate << std::endl;
+            std::cerr << "num discordant CIGAR, Depth >= " << minDepth << " with repeats = " 
+                      << (*repeatIter).first << ": "
+                      << (*repeatIter).second.discordantCount << std::endl;
         }
     }
+    for(repeatIter = PileupElementIndelDiscordance::ourRepeatInfo.begin(); 
+        repeatIter != PileupElementIndelDiscordance::ourRepeatInfo.end(); repeatIter++)
+    {
+        std::cerr << "num Depth >= " << minDepth << " with repeats = " 
+                  << (*repeatIter).first << ": "
+                  << (*repeatIter).second.count << std::endl;
+    }
+
+    // Determine the average depth.
+    double averageDepth =  PileupElementIndelDiscordance::ourRunningDepthStat.Mean();
+    // Don't use depths over twice the average.
+    double maxDepth = averageDepth * 2;
+
+    std::cerr << "average depth = " << averageDepth << std::endl;
+    std::cerr << "max depth = " << maxDepth << std::endl;
+
+    // Calculate the error rate for each repeat.
+    std::map<uint32_t, 
+        IndelDiscordance::PileupElementIndelDiscordance::DepthInfo>::iterator depthIter;
+
+    PileupElementIndelDiscordance::ourRunningDepthStat.Clear();
+    for(depthIter = PileupElementIndelDiscordance::ourDepthInfo.begin(); 
+        depthIter != PileupElementIndelDiscordance::ourDepthInfo.end(); depthIter++)
+    {
+        PileupElementIndelDiscordance::ourRunningDepthStat.Push((*depthIter).first);
+    }
+    std::cerr << "Overal average = " << PileupElementIndelDiscordance::ourRunningDepthStat.Mean() << std::endl;
+
+
+    for(repeatIter = PileupElementIndelDiscordance::ourRepeatInfo.begin(); 
+        repeatIter != PileupElementIndelDiscordance::ourRepeatInfo.end(); repeatIter++)
+    {
+        // Loop through and calculate the error rate for each depth with this
+        // repeat.
+//         std::cerr << "For RepeatCount = " << (*repeatIter).first << std::endl;
+
+        double sumErrorRates = 0;
+        uint32_t numErrorRates = 0;
+        // Calculate the error rate for each depth that has discordance.
+        for(depthIter = (*repeatIter).second.depthInfo.begin(); 
+            depthIter != (*repeatIter).second.depthInfo.end(); depthIter++)
+        {
+            int depth = (*depthIter).first;
+            if(depth > maxDepth)
+            {
+                // this is beyond the max depth we want to include.
+                continue;
+            }
+            // Number of sites with this repeat count and depth
+            int count = (*depthIter).second.count;
+            // Number of discordant sites with this repeat count and depth
+            int numDiscordant = (*depthIter).second.discordantCount;
+
+            if(count != 0)
+            {
+                double p_discordant = numDiscordant/(double)count;
+                double errorRate = 1. - pow(1. - p_discordant, 1./depth);
+//                 std::cerr << "\tFor Depth = " << depth << ", total num = " << count
+//                           << ", num discordant = " << numDiscordant
+//                           << ", p_discordant = " << p_discordant 
+//                           << ", and Error Rate = " << errorRate << std::endl;
+
+                sumErrorRates += errorRate * count * (depth-1);
+                numErrorRates += count * (depth-1);
+            }
+        }
+        if(numErrorRates > 0)
+        {
+            std:: cerr << "For RepeatCount = " << (*repeatIter).first 
+                       << ", Average Error Rate = " << sumErrorRates/numErrorRates
+                       << std::endl;
+        }
+    }
+   
+
 
 
     delete refPtr;
@@ -327,8 +382,11 @@ void IndelDiscordance::PileupElementIndelDiscordance::analyze()
     // Check the depth for this position.
     if(myDepth >= ourMinDepth)
     {
+        // add the depth to the running stat.
+        ourRunningDepthStat.Push(myDepth);
+
         // Update the number of occurrances of this depth.
-        ++ourDepthCounts[myDepth];
+        ++ourDepthInfo[myDepth].count;
 
         ++ourTotalMinDepth;
         int numRepeats = 0;
@@ -371,9 +429,18 @@ void IndelDiscordance::PileupElementIndelDiscordance::analyze()
                     }
                     ++tempRefPos;
                 }
-                if(numRepeats > 0)
+
+                // Increment the number of sites with this repeat count.
+                ++ourRepeatInfo[numRepeats].count;
+                // Increment the number of sites with this repeat count and depth.
+                ++ourRepeatInfo[numRepeats].depthInfo[myDepth].count;
+                if((myNumDeletion != 0) && (myNumMatch != 0))
                 {
-                    ++ourTotalRepeats[numRepeats];
+                    // Increment number of discordant sites with this repeat count.
+                    ++ourRepeatInfo[numRepeats].discordantCount;
+                    // Increment number of discordant sites with this repeat count
+                    // and depth.
+                    ++ourRepeatInfo[numRepeats].depthInfo[myDepth].discordantCount;
                 }
             }
         }
@@ -381,21 +448,16 @@ void IndelDiscordance::PileupElementIndelDiscordance::analyze()
         {
             // Discordant, so update counts.
             ++ourTotalDiscordant;
-            ++ourDepthDiscordantCounts[myDepth];
+            ++ourDepthInfo[myDepth].discordantCount;
             if(ourPrintPos)
             {
                 std::cerr << "Position " << getRefPosition() 
                           << " has " << myNumDeletion << " deletions and " 
                           << myNumMatch << " matches.  ";
             }
-            if(numRepeats > 0)
+            if((numRepeats > 0) && (ourPrintPos))
             {
-                if(ourPrintPos)
-                {
-                    std:: cerr << numRepeats << " repeats.";
-                }
-
-                ++ourTotalDiscordantRepeats[numRepeats];
+                std:: cerr << numRepeats << " repeats.";
             }
             if(ourPrintPos)
             {

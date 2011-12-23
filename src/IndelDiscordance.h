@@ -24,6 +24,7 @@
 
 #include "BamExecutable.h"
 #include "PileupElement.h"
+#include "SimpleStats.h"
 
 class IndelDiscordance : public BamExecutable
 {
@@ -48,19 +49,32 @@ private:
     class PileupElementIndelDiscordance : public PileupElement
     {
     public:
+        struct DepthInfo
+        {
+            // Number of sites with this depth.
+            uint32_t count;
+            // Number of discordant sites with this depth.
+            uint32_t discordantCount;
+        };
+
+        struct RepeatInfo
+        {
+            // Number of sites with this repeat.
+            uint32_t count;
+            // Number of discordant sites with this repeat.
+            uint32_t discordantCount;
+            // Depth information for this repeat.
+            std::map<uint32_t, DepthInfo> depthInfo;
+        };
+
         static uint32_t ourTotalMinDepth;
         static uint32_t ourTotalDiscordant;
-        // Map indexed by number of repeats that gives the number of discordant cigars with
-        // this number of repeats.
-        static std::map<uint32_t, uint32_t> ourTotalDiscordantRepeats;
-        // Map indexed by number of repeats that gives the total number of positions with
-        // this number of repeats.
-        static std::map<uint32_t, uint32_t> ourTotalRepeats;
-        // Map indexed by depth, that gives the number of positions with this depth.
-        static std::map<uint32_t, uint32_t> ourDepthCounts;
-        // Map indexed by depth, that gives the number of positions with discordant cigars 
-        // that have this depth.
-        static std::map<uint32_t, uint32_t> ourDepthDiscordantCounts;
+        static RunningStat ourRunningDepthStat;
+
+        // Map indexed by depth, that gives the number of sites with this depth.
+        static std::map<uint32_t, DepthInfo> ourDepthInfo;
+        // Map indexed by repeat length that gives the repeat info
+        static std::map<uint32_t, RepeatInfo> ourRepeatInfo;
 
         /// Set reference.
         static void setReference(GenomeSequence& reference)
@@ -86,6 +100,7 @@ private:
         virtual void reset(int32_t refPosition);
         
     private:
+
         PileupElementIndelDiscordance(const PileupElement& q);
         
         void initVars();
@@ -93,7 +108,6 @@ private:
 
         static int ourMinDepth;
         static bool ourPrintPos;
-
         int myDepth;
         int myNumDeletion;
         int myNumMatch;
