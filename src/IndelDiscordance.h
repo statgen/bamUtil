@@ -42,9 +42,12 @@ private:
     static const int DEFAULT_START_POS = 2699520;
     // 0-based exclusive end of non-pseudo-autosomal
     static const int DEFAULT_END_POS = 154931043;
-    static const int DEFAULT_MIN_DEPTH = 3;
+    static const int DEFAULT_MIN_DEPTH = 2;
     static const int DEFAULT_MIN_REPEAT = 1;
     static const int DEFAULT_SUM_REPEAT = 5;
+    // Default multiplier to the average depth to get the
+    // maximum depth to include.
+    static const int DEFAULT_AVG_DEPTH_MULTIPLIER = 3;
 
     class PileupElementIndelDiscordance : public PileupElement
     {
@@ -63,12 +66,20 @@ private:
             uint32_t count;
             // Number of discordant sites with this repeat.
             uint32_t discordantCount;
+            // used to calc avg depth stat.
+            RunningStat runningDepth;
             // Depth information for this repeat.
             std::map<uint32_t, DepthInfo> depthInfo;
         };
 
+        // Total number of positions that have the minimum depth.
         static uint32_t ourTotalMinDepth;
+
+        // Total number of positions that have the minimum depth
+        // and are discordant.
         static uint32_t ourTotalDiscordant;
+
+        // Used to calculate the average depth.
         static RunningStat ourRunningDepthStat;
 
         // Map indexed by depth, that gives the number of sites with this depth.

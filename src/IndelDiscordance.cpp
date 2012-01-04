@@ -34,8 +34,6 @@ RunningStat IndelDiscordance::PileupElementIndelDiscordance::ourRunningDepthStat
 uint32_t IndelDiscordance::PileupElementIndelDiscordance::ourTotalMinDepth = 0;
 uint32_t IndelDiscordance::PileupElementIndelDiscordance::ourTotalDiscordant = 0;
 std::map<uint32_t, IndelDiscordance::PileupElementIndelDiscordance::RepeatInfo> IndelDiscordance::PileupElementIndelDiscordance::ourRepeatInfo;
-std::map<uint32_t, IndelDiscordance::PileupElementIndelDiscordance::DepthInfo> IndelDiscordance::PileupElementIndelDiscordance::ourDepthInfo;
-
 
 IndelDiscordance::IndelDiscordance()
     : BamExecutable()
@@ -73,6 +71,8 @@ void IndelDiscordance::usage()
               << DEFAULT_MIN_REPEAT << std::endl;
     std::cerr << "\t\t--sumRepeatLen : all repeats this length and longer will be accumulated,\n"
               << "\t\t                 DEFAULT = " << DEFAULT_SUM_REPEAT << std::endl;
+    std::cerr << "\t\t--avgDepthMult : max depth used is the average depth * this multiplier,\n"
+              << "\t\t                 DEFAULT = " << DEFAULT_AVG_DEPTH_MULTIPLIER << std::endl;
     std::cerr << "\t\t--printPos     : print details for each position" << std::endl;
     std::cerr << "\t\t--chrom        : chromosome name other than X" << std::endl;
     std::cerr << "\t\t--start        : use a 0-based inclusive start position other than the default, "
@@ -96,6 +96,7 @@ int IndelDiscordance::execute(int argc, char **argv)
     int minDepth = DEFAULT_MIN_DEPTH;
     int minRepeatLen = DEFAULT_MIN_REPEAT;
     int sumRepeatLen = DEFAULT_SUM_REPEAT;
+    int avgDepthMultiplier = DEFAULT_AVG_DEPTH_MULTIPLIER;
     bool printPos = false;
     int startPos0Based = DEFAULT_START_POS;
     int endPos0Based = DEFAULT_END_POS;
@@ -113,6 +114,7 @@ int IndelDiscordance::execute(int argc, char **argv)
         LONG_INTPARAMETER("depth", &minDepth)
         LONG_INTPARAMETER("minRepeatLen", &minRepeatLen)
         LONG_INTPARAMETER("sumRepeatLen", &sumRepeatLen)
+        LONG_INTPARAMETER("avgDepthMult", &avgDepthMultiplier)
         LONG_PARAMETER("printPos", &printPos)
         LONG_STRINGPARAMETER("chrom", &chrom)
         LONG_INTPARAMETER("start", &startPos0Based)
@@ -254,8 +256,8 @@ int IndelDiscordance::execute(int argc, char **argv)
 
     // Determine the average depth.
     double averageDepth =  PileupElementIndelDiscordance::ourRunningDepthStat.Mean();
-    // Don't use depths over twice the average.
-    double maxDepth = averageDepth * 2;
+    // Don't use depths over the average times the multiplier.
+    double maxDepth = averageDepth * avgDepthMultiplier;
 
     std::cerr << "average depth = " << averageDepth << std::endl;
     std::cerr << "max depth = " << maxDepth << std::endl;
@@ -263,15 +265,6 @@ int IndelDiscordance::execute(int argc, char **argv)
     // Calculate the error rate for each repeat.
     std::map<uint32_t, 
         IndelDiscordance::PileupElementIndelDiscordance::DepthInfo>::iterator depthIter;
-
-    PileupElementIndelDiscordance::ourRunningDepthStat.Clear();
-    for(depthIter = PileupElementIndelDiscordance::ourDepthInfo.begin(); 
-        depthIter != PileupElementIndelDiscordance::ourDepthInfo.end(); depthIter++)
-    {
-        PileupElementIndelDiscordance::ourRunningDepthStat.Push((*depthIter).first);
-    }
-    std::cerr << "Overal average = " << PileupElementIndelDiscordance::ourRunningDepthStat.Mean() << std::endl;
-
 
     for(repeatIter = PileupElementIndelDiscordance::ourRepeatInfo.begin(); 
         repeatIter != PileupElementIndelDiscordance::ourRepeatInfo.end(); repeatIter++)
@@ -314,6 +307,7 @@ int IndelDiscordance::execute(int argc, char **argv)
         {
             std:: cerr << "For RepeatCount = " << (*repeatIter).first 
                        << ", Average Error Rate = " << sumErrorRates/numErrorRates
+                       << ", Average Depth = " << (*repeatIter).second.runningDepth.Mean()
                        << std::endl;
         }
     }
@@ -379,76 +373,80 @@ void IndelDiscordance::PileupElementIndelDiscordance::addEntry(SamRecord& record
 // has been fully populated by all records that cover the reference position.
 void IndelDiscordance::PileupElementIndelDiscordance::analyze()
 {
-    // Check the depth for this position.
+    // Check the reference for this position.
+    char refChar = 'N';
+    int numRepeats = 0;
+    if(ourReference != NULL)
+    {
+        // Add one to ref position since genome position takes 1-based
+        uint32_t refPos = 
+            ourReference->getGenomePosition(getChromosome(),
+                                            getRefPosition()+1);
+        uint32_t tempRefPos = refPos - 1;
+        refChar = (*ourReference)[refPos];
+        if(!BaseUtilities::isAmbiguous(refChar))
+        {
+            // Ambiguous base, so skip doing anything.
+            return;
+        }
+
+        // Have a reference with a base at this position, so check for repeats.
+        while(tempRefPos > 0)
+        {
+            if((*ourReference)[tempRefPos] == refChar)
+            {
+                ++numRepeats;
+            }
+            else
+            {
+                // Not a repeat.
+                break;
+            }
+            --tempRefPos;
+        }
+        // Loop in the other direction.
+        tempRefPos = refPos + 1;
+        while(tempRefPos < ourReference->getNumberBases())
+        {
+            if((*ourReference)[tempRefPos] == refChar)
+            {
+                ++numRepeats;
+            }
+            else
+            {
+                // Not a repeat.
+                break;
+            }
+            ++tempRefPos;
+        }
+    }
+
+    // Add this position's depth to our average depth value
+    // regardless of whether or not it is above the min depth.
+    ourRunningDepthStat.Push(myDepth);
+
+    // Only check for discordance if it is above the min depth.
     if(myDepth >= ourMinDepth)
     {
-        // add the depth to the running stat.
-        ourRunningDepthStat.Push(myDepth);
-
-        // Update the number of occurrances of this depth.
-        ++ourDepthInfo[myDepth].count;
-
         ++ourTotalMinDepth;
-        int numRepeats = 0;
-        if(ourReference != NULL)
-        {
-            // Add one to ref position since genome position takes 1-based
-            uint32_t refPos = 
-                ourReference->getGenomePosition(getChromosome(),
-                                                getRefPosition()+1);
-            uint32_t tempRefPos = refPos - 1;
-            char refChar = (*ourReference)[refPos];
-            if(!BaseUtilities::isAmbiguous(refChar))
-            {
-                // Found an actual base, so check for repeats.
-                while(tempRefPos > 0)
-                {
-                    if((*ourReference)[tempRefPos] == refChar)
-                    {
-                        ++numRepeats;
-                    }
-                    else
-                    {
-                        // Not a repeat.
-                        break;
-                    }
-                    --tempRefPos;
-                }
-                // Loop in the other direction.
-                tempRefPos = refPos + 1;
-                while(tempRefPos < ourReference->getNumberBases())
-                {
-                    if((*ourReference)[tempRefPos] == refChar)
-                    {
-                        ++numRepeats;
-                    }
-                    else
-                    {
-                        // Not a repeat.
-                        break;
-                    }
-                    ++tempRefPos;
-                }
 
-                // Increment the number of sites with this repeat count.
-                ++ourRepeatInfo[numRepeats].count;
-                // Increment the number of sites with this repeat count and depth.
-                ++ourRepeatInfo[numRepeats].depthInfo[myDepth].count;
-                if((myNumDeletion != 0) && (myNumMatch != 0))
-                {
-                    // Increment number of discordant sites with this repeat count.
-                    ++ourRepeatInfo[numRepeats].discordantCount;
-                    // Increment number of discordant sites with this repeat count
-                    // and depth.
-                    ++ourRepeatInfo[numRepeats].depthInfo[myDepth].discordantCount;
-                }
-            }
-        }
+        // Increment the number of sites with this repeat count.
+        ++ourRepeatInfo[numRepeats].count;
+        // Increment the number of sites with this repeat count and depth.
+        ++ourRepeatInfo[numRepeats].depthInfo[myDepth].count;
+        // Increment the running depth stat for this repeat count.
+        ourRepeatInfo[numRepeats].runningDepth.Push(myDepth);
+
         if((myNumDeletion != 0) && (myNumMatch != 0))
         {
+            // Increment number of discordant sites with this repeat count.
+            ++ourRepeatInfo[numRepeats].discordantCount;
+            // Increment number of discordant sites with this repeat count
+            // and depth.
+            ++ourRepeatInfo[numRepeats].depthInfo[myDepth].discordantCount;
+
             // Discordant, so update counts.
             ++ourTotalDiscordant;
-            ++ourDepthInfo[myDepth].discordantCount;
             if(ourPrintPos)
             {
                 std::cerr << "Position " << getRefPosition() 
