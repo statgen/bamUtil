@@ -259,13 +259,15 @@ int IndelDiscordance::execute(int argc, char **argv)
     // Don't use depths over the average times the multiplier.
     double maxDepth = averageDepth * avgDepthMultiplier;
 
-    std::cerr << "average depth = " << averageDepth << std::endl;
     std::cerr << "max depth = " << maxDepth << std::endl;
+    std::cerr << "#AverageDepth\n" << averageDepth << std::endl << std::endl;
 
     // Calculate the error rate for each repeat.
     std::map<uint32_t, 
         IndelDiscordance::PileupElementIndelDiscordance::DepthInfo>::iterator depthIter;
 
+
+    std::cerr << "#RepeatCount\tAverageErrorRate\tAverageDepth\n";
     for(repeatIter = PileupElementIndelDiscordance::ourRepeatInfo.begin(); 
         repeatIter != PileupElementIndelDiscordance::ourRepeatInfo.end(); repeatIter++)
     {
@@ -305,9 +307,8 @@ int IndelDiscordance::execute(int argc, char **argv)
         }
         if(numErrorRates > 0)
         {
-            std:: cerr << "For RepeatCount = " << (*repeatIter).first 
-                       << ", Average Error Rate = " << sumErrorRates/numErrorRates
-                       << ", Average Depth = " << (*repeatIter).second.runningDepth.Mean()
+            std:: cerr << (*repeatIter).first << "\t" << sumErrorRates/numErrorRates
+                       << "\t" << (*repeatIter).second.runningDepth.Mean()
                        << std::endl;
         }
     }
@@ -384,7 +385,7 @@ void IndelDiscordance::PileupElementIndelDiscordance::analyze()
                                             getRefPosition()+1);
         uint32_t tempRefPos = refPos - 1;
         refChar = (*ourReference)[refPos];
-        if(!BaseUtilities::isAmbiguous(refChar))
+        if(BaseUtilities::isAmbiguous(refChar))
         {
             // Ambiguous base, so skip doing anything.
             return;
@@ -425,6 +426,9 @@ void IndelDiscordance::PileupElementIndelDiscordance::analyze()
     // regardless of whether or not it is above the min depth.
     ourRunningDepthStat.Push(myDepth);
 
+    // Increment the running depth stat for this repeat count.
+    ourRepeatInfo[numRepeats].runningDepth.Push(myDepth);
+
     // Only check for discordance if it is above the min depth.
     if(myDepth >= ourMinDepth)
     {
@@ -434,8 +438,6 @@ void IndelDiscordance::PileupElementIndelDiscordance::analyze()
         ++ourRepeatInfo[numRepeats].count;
         // Increment the number of sites with this repeat count and depth.
         ++ourRepeatInfo[numRepeats].depthInfo[myDepth].count;
-        // Increment the running depth stat for this repeat count.
-        ourRepeatInfo[numRepeats].runningDepth.Push(myDepth);
 
         if((myNumDeletion != 0) && (myNumMatch != 0))
         {
