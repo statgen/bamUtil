@@ -80,7 +80,14 @@
 && diff results/statsBaseQCsam255Percent.txt expected/statsBaseQC255Percent.txt && diff results/statsBaseQCsam255Percent.log expected/statsBaseQC.log \
 && \
 ../bin/bam stats --in testFiles/testStatsBaseQCSorted.bam --pBaseQC results/statsBaseQCregQual2PercentSummary.txt --regionList testFiles/region.txt --minMapQual 2 --baseSum 2> results/statsBaseQCregQual2PercentSummary.log \
-&& diff results/statsBaseQCregQual2PercentSummary.txt expected/statsBaseQCregQual2PercentSummary.txt && diff results/statsBaseQCregQual2PercentSummary.log expected/statsBaseQCreg.log \
+&& diff results/statsBaseQCregQual2PercentSummary.txt expected/statsBaseQCregQual2Percent.txt && diff results/statsBaseQCregQual2PercentSummary.log expected/statsBaseQCregQual2PercentSummary.log \
 && \
 ../bin/bam stats --in testFiles/testStatsBaseQCSorted.bam --cBaseQC results/statsBaseQCregQual20Summary.txt --regionList testFiles/region.txt --minMapQual 20 --baseSum 2> results/statsBaseQCregQual20Summary.log \
-&& diff results/statsBaseQCregQual20Summary.txt expected/statsBaseQCregQual20Summary.txt && diff results/statsBaseQCregQual20Summary.log expected/statsBaseQCreg.log 
+&& diff results/statsBaseQCregQual20Summary.txt expected/statsBaseQCregQual20.txt && diff results/statsBaseQCregQual20Summary.log expected/statsBaseQCregQual20Summary.log  \
+&& \
+../bin/bam stats --in testFiles/testStatsBaseQCSorted.bam --regionList testFiles/region.txt --minMapQual 2 --baseSum 2> results/statsBaseQCregQual2SummaryNoDetail.log \
+&& diff results/statsBaseQCregQual2SummaryNoDetail.log expected/statsBaseQCregQual2PercentSummary.log \
+&& \
+../bin/bam stats --in testFiles/testStatsBaseQCSorted.bam --regionList testFiles/region.txt --minMapQual 20 --baseSum 2> results/statsBaseQCregQual20SummaryNoDetail.log \
+&& diff results/statsBaseQCregQual20SummaryNoDetail.log expected/statsBaseQCregQual20Summary.log 
+

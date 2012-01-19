@@ -51,7 +51,7 @@ public:
     /// Set whether or not a summary of all bases should be collected.
     static void setBaseSum(bool baseSum);
 
-    /// Only prints if a summary has been collected (based on setBaseSum).
+    /// Prints a summary to stderr if setBaseSum was passed true.
     static void printSummary();
 
     PileupElementBaseQCStats();

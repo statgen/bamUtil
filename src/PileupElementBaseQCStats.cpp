@@ -99,17 +99,17 @@ void PileupElementBaseQCStats::printSummary()
 {
     if(ourBaseSum)
     {
-        ifprintf(ourOutputFile, "\nSummary of Pileup Stats (1st Mean, 2nd Standard Deviation)\nTotalReads\tDups\tQCFail\tMapped\tPaired\tProperPaired\tZeroMapQual\tMapQual<10\tMapQual255\tPassMapQual\tAverageMapQuality\tAverageMapQualCount\tDepth\tQ20Bases\n");
+        fprintf(stderr, "\nSummary of Pileup Stats (1st Mean, 2nd Standard Deviation)\nTotalReads\tDups\tQCFail\tMapped\tPaired\tProperPaired\tZeroMapQual\tMapQual<10\tMapQual255\tPassMapQual\tAverageMapQuality\tAverageMapQualCount\tDepth\tQ20Bases\n");
         
-        ifprintf(ourOutputFile, 
+        fprintf(stderr, 
                  "%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n",
                  avgTotalReads.Mean(), avgDups.Mean(), avgQCFail.Mean(),
                  avgMapped.Mean(), avgPaired.Mean(), avgProperPaired.Mean(),
                  avgZeroMapQ.Mean(), avgLT10MapQ.Mean(), avgMapQ255.Mean(), 
                  avgMapQPass.Mean(), avgAvgMapQ.Mean(), avgAvgMapQCount.Mean(),
                  avgDepth.Mean(), avgQ20.Mean());
-        ifprintf(ourOutputFile, 
-                 "%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n",
+        fprintf(stderr, 
+                 "%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n\n",
                  avgTotalReads.StandardDeviation(), avgDups.StandardDeviation(), avgQCFail.StandardDeviation(),
                  avgMapped.StandardDeviation(), avgPaired.StandardDeviation(), avgProperPaired.StandardDeviation(),
                  avgZeroMapQ.StandardDeviation(), avgLT10MapQ.StandardDeviation(), avgMapQ255.StandardDeviation(), 

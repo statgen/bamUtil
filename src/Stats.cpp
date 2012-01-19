@@ -65,7 +65,7 @@ void Stats::usage()
     std::cerr << "\t\t--noeof       : Do not expect an EOF block on a bam file." << std::endl;
     std::cerr << "\t\t--params      : Print the parameter settings." << std::endl;
     std::cerr << "\tOptional BaseQC Only Parameters:" << std::endl;
-    std::cerr << "\t\t--baseSum     : Print an overall summary of the baseQC for the file." << std::endl;
+    std::cerr << "\t\t--baseSum     : Print an overall summary of the baseQC for the file to stderr." << std::endl;
     std::cerr << std::endl;
 }
 
@@ -178,8 +178,11 @@ int Stats::execute(int argc, char **argv)
     if(baseQCPtr != NULL)
     {
         PileupElementBaseQCStats::setOutputFile(baseQCPtr);
-        PileupElementBaseQCStats::setMapQualFilter(minMapQual);
         PileupElementBaseQCStats::printHeader();
+    }
+    if((baseQCPtr != NULL) || baseSum)
+    {
+        PileupElementBaseQCStats::setMapQualFilter(minMapQual);
         PileupElementBaseQCStats::setBaseSum(baseSum);
     }
 
@@ -226,7 +229,7 @@ int Stats::execute(int argc, char **argv)
 
     //////////////////////////
     // Read dbsnp if specified and doing baseQC
-    if((baseQCPtr != NULL) && (!dbsnp.IsEmpty()))
+    if(((baseQCPtr != NULL) || baseSum) && (!dbsnp.IsEmpty()))
     {
         // Read the dbsnp file.
         IFILE fdbSnp;
@@ -383,7 +386,7 @@ int Stats::execute(int argc, char **argv)
             }
 
             // Check the next thing to do for the read.
-            if(baseQCPtr != NULL)
+            if((baseQCPtr != NULL) || baseSum)
             {
                 // Pileup the bases for this read.
                 pileup.processAlignmentRegion(samRecord, myStartPos, myEndPos, dbsnpListPtr);
@@ -397,14 +400,11 @@ int Stats::execute(int argc, char **argv)
     }
 
     // Flush the rest of the pileup.
-    if(baseQCPtr != NULL)
+    if((baseQCPtr != NULL) || baseSum)
     {
         // Pileup the bases.
         pileup.processAlignmentRegion(samRecord, myStartPos, myEndPos, dbsnpListPtr);
-        if(baseSum)
-        {
-            PileupElementBaseQCStats::printSummary();
-        }
+        PileupElementBaseQCStats::printSummary();
         ifclose(baseQCPtr);
     }
 
