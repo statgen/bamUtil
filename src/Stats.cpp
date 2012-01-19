@@ -39,15 +39,18 @@ void Stats::description()
 void Stats::usage()
 {
     BamExecutable::usage();
-    std::cerr << "\t./bam stats --in <inputFile> [--basic] [--qual] [--phred] [--baseQC <outputFileName>] [--maxNumReads <maxNum>]"
-              << "[--unmapped] [--bamIndex <bamIndexFile>] [--regionList <regFileName>] [--minMapQual <minMapQ>] [--dbsnp <dbsnpFile>] [--sumStats] [--noeof] [--params]" << std::endl;
+    std::cerr << "\t./bam stats --in <inputFile> [--basic] [--qual] [--phred] [--pbaseQC <outputFileName>] [--cbaseQC <outputFileName>] [--maxNumReads <maxNum>]"
+              << "[--unmapped] [--bamIndex <bamIndexFile>] [--regionList <regFileName>] [--minMapQual <minMapQ>] [--dbsnp <dbsnpFile>] [--noeof] [--params]" << std::endl;
     std::cerr << "\tRequired Parameters:" << std::endl;
     std::cerr << "\t\t--in : the SAM/BAM file to calculate stats for" << std::endl;
     std::cerr << "\tTypes of Statistics that can be generated:" << std::endl;
     std::cerr << "\t\t--basic       : Turn on basic statistic generation" << std::endl;
     std::cerr << "\t\t--qual        : Generate a count for each quality (displayed as non-phred quality)" << std::endl;
     std::cerr << "\t\t--phred       : Generate a count for each quality (displayed as phred quality)" << std::endl;
-    std::cerr << "\t\t--baseQC      : Write per base statistics to the specified file." << std::endl;
+    std::cerr << "\t\t--pBaseQC     : Write per base statistics as Percentages to the specified file." << std::endl;
+    std::cerr << "\t\t                pBaseQC & cBaseQC cannot both be specified." << std::endl;
+    std::cerr << "\t\t--cBaseQC     : Write per base statistics as Counts to the specified file." << std::endl;
+    std::cerr << "\t\t                pBaseQC & cBaseQC cannot both be specified." << std::endl;
     std::cerr << "\tOptional Parameters:" << std::endl;
     std::cerr << "\t\t--maxNumReads : Maximum number of reads to process" << std::endl;
     std::cerr << "\t\t                Defaults to -1 to indicate all reads." << std::endl;
@@ -60,9 +63,9 @@ void Stats::usage()
     std::cerr << "\t\t--minMapQual  : The minimum mapping quality for filtering reads in the baseQC stats." << std::endl;
     std::cerr << "\t\t--dbsnp       : The dbSnp file of positions to exclude from baseQC analysis." << std::endl;
     std::cerr << "\t\t--noeof       : Do not expect an EOF block on a bam file." << std::endl;
-    std::cerr << "\t\t--params      : Print the parameter settings" << std::endl;
-    std::cerr << "\tOptional Base QC Only Parameters:" << std::endl;
-    std::cerr << "\t\t--sumStats    : Alternate summary output." << std::endl;
+    std::cerr << "\t\t--params      : Print the parameter settings." << std::endl;
+    std::cerr << "\tOptional BaseQC Only Parameters:" << std::endl;
+    std::cerr << "\t\t--baseSum     : Print an overall summary of the baseQC for the file." << std::endl;
     std::cerr << std::endl;
 }
 
@@ -77,15 +80,15 @@ int Stats::execute(int argc, char **argv)
     bool params = false;
     bool qual = false;
     bool phred = false;
-    bool sumStats = false;
     int maxNumReads = -1;
     bool unmapped = false;
-    String baseQC = "";
+    String pBaseQC = "";
+    String cBaseQC = "";
     String regionList = "";
     int minMapQual = 0;
     String dbsnp = "";
     PosList *dbsnpListPtr = NULL;
-
+    bool baseSum = false;
 
     ParameterList inputParameters;
     BEGIN_LONG_PARAMETERS(longParameterList)
@@ -95,7 +98,8 @@ int Stats::execute(int argc, char **argv)
         LONG_PARAMETER("basic", &basic)
         LONG_PARAMETER("qual", &qual)
         LONG_PARAMETER("phred", &phred)
-        LONG_STRINGPARAMETER("baseQC", &baseQC)
+        LONG_STRINGPARAMETER("pBaseQC", &pBaseQC)
+        LONG_STRINGPARAMETER("cBaseQC", &cBaseQC)
         LONG_PARAMETER_GROUP("Optional Parameters")
         LONG_INTPARAMETER("maxNumReads", &maxNumReads)
         LONG_PARAMETER("unmapped", &unmapped)
@@ -103,10 +107,10 @@ int Stats::execute(int argc, char **argv)
         LONG_STRINGPARAMETER("regionList", &regionList)
         LONG_INTPARAMETER("minMapQual", &minMapQual)
         LONG_STRINGPARAMETER("dbsnp", &dbsnp)
-        LONG_PARAMETER_GROUP("Optional BaseQC Only Parameters")
-        LONG_PARAMETER("sumStats", &sumStats)
         LONG_PARAMETER("noeof", &noeof)
         LONG_PARAMETER("params", &params)
+        LONG_PARAMETER_GROUP("Optional BaseQC Only Parameters")
+        LONG_PARAMETER("baseSum", &baseSum)
         END_LONG_PARAMETERS();
    
     inputParameters.Add(new LongParameters ("Input Parameters", 
@@ -152,13 +156,31 @@ int Stats::execute(int argc, char **argv)
     
     // Open the output qc file if applicable.
     IFILE baseQCPtr = NULL;
-    if(!baseQC.IsEmpty())
+    if(!pBaseQC.IsEmpty() && !cBaseQC.IsEmpty())
     {
-        baseQCPtr = ifopen(baseQC, "w");
+        usage();
+        inputParameters.Status();
+        // Cannot specify both types of baseQC.
+        std::cerr << "Cannot specify both --pBaseQC & --cBaseQC." << std::endl;
+        return(-1);
+    }
+    else if(!pBaseQC.IsEmpty())
+    {
+        baseQCPtr = ifopen(pBaseQC, "w");
+        PileupElementBaseQCStats::setPercentStats(true);
+    }
+    else if(!cBaseQC.IsEmpty())
+    {
+        baseQCPtr = ifopen(cBaseQC, "w");
+        PileupElementBaseQCStats::setPercentStats(false);
+    }
+
+    if(baseQCPtr != NULL)
+    {
         PileupElementBaseQCStats::setOutputFile(baseQCPtr);
         PileupElementBaseQCStats::setMapQualFilter(minMapQual);
-        PileupElementBaseQCStats::setSumStats(sumStats);
         PileupElementBaseQCStats::printHeader();
+        PileupElementBaseQCStats::setBaseSum(baseSum);
     }
 
     if(params)
@@ -379,6 +401,10 @@ int Stats::execute(int argc, char **argv)
     {
         // Pileup the bases.
         pileup.processAlignmentRegion(samRecord, myStartPos, myEndPos, dbsnpListPtr);
+        if(baseSum)
+        {
+            PileupElementBaseQCStats::printSummary();
+        }
         ifclose(baseQCPtr);
     }
 
