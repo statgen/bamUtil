@@ -41,6 +41,13 @@ public:
     /// as new chromosome/position. 
     static void setGapSize(int gapSize);
 
+    /// Set whether or not a deletion should be ignored.  Ignored deletions
+    /// do not show up in the output. 
+    /// If the deletion is not ignored (default), false, the deletion will be
+    /// represented as a 'D' in the BaseInfoRecord for the base and 0 for the
+    /// quality.
+    static void setIgnoreDeletion(bool ignoreDeletion);
+
     // Print the output format, make sure you call after setSumStats
     // if you want summary statistics or your output file
     // will have the wrong header..
@@ -65,14 +72,19 @@ private:
     void initVars();
 
     static IFILE ourOutputFile;
-
     static int ourGapSize;
+    static bool ourIgnoreDeletion;
+
+    static const char DELETION_BASE = 'D';
 
     static int ourPrevPos;
+    static int ourPrevChromID;
 
     String myOutputString;
 
+    int myChromID;
     char myRefBase;
+    bool myAllRef;
 
     BaseInfoRecord myBaseInfoRecord;
 };

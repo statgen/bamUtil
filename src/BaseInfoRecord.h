@@ -21,8 +21,6 @@
 #ifndef __BASE_INFO_RECORD_H__
 #define __BASE_INFO_RECORD_H__
 
-#include "StringArray.h"
-#include "BamExecutable.h"
 #include "SamFile.h"
 
 class BaseInfoRecord
@@ -32,22 +30,66 @@ public:
     
     ~BaseInfoRecord();
     
+    static bool setOutputFile(const char* fileName);
+
     void add(char base, int qual, int cycle, bool strand, int mq);
 
     void reset();
 
+    //////////////////////////////////
+    // Reading methods.
+
+    // Read a record from the file.  It is assumed the file is in the 
+    // correct position.
+    bool read(IFILE filePtr);
+
+    // 
+    bool isEmpty();
+    bool isPos();
+    bool isRefOnly();
+    bool isDetailed();
+
+    /////////////////////////////////
+    // Accessor methods
+    
+
+    ////////////////////////////////
+    // Writing methods.
+
+    static void writeEmpty(IFILE outputFile);
+    static void writePos(int32_t chrom, int32_t pos, IFILE outputFile);
+
+    void writeRefOnly(IFILE outputFile);
+    void writeDetailed(IFILE outputFile);
+
 private:
-    bool myAllRefBase;
+    static IFILE ourOutput;
+    static const unsigned int REC_TYPE_LEN;
+    static const uint8_t EMPTY_REC;
+    static const uint8_t POS_REC;
+    static const uint8_t REF_ONLY_REC;
+    static const uint8_t DETAILED_REC;
+    static const int MAX_NUM_BASES = 255;
 
+    int myNumBases;
 
-    TODO - these are max size of 255, so make them arrays of 255.
-        Maybe even as possible such that they can be directly written out to avoid a 2nd loop?
+    int myGLH;
+    int myGLA;
 
-    std::vector<int> myBases;
-    std::vector<int> myQuals;
-    std::vector<int> myCycles;
-    std::vector<bool> myStrands;
-    std::vector<uint8_t> myMQs;
+    // Since each base is only 4 bits, each index holds two bases.
+    // The earlier base is in the upper bits.
+    int8_t myBases[(MAX_NUM_BASES+1)/2];
+    int8_t myQuals[MAX_NUM_BASES];
+    int8_t myCycles[MAX_NUM_BASES];
+
+    // Since strands are only 1 bit, each index holds 4 strands
+    // with the first strand in the uppermost bit.
+    bool myStrands[MAX_NUM_BASES];
+    uint8_t myMQs[MAX_NUM_BASES];
+
+    // The choromsome & position for this record.
+    int32_t myChormID;
+    int32_t my0BasedPos;
 };
 
 
