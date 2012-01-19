@@ -23,6 +23,16 @@
 #include "BgzfFileType.h"
 #include "Pileup.h"
 #include "PileupElementBaseQCStats.h"
+#include "BaseAsciiMap.h"
+
+Stats::Stats()
+    : BamExecutable(),
+      myRegionList(NULL),
+      myRegColumn()
+{
+    reset();
+}
+
 
 void Stats::statsDescription()
 {
@@ -39,7 +49,7 @@ void Stats::description()
 void Stats::usage()
 {
     BamExecutable::usage();
-    std::cerr << "\t./bam stats --in <inputFile> [--basic] [--qual] [--phred] [--baseQC <outputFileName>] [--maxNumReads <maxNum>]"
+    std::cerr << "\t./bam stats --in <inputFile> [--basic] [--qual] [--phred] [--repeat <repeatSequence>] [--gcContent] [--baseQC <outputFileName>] [--maxNumReads <maxNum>]"
               << "[--unmapped] [--bamIndex <bamIndexFile>] [--regionList <regFileName>] [--minMapQual <minMapQ>] [--dbsnp <dbsnpFile>] [--sumStats] [--noeof] [--params]" << std::endl;
     std::cerr << "\tRequired Parameters:" << std::endl;
     std::cerr << "\t\t--in : the SAM/BAM file to calculate stats for" << std::endl;
@@ -47,6 +57,8 @@ void Stats::usage()
     std::cerr << "\t\t--basic       : Turn on basic statistic generation" << std::endl;
     std::cerr << "\t\t--qual        : Generate a count for each quality (displayed as non-phred quality)" << std::endl;
     std::cerr << "\t\t--phred       : Generate a count for each quality (displayed as phred quality)" << std::endl;
+    std::cerr << "\t\t--repeat      : Generate counts for the number of reads that contain repeats of the given sequence" << std::endl;
+    std::cerr << "\t\t--gcContent   :" << std::endl;
     std::cerr << "\t\t--baseQC      : Write per base statistics to the specified file." << std::endl;
     std::cerr << "\tOptional Parameters:" << std::endl;
     std::cerr << "\t\t--maxNumReads : Maximum number of reads to process" << std::endl;
@@ -77,6 +89,8 @@ int Stats::execute(int argc, char **argv)
     bool params = false;
     bool qual = false;
     bool phred = false;
+    String repeat = "";
+    bool gcContent = false;
     bool sumStats = false;
     int maxNumReads = -1;
     bool unmapped = false;
@@ -84,8 +98,8 @@ int Stats::execute(int argc, char **argv)
     String regionList = "";
     int minMapQual = 0;
     String dbsnp = "";
-    PosList *dbsnpListPtr = NULL;
 
+    reset();
 
     ParameterList inputParameters;
     BEGIN_LONG_PARAMETERS(longParameterList)
@@ -95,6 +109,8 @@ int Stats::execute(int argc, char **argv)
         LONG_PARAMETER("basic", &basic)
         LONG_PARAMETER("qual", &qual)
         LONG_PARAMETER("phred", &phred)
+        LONG_STRINGPARAMETER("repeat", &repeat)
+        LONG_PARAMETER("gcContent", &gcContent)
         LONG_STRINGPARAMETER("baseQC", &baseQC)
         LONG_PARAMETER_GROUP("Optional Parameters")
         LONG_INTPARAMETER("maxNumReads", &maxNumReads)
@@ -146,9 +162,6 @@ int Stats::execute(int argc, char **argv)
     ////////////////////////////////////////
     // Setup in case pileup is used.
     Pileup<PileupElementBaseQCStats> pileup;
-    // Initialize start/end positions.
-    myStartPos = 0;
-    myEndPos = -1;
     
     // Open the output qc file if applicable.
     IFILE baseQCPtr = NULL;
@@ -204,81 +217,10 @@ int Stats::execute(int argc, char **argv)
 
     //////////////////////////
     // Read dbsnp if specified and doing baseQC
+    PosList *dbsnpListPtr = NULL;
     if((baseQCPtr != NULL) && (!dbsnp.IsEmpty()))
     {
-        // Read the dbsnp file.
-        IFILE fdbSnp;
-        fdbSnp = ifopen(dbsnp,"r");
-        // Determine how many entries.
-        const SamReferenceInfo* refInfo = samHeader.getReferenceInfo();
-        if(refInfo != NULL)
-        {
-            int maxRefLen = 0;
-            for(int i = 0; i < refInfo->getNumEntries(); i++)
-            {
-                int refLen = refInfo->getReferenceLength(i);
-                if(refLen >= maxRefLen)
-                {
-                    maxRefLen = refLen + 1;
-                }
-            }
-
-            dbsnpListPtr = new PosList(refInfo->getNumEntries(),maxRefLen);
-        }
-
-        if(fdbSnp==NULL)
-        {
-            std::cerr << "Open dbSNP file " << dbsnp.c_str() << " failed!\n";
-        }
-        else if(dbsnpListPtr == NULL)
-        {
-            std::cerr << "Failed to init the memory allocation for the dbsnpList.\n";
-        }
-        else if(refInfo == NULL)
-        {
-            std::cerr << "Failed to get the reference information from the bam file.\n";
-        }
-        else
-        {
-            // Read the dbsnp file.
-            StringArray tokens;
-            String buffer;
-            int position = 0;
-            int refID = 0;
-
-            // Loop til the end of the file.
-            while (!ifeof(fdbSnp))
-            {
-                // Read the next line.
-                buffer.ReadLine(fdbSnp);
-                // If it does not have at least 2 columns, 
-                // continue to the next line.
-                if (buffer.IsEmpty() || buffer[0] == '#') continue;
-                tokens.AddTokens(buffer);
-                if(tokens.Length() < 2) continue;
-
-                if(!tokens[1].AsInteger(position))
-                {
-                    std::cerr << "Improperly formatted region line, start position "
-                              << "(2nd column) is not an integer: "
-                              << tokens[1]
-                              << "; Skipping to the next line.\n";         
-                    continue;
-                }
-
-                // Look up the reference name.
-                refID = samHeader.getReferenceID(tokens[0]);
-                if(refID != SamReferenceInfo::NO_REF_ID)
-                {
-                    // Reference id was found, so add it to the dbsnp
-                    dbsnpListPtr->addPosition(refID, position);
-                }
-        
-                tokens.Clear();
-                buffer.Clear();
-            }
-        }
-        ifclose(fdbSnp);
+        dbsnpListPtr = readDBSnp(dbsnp, samHeader);
     }
 
     // Read the sam records.
@@ -306,10 +248,22 @@ int Stats::execute(int argc, char **argv)
         phredCount[i] = 0;
     }
     
-    
-    //////////////////////////////////
-    // When not reading by sections, getNextSection returns true
-    // the first time, then false the next time.
+    ////////////////////
+    // Setup for repeats.
+    String reverse = "";
+    int repeatLen = repeat.Length();
+    std::vector<int> repeatCountVector;
+    if(repeatLen != 0)
+    {
+        for(int i = (repeatLen-1); i >= 0; i--)
+        {
+            reverse += (char)BaseAsciiMap::base2complement[(int)(repeat[i])];
+        }
+    }
+
+    // For gcContent/repeats
+    myGcContent.reset();
+
     while(getNextSection(samIn))
     {
         // Keep reading records from the file until SamFile::ReadRecord
@@ -360,6 +314,39 @@ int Stats::execute(int argc, char **argv)
                 }
             }
 
+            // Check the GC Content.
+            if(gcContent)
+            {
+                calcGCContent(samRecord);
+            }
+            
+            // Check if we are looking for repeats.
+            if(repeatLen != 0)
+            {
+                // Looking for repeats.
+                const char* sequence = samRecord.getSequence();
+                int numForward;
+                int numReverse;
+                numForward = repeatCounter(sequence, repeat.c_str(), repeatLen);
+                numReverse = repeatCounter(sequence, reverse.c_str(), repeatLen);
+                if(numForward >= numReverse)
+                {
+                    if((unsigned int)numForward >= repeatCountVector.size())
+                    {
+                        repeatCountVector.resize(numForward+1, 0);
+                    }
+                    ++repeatCountVector[numForward];
+                }
+                else
+                {
+                    if((unsigned int)numReverse >= repeatCountVector.size())
+                    {
+                        repeatCountVector.resize(numReverse+1, 0);
+                    }
+                    ++repeatCountVector[numReverse];
+                    }
+            }
+        
             // Check the next thing to do for the read.
             if(baseQCPtr != NULL)
             {
@@ -377,8 +364,8 @@ int Stats::execute(int argc, char **argv)
     // Flush the rest of the pileup.
     if(baseQCPtr != NULL)
     {
-        // Pileup the bases.
-        pileup.processAlignmentRegion(samRecord, myStartPos, myEndPos, dbsnpListPtr);
+        // Flush out the rest of the pileup.
+        pileup.flushPileup();
         ifclose(baseQCPtr);
     }
 
@@ -419,7 +406,54 @@ int Stats::execute(int argc, char **argv)
         status = SamStatus::SUCCESS;
     }
 
+    if(dbsnpListPtr != NULL)
+    {
+        delete dbsnpListPtr;
+        dbsnpListPtr = NULL;
+    }
+    
+    if(gcContent)
+    {
+        printf("samTelomere -- Print Telomere Repeat Statistics\n\n");
+        
+        printf("GoodReads\tReadsGc50\tTelomere\tGC50(pk)\tTelomere(pk)\tTel50(pk)\n");
+        printf("%d\t%d\t%d\t%.4f\t%.4f\t%.4f\t%s\n",
+               myGcContent.allReads, myGcContent.gcReads, myGcContent.tmReads,
+               myGcContent.gcReads / (myGcContent.allReads + 1e-30) * 1000,
+               myGcContent.tmReads / (myGcContent.allReads + 1e-30) * 1000,
+               myGcContent.tmReads / (myGcContent.gcReads + 1e-30) * 1000,
+               inFile.c_str());
+    }
+
+    if(repeatLen != 0)
+    {
+        std::cout << "\nRepeatCounts for "  << repeat << "/" 
+                  << reverse << ":\n";
+        std::cout << "#repeats\t#recs\n";
+        for(unsigned int i = 0; i < repeatCountVector.size(); i++)
+        {
+            std::cout << i << "\t" << repeatCountVector[i] << "\n";
+        }
+        std::cout << std::endl;
+    }
+
     return(status);
+}
+
+
+void Stats::reset()
+{
+    myStartPos = 0;
+    myEndPos = -1;
+    myRegBuffer.Clear();
+    myRegColumn.Clear();
+    if(myRegionList != NULL)
+    {
+        ifclose(myRegionList);
+        myRegionList = NULL;
+    }
+
+    myGcContent.reset();
 }
 
 
@@ -510,4 +544,167 @@ bool Stats::getNextSection(SamFile &samIn)
 }
 
 
+PosList* Stats::readDBSnp(const String& dbsnpFileName, SamFileHeader& samHeader)
+{
+    // Determine how many entries by determining the longest
+    // reference.
+    const SamReferenceInfo* refInfo = samHeader.getReferenceInfo();
+    if(refInfo == NULL)
+    {
+        std::cerr << "Failed to get the reference information from the bam file.\n";
+        return(NULL);
+    }
 
+    int maxRefLen = 0;
+    for(int i = 0; i < refInfo->getNumEntries(); i++)
+    {
+        int refLen = refInfo->getReferenceLength(i);
+        if(refLen >= maxRefLen)
+        {
+            maxRefLen = refLen + 1;
+        }
+    }
+
+    // Read the dbsnp file.
+    IFILE fdbSnp;
+    fdbSnp = ifopen(dbsnpFileName,"r");
+
+    if(fdbSnp==NULL)
+    {
+        std::cerr << "Open dbSNP file " << dbsnpFileName.c_str() << " failed!\n";
+        return(NULL);
+    }
+
+    // Now that we know the size to create, create the dbsnp position list.
+    PosList* dbsnpListPtr = new PosList(refInfo->getNumEntries(), maxRefLen);
+    if(dbsnpListPtr == NULL)
+    {
+        std::cerr << "Failed to init the memory allocation for the dbsnpList.\n";
+    }
+    else
+    {
+        // Read the dbsnp file.
+        StringArray tokens;
+        String buffer;
+        int position = 0;
+        int refID = 0;
+        
+        // Loop til the end of the file.
+        while (!ifeof(fdbSnp))
+        {
+            // Read the next line.
+            buffer.ReadLine(fdbSnp);
+            // If it does not have at least 2 columns, 
+            // continue to the next line.
+            if (buffer.IsEmpty() || buffer[0] == '#') continue;
+            tokens.AddTokens(buffer);
+            if(tokens.Length() < 2) continue;
+            
+            if(!tokens[1].AsInteger(position))
+            {
+                std::cerr << "Improperly formatted region line, start position "
+                          << "(2nd column) is not an integer: "
+                          << tokens[1]
+                          << "; Skipping to the next line.\n";         
+                continue;
+            }
+            
+            // Look up the reference name.
+            refID = samHeader.getReferenceID(tokens[0]);
+            if(refID != SamReferenceInfo::NO_REF_ID)
+            {
+                // Reference id was found, so add it to the dbsnp
+                dbsnpListPtr->addPosition(refID, position);
+            }
+            
+            tokens.Clear();
+            buffer.Clear();
+        }
+    }
+    ifclose(fdbSnp);
+    return(dbsnpListPtr);
+}
+
+
+// Check the sequence for the max number of repeats and return it.
+int Stats::repeatCounter(const char *sequence, const char* repeat, int repeatLen)
+{
+    int numRepeats = 0;
+    int maxRepeats = 0;
+    const char* repeatPtr = strstr(sequence, repeat);
+    const char* prevRepeat = NULL;
+
+    // Search forward.
+    while(repeatPtr != NULL)
+    {
+        // Check to see if this repeat is immediately after the previous one.
+        if(repeatPtr == (prevRepeat + repeatLen))
+        {
+            // Immediately after a previous repeat, so increment numRepeats.
+            ++numRepeats;
+        }
+        else
+        {
+            // Not a concatenated repeat, so set numRepeats to 1.
+            numRepeats = 1;
+        }
+        
+        if(numRepeats > maxRepeats)
+        {
+            maxRepeats = numRepeats;
+        }
+
+        // Found it in forward, so search to see if it is repeated again.
+        prevRepeat = repeatPtr;
+        repeatPtr = strstr(prevRepeat + repeatLen, repeat);
+    }
+    
+    return(maxRepeats);
+}
+
+
+void Stats::calcGCContent(SamRecord& samRecord)
+{
+    static const char* forward = "TTAGGGTTAGGGTTAGGGTTAGGGTTAGGG";
+    static const char* reverse = "CCCTAACCCTAACCCTAACCCTAACCCTAA";
+
+    // Check the GC Content.
+    int gcCount = 0;
+    int atCount = 0;
+    int32_t readLen = samRecord.getReadLength();
+    const char* sequence = samRecord.getSequence();
+    for(int i = 0; i < readLen; i++)
+    {
+        if((sequence[i] == 'G') || (sequence[i] == 'C') ||
+           (sequence[i] == 'g') || (sequence[i] == 'c'))
+        {
+            ++gcCount;
+        }
+        else if((sequence[i] == 'A') || (sequence[i] == 'T') ||
+                (sequence[i] == 'a') || (sequence[i] == 't'))
+        {
+            ++atCount;
+        }
+    }
+    
+    if ((atCount + gcCount) < (readLen * 0.90))
+    {
+        return;
+    }
+    else
+    {
+        myGcContent.allReads++;
+        
+        if (abs(atCount - gcCount) <= 1)
+            myGcContent.gcReads++;
+        
+        double percent = gcCount * 1.0 / (atCount + gcCount);
+        
+        if (percent < 0.45 || percent > 0.55)
+            return;
+        
+        if ((strstr(sequence, forward) != NULL) ||
+            (strstr(sequence, reverse) != NULL))
+            myGcContent.tmReads++;
+    }
+}

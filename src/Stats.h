@@ -24,17 +24,39 @@
 
 #include "BamExecutable.h"
 #include "SamFile.h"
+#include "PosList.h"
 
 class Stats : public BamExecutable
 {
 public:
+    Stats();
+
     static void statsDescription();
     void description();
     void usage();
     int execute(int argc, char **argv);
 
 private:
+    void reset();
+
+
     bool getNextSection(SamFile& samIn);
+
+    // Read the specified dbsnp file using the specified sam/bam header for
+    // determining the max reference length and for mapping the
+    // reference name to the reference id.
+    // Returns a pointer to a newly created dbsnp position list.  The caller of this
+    // method should delete the list when done with it.
+    PosList* readDBSnp(const String& dbsnpFileName, SamFileHeader& samHeader);
+
+
+    // Calculate GC Content
+    void calcGCContent(SamRecord& samRecord);
+
+    // Check the sequence for the max number of repeats and return it.
+    // Pass in repeatLen so it doesn't have to be recalculated for repeat everytime.
+    int repeatCounter(const char *sequence, const char* repeat, int repeatLen);
+    int repeatCounter(const char *sequence, const char* repeat, const char* reverse, int repeatLen);
 
     // Pointer to the region list file
     IFILE  myRegionList;
@@ -45,7 +67,15 @@ private:
     String myRegBuffer;
     StringArray myRegColumn;
 
-    bool myWithinRegion;
+
+    struct gcContent
+    {
+        int allReads;
+        int gcReads;
+        int tmReads;
+
+        void reset() { allReads = 0; gcReads = 0; tmReads = 0;}
+    } myGcContent;
 };
 
 #endif
