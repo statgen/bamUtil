@@ -16,16 +16,16 @@
  */
 
 //////////////////////////////////////////////////////////////////////////
-// This file contains the processing for the executable option "baseInfo"
+// This file contains the processing for the executable option "asp"
 // which generates some statistics for SAM/BAM files.
 
-#include "BaseInfo.h"
+#include "Asp.h"
 #include "SamFile.h"
 #include "BgzfFileType.h"
 #include "Pileup.h"
-#include "PileupElementBaseInfo.h"
+#include "PileupElementAsp.h"
 
-BaseInfo::BaseInfo()
+Asp::Asp()
     : BamExecutable(),
       myRegionList(NULL),
       myRegColumn()
@@ -34,29 +34,29 @@ BaseInfo::BaseInfo()
 }
 
 
-BaseInfo::~BaseInfo()
+Asp::~Asp()
 {
 }
 
 
-void BaseInfo::baseInfoDescription()
+void Asp::aspDescription()
 {
-    std::cerr << " baseInfo - BaseInfo a SAM/BAM File" << std::endl;
+    std::cerr << " asp - Asp a SAM/BAM File" << std::endl;
 }
 
 
-void BaseInfo::description()
+void Asp::description()
 {
-    baseInfoDescription();
+    aspDescription();
 }
 
 
-void BaseInfo::usage()
+void Asp::usage()
 {
     BamExecutable::usage();
-    std::cerr << "\t./bam baseInfo --in <inputFile> --out <outputFile> --refFile <referenceFilename> [--bamIndex <bamIndexFile>] [--regionList <regFileName>] [--noeof] [--params]" << std::endl;
+    std::cerr << "\t./bam asp --in <inputFile> --out <outputFile> --refFile <referenceFilename> [--bamIndex <bamIndexFile>] [--regionList <regFileName>] [--noeof] [--params]" << std::endl;
     std::cerr << "\tRequired Parameters:" << std::endl;
-    std::cerr << "\t\t--in       : the SAM/BAM file to calculate baseInfo for" << std::endl;
+    std::cerr << "\t\t--in       : the SAM/BAM file to calculate asp for" << std::endl;
     std::cerr << "\t\t--out      : the output file to write" << std::endl;
     std::cerr << "\t\t--refFile  : the reference file" << std::endl;
     std::cerr << "\tOptional Parameters:" << std::endl;
@@ -74,7 +74,7 @@ void BaseInfo::usage()
 }
 
 
-int BaseInfo::execute(int argc, char **argv)
+int Asp::execute(int argc, char **argv)
 {
     // Extract command line arguments.
     String inFile = "";
@@ -121,7 +121,7 @@ int BaseInfo::execute(int argc, char **argv)
         usage();
         inputParameters.Status();
         // In file was not specified but it is mandatory.
-        std::cerr << "--in is a mandatory argument for baseInfo, "
+        std::cerr << "--in is a mandatory argument for asp, "
                   << "but was not specified" << std::endl;
         return(-1);
     }
@@ -130,7 +130,7 @@ int BaseInfo::execute(int argc, char **argv)
         usage();
         inputParameters.Status();
         // Out file was not specified but it is mandatory.
-        std::cerr << "--out is a mandatory argument for baseInfo, "
+        std::cerr << "--out is a mandatory argument for asp, "
                   << "but was not specified" << std::endl;
         return(-1);
     }
@@ -139,7 +139,7 @@ int BaseInfo::execute(int argc, char **argv)
         usage();
         inputParameters.Status();
         // Ref file was not specified but it is mandatory.
-        std::cerr << "--refFile is a mandatory argument for baseInfo, "
+        std::cerr << "--refFile is a mandatory argument for asp, "
                   << "but was not specified" << std::endl;
         return(-1);
     }
@@ -159,10 +159,10 @@ int BaseInfo::execute(int argc, char **argv)
 
     ////////////////////////////////////////
     // Setup in case pileup is used.
-    Pileup<PileupElementBaseInfo> pileup;
+    Pileup<PileupElementAsp> pileup;
     
-    PileupElementBaseInfo::setOutputFile(outFile);
-    PileupElementBaseInfo::setGapSize(gapSize);
+    PileupElementAsp::setOutputFile(outFile);
+    PileupElementAsp::setGapSize(gapSize);
     PileupElement::setReference(&reference);
 
     if(params)
@@ -219,7 +219,7 @@ int BaseInfo::execute(int argc, char **argv)
     // Flush the rest of the pileup.
     pileup.flushPileup();
 
-    PileupElementBaseInfo::closeOutputFile();
+    PileupElementAsp::closeOutputFile();
 
     SamStatus::Status status = samIn.GetStatus();
     if(status == SamStatus::NO_MORE_RECS)
@@ -231,7 +231,7 @@ int BaseInfo::execute(int argc, char **argv)
 }
 
 
-void BaseInfo::reset()
+void Asp::reset()
 {
     myStartPos = 0;
     myEndPos = -1;
@@ -245,7 +245,7 @@ void BaseInfo::reset()
 }
 
 
-bool BaseInfo::getNextSection(SamFile &samIn)
+bool Asp::getNextSection(SamFile &samIn)
 {
     static bool alreadyRead = false;
     if(myRegionList == NULL)

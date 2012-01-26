@@ -16,45 +16,26 @@
  */
 
 //////////////////////////////////////////////////////////////////////////
-// This file contains the processing for the executable option "baseInfo"
-// which generates some base information for SAM/BAM files.
+// This file contains the processing for the executable option "dumpAsp"
+// which prints the asp file to the screen in a readable format.
 
+#ifndef __DUMP_ASP_H__
+#define __DUMP_ASP_H__
 
-#ifndef __BASE_INFO_H__
-#define __BASE_INFO_H__
-
-#include "StringArray.h"
 #include "BamExecutable.h"
-#include "SamFile.h"
+#include "AspRecord.h"
 
-class BaseInfo : public BamExecutable
+class DumpAsp : public BamExecutable
 {
 public:
-    BaseInfo();
-    
-    ~BaseInfo();
-    
-    static void baseInfoDescription();
+    static void dumpAspDescription();
     void description();
     void usage();
     int execute(int argc, char **argv);
-    
+
 private:
-    void reset();
-
-    bool getNextSection(SamFile& samIn);
-
-    static const int DEFAULT_GAP_SIZE = 100;
-
-    // Pointer to the region list file
-    IFILE  myRegionList;
-
-    int myStartPos;
-    int myEndPos;
-
-    String myRegBuffer;
-    StringArray myRegColumn;
+    void printRefOnly(AspRecord& record);
+    void printDetailed(AspRecord& record);
 };
-
 
 #endif

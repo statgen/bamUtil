@@ -19,14 +19,14 @@
 // This file contains the processing for the executable option "stats"
 // which generates some statistics for SAM/BAM files.
 
-#ifndef __PILEUP_ELEMENT_BASE_INFO_H__
-#define __PILEUP_ELEMENT_BASE_INFO_H__
+#ifndef __PILEUP_ELEMENT_ASP_H__
+#define __PILEUP_ELEMENT_ASP_H__
 
 #include "PileupElement.h"
-#include "BaseInfoRecord.h"
+#include "AspRecord.h"
 
 
-class PileupElementBaseInfo : public PileupElement
+class PileupElementAsp : public PileupElement
 {
 public:
 
@@ -44,7 +44,7 @@ public:
     /// Set whether or not a deletion should be ignored.  Ignored deletions
     /// do not show up in the output. 
     /// If the deletion is not ignored (default), false, the deletion will be
-    /// represented as a 'D' in the BaseInfoRecord for the base and 0 for the
+    /// represented as a 'D' in the AspRecord for the base and 0 for the
     /// quality.
     static void setIgnoreDeletion(bool ignoreDeletion);
 
@@ -53,9 +53,9 @@ public:
     // will have the wrong header..
     static void printHeader();
     
-    PileupElementBaseInfo();
+    PileupElementAsp();
 
-    virtual ~PileupElementBaseInfo();
+    virtual ~PileupElementAsp();
 
     // Add an entry to this pileup element.  
     virtual void addEntry(SamRecord& record);
@@ -67,15 +67,13 @@ public:
     virtual void reset(int32_t refPosition);
 
 private:
-    PileupElementBaseInfo(const PileupElement& q);
+    PileupElementAsp(const PileupElement& q);
 
     void initVars();
 
     static IFILE ourOutputFile;
     static int ourGapSize;
     static bool ourIgnoreDeletion;
-
-    static const char DELETION_BASE = 'D';
 
     static int ourPrevPos;
     static int ourPrevChromID;
@@ -86,7 +84,7 @@ private:
     char myRefBase;
     bool myAllRef;
 
-    BaseInfoRecord myBaseInfoRecord;
+    AspRecord myAspRecord;
 };
 
 #endif

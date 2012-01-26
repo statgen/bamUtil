@@ -16,64 +16,66 @@
  */
 
 //////////////////////////////////////////////////////////////////////////
-#include "PileupElementBaseInfo.h"
-#include "SamFlag.h"
+#include "PileupElementAsp.h"
 #include <stdexcept>
+
+#include "SamFlag.h"
+#include "BaseUtilities.h"
 
 /////////////////////////////////////////////////////////////////////////////
 //
-// PileupElementBaseInfo
+// PileupElementAsp
 //
 
-IFILE PileupElementBaseInfo::ourOutputFile = NULL;
-int PileupElementBaseInfo::ourGapSize = 0;
-bool PileupElementBaseInfo::ourIgnoreDeletion = false;
+IFILE PileupElementAsp::ourOutputFile = NULL;
+int PileupElementAsp::ourGapSize = 0;
+bool PileupElementAsp::ourIgnoreDeletion = false;
 
-int PileupElementBaseInfo::ourPrevPos = PileupElement::UNSET_POSITION;
-int PileupElementBaseInfo::ourPrevChromID = INVALID_CHROMOSOME_INDEX;
+int PileupElementAsp::ourPrevPos = PileupElement::UNSET_POSITION;
+int PileupElementAsp::ourPrevChromID = INVALID_CHROMOSOME_INDEX;
 
-void PileupElementBaseInfo::setOutputFile(const char* outputFile)
+void PileupElementAsp::setOutputFile(const char* outputFile)
 {
     ourOutputFile = ifopen(outputFile, "w");
 }
 
-void PileupElementBaseInfo::closeOutputFile()
+void PileupElementAsp::closeOutputFile()
 {
     ifclose(ourOutputFile);
 }
 
 
-void PileupElementBaseInfo::setGapSize(int gapSize)
+void PileupElementAsp::setGapSize(int gapSize)
 {
     ourGapSize = gapSize;
 }
 
 
-void PileupElementBaseInfo::setIgnoreDeletion(bool ignoreDeletion)
+void PileupElementAsp::setIgnoreDeletion(bool ignoreDeletion)
 {
     ourIgnoreDeletion = ignoreDeletion;
 }
 
 
-void PileupElementBaseInfo::printHeader()
+void PileupElementAsp::printHeader()
 {
 }
 
 
-PileupElementBaseInfo::PileupElementBaseInfo()
+PileupElementAsp::PileupElementAsp()
     : PileupElement()
 {
     initVars();
 }
 
 
-PileupElementBaseInfo::~PileupElementBaseInfo()
+PileupElementAsp::~PileupElementAsp()
 {
 }
 
 
 // Add an entry to this pileup element.  
-void PileupElementBaseInfo::addEntry(SamRecord& record)
+void PileupElementAsp::addEntry(SamRecord& record)
 {
     if(record.getReadLength() == 0)
     {
@@ -88,6 +90,8 @@ void PileupElementBaseInfo::addEntry(SamRecord& record)
     if(myChromID == INVALID_CHROMOSOME_INDEX)
     {
         myChromID = record.getReferenceID();
+        // This means the reference base wasn't set either, so set it now.
+        myRefBase = getRefBase();
     }
 
     // Get the position within the read of this entry.
@@ -95,6 +99,11 @@ void PileupElementBaseInfo::addEntry(SamRecord& record)
     if(cigar == NULL)
     {
         throw std::runtime_error("Failed to retrieve cigar info from the record.");
+    }
+    if(cigar->size() == 0)
+    {
+        // There is no cigar, so return.
+        return;
     }
 
     // The cycle is the query index.
@@ -112,9 +121,9 @@ void PileupElementBaseInfo::addEntry(SamRecord& record)
             return;
         }
         // set the base for the deletion.
-        base = DELETION_BASE;
-        // No quality, so set to 0.
-        qual = 0;
+        base = AspRecord::DELETION_BASE;
+        // No quality, so set to unknown.
+        qual = BaseUtilities::UNKNOWN_QUALITY_CHAR;
     }
     else
     {
@@ -126,40 +135,42 @@ void PileupElementBaseInfo::addEntry(SamRecord& record)
     uint8_t mq = record.getMapQuality();
 
     // Check to see if this entry matches the reference base.
-    if(base != myRefBase)
+    if(base == '=')
+    {
+        base = myRefBase;
+    }
+    else if(base != myRefBase)
     {
         myAllRef = false;
     }
-
-    myBaseInfoRecord.add(base, qual, cycle, strand, mq);
+    myAspRecord.add(base, qual, cycle, strand, mq);
 }
 
 
 // Perform the analysis associated with this class.  May be a simple print, 
 // a calculation, or something else.  Typically performed when this element
 // has been fully populated by all records that cover the reference position.
-void PileupElementBaseInfo::analyze()
+void PileupElementAsp::analyze()
 {
     // Check the previous position.
     int posDiff = getRefPosition() - ourPrevPos;
     if(ourPrevChromID != myChromID || posDiff > ourGapSize)
     {
         // Write a new position record.
-        // TODO        BaseInfoRecord::writePos(getChromosome(), getRefPosition(), ourOutputFile);
-        BaseInfoRecord::writePos(myChromID, getRefPosition(), ourOutputFile);
+        AspRecord::writePos(myChromID, getRefPosition(), ourOutputFile);
     }
     else if(posDiff < 0)
     {
         // Position is going back.  This is an error.
-        std::cerr << "PileupElementBaseInfo is being analyzed out of order!\n";
+        std::cerr << "PileupElementAsp is being analyzed out of order!\n";
         return;
     }
     else
     {
         // Write empty records to fill in the gap to this position.
-        while(posDiff > 0)
+        while(posDiff > 1)
         {
-            BaseInfoRecord::writeEmpty(ourOutputFile);
+            AspRecord::writeEmpty(ourOutputFile);
             --posDiff;
         }
     }
@@ -167,12 +178,13 @@ void PileupElementBaseInfo::analyze()
     // If all positions match the reference, write the short record.
     if(myAllRef)
     {
-        myBaseInfoRecord.writeRefOnly(ourOutputFile);
+        myAspRecord.setRefOnlyType();
+        myAspRecord.write(ourOutputFile);
     }
     else
     {
         // Write the full record.
-        myBaseInfoRecord.writeDetailed(ourOutputFile);
+        myAspRecord.write(ourOutputFile);
     }
 
     // Update the last position written.
@@ -182,22 +194,19 @@ void PileupElementBaseInfo::analyze()
 
 
 // Resets the entry, setting the new position associated with this element.
-void PileupElementBaseInfo::reset(int32_t refPosition)
+void PileupElementAsp::reset(int32_t refPosition)
 {
     // Call the base class.
     PileupElement::reset(refPosition);
 
     initVars();
 
-    // get the reference base.
-    myRefBase = getRefBase();
-
-    myBaseInfoRecord.reset();
+    myAspRecord.reset();
 
     myChromID = INVALID_CHROMOSOME_INDEX;
 }
 
-void PileupElementBaseInfo::initVars()
+void PileupElementAsp::initVars()
 {
     myOutputString.Clear();
     // Default that all bases match the reference.

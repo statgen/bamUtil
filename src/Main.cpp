@@ -35,7 +35,8 @@
 #include "FindCigars.h"
 #include "Stats.h"
 #include "ClipOverlap.h"
-#include "BaseInfo.h"
+#include "Asp.h"
+#include "DumpAsp.h"
 
 void Usage()
 {
@@ -58,7 +59,8 @@ void Usage()
     FindCigars::findCigarsDescription();
     Stats::statsDescription();
     ClipOverlap::clipOverlapDescription();
-    BaseInfo::baseInfoDescription();
+    Asp::aspDescription();
+    DumpAsp::dumpAspDescription();
     std::cerr << std::endl;
     std::cerr << "Usage: " << std::endl;
     std::cerr << "\tbam <tool> [<tool arguments>]" << std::endl;
@@ -138,9 +140,13 @@ int main(int argc, char ** argv)
     {
         bamExe = new ClipOverlap();
     }
-    else if(strcmp(argv[1], "baseInfo") == 0)
+    else if(strcmp(argv[1], "asp") == 0)
     {
-        bamExe = new BaseInfo();
+        bamExe = new Asp();
+    }
+    else if(strcmp(argv[1], "dumpAsp") == 0)
+    {
+        bamExe = new DumpAsp();
     }
     else if(strcmp(argv[1], "convert") == 0)
     {
