@@ -99,7 +99,7 @@ void PileupElementBaseQCStats::printSummary()
 {
     if(ourBaseSum)
     {
-        fprintf(stderr, "\nSummary of Pileup Stats (1st Mean, 2nd Standard Deviation)\nTotalReads\tDups\tQCFail\tMapped\tPaired\tProperPaired\tZeroMapQual\tMapQual<10\tMapQual255\tPassMapQual\tAverageMapQuality\tAverageMapQualCount\tDepth\tQ20Bases\n");
+        fprintf(stderr, "\nSummary of Pileup Stats (1st Row is Mean, 2nd Row is Standard Deviation)\nTotalReads\tDups\tQCFail\tMapped\tPaired\tProperPaired\tZeroMapQual\tMapQual<10\tMapQual255\tPassMapQual\tAverageMapQuality\tAverageMapQualCount\tDepth\tQ20Bases\n");
         
         fprintf(stderr, 
                  "%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n",
