@@ -41,7 +41,7 @@ Asp::~Asp()
 
 void Asp::aspDescription()
 {
-    std::cerr << " asp - Asp a SAM/BAM File" << std::endl;
+    std::cerr << " asp - Pileup on a SAM/BAM File" << std::endl;
 }
 
 
