@@ -88,11 +88,8 @@ int DumpAsp::execute(int argc, char **argv)
 
     // Read the asp.
     AspFileReader asp;
-    if(!asp.open(aspFile) || !asp.isOpen())
-    {
-        std::cerr << "Failed to open the asp file." << std::endl;
-        return(-1);
-    }
+    // Throws acception if the open fails.
+    asp.open(aspFile);
 
     AspRecord record;
     int returnVal = 0;
