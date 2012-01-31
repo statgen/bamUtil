@@ -29,6 +29,11 @@
 ClipOverlap::ClipOverlap()
     : BamExecutable(),
       myStoreOrig(""),
+      myStats(false),
+      myOverlaps(),
+      myNumForwardClips(0),
+      myNumReverseClips(0),
+      myNumOrientationClips(0),
       myNumMateFailures(0),
       myNumPoolFail(0),
       myPoolSkipClip(false)
@@ -58,8 +63,9 @@ void ClipOverlap::usage()
     std::cerr << "\tOptional Parameters:" << std::endl;
     std::cerr << "\t\t--storeOrig   : Store the original cigar in the specified tag." << std::endl;
     std::cerr << "\t\t--readName    : Original file is sorted by Read Name instead of coordinate." << std::endl;
+    std::cerr << "\t\t--stats       : Print some statistics on the overlaps." << std::endl;
     std::cerr << "\t\t--noeof       : Do not expect an EOF block on a bam file." << std::endl;
-    std::cerr << "\t\t--params      : Print the parameter settings" << std::endl;
+    std::cerr << "\t\t--params      : Print the parameter settings to stderr" << std::endl;
     std::cerr << "\tClipping By Coordinate Optional Parameters:" << std::endl;
     std::cerr << "\t\t--poolSize    : Maximum number of records the program is allowed to allocate" << std::endl;
     std::cerr << "\t\t                for clipping on Coordinate sorted files. (Default: " << DEFAULT_POOL_SIZE << ")" << std::endl;
@@ -90,6 +96,7 @@ int ClipOverlap::execute(int argc, char **argv)
         LONG_PARAMETER_GROUP("Optional Parameters")
         LONG_STRINGPARAMETER("storeOrig", &myStoreOrig)
         LONG_PARAMETER("readName", &readName)
+        LONG_PARAMETER ("stats", &myStats)
         LONG_PARAMETER("noeof", &noeof)
         LONG_PARAMETER("params", &params)
         LONG_PARAMETER_GROUP("Coordinate Clipping Optional Parameters")
@@ -279,6 +286,24 @@ int ClipOverlap::clipSortedByReadName(SamFile& samIn, SamFile& samOut)
         delete tmpRecord;
     }
 
+    // Print Stats if applicable
+    if(myStats)
+    {
+        std::cerr << "Overlap Statistics:" << std::endl;
+        std::cerr << "Number of overlapping pairs: "
+                  << myOverlaps.NumDataValues() << std::endl
+                  << "Average # Reference Bases Overlapped: "
+                  << myOverlaps.Mean() << std::endl
+                  << "Variance of Reference Bases overlapped: "
+                  << myOverlaps.Variance() << std::endl
+                  << "Number of times the forward strand was clipped: "
+                  << myNumForwardClips << std::endl
+                  << "Number of times the reverse strand was clipped: "
+                  << myNumReverseClips << std::endl
+                  << "Number of times orientation causes additional clipping: "
+                  << myNumOrientationClips << std::endl;
+    }
+
     if(returnStatus == SamStatus::SUCCESS)
     {
         std::cerr << "Completed ClipOverlap Successfully.\n";
@@ -393,6 +418,24 @@ int ClipOverlap::clipSortedByCoord(SamFile& samIn, SamFile& samOut, int poolSize
         returnStatus = SamStatus::NO_MORE_RECS;
     }
 
+    // Print Stats if applicable
+    if(myStats)
+    {
+        std::cerr << "Overlap Statistics:" << std::endl;
+        std::cerr << "Number of overlapping pairs: "
+                  << myOverlaps.NumDataValues() << std::endl
+                  << "Average # Reference Bases Overlapped: "
+                  << myOverlaps.Mean() << std::endl
+                  << "Variance of Reference Bases overlapped: "
+                  << myOverlaps.Variance() << std::endl
+                  << "Number of times the forward strand was clipped: "
+                  << myNumForwardClips << std::endl
+                  << "Number of times the reverse strand was clipped: "
+                  << myNumReverseClips << std::endl
+                  << "Number of times orientation causes additional clipping: "
+                  << myNumOrientationClips << std::endl;
+    }
+    
     if(returnStatus == SamStatus::SUCCESS)
     {
         std::cerr << "Completed ClipOverlap Successfully.\n";
@@ -459,6 +502,12 @@ void ClipOverlap::handleCoordRead(SamRecord& record,
                 {
                     // Clip both.
                     clipEntire(record);
+                    // Increment orientation clip counter on the first read
+                    // in the pair.
+                    if(myStats)
+                    {
+                        ++myNumOrientationClips;
+                    }
                 }
                 // No clipping is necessary (or the whole read was clipped),
                 // so just write it to the output buffer.
@@ -497,6 +546,8 @@ void ClipOverlap::handleCoordRead(SamRecord& record,
                     if(!SamFlag::isReverse(flag) && SamFlag::isMateReverse(flag))
                     {
                         // Clip both.
+                        // Do not increment the orientation clips since
+                        // it was incremented when the mate was clipped.
                         clipEntire(record);
                     }
                 
@@ -596,6 +647,15 @@ bool ClipOverlap::forceRecordFlush(MateMapByCoord& mateMap,
             int16_t flag = firstRec->getFlag();
             if(SamFlag::isReverse(flag) && !SamFlag::isMateReverse(flag))
             {
+                if(myStats)
+                {
+                    ++myNumOrientationClips;
+
+                    // Also increment the times that the reverse is clipped.
+                    ++myNumReverseClips;
+                    myOverlaps.Push(firstRec->get0BasedAlignmentEnd() -
+                                    firstRec->get0BasedMatePosition() + 1);
+                }
                 clipEntire(*firstRec);
             }
             else
@@ -604,6 +664,23 @@ bool ClipOverlap::forceRecordFlush(MateMapByCoord& mateMap,
                                                     firstRec->get0BasedMatePosition(), 
                                                     newFirstCigar) != CigarHelper::NO_CLIP)
                 {
+                    // Update the number of clips.
+                    if(myStats)
+                    {
+                        // Clipping the first record's strand.
+                        if(SamFlag::isReverse(flag))
+                        {
+                            ++myNumReverseClips;
+                        }
+                        else
+                        {
+                            ++myNumForwardClips;
+                        }
+                        // Update the overlap length - the difference
+                        // between the mate start and this read's end.
+                        myOverlaps.Push(firstRec->get0BasedAlignmentEnd() -
+                                        firstRec->get0BasedMatePosition() + 1);
+                    }
                     // Write the original cigar into the specified tag.
                     if(!myStoreOrig.IsEmpty())
                     {
@@ -623,7 +700,7 @@ bool ClipOverlap::forceRecordFlush(MateMapByCoord& mateMap,
         // Flush up to & including this record's position.
         return(outputBuffer.flush(firstRec->getReferenceID(), 
                                   firstRec->get0BasedPosition()));
-   }
+    }
     else
     {
         // There was nothing in the mateMap, so flush everything from the output buffer.
@@ -650,10 +727,29 @@ void ClipOverlap::clip(SamRecord& firstRecord, SamRecord& secondRecord)
 
     if(firstEnd >= secondStart)
     {
-        // overlap, determine which record will get clipped by determining
+        // overlap
+
+        // If we are keeping stats, update the stats with the overlap length.
+        if(myStats)
+        {
+            // Both firstEnd & secondStart are 0-based inclusive.
+            // Check to see which one ends last.
+            int32_t secondEnd = secondRecord.get0BasedAlignmentEnd();
+            int32_t end = firstEnd;
+            if(firstEnd > secondEnd)
+            {
+                // The first read ends after the 2nd one, so the
+                // overlap ends at the end of the 2nd read.
+                end = secondEnd;
+            }
+            // If firstEnd = 5 & secondStart = 3, they overlap at
+            // positions 3, 4, & 5.  So 5-3+1=3 positions.
+            myOverlaps.Push(end - secondStart + 1);
+        }
+
+        // Determine which record will get clipped by determining
         // which record has a lower base quality in the overlapping region.
         // First check clipping the first region.
-
         // Determine the clipping on the 1st record at the start of the 2nd.
         int32_t firstClipPos = 
             CigarHelper::softClipEndByRefPos(firstRecord, secondStart, 
@@ -675,7 +771,20 @@ void ClipOverlap::clip(SamRecord& firstRecord, SamRecord& secondRecord)
         // based on which has the lower quality.
         if(firstQualAvg <= secondQualAvg)
         {
-            // First clip has lower or equal quality, so clip that.
+            // First read has lower or equal quality, so clip that.
+            if(myStats)
+            {
+                if(SamFlag::isReverse(firstFlag))
+                {
+                    ++myNumReverseClips;
+                }
+                else
+                {
+                    ++myNumForwardClips;
+                }
+            }
+
+
             // Check to see if the entire read should be clipped by
             // checking forward/reverse.
             if(SamFlag::isReverse(firstFlag) && !SamFlag::isReverse(secondFlag))
@@ -683,6 +792,12 @@ void ClipOverlap::clip(SamRecord& firstRecord, SamRecord& secondRecord)
                 // first record is reverse and 2nd is forward, so clip
                 // those extending ends which means clipping all of the
                 // reverse(first) strand since it's overlap has lower quality.
+                if(myStats)
+                {
+                    // Increment that we are doing an orientation clip.
+                    ++myNumOrientationClips;
+                }
+
                 clipEntire(firstRecord);
 
                 // Soft clip the end of the forward(second) strand that
@@ -718,6 +833,17 @@ void ClipOverlap::clip(SamRecord& firstRecord, SamRecord& secondRecord)
         else
         {
             // The 2nd clip has lower quality, so clip that.
+            if(myStats)
+            {
+                if(SamFlag::isReverse(secondFlag))
+                {
+                    ++myNumReverseClips;
+                }
+                else
+                {
+                    ++myNumForwardClips;
+                }
+            }
             // Check to see if the entire read should be clipped by
             // checking forward/reverse.
             if(SamFlag::isReverse(firstFlag) && !SamFlag::isReverse(secondFlag))
@@ -725,6 +851,11 @@ void ClipOverlap::clip(SamRecord& firstRecord, SamRecord& secondRecord)
                 // first record is reverse and 2nd is forward, so clip
                 // those extending ends which means clipping all of the
                 // forward(second) strand since it's overlap has lower quality.
+                if(myStats)
+                {
+                    // Increment that we are doing an orientation clip.
+                    ++myNumOrientationClips;
+                }
                 clipEntire(secondRecord);
 
                 // Soft clip the front of the reverse(first) strand that
@@ -776,6 +907,12 @@ void ClipOverlap::clip(SamRecord& firstRecord, SamRecord& secondRecord)
             // clip them both.
             clipEntire(firstRecord);
             clipEntire(secondRecord);
+
+            // Complete Overlap
+            if(myStats)
+            {
+                ++myNumOrientationClips;
+            }
         }
     }
 }

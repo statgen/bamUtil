@@ -53,6 +53,58 @@ let "status |= $?"
 diff results/testClipOverlapCoordPool0Clip.log expected/testClipOverlapCoordPool0Clip.log
 let "status |= $?"
 
+# Test clipping files sorted by read name.
+../bin/bam clipOverlap --stats --readName --in testFiles/testClipOverlapReadName.sam --out results/testClipOverlapReadNameStats.sam --storeOrig XC 2> results/testClipOverlapReadNameStats.log
+let "status |= $?"
+diff results/testClipOverlapReadNameStats.sam expected/testClipOverlapReadName.sam
+let "status |= $?"
+diff results/testClipOverlapReadNameStats.log expected/testClipOverlapReadNameStats.log
+let "status |= $?"
+
+# Test clipping files sorted by coordinate
+../bin/bam clipOverlap --stats --in testFiles/testClipOverlapCoord.sam --out results/testClipOverlapCoordStats.sam --storeOrig XC 2> results/testClipOverlapCoordStats.log
+let "status |= $?"
+diff results/testClipOverlapCoordStats.sam expected/testClipOverlapCoord.sam
+let "status |= $?"
+diff results/testClipOverlapCoordStats.log expected/testClipOverlapCoordStats.log
+let "status |= $?"
+
+# Test clipping files sorted by coordinate with small pool without default clipping
+../bin/bam clipOverlap --stats --in testFiles/testClipOverlapCoord.sam --out results/testClipOverlapCoordPool3Stats.sam --storeOrig XC --poolSize 3 --poolSkipClip 2> results/testClipOverlapCoordPool3Stats.log
+if [ $? != 2 ]
+then
+    status=1
+    echo did not get expected return value for a small pool.
+fi
+diff results/testClipOverlapCoordPool3Stats.sam expected/testClipOverlapCoordPool3.sam
+let "status |= $?"
+diff results/testClipOverlapCoordPool3Stats.log expected/testClipOverlapCoordPool3Stats.log
+let "status |= $?"
+
+# Test clipping files sorted by coordinate with small pool with default clipping
+../bin/bam clipOverlap --stats --in testFiles/testClipOverlapCoord.sam --out results/testClipOverlapCoordPool3ClipStats.sam --storeOrig XC --poolSize 3 2> results/testClipOverlapCoordPool3ClipStats.log
+if [ $? != 2 ]
+then
+    status=1
+    echo did not get expected return value for a small pool.
+fi
+diff results/testClipOverlapCoordPool3ClipStats.sam expected/testClipOverlapCoordPool3Clip.sam
+let "status |= $?"
+diff results/testClipOverlapCoordPool3ClipStats.log expected/testClipOverlapCoordPool3ClipStats.log
+let "status |= $?"
+
+# Test clipping files sorted by coordinate with no pool with default clipping
+../bin/bam clipOverlap --stats --in testFiles/testClipOverlapCoord.sam --out results/testClipOverlapCoordPool0ClipStats.sam --storeOrig XC --poolSize 0 2> results/testClipOverlapCoordPool0ClipStats.log
+if [ $? != 8 ]
+then
+    status=1
+    echo did not get expected return value for no pool.
+fi
+diff results/testClipOverlapCoordPool0ClipStats.sam expected/testClipOverlapCoordPool0Clip.sam
+let "status |= $?"
+diff results/testClipOverlapCoordPool0ClipStats.log expected/testClipOverlapCoordPool0ClipStats.log
+let "status |= $?"
+
 if [ $status != 0 ]
 then
   echo failed testClipOverlap.sh

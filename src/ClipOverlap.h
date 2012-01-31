@@ -26,6 +26,7 @@
 #include "SamFile.h"
 #include "MateMapByCoord.h"
 #include "SamCoordOutput.h"
+#include "SimpleStats.h"
 
 class ClipOverlap : public BamExecutable
 {
@@ -69,6 +70,11 @@ private:
     double getAvgQual(SamRecord& record, int32_t startPos, int32_t endPos);
 
     String myStoreOrig;
+    bool myStats;
+    RunningStat myOverlaps;
+    int myNumForwardClips;
+    int myNumReverseClips;
+    int myNumOrientationClips;
 
     int myNumMateFailures;
     int myNumPoolFail;
