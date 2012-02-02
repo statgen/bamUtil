@@ -226,10 +226,10 @@ int IndelDiscordance::execute(int argc, char **argv)
         status = SamStatus::SUCCESS;
     }
 
-    std::cerr << "SUMMARY\n";
-    std::cerr << "numDepth >= " << minDepth << ": " 
+    std::cerr << "# SUMMARY\n";
+    std::cerr << "# numDepth >= " << minDepth << ": " 
               << PileupElementIndelDiscordance::ourTotalMinDepth << std::endl;
-    std::cerr << "num discordant CIGAR, Depth >= " << minDepth << ": " 
+    std::cerr << "# num discordant CIGAR, Depth >= " << minDepth << ": " 
               << PileupElementIndelDiscordance::ourTotalDiscordant << std::endl;
 
     
@@ -241,7 +241,7 @@ int IndelDiscordance::execute(int argc, char **argv)
     {
         if((*repeatIter).second.discordantCount != 0)
         {
-            std::cerr << "num discordant CIGAR, Depth >= " << minDepth << " with repeats = " 
+            std::cerr << "# num discordant CIGAR, Depth >= " << minDepth << " with repeats = " 
                       << (*repeatIter).first << ": "
                       << (*repeatIter).second.discordantCount << std::endl;
         }
@@ -249,7 +249,7 @@ int IndelDiscordance::execute(int argc, char **argv)
     for(repeatIter = PileupElementIndelDiscordance::ourRepeatInfo.begin(); 
         repeatIter != PileupElementIndelDiscordance::ourRepeatInfo.end(); repeatIter++)
     {
-        std::cerr << "num Depth >= " << minDepth << " with repeats = " 
+        std::cerr << "# num Depth >= " << minDepth << " with repeats = " 
                   << (*repeatIter).first << ": "
                   << (*repeatIter).second.count << std::endl;
     }
@@ -259,8 +259,10 @@ int IndelDiscordance::execute(int argc, char **argv)
     // Don't use depths over the average times the multiplier.
     double maxDepth = averageDepth * avgDepthMultiplier;
 
-    std::cerr << "max depth = " << maxDepth << std::endl;
-    std::cerr << "#AverageDepth\n" << averageDepth << std::endl << std::endl;
+    std::cerr << "# max depth = " << maxDepth 
+              << std::endl << std::endl << std::endl;
+    std::cerr << "#AverageDepth\n" << averageDepth 
+              << std::endl << std::endl << std::endl;
 
     // Calculate the error rate for each repeat.
     std::map<uint32_t, 
