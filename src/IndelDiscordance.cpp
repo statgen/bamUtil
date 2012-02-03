@@ -74,6 +74,9 @@ void IndelDiscordance::usage()
     std::cerr << "\t\t--avgDepthMult : max depth used is the average depth * this multiplier,\n"
               << "\t\t                 DEFAULT = " << DEFAULT_AVG_DEPTH_MULTIPLIER << std::endl;
     std::cerr << "\t\t--printPos     : print details for each position" << std::endl;
+    std::cerr << "\t\t--printCounts  : print counts of occurrances of each repeat count and of discordant cigars for each repeat count" << std::endl;
+    std::cerr << "\t\t--sample       : output the specified sample name as part of the error rate/depth table" << std::endl;
+    std::cerr << "\t\t--gender       : output the specified gender as part of the error rate/depth table" << std::endl;
     std::cerr << "\t\t--chrom        : chromosome name other than X" << std::endl;
     std::cerr << "\t\t--start        : use a 0-based inclusive start position other than the default, "
               << DEFAULT_START_POS << std::endl;
@@ -98,6 +101,9 @@ int IndelDiscordance::execute(int argc, char **argv)
     int sumRepeatLen = DEFAULT_SUM_REPEAT;
     int avgDepthMultiplier = DEFAULT_AVG_DEPTH_MULTIPLIER;
     bool printPos = false;
+    bool printCounts = false;
+    String sample = "";
+    String gender = "";
     int startPos0Based = DEFAULT_START_POS;
     int endPos0Based = DEFAULT_END_POS;
     bool noeof = false;
@@ -116,6 +122,9 @@ int IndelDiscordance::execute(int argc, char **argv)
         LONG_INTPARAMETER("sumRepeatLen", &sumRepeatLen)
         LONG_INTPARAMETER("avgDepthMult", &avgDepthMultiplier)
         LONG_PARAMETER("printPos", &printPos)
+        LONG_PARAMETER("printCounts", &printCounts)
+        LONG_STRINGPARAMETER("sample", &sample)
+        LONG_STRINGPARAMETER("gender", &gender)
         LONG_STRINGPARAMETER("chrom", &chrom)
         LONG_INTPARAMETER("start", &startPos0Based)
         LONG_INTPARAMETER("end", &endPos0Based)
@@ -226,41 +235,43 @@ int IndelDiscordance::execute(int argc, char **argv)
         status = SamStatus::SUCCESS;
     }
 
-    std::cerr << "# SUMMARY\n";
-    std::cerr << "# numDepth >= " << minDepth << ": " 
-              << PileupElementIndelDiscordance::ourTotalMinDepth << std::endl;
-    std::cerr << "# num discordant CIGAR, Depth >= " << minDepth << ": " 
-              << PileupElementIndelDiscordance::ourTotalDiscordant << std::endl;
-
     
-
-    std::map<uint32_t, 
-        IndelDiscordance::PileupElementIndelDiscordance::RepeatInfo>::iterator repeatIter;
-    for(repeatIter = PileupElementIndelDiscordance::ourRepeatInfo.begin(); 
-        repeatIter != PileupElementIndelDiscordance::ourRepeatInfo.end(); repeatIter++)
-    {
-        if((*repeatIter).second.discordantCount != 0)
-        {
-            std::cerr << "# num discordant CIGAR, Depth >= " << minDepth << " with repeats = " 
-                      << (*repeatIter).first << ": "
-                      << (*repeatIter).second.discordantCount << std::endl;
-        }
-    }
-    for(repeatIter = PileupElementIndelDiscordance::ourRepeatInfo.begin(); 
-        repeatIter != PileupElementIndelDiscordance::ourRepeatInfo.end(); repeatIter++)
-    {
-        std::cerr << "# num Depth >= " << minDepth << " with repeats = " 
-                  << (*repeatIter).first << ": "
-                  << (*repeatIter).second.count << std::endl;
-    }
-
     // Determine the average depth.
     double averageDepth =  PileupElementIndelDiscordance::ourRunningDepthStat.Mean();
     // Don't use depths over the average times the multiplier.
     double maxDepth = averageDepth * avgDepthMultiplier;
+    
+    std::map<uint32_t,
+        IndelDiscordance::PileupElementIndelDiscordance::RepeatInfo>::iterator repeatIter;
 
-    std::cerr << "# max depth = " << maxDepth 
-              << std::endl << std::endl << std::endl;
+    if(printCounts)
+    {
+        std::cerr << "# SUMMARY\n";
+        std::cerr << "# numDepth >= " << minDepth << ": " 
+                  << PileupElementIndelDiscordance::ourTotalMinDepth << std::endl;
+        std::cerr << "# num discordant CIGAR, Depth >= " << minDepth << ": " 
+                  << PileupElementIndelDiscordance::ourTotalDiscordant << std::endl;
+        for(repeatIter = PileupElementIndelDiscordance::ourRepeatInfo.begin();
+            repeatIter != PileupElementIndelDiscordance::ourRepeatInfo.end(); repeatIter++)
+        {
+            if((*repeatIter).second.discordantCount != 0)
+            {
+                std::cerr << "# num discordant CIGAR, Depth >= " << minDepth << " with repeats = " 
+                          << (*repeatIter).first << ": "
+                          << (*repeatIter).second.discordantCount << std::endl;
+            }
+        }
+        for(repeatIter = PileupElementIndelDiscordance::ourRepeatInfo.begin(); 
+            repeatIter != PileupElementIndelDiscordance::ourRepeatInfo.end(); repeatIter++)
+        {
+            std::cerr << "# num Depth >= " << minDepth << " with repeats = " 
+                      << (*repeatIter).first << ": "
+                      << (*repeatIter).second.count << std::endl;
+        }
+        std::cerr << "# max depth = " << maxDepth 
+                  << std::endl << std::endl << std::endl;
+    }
+
     std::cerr << "#AverageDepth\n" << averageDepth 
               << std::endl << std::endl << std::endl;
 
@@ -269,7 +280,17 @@ int IndelDiscordance::execute(int argc, char **argv)
         IndelDiscordance::PileupElementIndelDiscordance::DepthInfo>::iterator depthIter;
 
 
-    std::cerr << "#RepeatCount\tAverageErrorRate\tAverageDepth\n";
+    std::cerr << "#RepeatCount\tAverageErrorRate\tAverageDepth";
+    if(sample != "")
+    {
+        std::cerr << "\tSample";
+    }
+    if(gender != "")
+    {
+        std::cerr << "\tGender";
+    }
+    std::cerr << "\n";
+
     for(repeatIter = PileupElementIndelDiscordance::ourRepeatInfo.begin(); 
         repeatIter != PileupElementIndelDiscordance::ourRepeatInfo.end(); repeatIter++)
     {
@@ -310,8 +331,16 @@ int IndelDiscordance::execute(int argc, char **argv)
         if(numErrorRates > 0)
         {
             std:: cerr << (*repeatIter).first << "\t" << sumErrorRates/numErrorRates
-                       << "\t" << (*repeatIter).second.runningDepth.Mean()
-                       << std::endl;
+                       << "\t" << (*repeatIter).second.runningDepth.Mean();
+            if(sample != "")
+            {
+                std::cerr << "\t" << sample;
+            }
+            if(gender != "")
+            {
+                std::cerr << "\t" << gender;
+            }
+            std::cerr << std::endl;
         }
     }
    
