@@ -122,7 +122,8 @@ private:
         int myDepth;
         int myNumDeletion;
         int myNumMatch;
-        int myNumInsertions;
+        int myNumInsertion;
+        int myNumNoInsertion;
 
         static GenomeSequence* ourReference;
     };

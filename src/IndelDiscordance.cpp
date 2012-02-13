@@ -372,6 +372,8 @@ void IndelDiscordance::PileupElementIndelDiscordance::addEntry(SamRecord& record
 
     ++myDepth;
 
+    bool insertion = false;
+
     // Analyze the record.
     Cigar* cigar = record.getCigarInfo();
     if(cigar == NULL)
@@ -385,17 +387,81 @@ void IndelDiscordance::PileupElementIndelDiscordance::addEntry(SamRecord& record
         return;
     }
 
-    // Get the query index for this position.
-    int queryIndex = 
-        cigar->getQueryIndex(getRefPosition(),
-                             record.get0BasedPosition());
-    if(queryIndex == -1)
+    // Get the position in the expanded cigar.
+    int cigarPos = 
+        cigar->getExpandedCigarIndexFromRefPos(getRefPosition(),
+                                               record.get0BasedPosition());
+
+    char cigarChar = cigar->getCigarCharOp(cigarPos);
+
+    // Check for deletion.
+    if(cigarChar == 'D')
     {
+        // Deletion
         ++myNumDeletion;
+    }
+    else if((cigarChar == 'M') || (cigarChar == 'X') || (cigarChar == '='))
+    {
+        ++myNumMatch;
     }
     else
     {
-        ++myNumMatch;
+        // Could be a skip or the situation where no matches/deletions and 
+        // only insertions.  
+        // If only soft clips and insertions, the insertion will not be found
+        // if the soft clip is first.
+    }
+
+    // Check if this is the first position and there is a preceding insert.
+    if(getRefPosition() == record.get0BasedPosition())
+    {
+        char newCigarPos = cigarPos;
+        while(newCigarPos > 0)
+        {
+            --newCigarPos;
+            cigarChar = cigar->getCigarCharOp(newCigarPos);
+            if(cigarChar == 'I')
+            {
+                insertion = true;
+                break;
+            }
+            if((cigarChar == 'S') || (cigarChar == 'H'))
+            {
+                // Clip, so stop looping.
+                break;
+            }
+        }
+    }
+
+    // Check to see if the following cigar operation is an insertion.
+    // If the next operation is a pad, keep checking.
+    while(1)
+    {
+        // Check the next cigarPos.
+        char newCigarPos = cigarPos + 1;
+        cigarChar = cigar->getCigarCharOp(newCigarPos);
+        if(cigarChar == 'I')
+        {
+            // insertion.
+            insertion = true;
+        }
+        else if(cigarChar == 'P')
+        {
+            // Only keep checking for insertions if this is a pad.
+            continue;
+        }
+        // Not a pad, so exit the loop.
+        break;
+    }
+
+    // increment the insertion counters.
+    if(insertion)
+    {
+        ++myNumInsertion;
+    }
+    else
+    {
+        ++myNumNoInsertion;
     }
 }
 
@@ -485,13 +551,33 @@ void IndelDiscordance::PileupElementIndelDiscordance::analyze()
                 std::cerr << "Position " << getRefPosition() 
                           << " has " << myNumDeletion << " deletions and " 
                           << myNumMatch << " matches.  ";
+                if(numRepeats > 0)
+                {
+                    std:: cerr << numRepeats << " repeats.";
+                }
+                std::cerr << "\n";
             }
-            if((numRepeats > 0) && (ourPrintPos))
-            {
-                std:: cerr << numRepeats << " repeats.";
-            }
+        }
+        else if((myNumInsertion != 0) && (myNumNoInsertion != 0))
+        {
+            // Discordance due to insertion.
+            // Increment number of discordant sites with this repeat count.
+            ++ourRepeatInfo[numRepeats].discordantCount;
+            // Increment number of discordant sites with this repeat count
+            // and depth.
+            ++ourRepeatInfo[numRepeats].depthInfo[myDepth].discordantCount;
+            
+            // Discordant, so update counts.
+            ++ourTotalDiscordant;
             if(ourPrintPos)
             {
+                std::cerr << "Position " << getRefPosition() 
+                          << " has " << myNumInsertion << " insertions and " 
+                          << myNumNoInsertion << " no insertions.  ";
+                if(numRepeats > 0)
+                {
+                    std:: cerr << numRepeats << " repeats.";
+                }
                 std::cerr << "\n";
             }
         }
@@ -514,5 +600,6 @@ void IndelDiscordance::PileupElementIndelDiscordance::initVars()
     myDepth = 0;
     myNumDeletion = 0;
     myNumMatch = 0;
-    myNumInsertions = 0;
+    myNumInsertion = 0;
+    myNumNoInsertion = 0;
 }
