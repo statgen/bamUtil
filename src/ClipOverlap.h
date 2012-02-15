@@ -43,7 +43,7 @@ private:
 
     int clipSortedByReadName(SamFile& samIn, SamFile& outFile);
 
-    int clipSortedByCoord(SamFile& samIn, SamFile& outFile, int poolSize);
+    int clipSortedByCoord(SamFile& samIn, SamFile& outFile);
     
     void handleCoordRead(SamRecord& record, 
                          MateMapByCoord& mateMap,
@@ -59,7 +59,8 @@ private:
     bool forceRecordFlush(MateMapByCoord& mateMap, SamCoordOutput& outputBuffer);
 
     // Clip overlapping reads and strands that extend past the other strand.
-    void clip(SamRecord& firstRecord, SamRecord& secondRecord);
+    // Return true if a record is clipped, false if neither is clipped.
+    bool clip(SamRecord& firstRecord, SamRecord& secondRecord);
 
     // Clip an entire read.
     void clipEntire(SamRecord& record);
@@ -69,6 +70,8 @@ private:
     // found, indicating the end of the string.
     double getAvgQual(SamRecord& record, int32_t startPos, int32_t endPos);
 
+    SamRecordPool myPool; // used just for coord reads.
+    bool myClipsOnly;
     String myStoreOrig;
     bool myStats;
     RunningStat myOverlaps;
