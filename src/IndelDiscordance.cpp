@@ -33,6 +33,8 @@ bool IndelDiscordance::PileupElementIndelDiscordance::ourPrintPos = false;
 RunningStat IndelDiscordance::PileupElementIndelDiscordance::ourRunningDepthStat;
 uint32_t IndelDiscordance::PileupElementIndelDiscordance::ourTotalMinDepth = 0;
 uint32_t IndelDiscordance::PileupElementIndelDiscordance::ourTotalDiscordant = 0;
+uint32_t IndelDiscordance::PileupElementIndelDiscordance::ourTotalDelDiscordant = 0;
+uint32_t IndelDiscordance::PileupElementIndelDiscordance::ourTotalInsDiscordant = 0;
 std::map<uint32_t, IndelDiscordance::PileupElementIndelDiscordance::RepeatInfo> IndelDiscordance::PileupElementIndelDiscordance::ourRepeatInfo;
 
 IndelDiscordance::IndelDiscordance()
@@ -63,7 +65,7 @@ void IndelDiscordance::usage()
     std::cerr << "\t\t--bamIndex     : The path/name of the bam index file" << std::endl;
     std::cerr << "\t\t                 (if required and not specified, uses the --in value + \".bai\")" << std::endl;
     std::cerr << "\t\t--refFile      : reference file for determining repeat counts" << std::endl;
-    std::cerr << "\t\t--umRef        : use the reference at the default UofM location, "
+    std::cerr << "\t\t--umRef        : use the reference at the default UofM location, " << std::endl
               << "\t\t                 " << DEFAULT_UM_REF_LOC << std::endl;
     std::cerr << "\t\t--depth        : min depth at which to report indel discordance, DEFAULT >= "
               << DEFAULT_MIN_DEPTH << std::endl;
@@ -280,7 +282,7 @@ int IndelDiscordance::execute(int argc, char **argv)
         IndelDiscordance::PileupElementIndelDiscordance::DepthInfo>::iterator depthIter;
 
 
-    std::cerr << "#RepeatCount\tAverageErrorRate\tAverageDepth";
+    std::cerr << "#RepeatCount\tAverageErrorRate\tAverageDepth\tAverageDeletionErrorRate\tAverageInsertionErrorRate\tAvgDeletionLen\tAvgDiscordantDeletionLen\tAvgInsertLen\tAvgDiscordantInsertLen";
     if(sample != "")
     {
         std::cerr << "\tSample";
@@ -300,6 +302,8 @@ int IndelDiscordance::execute(int argc, char **argv)
 
         double sumErrorRates = 0;
         uint32_t numErrorRates = 0;
+        double sumDelErrorRates = 0;
+        double sumInsErrorRates = 0;
         // Calculate the error rate for each depth that has discordance.
         for(depthIter = (*repeatIter).second.depthInfo.begin(); 
             depthIter != (*repeatIter).second.depthInfo.end(); depthIter++)
@@ -317,21 +321,33 @@ int IndelDiscordance::execute(int argc, char **argv)
 
             if(count != 0)
             {
+                // Overall
                 double p_discordant = numDiscordant/(double)count;
                 double errorRate = 1. - pow(1. - p_discordant, 1./depth);
-//                 std::cerr << "\tFor Depth = " << depth << ", total num = " << count
-//                           << ", num discordant = " << numDiscordant
-//                           << ", p_discordant = " << p_discordant 
-//                           << ", and Error Rate = " << errorRate << std::endl;
-
                 sumErrorRates += errorRate * count * (depth-1);
                 numErrorRates += count * (depth-1);
+                // Deletion
+                p_discordant =
+                    ((*depthIter).second.delDiscordantCount) / (double)count;
+                errorRate =  1. - pow(1. - p_discordant, 1./depth);
+                sumDelErrorRates += errorRate * count * (depth-1);
+                // Insertion
+                p_discordant =
+                    ((*depthIter).second.insDiscordantCount) / (double)count;
+                errorRate =  1. - pow(1. - p_discordant, 1./depth);
+                sumInsErrorRates += errorRate * count * (depth-1);
             }
         }
         if(numErrorRates > 0)
         {
             std:: cerr << (*repeatIter).first << "\t" << sumErrorRates/numErrorRates
-                       << "\t" << (*repeatIter).second.runningDepth.Mean();
+                       << "\t" << (*repeatIter).second.runningDepth.Mean()
+                       << "\t" << sumDelErrorRates/numErrorRates
+                       << "\t" << sumInsErrorRates/numErrorRates
+                       << "\t" << (*repeatIter).second.avgDelLens.Mean()
+                       << "\t" << (*repeatIter).second.avgDisDelLens.Mean()
+                       << "\t" << (*repeatIter).second.avgInsLens.Mean()
+                       << "\t" << (*repeatIter).second.avgDisInsLens.Mean();
             if(sample != "")
             {
                 std::cerr << "\t" << sample;
@@ -372,8 +388,6 @@ void IndelDiscordance::PileupElementIndelDiscordance::addEntry(SamRecord& record
 
     ++myDepth;
 
-    bool insertion = false;
-
     // Analyze the record.
     Cigar* cigar = record.getCigarInfo();
     if(cigar == NULL)
@@ -391,6 +405,7 @@ void IndelDiscordance::PileupElementIndelDiscordance::addEntry(SamRecord& record
     int cigarPos = 
         cigar->getExpandedCigarIndexFromRefPos(getRefPosition(),
                                                record.get0BasedPosition());
+    int newCigarPos = 0;
 
     char cigarChar = cigar->getCigarCharOp(cigarPos);
 
@@ -399,6 +414,44 @@ void IndelDiscordance::PileupElementIndelDiscordance::addEntry(SamRecord& record
     {
         // Deletion
         ++myNumDeletion;
+        
+        int delLen = 1;
+
+        // Determine the length of the deletion.
+        newCigarPos = cigarPos;
+        // Search to the left.
+        while(newCigarPos > 0)
+        {
+            --newCigarPos;
+            cigarChar = cigar->getCigarCharOp(newCigarPos);
+            if(cigarChar == 'D')
+            {
+                ++delLen;
+                // Keep looping looking for more deletions.
+            }
+            else
+            {
+                break;
+            }
+        }
+        // Search to the right.
+        newCigarPos = cigarPos;
+        while(1)
+        {
+            // Check the next cigarPos.
+            ++newCigarPos;
+            cigarChar = cigar->getCigarCharOp(newCigarPos);
+            if(cigarChar == 'D')
+            {
+                // deletion
+                ++delLen;
+                // Keep looping to determine the deletion length.
+                continue;
+            }
+            // Not a deletion, so exit the loop.
+            break;
+        }
+        myDeletionLen.Push(delLen);
     }
     else if((cigarChar == 'M') || (cigarChar == 'X') || (cigarChar == '='))
     {
@@ -412,18 +465,19 @@ void IndelDiscordance::PileupElementIndelDiscordance::addEntry(SamRecord& record
         // if the soft clip is first.
     }
 
+    int insertLen = 0;
     // Check if this is the first position and there is a preceding insert.
     if(getRefPosition() == record.get0BasedPosition())
     {
-        char newCigarPos = cigarPos;
+        newCigarPos = cigarPos;
         while(newCigarPos > 0)
         {
             --newCigarPos;
             cigarChar = cigar->getCigarCharOp(newCigarPos);
             if(cigarChar == 'I')
             {
-                insertion = true;
-                break;
+                ++insertLen;
+                // Keep looping looking for more insertions.
             }
             if((cigarChar == 'S') || (cigarChar == 'H'))
             {
@@ -435,15 +489,18 @@ void IndelDiscordance::PileupElementIndelDiscordance::addEntry(SamRecord& record
 
     // Check to see if the following cigar operation is an insertion.
     // If the next operation is a pad, keep checking.
+    newCigarPos = cigarPos;
     while(1)
     {
         // Check the next cigarPos.
-        char newCigarPos = cigarPos + 1;
+        ++newCigarPos;
         cigarChar = cigar->getCigarCharOp(newCigarPos);
         if(cigarChar == 'I')
         {
             // insertion.
-            insertion = true;
+            ++insertLen;
+            // Keep looping to determine the insert length.
+            continue;
         }
         else if(cigarChar == 'P')
         {
@@ -455,9 +512,11 @@ void IndelDiscordance::PileupElementIndelDiscordance::addEntry(SamRecord& record
     }
 
     // increment the insertion counters.
-    if(insertion)
+    if(insertLen != 0)
     {
         ++myNumInsertion;
+        // Check to see if the length equals the average.
+        myInsertLen.Push(insertLen);
     }
     else
     {
@@ -526,6 +585,16 @@ void IndelDiscordance::PileupElementIndelDiscordance::analyze()
     // Increment the running depth stat for this repeat count.
     ourRepeatInfo[numRepeats].runningDepth.Push(myDepth);
 
+    // Update the insertion/deletion lengths.
+    if(myNumInsertion != 0)
+    {
+        ourRepeatInfo[numRepeats].avgInsLens.Push(myInsertLen.Mean());
+    }
+    if(myNumDeletion != 0)
+    {
+        ourRepeatInfo[numRepeats].avgDelLens.Push(myDeletionLen.Mean());
+    }
+
     // Only check for discordance if it is above the min depth.
     if(myDepth >= ourMinDepth)
     {
@@ -536,16 +605,32 @@ void IndelDiscordance::PileupElementIndelDiscordance::analyze()
         // Increment the number of sites with this repeat count and depth.
         ++ourRepeatInfo[numRepeats].depthInfo[myDepth].count;
 
+        bool delDiscordant = false;
         if((myNumDeletion != 0) && (myNumMatch != 0))
         {
+            delDiscordant = true;
+
+            ////////////////////////////////////////////
+            // Increment the deletion specific counts.
+            ++ourRepeatInfo[numRepeats].delDiscordantCount;
+            // Increment number of discordant sites with this repeat count
+            // and depth.
+            ++ourRepeatInfo[numRepeats].depthInfo[myDepth].delDiscordantCount;
+            // Update the discordant deletion length.
+            ourRepeatInfo[numRepeats].avgDisDelLens.Push(myDeletionLen.Mean());
+            // Discordant, so update counts.
+            ++ourTotalDelDiscordant;
+
+            ////////////////////////////////////////////
+            // Increment the overall discordant counts.
             // Increment number of discordant sites with this repeat count.
             ++ourRepeatInfo[numRepeats].discordantCount;
             // Increment number of discordant sites with this repeat count
             // and depth.
             ++ourRepeatInfo[numRepeats].depthInfo[myDepth].discordantCount;
-
             // Discordant, so update counts.
             ++ourTotalDiscordant;
+
             if(ourPrintPos)
             {
                 std::cerr << "Position " << getRefPosition() 
@@ -558,17 +643,35 @@ void IndelDiscordance::PileupElementIndelDiscordance::analyze()
                 std::cerr << "\n";
             }
         }
-        else if((myNumInsertion != 0) && (myNumNoInsertion != 0))
+        if((myNumInsertion != 0) && (myNumNoInsertion != 0))
         {
             // Discordance due to insertion.
-            // Increment number of discordant sites with this repeat count.
-            ++ourRepeatInfo[numRepeats].discordantCount;
+            ////////////////////////////////////////////
+            // Increment the insertion specific counts.
+            ++ourRepeatInfo[numRepeats].insDiscordantCount;
             // Increment number of discordant sites with this repeat count
             // and depth.
-            ++ourRepeatInfo[numRepeats].depthInfo[myDepth].discordantCount;
-            
+            ++ourRepeatInfo[numRepeats].depthInfo[myDepth].insDiscordantCount;
+            // Update the discordant insertion length.
+            ourRepeatInfo[numRepeats].avgDisInsLens.Push(myInsertLen.Mean());
+
             // Discordant, so update counts.
-            ++ourTotalDiscordant;
+            ++ourTotalInsDiscordant;
+
+            ////////////////////////////////////////////
+            // Increment the overall discordant counts
+            // if they have not already been incremented.
+            if(!delDiscordant)
+            {
+                // Increment number of discordant sites with this repeat count.
+                ++ourRepeatInfo[numRepeats].discordantCount;
+                // Increment number of discordant sites with this repeat count
+                // and depth.
+                ++ourRepeatInfo[numRepeats].depthInfo[myDepth].discordantCount;
+                // Discordant, so update counts.
+                ++ourTotalDiscordant;
+            }
+
             if(ourPrintPos)
             {
                 std::cerr << "Position " << getRefPosition() 

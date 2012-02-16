@@ -58,6 +58,10 @@ private:
             uint32_t count;
             // Number of discordant sites with this depth.
             uint32_t discordantCount;
+            // Number of discordant sites with this depth due to deletion.
+            uint32_t delDiscordantCount;
+            // Number of discordant sites with this depth due to insertion.
+            uint32_t insDiscordantCount;
         };
 
         struct RepeatInfo
@@ -66,6 +70,18 @@ private:
             uint32_t count;
             // Number of discordant sites with this repeat.
             uint32_t discordantCount;
+            // Number of deletion discordant sites with this repeat.
+            uint32_t delDiscordantCount;
+            // Number of insertion discordant sites with this repeat.
+            uint32_t insDiscordantCount;
+            // Accumulate the Average Discordant Deletion Lengths.
+            RunningStat avgDisDelLens;
+            // Accumulate the Average Deletion Lengths.
+            RunningStat avgDelLens;
+            // Accumulate the Average Discordant Insertion Lengths.
+            RunningStat avgDisInsLens;
+            // Accumulate the Average Insertion Lengths.
+            RunningStat avgInsLens;
             // used to calc avg depth stat.
             RunningStat runningDepth;
             // Depth information for this repeat.
@@ -78,6 +94,14 @@ private:
         // Total number of positions that have the minimum depth
         // and are discordant.
         static uint32_t ourTotalDiscordant;
+
+        // Total number of positions that have the minimum depth
+        // and are deletion discordant.
+        static uint32_t ourTotalDelDiscordant;
+
+        // Total number of positions that have the minimum depth
+        // and are insertion discordant.
+        static uint32_t ourTotalInsDiscordant;
 
         // Used to calculate the average depth.
         static RunningStat ourRunningDepthStat;
@@ -124,6 +148,8 @@ private:
         int myNumMatch;
         int myNumInsertion;
         int myNumNoInsertion;
+        RunningStat myInsertLen;
+        RunningStat myDeletionLen;
 
         static GenomeSequence* ourReference;
     };
