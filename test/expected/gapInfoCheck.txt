@@ -1,0 +1,16 @@
+1	28	71	NotFirst	Reverse
+1	28	-19	NotFirst	Reverse
+1	28	-19	NotFirst	Reverse
+1	28	-19	NotFirst	Reverse
+1	30	-21
+1	30	-20
+1	30	-20
+1	30	-21
+1	30	-21
+1	30	-20
+1	30	-20
+2	32	-18	NotFirst	Reverse
+4	24	-23
+4	27	-23
+4	30	-23
+4	34	-5

@@ -35,7 +35,8 @@ public:
     int execute(int argc, char **argv);
 
 private:
-    int processFile(const char* inputFileName, const char* outputFileName);
+    int processFile(const char* inputFileName, const char* outputFileName,
+                    bool checkFirst, bool checkStrand);
 };
 
 #endif

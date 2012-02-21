@@ -48,6 +48,8 @@ void GapInfo::usage()
     std::cerr << "\t\t--in          : the SAM/BAM file to print read pair gap info for" << std::endl;
     std::cerr << "\t\t--out         : the output file to be written" << std::endl;
     std::cerr << "\tOptional Parameters:" << std::endl;
+    std::cerr << "\t\t--checkFirst  : Check the first in pair flag and print \"NotFirst\" if it isn't first" << std::endl;
+    std::cerr << "\t\t--checkStrand : Check the strand flag and print \"Reverse\" if it is reverse complimented" << std::endl;
     std::cerr << "\t\t--noeof       : Do not expect an EOF block on a bam file." << std::endl;
     std::cerr << "\t\t--params      : Print the parameter settings to stderr" << std::endl;
 }
@@ -58,6 +60,8 @@ int GapInfo::execute(int argc, char **argv)
     // Extract command line arguments.
     String inFile = "";
     String outFile = "";
+    bool checkFirst = false;
+    bool checkStrand = false;
     bool noeof = false;
     bool params = false;
 
@@ -67,6 +71,8 @@ int GapInfo::execute(int argc, char **argv)
         LONG_STRINGPARAMETER("in", &inFile)
         LONG_STRINGPARAMETER("out", &outFile)
         LONG_PARAMETER_GROUP("Optional Parameters")
+        LONG_PARAMETER("checkFirst", &checkFirst)
+        LONG_PARAMETER("checkStrand", &checkStrand)
         LONG_PARAMETER("noeof", &noeof)
         LONG_PARAMETER("params", &params)
         END_LONG_PARAMETERS();
@@ -111,12 +117,13 @@ int GapInfo::execute(int argc, char **argv)
         inputParameters.Status();
     }
 
-
-    return(processFile(inFile.c_str(), outFile.c_str()));
+    return(processFile(inFile.c_str(), outFile.c_str(),
+                       checkFirst, checkStrand));
 }
 
 
-int GapInfo::processFile(const char* inputFileName, const char* outputFileName)
+int GapInfo::processFile(const char* inputFileName, const char* outputFileName,
+                         bool checkFirst, bool checkStrand)
 {
     // Open the file for reading.
     SamFile samIn;
@@ -178,14 +185,15 @@ int GapInfo::processFile(const char* inputFileName, const char* outputFileName)
         int32_t gapSize = mateStart - readEnd - 1;
 
         // Output the gap info.
-        ifprintf(outFile, "%d\t%d", readEnd+1, gapSize);
+        ifprintf(outFile, "%s\t%d\t%d", 
+                 samRecord.getReferenceName(), readEnd+1, gapSize);
         
         // Check if it is not the first or if it is not the forward strand.
-        if(!SamFlag::isFirstFragment(samFlags))
+        if(checkFirst && !SamFlag::isFirstFragment(samFlags))
         {
             ifprintf(outFile, "\tNotFirst");
         }
-        if(SamFlag::isReverse(samFlags))
+        if(checkStrand && SamFlag::isReverse(samFlags))
         {
             ifprintf(outFile, "\tReverse");
         }
