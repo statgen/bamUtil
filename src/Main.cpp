@@ -36,6 +36,7 @@
 #include "Stats.h"
 #include "ClipOverlap.h"
 #include "SplitBam.h"
+#include "GapInfo.h"
 
 void Usage()
 {
@@ -59,6 +60,7 @@ void Usage()
     Stats::statsDescription();
     ClipOverlap::clipOverlapDescription();
     SplitBam::splitBamDescription();
+    GapInfo::gapInfoDescription();
     std::cerr << std::endl;
     std::cerr << "Usage: " << std::endl;
     std::cerr << "\tbam <tool> [<tool arguments>]" << std::endl;
@@ -141,6 +143,10 @@ int main(int argc, char ** argv)
     else if(strcmp(argv[1], "splitBam") == 0)
     {
         bamExe = new SplitBam();
+    }
+    else if(strcmp(argv[1], "gapInfo") == 0)
+    {
+        bamExe = new GapInfo();
     }
     else if(strcmp(argv[1], "convert") == 0)
     {
