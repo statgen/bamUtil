@@ -402,7 +402,7 @@ void IndelDiscordance::PileupElementIndelDiscordance::addEntry(SamRecord& record
     }
 
     // Get the position in the expanded cigar.
-    int cigarPos = 
+    const int cigarPos = 
         cigar->getExpandedCigarIndexFromRefPos(getRefPosition(),
                                                record.get0BasedPosition());
     int newCigarPos = 0;
@@ -515,7 +515,6 @@ void IndelDiscordance::PileupElementIndelDiscordance::addEntry(SamRecord& record
     if(insertLen != 0)
     {
         ++myNumInsertion;
-        // Check to see if the length equals the average.
         myInsertLen.Push(insertLen);
     }
     else
@@ -705,4 +704,6 @@ void IndelDiscordance::PileupElementIndelDiscordance::initVars()
     myNumMatch = 0;
     myNumInsertion = 0;
     myNumNoInsertion = 0;
+    myInsertLen.Clear();
+    myDeletionLen.Clear();
 }
