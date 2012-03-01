@@ -192,10 +192,10 @@ int GapInfo::processFile(const char* inputFileName, const char* outputFileName,
         {
             continue;
         }
-        if((mateStart == readStart) && (!SamFlag::isFirstFragment(samFlags)))
+        if((mateStart == readStart) && (SamFlag::isReverse(samFlags)))
         {
             // read and mate start at the same position, so 
-            // only process the first fragment.
+            // only process the forward strand.
             continue;
         }
 
