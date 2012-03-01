@@ -36,6 +36,7 @@ public:
 
 private:
     int processFile(const char* inputFileName, const char* outputFileName,
+                    const char* refFile, bool detailed,
                     bool checkFirst, bool checkStrand);
 };
 

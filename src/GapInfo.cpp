@@ -48,6 +48,9 @@ void GapInfo::usage()
     std::cerr << "\t\t--in          : the SAM/BAM file to print read pair gap info for" << std::endl;
     std::cerr << "\t\t--out         : the output file to be written" << std::endl;
     std::cerr << "\tOptional Parameters:" << std::endl;
+    std::cerr << "\t\t--refFile     : reference file, used to skip gaps that include reference base 'N' (for runs without --detailed)";
+    std::cerr << "\t\t--detailed    : Print  the details for each read pair" << std::endl;
+    std::cerr << "\tOptional Parameters for the Detailed Option:" << std::endl;
     std::cerr << "\t\t--checkFirst  : Check the first in pair flag and print \"NotFirst\" if it isn't first" << std::endl;
     std::cerr << "\t\t--checkStrand : Check the strand flag and print \"Reverse\" if it is reverse complimented" << std::endl;
     std::cerr << "\t\t--noeof       : Do not expect an EOF block on a bam file." << std::endl;
@@ -60,6 +63,8 @@ int GapInfo::execute(int argc, char **argv)
     // Extract command line arguments.
     String inFile = "";
     String outFile = "";
+    String refFile = "";
+    bool detailed = false;
     bool checkFirst = false;
     bool checkStrand = false;
     bool noeof = false;
@@ -71,6 +76,9 @@ int GapInfo::execute(int argc, char **argv)
         LONG_STRINGPARAMETER("in", &inFile)
         LONG_STRINGPARAMETER("out", &outFile)
         LONG_PARAMETER_GROUP("Optional Parameters")
+        LONG_STRINGPARAMETER("refFile", &refFile)
+        LONG_PARAMETER("detailed", &detailed)
+        LONG_PARAMETER_GROUP("Optional Detailed Parameters")
         LONG_PARAMETER("checkFirst", &checkFirst)
         LONG_PARAMETER("checkStrand", &checkStrand)
         LONG_PARAMETER("noeof", &noeof)
@@ -118,11 +126,13 @@ int GapInfo::execute(int argc, char **argv)
     }
 
     return(processFile(inFile.c_str(), outFile.c_str(),
+                       refFile, detailed, 
                        checkFirst, checkStrand));
 }
 
 
 int GapInfo::processFile(const char* inputFileName, const char* outputFileName,
+                         const char* refFile, bool detailed,
                          bool checkFirst, bool checkStrand)
 {
     // Open the file for reading.
@@ -135,7 +145,17 @@ int GapInfo::processFile(const char* inputFileName, const char* outputFileName,
 
     SamRecord samRecord;
 
+    GenomeSequence* refPtr = NULL;
+    if(strcmp(refFile, "") != 0)
+    {
+        refPtr = new GenomeSequence(refFile);
+    }
+
     IFILE outFile = ifopen(outputFileName, "w");
+
+    // Map for summary.
+    std::map<int, int> gapInfoMap;
+
 
     // Keep reading records until ReadRecord returns false.
     while(samIn.ReadRecord(samHeader, samRecord))
@@ -184,21 +204,76 @@ int GapInfo::processFile(const char* inputFileName, const char* outputFileName,
         
         int32_t gapSize = mateStart - readEnd - 1;
 
-        // Output the gap info.
-        ifprintf(outFile, "%s\t%d\t%d", 
-                 samRecord.getReferenceName(), readEnd+1, gapSize);
-        
-        // Check if it is not the first or if it is not the forward strand.
-        if(checkFirst && !SamFlag::isFirstFragment(samFlags))
+        if(detailed)
         {
-            ifprintf(outFile, "\tNotFirst");
+            // Output the gap info.
+            ifprintf(outFile, "%s\t%d\t%d", 
+                     samRecord.getReferenceName(), readEnd+1, gapSize);
+            
+            // Check if it is not the first or if it is not the forward strand.
+            if(checkFirst && !SamFlag::isFirstFragment(samFlags))
+            {
+                ifprintf(outFile, "\tNotFirst");
+            }
+            if(checkStrand && SamFlag::isReverse(samFlags))
+            {
+                ifprintf(outFile, "\tReverse");
+            }
+            ifprintf(outFile, "\n");
         }
-        if(checkStrand && SamFlag::isReverse(samFlags))
+        else
         {
-            ifprintf(outFile, "\tReverse");
+            // Summary.
+            // Skip reads that are not the forward strand.
+            if(SamFlag::isReverse(samFlags))
+            {
+                // continue
+                continue;
+            }
+
+            // Forward.
+            // Check the reference for 'N's.
+            if(refPtr != NULL)
+            {
+                genomeIndex_t chromStartIndex = 
+                    refPtr->getGenomePosition(samRecord.getReferenceName());
+                if(chromStartIndex == INVALID_GENOME_INDEX)
+                {
+                    // Invalid position, so continue to the next one.
+                    continue;
+                }
+                bool skipRead = false;
+                for(int i = readEnd + 1; i < mateStart; i++)
+                {
+                    if((*refPtr)[i] == 'N')
+                    {
+                        // 'N' in the reference, so continue to the next read.
+                        skipRead = true;
+                        break;
+                    }
+                }
+                if(skipRead)
+                {
+                    continue;
+                }
+            }
+            
+            // Update the gapInfo.
+            gapInfoMap[gapSize]++;
         }
-        ifprintf(outFile, "\n");
     }
+
+    if(!detailed)
+    {
+        // Output the summary.
+        ifprintf(outFile, "GapSize\tNumPairs\n");
+        for(std::map<int,int>::iterator iter = gapInfoMap.begin(); 
+            iter != gapInfoMap.end(); iter++)
+        {
+            ifprintf(outFile, "%d\t%d\n", (*iter).first, (*iter).second);
+        }
+    }
+    
 
     SamStatus::Status returnStatus = samIn.GetStatus();
     if(returnStatus == SamStatus::NO_MORE_RECS)

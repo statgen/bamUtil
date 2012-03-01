@@ -1,32 +1,46 @@
 #!/bin/bash
 
 status=0;
-../bin/bam gapInfo --in testFiles/testClipOverlapCoord.sam --out results/gapInfo.txt 2> results/gapInfo.log
+../bin/bam gapInfo --in testFiles/testGapInfo.sam --out results/gapInfo.txt 2> results/gapInfo.log
 let "status |= $?"
 diff results/gapInfo.txt expected/gapInfo.txt
 let "status |= $?"
 diff results/gapInfo.log expected/empty.log
 let "status |= $?"
 
-../bin/bam gapInfo --in testFiles/testClipOverlapCoord.sam --checkFirst --checkStrand --out results/gapInfoCheck.txt 2> results/gapInfoCheck.log
+../bin/bam gapInfo --in testFiles/testGapInfo.sam --refFile testFilesLibBam/chr1_partial.fa --out results/gapInfoRef.txt 2> results/gapInfoRef.log
 let "status |= $?"
-diff results/gapInfoCheck.txt expected/gapInfoCheck.txt
+diff results/gapInfoRef.txt expected/gapInfoRef.txt
 let "status |= $?"
-diff results/gapInfoCheck.log expected/empty.log
-let "status |= $?"
-
-../bin/bam gapInfo --in testFiles/testClipOverlapCoord.sam --checkFirst --out results/gapInfoCheckFirst.txt 2> results/gapInfoCheckFirst.log
-let "status |= $?"
-diff results/gapInfoCheckFirst.txt expected/gapInfoCheckFirst.txt
-let "status |= $?"
-diff results/gapInfoCheckFirst.log expected/empty.log
+diff results/gapInfoRef.log expected/empty.log
 let "status |= $?"
 
-../bin/bam gapInfo --in testFiles/testClipOverlapCoord.sam --checkStrand --out results/gapInfoCheckStrand.txt 2> results/gapInfoCheckStrand.log
+../bin/bam gapInfo --in testFiles/testGapInfo.sam --detailed --out results/gapInfoDetailed.txt 2> results/gapInfoDetailed.log
 let "status |= $?"
-diff results/gapInfoCheckStrand.txt expected/gapInfoCheckStrand.txt
+diff results/gapInfoDetailed.txt expected/gapInfoDetailed.txt
 let "status |= $?"
-diff results/gapInfoCheckStrand.log expected/empty.log
+diff results/gapInfoDetailed.log expected/empty.log
+let "status |= $?"
+
+../bin/bam gapInfo --in testFiles/testGapInfo.sam --detailed --checkFirst --checkStrand --out results/gapInfoDetailedCheck.txt 2> results/gapInfoDetailedCheck.log
+let "status |= $?"
+diff results/gapInfoDetailedCheck.txt expected/gapInfoDetailedCheck.txt
+let "status |= $?"
+diff results/gapInfoDetailedCheck.log expected/empty.log
+let "status |= $?"
+
+../bin/bam gapInfo --in testFiles/testGapInfo.sam --detailed --checkFirst --out results/gapInfoDetailedCheckFirst.txt 2> results/gapInfoDetailedCheckFirst.log
+let "status |= $?"
+diff results/gapInfoDetailedCheckFirst.txt expected/gapInfoDetailedCheckFirst.txt
+let "status |= $?"
+diff results/gapInfoDetailedCheckFirst.log expected/empty.log
+let "status |= $?"
+
+../bin/bam gapInfo --in testFiles/testGapInfo.sam --detailed --checkStrand --out results/gapInfoDetailedCheckStrand.txt 2> results/gapInfoDetailedCheckStrand.log
+let "status |= $?"
+diff results/gapInfoDetailedCheckStrand.txt expected/gapInfoDetailedCheckStrand.txt
+let "status |= $?"
+diff results/gapInfoDetailedCheckStrand.log expected/empty.log
 let "status |= $?"
 
 
