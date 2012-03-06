@@ -42,16 +42,18 @@ void Usage()
 {
     BamExecutable::bamExecutableDescription();
     std::cerr << std::endl;
-    std::cerr << "Tools: " << std::endl;
+    std::cerr << "Tools to Rewrite SAM/BAM Files: " << std::endl;
     Convert::convertDescription();
-    SplitChromosome::splitChromosomeDescription();
     WriteRegion::writeRegionDescription();
+    SplitChromosome::splitChromosomeDescription();
+    SplitBam::splitBamDescription();
+    FindCigars::findCigarsDescription();
+
+    std::cerr << "\nTools to Modify & write SAM/BAM Files: " << std::endl;
+    ClipOverlap::clipOverlapDescription();
     Filter::filterDescription();
     Revert::revertDescription();
     Squeeze::squeezeDescription();
-    FindCigars::findCigarsDescription();
-    ClipOverlap::clipOverlapDescription();
-    SplitBam::splitBamDescription();
 
     std::cerr << "\nInformational Tools\n";
     Validate::validateDescription();

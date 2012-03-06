@@ -48,17 +48,14 @@ void Convert::usage()
     std::cerr << "\t\t--out        : the SAM/BAM file to be written" << std::endl;
     std::cerr << "\tOptional Parameters:" << std::endl;
     std::cerr << "\t\t--refFile    : reference file name" << std::endl;
-    std::cerr << "\t\t--lshift    : left shift indels when writing records\n";
-    std::cerr << "\t\t--noeof      : do not expect an EOF block on a bam file." << std::endl;
+    std::cerr << "\t\t--lshift     : left shift indels when writing records\n";
+    std::cerr << "\t\t--noeof      : do not expect an EOF block on a bam file" << std::endl;
     std::cerr << "\t\t--params     : print the parameter settings" << std::endl;
-    std::cerr << "\t\t--recover    : attempt error recovery while reading a bam file." << std::endl;
-    std::cerr << std::endl;
+    std::cerr << "\t\t--recover    : attempt error recovery while reading a bam file" << std::endl;
     std::cerr << "\tOptional Sequence Parameters (only specify one):" << std::endl;
-    std::cerr << "\t\t--useOrigSeq : Leave the sequence as is (default & used if reference is not specified)." << std::endl;
-    std::cerr << "\t\t--useBases   : Convert any '=' in the sequence to the appropriate base using the reference (requires --refFile)." << std::endl;
-    std::cerr << "\t\t--useEquals  : Convert any bases that match the reference to '=' (requires --refFile)." << std::endl;
-    std::cerr << "\tOptional Region Specifier Parameters:" << std::endl;
-
+    std::cerr << "\t\t--useOrigSeq : Leave the sequence as is (default & used if reference is not specified)" << std::endl;
+    std::cerr << "\t\t--useBases   : Convert any '=' in the sequence to the appropriate base using the reference (requires --refFile)" << std::endl;
+    std::cerr << "\t\t--useEquals  : Convert any bases that match the reference to '=' (requires --refFile)" << std::endl;
 }
 
 #define SIGNATURE_LENGTH (sizeof(bamRecordStruct))
