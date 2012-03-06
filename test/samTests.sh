@@ -63,6 +63,13 @@ then
     ERROR=true
 fi
 
+# Test converting bam to sam left shifting
+../bin/bam convert --lshift --in testFilesLibBam/testShift.bam --out results/convertShift.sam 2> results/convertShift.txt && diff results/convertShift.sam expected/convertShift.sam && diff results/convertShift.txt expected/convertShift.txt
+if [ $? -ne 0 ]
+then
+    ERROR=true
+fi
+
 #TODO test reading & writing ubam over stdin/stdout.
 
 

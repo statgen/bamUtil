@@ -43,24 +43,32 @@ void Usage()
     BamExecutable::bamExecutableDescription();
     std::cerr << std::endl;
     std::cerr << "Tools: " << std::endl;
-    Validate::validateDescription();
     Convert::convertDescription();
-    DumpHeader::dumpHeaderDescription();
     SplitChromosome::splitChromosomeDescription();
     WriteRegion::writeRegionDescription();
-    DumpRefInfo::dumpRefInfoDescription();
-    DumpIndex::dumpIndexDescription();
-    ReadIndexedBam::readIndexedBamDescription();
     Filter::filterDescription();
-    ReadReference::readReferenceDescription();
     Revert::revertDescription();
-    Diff::diffDescription();
     Squeeze::squeezeDescription();
     FindCigars::findCigarsDescription();
-    Stats::statsDescription();
     ClipOverlap::clipOverlapDescription();
     SplitBam::splitBamDescription();
+
+    std::cerr << "\nInformational Tools\n";
+    Validate::validateDescription();
+    Diff::diffDescription();
+    Stats::statsDescription();
     GapInfo::gapInfoDescription();
+
+    std::cerr << "\nTools to Print Information In Readable Format\n";
+    DumpHeader::dumpHeaderDescription();
+    DumpRefInfo::dumpRefInfoDescription();
+    DumpIndex::dumpIndexDescription();
+    ReadReference::readReferenceDescription();
+
+    std::cerr << "\nDummy/Example Tools\n";
+    ReadReference::readReferenceDescription();
+
+
     std::cerr << std::endl;
     std::cerr << "Usage: " << std::endl;
     std::cerr << "\tbam <tool> [<tool arguments>]" << std::endl;

@@ -42,12 +42,13 @@ void Convert::description()
 void Convert::usage()
 {
     BamExecutable::usage();
-    std::cerr << "\t./bam convert --in <inputFile> --out <outputFile.sam/bam/ubam (ubam is uncompressed bam)> [--refFile <reference filename>] [--useBases|--useEquals|--useOrigSeq] [--noeof] [--params]" << std::endl;
+    std::cerr << "\t./bam convert --in <inputFile> --out <outputFile.sam/bam/ubam (ubam is uncompressed bam)> [--refFile <reference filename>] [--useBases|--useEquals|--useOrigSeq] [--lshift] [--noeof] [--params]" << std::endl;
     std::cerr << "\tRequired Parameters:" << std::endl;
     std::cerr << "\t\t--in         : the SAM/BAM file to be read" << std::endl;
     std::cerr << "\t\t--out        : the SAM/BAM file to be written" << std::endl;
     std::cerr << "\tOptional Parameters:" << std::endl;
     std::cerr << "\t\t--refFile    : reference file name" << std::endl;
+    std::cerr << "\t\t--lshift    : left shift indels when writing records\n";
     std::cerr << "\t\t--noeof      : do not expect an EOF block on a bam file." << std::endl;
     std::cerr << "\t\t--params     : print the parameter settings" << std::endl;
     std::cerr << "\t\t--recover    : attempt error recovery while reading a bam file." << std::endl;
@@ -90,6 +91,7 @@ int Convert::execute(int argc, char **argv)
     String inFile = "";
     String outFile = "";
     String refFile = "";
+    bool lshift = false;
     bool noeof = false;
     bool params = false;
 
@@ -104,6 +106,7 @@ int Convert::execute(int argc, char **argv)
         LONG_STRINGPARAMETER("in", &inFile)
         LONG_STRINGPARAMETER("out", &outFile)
         LONG_STRINGPARAMETER("refFile", &refFile)
+        LONG_PARAMETER("lshift", &lshift)
         LONG_PARAMETER("noeof", &noeof)
         LONG_PARAMETER("recover", &recover)
         LONG_PARAMETER("params", &params)
@@ -205,6 +208,12 @@ int Convert::execute(int argc, char **argv)
             // Keep reading records until ReadRecord returns false.
             while(samIn.ReadRecord(samHeader, samRecord))
             {
+                // left shift if necessary.
+                if(lshift)
+                {
+                    samRecord.shiftIndelsLeft();
+                }
+
                 // Successfully read a record from the file, so write it.
                 if(!samOut.WriteRecord(samHeader, samRecord))
                 {

@@ -2,8 +2,8 @@
 The following parameters are available.  Ones with "[]" are in effect:
 
 Input Parameters
- --in [testFilesLibBam/testBam.bam], --out [-.sam], --refFile [], --noeof,
-                        --recover, --params [ON]
+ --in [testFilesLibBam/testBam.bam], --out [-.sam], --refFile [], --lshift,
+                        --noeof, --recover, --params [ON]
    SequenceConversion : --useBases, --useEquals, --useOrigSeq [ON]
 
 
