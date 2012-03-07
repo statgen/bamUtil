@@ -1,0 +1,97 @@
+        10012   10013   10014   10015   10016   10017   10018   10019   10020   10021   10022   10023   10024   10025
+   3H2S M       M       M       D       D       M       M       M    1I M       N       N       N       M    1P M    3S
+   3H2S M       M       M       D       D       M       M       M    1I M       N       N       N       M    1P M    3S
+   3H2S M       M       M       D       D       M       M       M    1I M       N       N       N       M    1P M    3S
+   3H2S M       M       M       D       D       M       M       M    1I M       N       N       N       M    1P M    3S
+        M       M       M       M       M       M       M       M       M       M       M       M       M       M
+
+
+10030   10031   10032   10033   10034   10035   10036   10037   10038   10039   10040   10041   10042
+M       M    2I M       M
+M       M    2I M       M
+             2I M       M
+                        M    3I M       M    1I
+                                M       M       M       M       M
+                                M       M       M       M       M
+                                                             2I M       M       M       M       M
+
+
+#    discord    Position        Ref     DepthDel   DepthIns   RepeatLen       NumMatch        NumDel  DelLen  NumSkip NumInsert       InsertLen       NumNoInsert
+1               10012           T       5          5          0               5               0       -       0       0               -               5
+2               10013           A       5          5          1               5               0       -       0       0               -               5
+3               10014           A       5          5          1               5               0       -       0       0               -               5
+4    D          10015           C       5          5          2               1               4       2       0       0               -               5
+5    D          10016           C       5          5          2               1               4       2       0       0               -               5
+6               10017           C       5          5          2               5               0       -       0       0               -               5
+7               10018           T       5          5          0               5               0       -       0       0               -               5
+8    D          10019           A       5          5          1               5               0       -       0       4               1               1
+9               10020           A       5          5          1               5               0       -       0       0               -               5
+10              10021           C       1          5          2               1               0       -       4       0               -               5
+11              10022           C       1          5          2               1               0       -       4       0               -               5
+12              10023           C       1          5          2               1               0       -       4       0               -               5
+13              10024           T       5          5          0               5               0       -       0       0               -               5
+14              10025           A       5          0          1               5               0       -       0       0               -               0
+                10026           A       -          -          -               -               -       -       -       -               -               -
+                10027           C       -          -          -               -               -       -       -       -               -               -
+                10028           C       -          -          -               -               -       -       -       -               -               -
+                10029           C       -          -          -               -               -       -       -       -               -               -
+15              10030           T       2          2          0               2               0       -       0       0               -               2
+16   O          10031           A       2          2          1               2               0       -       0       2               2               0
+17   O          10032           A       3          3          1               3               0       -       0       0               -               3
+18   O          10033           C       4          1          2               4               0       -       0       1               3               0
+19              10034           C       3          3          2               3               0       -       0       0               -               3
+20              10035           C       3          2          2               3               0       -       0       0               -               2
+21              10036           T       2          2          0               2               0       -       0       0               -               2
+22              10037           A       2          2          1               2               0       -       0       0               -               2
+23   O          10038           A       3          1          1               3               0       -       0       0               -               1
+24              10039           C       1          1          2               1               0       -       0       0               -               1
+25              10040           C       1          1          2               1               0       -       0       0               -               1
+26              10041           C       1          1          2               1               0       -       0       0               -               1
+27              10042           T       1          0          0               1               0       -       0       0               -               0
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+27  3D                                  86         86
+
+Summary:
+Average Del & Ins Depth: 27 Positions covered, sum of all depths = 86, 86/27 = 3.185185185
+Average Del Depth, Repeat 0: 6 Positions covered, sum of all depths = 5+5+5+2+2+1 = 20, 20/6 = 3.33333333
+Average Ins Depth, Repeat 0: 6 Positions covered, sum of all depths = 5+5+5+2+2+0 = 19, 19/5 = 3.16666667
+Average Del Depth, Repeat 1: 10 Positions covered, sum of all depths = 5+5+5+5+5+2+3+2+3 = 35, 35/9 = 3.8888888889
+Average Ins Depth, Repeat 1: 10 Positions covered, sum of all depths = 5+5+5+5+0+2+3+2+1 = 28, 28/9 = 3.1111111111
+Average Del Depth, Repeat 2: 12 Positions covered, sum of all depths = 5+5+5+1+1+1+4+3+3+1+1+1 = 31, 31/12 = 2.58333333
+Average Ins Depth, Repeat 2: 12 Positions covered, sum of all depths = 5+5+5+5+5+5+1+3+2+1+1+1 = 39, 39/12 = 3.25
+
+Error Rate Calc:
+   p_discordant = discordantCount/(# with this depth & repeat count)
+   errorRate = 1 - (1-p_discordant)^(1/depth)
+   numErrorRates is incremented by: count*(depth-1)
+   sumErrorRates is incremented by: ErrorRate*count*(depth-1)
+
+Repeat 0 Deletion Discordance : No discordance
+Repeat 0 Insertion Discordance: No discordance
+Repeat 1 Deletion Discordance : No discordance
+Repeat 1 Insertion Discordance: 1 discordance on depth 5 (4 pos with depth 5)
+    Depth     count  ErrorRate                        count*(depth-1)   numErrorRates     sumErrorRates
+    2         2      0                                2*(2-1) = 2       2                 0
+    3         1      0                                1*(3-1) = 2       4                 0
+    5         4      1 - (1-1/4)^(1/5) = .055912489   4*(5-1) = 16      20                .894599824
+  .894599824/20 = 0.044729991
+Repeat 2 Deletion Discordance : 2 discordance
+    Depth     count  ErrorRate                        count*(depth-1)   numErrorRates     sumErrorRates
+    3         2      0                                2*(3-1) = 4       4                 0
+    4         1      0                                1*(4-1) = 3       7                 0
+    5         3      1 - (1-2/3)^(1/5) = .197258438   3*(5-1) = 12      19                2.367101256
+  2.367101256/19 = 0.124584277
+Repeat 2 Insertion Discordance: No discordance
+
+Repeat 0 Deletion Lengths            : 0
+Repeat 0 Discordant Deletion Lengths : 0
+Repeat 0 Insertion Lengths           : 0
+Repeat 0 Discordant Insertion Lengths: 0
+Repeat 1 Deletion Lengths            : 0
+Repeat 1 Discordant Deletion Lengths : 0
+Repeat 1 Insertion Lengths           : (1+2)/2 = 1.5
+Repeat 1 Discordant Insertion Lengths: (1)/1 = 1
+Repeat 2 Deletion Lengths            : (2+2)/2 = 2
+Repeat 2 Discordant Deletion Lengths : (2+2)/2 = 2
+Repeat 2 Insertion Lengths           : (3)/1 = 3
+Repeat 2 Discordant Insertion Lengths: 0

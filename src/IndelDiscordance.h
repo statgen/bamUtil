@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011  Regents of the University of Michigan
+ *  Copyright (C) 2012  Regents of the University of Michigan
  *
  *   This program is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -54,60 +54,47 @@ private:
     public:
         struct DepthInfo
         {
-            // Number of sites with this depth.
+            // Number of sites with this depth checked for deletion/insertion discordance.
             uint32_t count;
-            // Number of discordant sites with this depth.
+            // Number of discordant sites with this depth due to deletion/insertion.
             uint32_t discordantCount;
-            // Number of discordant sites with this depth due to deletion.
-            uint32_t delDiscordantCount;
-            // Number of discordant sites with this depth due to insertion.
-            uint32_t insDiscordantCount;
+        };
+
+        struct RepeatInfoAvgs
+        {
+            // Accumulate the Average Discordant Lengths of
+            // an insertion/deletion.
+            RunningStat avgDisLens;
+            // Accumulate the Average Lengths of an insertion/deletion.
+            RunningStat avgLens;
+            // used to calc avg depth stat.
+            // Number of reads for each position 
+            //checked for insertion/deletion.
+            RunningStat runningDepth;
+
         };
 
         struct RepeatInfo
         {
-            // Number of sites with this repeat.
-            uint32_t count;
-            // Number of discordant sites with this repeat.
-            uint32_t discordantCount;
-            // Number of deletion discordant sites with this repeat.
-            uint32_t delDiscordantCount;
-            // Number of insertion discordant sites with this repeat.
-            uint32_t insDiscordantCount;
-            // Accumulate the Average Discordant Deletion Lengths.
-            RunningStat avgDisDelLens;
-            // Accumulate the Average Deletion Lengths.
-            RunningStat avgDelLens;
-            // Accumulate the Average Discordant Insertion Lengths.
-            RunningStat avgDisInsLens;
-            // Accumulate the Average Insertion Lengths.
-            RunningStat avgInsLens;
-            // used to calc avg depth stat.
-            RunningStat runningDepth;
+            RepeatInfoAvgs delAvgs;
+            RepeatInfoAvgs insAvgs;
             // Depth information for this repeat.
-            std::map<uint32_t, DepthInfo> depthInfo;
+            std::map<uint32_t, DepthInfo> delDepthInfo;
+            std::map<uint32_t, DepthInfo> insDepthInfo;
         };
 
-        // Total number of positions that have the minimum depth.
-        static uint32_t ourTotalMinDepth;
+        // Structure containing the average number of reads
+        // that were checked for deletion at a position.
+        static RunningStat ourRunningDelCheckDepthStat;
 
-        // Total number of positions that have the minimum depth
-        // and are discordant.
-        static uint32_t ourTotalDiscordant;
+        // Structure containing the average number of reads
+        // that were checked for insertion at a position.
+        // The last position of a read is not checked for an
+        // insertion because there is no trailing aligned base
+        // so this is different than the number of reads
+        // checked for deletion.
+        static RunningStat ourRunningInsCheckDepthStat;
 
-        // Total number of positions that have the minimum depth
-        // and are deletion discordant.
-        static uint32_t ourTotalDelDiscordant;
-
-        // Total number of positions that have the minimum depth
-        // and are insertion discordant.
-        static uint32_t ourTotalInsDiscordant;
-
-        // Used to calculate the average depth.
-        static RunningStat ourRunningDepthStat;
-
-        // Map indexed by depth, that gives the number of sites with this depth.
-        static std::map<uint32_t, DepthInfo> ourDepthInfo;
         // Map indexed by repeat length that gives the repeat info
         static std::map<uint32_t, RepeatInfo> ourRepeatInfo;
 
@@ -143,7 +130,6 @@ private:
 
         static int ourMinDepth;
         static bool ourPrintPos;
-        int myDepth;
         int myNumDeletion;
         int myNumMatch;
         int myNumInsertion;
@@ -153,6 +139,8 @@ private:
 
         static GenomeSequence* ourReference;
     };
+
+    double calcErrorRate(std::map<uint32_t, PileupElementIndelDiscordance::DepthInfo>& depthInfo, double maxDepth);
 };
 
 #endif
