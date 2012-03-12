@@ -35,7 +35,7 @@
 // Last modified Jun 10, 2010
 // Modified 1/16/2012 by Mary Kate Trost to put into bamUtil.
 //
-// SplitBAM splits a BAM file into multiple BAM files based on
+// SplitBam splits a BAM file into multiple BAM files based on
 //   ReadGroup according to the following details.
 // (1) Creates multiple output files named [outprefix].[RGID].bam, for
 //     each ReadGroup ID (RGID) existing in the bam file
@@ -44,7 +44,7 @@
 // (3) Copy each of the original file's BAM record to one of the output
 //     file where the ReadGroup ID matches
 //
-// Usage : bam splitBAM [-v] [-i inputBAMFile] [-o outPrefix] [-L logFile]
+// Usage : bam splitBam [-v] [-i inputBAMFile] [-o outPrefix] [-L logFile]
 // Required arguments:
 //    -i inputBAMFile : Original BAM file containing readGroup info
 //    -o outprefix  : prefix of output bam files of [outprefix].[RGID].bam
@@ -93,7 +93,7 @@ uint32_t addTokenizedStrings(const std::string& str, const std::string& delimite
 
 void SplitBam::splitBamDescription()
 {
-    std::cerr << " splitBAM - Split a BAM file into multiple BAM files based on ReadGroup" << std::endl;
+    std::cerr << " splitBam - Split a BAM file into multiple BAM files based on ReadGroup" << std::endl;
 }
 
 
@@ -107,8 +107,8 @@ void SplitBam::description()
 void SplitBam::usage()
 {
     BamExecutable::usage();
-  std::cerr << "\t ./bam splitBAM [-v] -i <inputBAMFile> -o <outPrefix> [-L logFile]" << std::endl;
-  std::cerr << "splitBAM splits a BAM file into multiple BAM files based on" << std::endl;
+  std::cerr << "\t ./bam splitBam [-v] -i <inputBAMFile> -o <outPrefix> [-L logFile]" << std::endl;
+  std::cerr << "splitBam splits a BAM file into multiple BAM files based on" << std::endl;
   std::cerr << "ReadGroup according to the following details." << std::endl;
   std::cerr << "\t(1) Creates multiple output files named [outprefix].[RGID].bam, for" << std::endl;
   std::cerr << "\teach ReadGroup ID (RGID) in the BAM record" << std::endl;
