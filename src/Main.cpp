@@ -150,7 +150,8 @@ int main(int argc, char ** argv)
     {
         bamExe = new ClipOverlap();
     }
-    else if(strcmp(argv[1], "splitBam") == 0)
+    else if((strcmp(argv[1], "splitBam") == 0) ||
+            (strcmp(argv[1], "splitBAM") == 0))
     {
         bamExe = new SplitBam();
     }
