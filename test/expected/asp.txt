@@ -1,0 +1,4 @@
+Number of Position Records = 7
+Number of Empty Records = 6
+Number of Reference Only Records = 14
+Number of Detailed Records = 33
