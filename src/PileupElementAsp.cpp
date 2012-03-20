@@ -27,27 +27,18 @@
 // PileupElementAsp
 //
 
-IFILE PileupElementAsp::ourOutputFile = NULL;
-int PileupElementAsp::ourGapSize = 0;
+AspFileWriter PileupElementAsp::ourOutputFile;
 bool PileupElementAsp::ourIgnoreDeletion = false;
 
-int PileupElementAsp::ourPrevPos = PileupElement::UNSET_POSITION;
-int PileupElementAsp::ourPrevChromID = INVALID_CHROMOSOME_INDEX;
-
-void PileupElementAsp::setOutputFile(const char* outputFile)
+void PileupElementAsp::setOutputFile(const char* outputFile,
+                                     SamFileHeader& samHeader)
 {
-    ourOutputFile = ifopen(outputFile, "w");
+    ourOutputFile.open(outputFile, samHeader);
 }
 
 void PileupElementAsp::closeOutputFile()
 {
-    ifclose(ourOutputFile);
-}
-
-
-void PileupElementAsp::setGapSize(int gapSize)
-{
-    ourGapSize = gapSize;
+    ourOutputFile.close();
 }
 
 
@@ -57,17 +48,20 @@ void PileupElementAsp::setIgnoreDeletion(bool ignoreDeletion)
 }
 
 
-void PileupElementAsp::printHeader()
-{
-}
-
-
 PileupElementAsp::PileupElementAsp()
-    : PileupElement()
+    : PileupElement(),
+      myAspRecord()
 {
     initVars();
 }
 
+
+// NOTE that this method does not actually copy, it just resets.
+PileupElementAsp::PileupElementAsp(const PileupElementAsp& q)
+    : PileupElement(),
+      myAspRecord()
+{
+}
 
 PileupElementAsp::~PileupElementAsp()
 {
@@ -84,16 +78,6 @@ void PileupElementAsp::addEntry(SamRecord& record)
         return;
     }
 
-    // Call the base class:
-    PileupElement::addEntry(record);
-
-    if(myChromID == INVALID_CHROMOSOME_INDEX)
-    {
-        myChromID = record.getReferenceID();
-        // This means the reference base wasn't set either, so set it now.
-        myRefBase = getRefBase();
-    }
-
     // Get the position within the read of this entry.
     Cigar* cigar = record.getCigarInfo();
     if(cigar == NULL)
@@ -104,6 +88,15 @@ void PileupElementAsp::addEntry(SamRecord& record)
     {
         // There is no cigar, so return.
         return;
+    }
+
+    // Call the base class since there is data to process.
+    PileupElement::addEntry(record);
+
+    if(myRefBase == UNKNOWN_REF_BASE)
+    {
+        // This means the reference base wasn't set, so set it now.
+        myRefBase = getRefBase();
     }
 
     // The cycle is the query index.
@@ -152,44 +145,19 @@ void PileupElementAsp::addEntry(SamRecord& record)
 // has been fully populated by all records that cover the reference position.
 void PileupElementAsp::analyze()
 {
-    // Check the previous position.
-    int posDiff = getRefPosition() - ourPrevPos;
-    if(ourPrevChromID != myChromID || posDiff > ourGapSize)
-    {
-        // Write a new position record.
-        AspRecord::writePos(myChromID, getRefPosition(), ourOutputFile);
-    }
-    else if(posDiff < 0)
-    {
-        // Position is going back.  This is an error.
-        std::cerr << "PileupElementAsp is being analyzed out of order!\n";
-        return;
-    }
-    else
-    {
-        // Write empty records to fill in the gap to this position.
-        while(posDiff > 1)
-        {
-            AspRecord::writeEmpty(ourOutputFile);
-            --posDiff;
-        }
-    }
-
     // If all positions match the reference, write the short record.
     if(myAllRef)
     {
+        // Set to ref only (default is full record).
         myAspRecord.setRefOnlyType();
-        myAspRecord.write(ourOutputFile);
     }
     else
     {
         // Write the full record.
-        myAspRecord.write(ourOutputFile);
+        myAspRecord.setDetailedType();
     }
-
-    // Update the last position written.
-    ourPrevChromID = myChromID;
-    ourPrevPos = getRefPosition();
+    // Write the record.
+    ourOutputFile.write(myAspRecord, getChromosome(), getRefPosition());
 }
 
 
@@ -202,8 +170,6 @@ void PileupElementAsp::reset(int32_t refPosition)
     initVars();
 
     myAspRecord.reset();
-
-    myChromID = INVALID_CHROMOSOME_INDEX;
 }
 
 void PileupElementAsp::initVars()
@@ -212,5 +178,7 @@ void PileupElementAsp::initVars()
     // Default that all bases match the reference.
     // This will be changed when one does not.
     myAllRef = true;
+
+    myRefBase = UNKNOWN_REF_BASE;
 }
 

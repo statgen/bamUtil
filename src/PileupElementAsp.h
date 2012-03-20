@@ -23,23 +23,20 @@
 #define __PILEUP_ELEMENT_ASP_H__
 
 #include "PileupElement.h"
-#include "AspRecord.h"
+#include "AspFile.h"
 
 
 class PileupElementAsp : public PileupElement
 {
 public:
 
-    /// Set & open the output file.
-    static void setOutputFile(const char* outputFile);
+    /// Set & open the output file and write the header based on the
+    /// sam header.
+    static void setOutputFile(const char* outputFile,
+                              SamFileHeader& samHeader);
 
     /// Close the output file if it is open.
     static void closeOutputFile();
-
-    /// Set the gap size threshold such that gaps smaller than this size are
-    /// filled with empty records and gaps this size or larger are writen
-    /// as new chromosome/position. 
-    static void setGapSize(int gapSize);
 
     /// Set whether or not a deletion should be ignored.  Ignored deletions
     /// do not show up in the output. 
@@ -47,13 +44,11 @@ public:
     /// represented as a 'D' in the AspRecord for the base and 0 for the
     /// quality.
     static void setIgnoreDeletion(bool ignoreDeletion);
-
-    // Print the output format, make sure you call after setSumStats
-    // if you want summary statistics or your output file
-    // will have the wrong header..
-    static void printHeader();
     
     PileupElementAsp();
+
+    /// Constructor that resets the pileup element, does not copy, just resets.
+    PileupElementAsp(const PileupElementAsp& q);
 
     virtual ~PileupElementAsp();
 
@@ -67,20 +62,14 @@ public:
     virtual void reset(int32_t refPosition);
 
 private:
-    PileupElementAsp(const PileupElement& q);
-
     void initVars();
 
-    static IFILE ourOutputFile;
-    static int ourGapSize;
+    static AspFileWriter ourOutputFile;
     static bool ourIgnoreDeletion;
-
-    static int ourPrevPos;
-    static int ourPrevChromID;
+    static const char UNKNOWN_REF_BASE = 'U';
 
     String myOutputString;
 
-    int myChromID;
     char myRefBase;
     bool myAllRef;
 

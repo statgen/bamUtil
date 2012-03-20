@@ -67,7 +67,7 @@ void Asp::usage()
     std::cerr << "\t\t                Uses bamIndex." << std::endl;
     std::cerr << "\t\t--gapSize     : Gap Size threshold such that position gaps less than this size have an" << std::endl;
     std::cerr << "\t\t                empty record written, while gaps larger than this size have a new" << std::endl;
-    std::cerr << "\t\t                chrom/position header written, Default = " << DEFAULT_GAP_SIZE << "." << std::endl;
+    std::cerr << "\t\t                chrom/position header written, Default = " << AspFileWriter::DEFAULT_GAP_SIZE << "." << std::endl;
     std::cerr << "\t\t--noeof       : Do not expect an EOF block on a bam file." << std::endl;
     std::cerr << "\t\t--params      : Print the parameter settings" << std::endl;
     std::cerr << std::endl;
@@ -84,7 +84,7 @@ int Asp::execute(int argc, char **argv)
     bool noeof = false;
     bool params = false;
     String regionList = "";
-    int gapSize = DEFAULT_GAP_SIZE;
+    int gapSize = AspFileWriter::DEFAULT_GAP_SIZE;
 
     reset();
 
@@ -161,8 +161,7 @@ int Asp::execute(int argc, char **argv)
     // Setup in case pileup is used.
     Pileup<PileupElementAsp> pileup;
     
-    PileupElementAsp::setOutputFile(outFile);
-    PileupElementAsp::setGapSize(gapSize);
+    AspFileWriter::setGapSize(gapSize);
     PileupElement::setReference(&reference);
 
     if(params)
@@ -185,6 +184,8 @@ int Asp::execute(int argc, char **argv)
         fprintf(stderr, "%s\n", samIn.GetStatusMessage());
         return(samIn.GetStatus());
     }
+
+    PileupElementAsp::setOutputFile(outFile, samHeader);
 
     // Open the bam index file for reading if we are
     // doing unmapped reads (also set the read section).

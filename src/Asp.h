@@ -44,8 +44,6 @@ private:
 
     bool getNextSection(SamFile& samIn);
 
-    static const int DEFAULT_GAP_SIZE = 100;
-
     // Pointer to the region list file
     IFILE  myRegionList;
 
