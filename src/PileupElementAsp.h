@@ -48,6 +48,11 @@ public:
     /// quality.
     static void setIgnoreDeletion(bool ignoreDeletion);
 
+    static int getNumPosRecs() { return(ourNumPosRecs); }
+    static int getNumEmptyRecs() { return(ourNumEmptyRecs); }
+    static int getNumRefOnlyRecs() { return(ourNumRefOnlyRecs); }
+    static int getNumDetailedRecs() { return(ourNumDetailedRecs); }
+
     // Print the output format, make sure you call after setSumStats
     // if you want summary statistics or your output file
     // will have the wrong header..
@@ -74,15 +79,22 @@ private:
     static IFILE ourOutputFile;
     static int ourGapSize;
     static bool ourIgnoreDeletion;
+    static bool ourReportOverMax;
 
     static int ourPrevPos;
     static int ourPrevChromID;
+
+    static int ourNumPosRecs;
+    static int ourNumEmptyRecs;
+    static int ourNumRefOnlyRecs;
+    static int ourNumDetailedRecs;
 
     String myOutputString;
 
     int myChromID;
     char myRefBase;
     bool myAllRef;
+    int myOverMax;
 
     AspRecord myAspRecord;
 };

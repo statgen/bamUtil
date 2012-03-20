@@ -45,8 +45,10 @@ void DumpAsp::usage()
     std::cerr << "\tRequired Parameters:" << std::endl;
     std::cerr << "\t\t--asp : the path/name of the asp file to display" << std::endl;
     std::cerr << "\tOptional Parameters:" << std::endl;
-    std::cerr << "\t\t--dataOnly : Only print the data records." << std::endl;
-    std::cerr << "\t\t--params   : print the parameter settings" << std::endl;
+    std::cerr << "\t\t--statsOnly : Only print the stats on the records."
+              << std::endl;
+    std::cerr << "\t\t--dataOnly  : Only print the data records." << std::endl;
+    std::cerr << "\t\t--params    : print the parameter settings" << std::endl;
     std::cerr << std::endl;
 }
 
@@ -56,12 +58,14 @@ int DumpAsp::execute(int argc, char **argv)
 {
     // Extract command line arguments.
     String aspFile = "";
+    bool statsOnly = false;
     bool dataOnly = false;
     bool params = false;
 
     ParameterList inputParameters;
     BEGIN_LONG_PARAMETERS(longParameterList)
         LONG_STRINGPARAMETER("asp", &aspFile)
+        LONG_PARAMETER("statsOnly", &statsOnly)
         LONG_PARAMETER("dataOnly", &dataOnly)
         LONG_PARAMETER("params", &params)
         END_LONG_PARAMETERS();
@@ -115,6 +119,65 @@ int DumpAsp::execute(int argc, char **argv)
         }
 
 
+    }
+    else if(statsOnly)
+    {
+        unsigned int numEmpty = 0;
+        unsigned int numPos = 0;
+        unsigned int numRefOnly = 0;
+        unsigned int numDetailed = 0;
+        unsigned int numUnknown = 0;
+        while(asp.getNextRecord(record))
+        {
+            if(record.isEmptyType())
+            {
+                ++numEmpty;
+                if(numEmpty == 0)
+                {
+                    std::cerr << "Empty Wrap Around\n";
+                }
+            }
+            else if(record.isPosType())
+            {
+                ++numPos;
+                if(numPos == 0)
+                {
+                    std::cerr << "Pos Wrap Around\n";
+                }
+            }
+            else if(record.isRefOnlyType())
+            {
+                ++numRefOnly;
+                if(numRefOnly == 0)
+                {
+                    std::cerr << "RefOnly Wrap Around\n";
+                }
+            }
+            else if(record.isDetailedType())
+            {
+                ++numDetailed;
+                if(numDetailed == 0)
+                {
+                    std::cerr << "Detailed Wrap Around\n";
+                }
+            }
+            else
+            {
+                ++numUnknown;
+                returnVal = 1;
+            }
+        }
+        // Output the stats.
+        std::cerr << "Number of Position Records = "
+                  << numPos << "\n"
+                  << "Number of Empty Records = "
+                  << numEmpty << "\n"
+                  << "Number of Reference Only Records = "
+                  << numRefOnly << "\n"
+                  << "Number of Detailed Records = "
+                  << numDetailed << "\n"
+                  << "Number of Unknown Records = "
+                  << numUnknown << "\n";
     }
     else
     {

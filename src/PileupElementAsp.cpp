@@ -30,13 +30,19 @@
 IFILE PileupElementAsp::ourOutputFile = NULL;
 int PileupElementAsp::ourGapSize = 0;
 bool PileupElementAsp::ourIgnoreDeletion = false;
+bool PileupElementAsp::ourReportOverMax = true;
 
 int PileupElementAsp::ourPrevPos = PileupElement::UNSET_POSITION;
 int PileupElementAsp::ourPrevChromID = INVALID_CHROMOSOME_INDEX;
 
+int PileupElementAsp::ourNumPosRecs = 0;
+int PileupElementAsp::ourNumEmptyRecs = 0;
+int PileupElementAsp::ourNumRefOnlyRecs = 0;
+int PileupElementAsp::ourNumDetailedRecs = 0;
+
 void PileupElementAsp::setOutputFile(const char* outputFile)
 {
-    ourOutputFile = ifopen(outputFile, "w");
+    ourOutputFile = ifopen(outputFile, "w", InputFile::BGZF);
 }
 
 void PileupElementAsp::closeOutputFile()
@@ -94,6 +100,12 @@ void PileupElementAsp::addEntry(SamRecord& record)
         myRefBase = getRefBase();
     }
 
+    // If the reference is 'N', skip this position.
+    if(myRefBase == 'N')
+    {
+        return;
+    }
+
     // Get the position within the read of this entry.
     Cigar* cigar = record.getCigarInfo();
     if(cigar == NULL)
@@ -143,7 +155,11 @@ void PileupElementAsp::addEntry(SamRecord& record)
     {
         myAllRef = false;
     }
-    myAspRecord.add(base, qual, cycle, strand, mq);
+    if(!myAspRecord.add(base, qual, cycle, strand, mq))
+    {
+        // Count the number of entries over the max.
+        ++myOverMax;
+    }
 }
 
 
@@ -152,12 +168,27 @@ void PileupElementAsp::addEntry(SamRecord& record)
 // has been fully populated by all records that cover the reference position.
 void PileupElementAsp::analyze()
 {
+    // If the reference is 'N', skip this position.
+    if(myRefBase == 'N')
+    {
+        return;
+    }
+    if((myOverMax != 0) && (ourReportOverMax))
+    {
+        // This position had more than the max allowed, so not
+        // all got added.
+        std::cerr << "Went over the maximum number of records at a position, "
+                  << getChromosome() << ":"
+                  << getRefPosition() << "by " << myOverMax << " records\n";
+    }
+
     // Check the previous position.
     int posDiff = getRefPosition() - ourPrevPos;
     if(ourPrevChromID != myChromID || posDiff > ourGapSize)
     {
         // Write a new position record.
         AspRecord::writePos(myChromID, getRefPosition(), ourOutputFile);
+        ++ourNumPosRecs;
     }
     else if(posDiff < 0)
     {
@@ -172,6 +203,7 @@ void PileupElementAsp::analyze()
         {
             AspRecord::writeEmpty(ourOutputFile);
             --posDiff;
+            ++ourNumEmptyRecs;
         }
     }
 
@@ -180,11 +212,13 @@ void PileupElementAsp::analyze()
     {
         myAspRecord.setRefOnlyType();
         myAspRecord.write(ourOutputFile);
+        ++ourNumRefOnlyRecs;
     }
     else
     {
         // Write the full record.
         myAspRecord.write(ourOutputFile);
+        ++ourNumDetailedRecs;
     }
 
     // Update the last position written.
@@ -212,5 +246,8 @@ void PileupElementAsp::initVars()
     // Default that all bases match the reference.
     // This will be changed when one does not.
     myAllRef = true;
+
+    // Did not go over the max allowed records.
+    myOverMax = 0;
 }
 

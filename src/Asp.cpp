@@ -158,7 +158,7 @@ int Asp::execute(int argc, char **argv)
     GenomeSequence reference(refFile);
 
     ////////////////////////////////////////
-    // Setup in case pileup is used.
+    // Setup pileup.
     Pileup<PileupElementAsp> pileup;
     
     PileupElementAsp::setOutputFile(outFile);
@@ -220,6 +220,15 @@ int Asp::execute(int argc, char **argv)
     pileup.flushPileup();
 
     PileupElementAsp::closeOutputFile();
+
+    std::cerr << "Number of Position Records = "
+              << PileupElementAsp::getNumPosRecs() << "\n"
+              << "Number of Empty Records = "
+              << PileupElementAsp::getNumEmptyRecs() << "\n"
+              << "Number of Reference Only Records = "
+              << PileupElementAsp::getNumRefOnlyRecs() << "\n"
+              << "Number of Detailed Records = "
+              << PileupElementAsp::getNumDetailedRecs() << "\n";
 
     SamStatus::Status status = samIn.GetStatus();
     if(status == SamStatus::NO_MORE_RECS)
