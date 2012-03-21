@@ -56,6 +56,7 @@ PileupElementAsp::PileupElementAsp(const PileupElementAsp& q)
     : PileupElement(),
       myAspRecord()
 {
+    initVars();
 }
 
 
@@ -134,7 +135,8 @@ void PileupElementAsp::addEntry(SamRecord& record)
     {
         base = myRefBase;
     }
-    else if(base != myRefBase)
+    // Check if it does not match the reference base and is not ambiguous.
+    else if(!BaseUtilities::isAmbiguous(base) && (base != myRefBase))
     {
         myAllRef = false;
     }
