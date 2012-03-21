@@ -54,7 +54,7 @@ void Asp::description()
 void Asp::usage()
 {
     BamExecutable::usage();
-    std::cerr << "\t./bam asp --in <inputFile> --out <outputFile> --refFile <referenceFilename> [--bamIndex <bamIndexFile>] [--regionList <regFileName>] [--noeof] [--params]" << std::endl;
+    std::cerr << "\t./bam asp --in <inputFile> --out <outputFile> --refFile <referenceFilename> [--bamIndex <bamIndexFile>] [--regionList <regFileName>] [--gapSize <gapSize>] [--noeof] [--params]" << std::endl;
     std::cerr << "\tRequired Parameters:" << std::endl;
     std::cerr << "\t\t--in       : the SAM/BAM file to calculate asp for" << std::endl;
     std::cerr << "\t\t--out      : the output file to write" << std::endl;
