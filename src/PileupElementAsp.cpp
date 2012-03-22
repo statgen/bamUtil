@@ -140,7 +140,7 @@ void PileupElementAsp::addEntry(SamRecord& record)
     {
         myAllRef = false;
     }
-    myAspRecord.add(base, qual, cycle, strand, mq);
+    myAspRecord.add(myRefBase, base, qual, cycle, strand, mq);
 }
 
 

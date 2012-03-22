@@ -215,7 +215,9 @@ int DumpAsp::execute(int argc, char **argv)
 
 void DumpAsp::printRefOnly(AspRecord& record)
 {
-    std::cout << "REF_ONLY\t" << record.getNumBases() << "\t"
+    std::cout << "REF_ONLY\t" 
+              << record.getRefBase() << "\t"
+              << record.getNumBases() << "\t"
               << record.getGLH() << "\t" 
               << record.getGLA() << "\n";
 }
@@ -223,7 +225,9 @@ void DumpAsp::printRefOnly(AspRecord& record)
 
 void DumpAsp::printDetailed(AspRecord& record)
 {
-    std::cout << "DETAILED\t" << record.getNumBases() << "\t";
+    std::cout << "DETAILED\t" 
+              << record.getRefBase() << "\t"
+              << record.getNumBases() << "\t";
     for(int i = 0; i < record.getNumBases(); i++)
     {
         std::cout << record.getBaseChar(i);
