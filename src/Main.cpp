@@ -37,6 +37,8 @@
 #include "ClipOverlap.h"
 #include "SplitBam.h"
 #include "TrimBam.h"
+#include "RGMergeBam.h"
+#include "PolishBam.h"
 #include "GapInfo.h"
 
 void Usage()
@@ -49,6 +51,8 @@ void Usage()
     SplitChromosome::splitChromosomeDescription();
     SplitBam::splitBamDescription();
     TrimBam::trimBamDescription();
+    RGMergeBam::rgMergeBamDescription();
+    PolishBam::polishBamDescription();
     FindCigars::findCigarsDescription();
 
     std::cerr << "\nTools to Modify & write SAM/BAM Files: " << std::endl;
@@ -160,6 +164,14 @@ int main(int argc, char ** argv)
     else if(strcmp(argv[1], "trimBam") == 0)
     {
         bamExe = new TrimBam();
+    }
+    else if(strcmp(argv[1], "rgMergeBam") == 0)
+    {
+        bamExe = new RGMergeBam();
+    }
+    else if(strcmp(argv[1], "polishBam") == 0)
+    {
+        bamExe = new PolishBam();
     }
     else if(strcmp(argv[1], "gapInfo") == 0)
     {

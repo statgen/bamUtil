@@ -5,7 +5,8 @@ TEST_COMMAND = ln -sfT $(ACTUAL_PATH)/bam/test/testFiles testFilesLibBam; \
                ./splitChromosome.sh && ./writeRegion.sh && \
                ./testSqueeze.sh && ./testCigars.sh && ./testStats.sh && \
                ./testClipOverlap.sh && ./testSplitBam.sh && \
-               ./testTrimBam.sh && ./testGapInfo.sh
+               ./testTrimBam.sh && ./testPolishBam.sh && \
+               ./testRGMergeBam.sh && ./testGapInfo.sh
 
 TEST_CLEAN = rm -f testFilesLibBam
 
