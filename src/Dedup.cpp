@@ -55,9 +55,6 @@ void Dedup::usage() {
     std::cerr << "-r/--rm  : Remove duplicates (default is to mark duplicates)" << std::endl;
     std::cerr << "-f/--force-unmark  : Allow mark-duplicated BAM file and force unmarking the duplicates" << std::endl;
     std::cerr << "                     Default is to throw errors when trying to run a mark-duplicated BAM" << std::endl;
-    std::cerr << "-c/--clip : Soft clip lower quality segment of overlapping paired end reads" << std::endl;
-    std::cerr << "-s/--swap : Soft clip lower quality segment of overlapping paired end reads" << std::endl;
-    std::cerr << "            Higher quality bases are swapped into the overlap of the unclipped end" << std::endl;
     std::cerr << "-v/--verbose  : Turn on verbose mode" << std::endl;
     std::cerr << "\n" << std::endl;
 }
@@ -75,8 +72,6 @@ int Dedup::execute(int argc, char** argv)
     bool removeFlag = false;
     bool verboseFlag = false;
     bool forceFlag = false;
-    bool overlapFlag = false;
-    bool overlapReplacementFlag = false;
     char c;
     int optionIndex = 0;
     
@@ -86,8 +81,6 @@ int Dedup::execute(int argc, char** argv)
             { "out", required_argument, NULL, 'o' },
             { "rm", no_argument, NULL, 'r' },
             { "log", no_argument, NULL, 'l' },
-            { "clip", no_argument, NULL, 'c' },
-            { "swap", no_argument, NULL, 'c' },
             { "force-unmark", no_argument, NULL, 'c' },
             { "verbose", no_argument, NULL, 'v' },
             { NULL, 0, NULL, 0 },
@@ -109,11 +102,6 @@ int Dedup::execute(int argc, char** argv)
                 break;
             case 'l':
                 logFile = optarg;
-                break;
-            case 's':
-                overlapReplacementFlag = true;
-            case 'c':
-                overlapFlag = true;
                 break;
             case 'f':
                 forceFlag = true;
@@ -170,10 +158,6 @@ int Dedup::execute(int argc, char** argv)
     uint32_t unmappedCount = 0;
     uint32_t reverseCount = 0;
     uint32_t qualCheckFailCount = 0;
-
-    // improve this later
-    dedup.overlapFlag = overlapFlag;
-    dedup.overlapReplacementFlag = overlapReplacementFlag;
 
     // Now we start reading records
     SamRecord record; 
@@ -246,9 +230,6 @@ int Dedup::execute(int argc, char** argv)
     Logger::gLogger->writeLog("Total number of duplicate single-ended or mate-unpaired reads : %u",dedup.singleDuplicates);
     Logger::gLogger->writeLog("Total number of duplicate paired-end reads (both ends mapped) : %u",dedup.pairedDuplicates);
     Logger::gLogger->writeLog("Total number of duplicated records: %u",totalDuplicates);
-    if (overlapFlag) {
-        Logger::gLogger->writeLog("Total number of overlapping pairs clipped: %u",dedup.overlappingPairs);
-    }
     Logger::gLogger->writeLog("--------------------------------------------------------------------------");
     Logger::gLogger->writeLog("Sorting the indices of %d duplicated records",dedup.duplicateIndices.size());
 
@@ -277,20 +258,6 @@ int Dedup::execute(int argc, char** argv)
         uint32_t currentIndex = samIn.GetCurrentRecordCount();
 
         bool foundDup = (currentIndex == *currentDupIndex);
-
-        // if we are looking for overlapping pairs, check to see if we need to update this record
-        //    we may need to update the cigar, sequence, and quality array
-        if (dedup.overlapFlag) {
-            Dedup::UInt32ToUpdateDataPointerIterator recordIterator = 
-                dedup.recordUpdates.find(currentIndex);
-            if (recordIterator != dedup.recordUpdates.end()) {
-                record.setCigar(recordIterator->second->cigar);
-                record.setSequence(recordIterator->second->sequence.c_str());
-                record.setQuality(recordIterator->second->baseQualities.c_str());
-                delete recordIterator->second; 
-                dedup.recordUpdates.erase(samIn.GetCurrentRecordCount());
-            }
-        }
 
         // modify the duplicate flag and write out the record, if it's appropriate
         int flag = record.getFlag();
@@ -498,16 +465,6 @@ void Dedup::placeRecordInMaps(SamRecord& record, uint32_t recordCount) {
 
     if(earlierRead == readDataMap.end()) { // We haven't seen this read before
         firstPair++;
-        if (overlapFlag) {
-            // store additional information to process overlaps
-            OverlapData* overlapDataPointer = new OverlapData();
-            overlapDataPointer->clippedEnd = record.get0BasedAlignmentEnd();
-            overlapDataPointer->cigar = *record.getCigarInfo();
-            overlapDataPointer->start = record.get0BasedPosition();
-            overlapDataPointer->baseQualities = std::string(record.getQuality());
-            overlapDataPointer->sequence = std::string(record.getSequence());
-            readDataPointer->overlapData = overlapDataPointer;
-        }
         // put this in fragmentMap, record that we've seen it, and move on to the next record
         fragmentMap[key].push_back(readDataPointer);
         readDataMap.insert( std::pair <std::string, ReadData*> (record.getReadName(), readDataPointer));
@@ -517,16 +474,6 @@ void Dedup::placeRecordInMaps(SamRecord& record, uint32_t recordCount) {
     // We have already seen this read's mate
     foundPair++;
     ReadData* readData = earlierRead->second;
-
-    if (overlapFlag && record.get0BasedPosition() <= readData->overlapData->clippedEnd) {
-        // We're in here if the two ends overlap
-        if (readData->overlapData->clippedEnd >= record.get0BasedAlignmentEnd()) {
-            // something more interesting will happen here in the next version
-        } else {
-            overlappingPairs++;
-            processOverlap(readData, record, recordCount);
-        }
-    }
 
     // Update the information in the ReadData structure
     fragmentMap[key].push_back(readDataPointer);
@@ -548,157 +495,6 @@ void Dedup::placeRecordInMaps(SamRecord& record, uint32_t recordCount) {
 
 }
 
-// When the read summarized in readData and its mate in record overlap, we'll do some work here
-void Dedup::processOverlap(ReadData * readData, SamRecord & record, uint32_t recordCount) {
-
-    // The first read has subscript 0, the second subscript 1
-    // First, we record some positions in the reference coordinate
-    int32_t start0 = readData->overlapData->start;
-    int32_t end0 = readData->overlapData->clippedEnd;
-    int32_t start1 = record.get0BasedPosition();
-    
-    // get the two cigars
-    Cigar * cigar0 = &(readData->overlapData->cigar);
-    Cigar * cigar1 = record.getCigarInfo();
-
-    // For each read, find the range of query indices describing the overlap
-    // First for read 0
-    int32_t queryIndex0End   = cigar0->getQueryIndex(end0 - start0);
-    int32_t queryIndex0Start = queryIndex0End;
-    int32_t targetRefOffset0 = start1 - start0;
-    for (int32_t i = queryIndex0End; i >= 0; i--) {
-        int32_t refOffset = cigar0->getRefOffset(i);
-        if (refOffset == Cigar::INDEX_NA) continue;
-        if (refOffset < targetRefOffset0) break;
-        queryIndex0Start = i;
-    }
-
-    // Then for read 1
-    int32_t queryIndex1Start = cigar1->getQueryIndex(0);
-    int32_t queryIndex1End   = queryIndex1Start;
-    int32_t targetRefOffset1 = end0 - start1;
-    for (int32_t i = queryIndex1Start; i < record.getReadLength(); i++) {
-        int32_t refOffset = cigar1->getRefOffset(i);
-        if (refOffset == Cigar::INDEX_NA) continue;
-        if (refOffset > targetRefOffset1) break;
-        queryIndex1End = i;
-    }
-
-    // Find the average base quality in the overlap for read 0
-    float baseQuality0 = 0;
-    for (int i = queryIndex0Start; i <= queryIndex0End; i++) {
-        baseQuality0 += static_cast<float>(readData->overlapData->baseQualities[i]);
-    }
-    baseQuality0 /= (queryIndex0End - queryIndex0Start + 1);
-
-    // Find the average base quality in the overlap for read 1
-    float baseQuality1 = 0;
-    std::string baseQualities1 = std::string(record.getQuality());
-    for (int i = queryIndex1Start; i <= queryIndex1End; i++) {
-        baseQuality1 += static_cast<float>(baseQualities1[i]);
-    }
-    baseQuality1 /= (queryIndex1End - queryIndex1Start + 1);
-
-    if (baseQuality0 < baseQuality1) {
-        // read 0 has a lower average base quality so it will be soft clipped in the overlap
-        if (overlapReplacementFlag) {
-            // if this flag is set, we will replace lower quality bases in read 1 with bases from read 0
-            std::string expandedCigar0, expandedCigar1;
-            cigar0->getExpandedString(expandedCigar0);
-            cigar1->getExpandedString(expandedCigar1);
-            std::string sequence1 = std::string(record.getSequence());
-
-            // walk through corresponding bases in the two reads 
-            for (int32_t reference = start1; reference <= end0; reference++) {
-                int32_t qi0 = cigar0->getQueryIndex(reference-start0);
-                if (qi0 == Cigar::INDEX_NA) continue;
-                int32_t qi1 = cigar1->getQueryIndex(reference-start1);
-                if (qi1 == Cigar::INDEX_NA) continue;
-                if (readData->overlapData->baseQualities[qi0] > baseQualities1[qi1]) {
-                    // if the base is read 0 has a higher quality, we substitute it into read 1
-                    baseQualities1.replace(qi1, 1, 1, readData->overlapData->baseQualities.at(qi0));
-                    sequence1.replace(qi1, 1, 1, readData->overlapData->sequence.at(qi0));
-                    expandedCigar1.replace(qi1, 1, 1, expandedCigar0.at(qi0));
-                }
-            }
-
-            // Store the updated information about read 1
-            UpdateData* updateDataPointer = new UpdateData();
-            updateDataPointer->sequence = sequence1;
-            updateDataPointer->baseQualities = baseQualities1;
-            updateDataPointer->cigar = *rollupCigar(expandedCigar1);
-            recordUpdates.insert(std::pair<uint32_t, UpdateData*> (recordCount, updateDataPointer));
-        }
-
-        // clip read 0 and store the updated information
-        cigar0 = insertClipsIntoCigar(cigar0, queryIndex0Start, queryIndex0End);
-
-        UpdateData* updateDataPointer = new UpdateData();
-        updateDataPointer->sequence = readData->overlapData->sequence;
-        updateDataPointer->baseQualities = readData->overlapData->baseQualities;
-        updateDataPointer->cigar = *cigar0;
-
-        recordUpdates.insert(std::pair<uint32_t, UpdateData*> (readData->recordCount1, updateDataPointer));
-    } else {
-        // In this case, read 1 is the lower quality read,
-        //    so we do the same thing with the role of the reads reversed
-        if (overlapReplacementFlag) {
-            std::string expandedCigar0, expandedCigar1;
-            cigar0->getExpandedString(expandedCigar0);
-            cigar1->getExpandedString(expandedCigar1);
-            std::string sequence1 = std::string(record.getSequence());
-
-            std::string baseQualities0 = readData->overlapData->baseQualities;
-            std::string sequence0 = readData->overlapData->sequence;
-
-            for (int32_t reference = start1; reference <= end0; reference++) {
-                int32_t qi0 = cigar0->getQueryIndex(reference-start0);
-                if (qi0 == Cigar::INDEX_NA) continue;
-                int32_t qi1 = cigar1->getQueryIndex(reference-start1);
-                if (qi1 == Cigar::INDEX_NA) continue;
-                if (baseQualities0[qi0] < baseQualities1[qi1]) {
-                    baseQualities0.replace(qi0, 1, 1, baseQualities1[qi1]);
-                    sequence0.replace(qi0, 1, 1, sequence1.at(qi1));
-                    expandedCigar0.replace(qi0, 1, 1, expandedCigar1.at(qi1));
-                }
-            }
-
-            UpdateData* updateDataPointer = new UpdateData();
-            updateDataPointer->sequence = sequence0;
-            updateDataPointer->baseQualities = baseQualities0;
-            updateDataPointer->cigar = *rollupCigar(expandedCigar0);
-            recordUpdates.insert(std::pair<uint32_t, UpdateData*> (readData->recordCount1, updateDataPointer));
-        }
-
-        UpdateData* updateDataPointer = new UpdateData();
-        updateDataPointer->sequence = record.getSequence();
-        updateDataPointer->baseQualities = baseQualities1;
-        updateDataPointer->cigar = *insertClipsIntoCigar(cigar1, queryIndex1Start, queryIndex1End);
-        recordUpdates.insert(std::pair<uint32_t, UpdateData*> (recordCount, updateDataPointer));
-    }
-
-    delete readData->overlapData; 
-}
-
-// turns an expanded cigar string in a rolled up cigar string
-Cigar * Dedup::rollupCigar(std::string cigarString) {
-    CigarRoller * cigarRoller = new CigarRoller();
-    for (uint32_t i = 0; i < cigarString.length(); i++) {
-        cigarRoller->Add(cigarString.at(i), 1);
-    }
-    return cigarRoller;
-}
-
-// replaces portions of a cigar with soft clips
-Cigar * Dedup::insertClipsIntoCigar(Cigar * cigar, int32_t begin, int32_t end)
-{
-    std::string cigarString;
-    cigar->getExpandedString(cigarString);
-    int32_t insertLength = end-begin+1;
-    cigarString.replace(begin, insertLength, insertLength, 'S');
-
-    return rollupCigar(cigarString);
-}
 
 // Finds the total base quality of a read 
 int Dedup::getBaseQuality(SamRecord & record) {

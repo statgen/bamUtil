@@ -53,30 +53,12 @@ public:
         }
     };
 
-    // When we have an overlapping paired end read, we store necessary data for updating the
-    // records in this structure.
-    struct UpdateData {
-        Cigar cigar;
-        std::string sequence;
-        std::string baseQualities;
-    };
-
-    // This structure stores information needed to determine when two ends in a pair overlap
-    struct OverlapData {
-        Cigar cigar;
-        int32_t clippedEnd;
-        int32_t start;
-        std::string sequence;
-        std::string baseQualities;
-    };
-
     // This structure stores some basic information from either a single read or paired read
     struct ReadData {
         int baseQuality;
         uint64_t key1, key2;
         uint32_t recordCount1, recordCount2;
         bool paired;
-        OverlapData * overlapData;
         std::string readName;
         inline int getPairedBaseQuality() {
             return baseQuality + ( paired ? PAIRED_QUALITY_OFFSET : 0 );
@@ -111,16 +93,11 @@ public:
     typedef std::vector< uint32_t >::iterator Int32VectorIterator;
     Int32Vector duplicateIndices;
 
-    // A map from record number to updated data for that record
-    typedef std::map< uint32_t, UpdateData*, std::less<uint32_t> > UInt32ToUpdateDataPointerMap;
-    typedef std::map< uint32_t, UpdateData*, std::less<uint32_t> >::iterator UInt32ToUpdateDataPointerIterator;
-    UInt32ToUpdateDataPointerMap recordUpdates;
-
     int lastCoordinate;
     int lastReference;
     uint32_t numLibraries;
-    uint32_t singleDuplicates, pairedDuplicates, overlappingPairs;
-    bool removeFlag, forceFlag, verboseFlag, overlapFlag, overlapReplacementFlag;
+    uint32_t singleDuplicates, pairedDuplicates;
+    bool removeFlag, forceFlag, verboseFlag;
 
     static const uint32_t CLIP_OFFSET;
     static const uint64_t UNMAPPED_SINGLE_KEY;
@@ -155,12 +132,6 @@ public:
     // Returns the key constructed from a record
     uint64_t makeKeyFromRecord(SamRecord & record);
 
-    // Forms a cigar from an expanded string
-    Cigar * rollupCigar(std::string cigarString);
-
-    // Inserts soft clips into a cigar
-    Cigar * insertClipsIntoCigar(Cigar * cigar, int32_t begin, int32_t end);
-    
     // Determines if the current position has changed when we read record
     bool hasPositionChanged(SamRecord & record);
 
@@ -170,19 +141,13 @@ public:
     // Same as above, but it uses record's referenceID and coordinate
     void markDuplicatesBefore(uint32_t referenceID, uint32_t coordinate);
 
-    // Handle the overlap between the reads in readData and record
-    void processOverlap(ReadData * readData, SamRecord & record, uint32_t recordCount);
-
 public:
     Dedup(): lastCoordinate(-1), lastReference(-1), numLibraries(0), 
              singleDuplicates(0),
              pairedDuplicates(0),
-             overlappingPairs(0),
              removeFlag(false),
              forceFlag(false),
              verboseFlag(false),
-             overlapFlag(false),
-             overlapReplacementFlag(false),
              unmapped(0),
              singleRead(0),
              firstPair(0),
