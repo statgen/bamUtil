@@ -46,25 +46,34 @@
 #define MAXITERATION 10000
 #define READSEPARATORS ":_"
 
-
-Logger* Logger::gLogger = NULL;
-
-void printUsage(std::ostream& os)
+void ReCab::recabDescription()
 {
-    os << "Usage: ReCab (options) --i <InputBamFile> --o <OutputFile>\n" << std::endl;
-    os << "Required parameters :" << std::endl;
-    os << "--i [infile]  : input BAM file name" << std::endl;
-    os << "--o [outfile] : output recalibration file name" << std::endl;
-    os << "--r [reference file]" << std::endl;
-    os << "Optional parameters : " << std::endl;
-    os << "--s [known variance file]" << std::endl;
-    os << "--l [logfile] : log and summary statistics (default: [outfile].log)" << std::endl;
-    os << "--v : Turn on verbose mode" << std::endl;
-    os << "--first [n] : First n reads are processed" << std::endl;
-    os << "--b [weight]: blended model weight" << std::endl;
-    os << "\n" << std::endl;
-    os << "version: " << BASEQC_VERSION << std::endl;
-    os << "\n" << std::endl;
+    std::cerr << " recab - Recalibrate\n";
+}
+
+
+void ReCab::description()
+{
+    recabDescription();
+}
+
+
+void ReCab::usage()
+{
+    std::cerr << "Usage: ReCab (options) --i <InputBamFile> --o <OutputFile>\n" << std::endl;
+    std::cerr << "Required parameters :" << std::endl;
+    std::cerr << "--i [infile]  : input BAM file name" << std::endl;
+    std::cerr << "--o [outfile] : output recalibration file name" << std::endl;
+    std::cerr << "--r [reference file]" << std::endl;
+    std::cerr << "Optional parameters : " << std::endl;
+    std::cerr << "--s [known variance file]" << std::endl;
+    std::cerr << "--l [logfile] : log and summary statistics (default: [outfile].log)" << std::endl;
+    std::cerr << "--v : Turn on verbose mode" << std::endl;
+    std::cerr << "--first [n] : First n reads are processed" << std::endl;
+    std::cerr << "--b [weight]: blended model weight" << std::endl;
+    std::cerr << "\n" << std::endl;
+    std::cerr << "version: " << BASEQC_VERSION << std::endl;
+    std::cerr << "\n" << std::endl;
 }
 
 ReCab::ReCab()
@@ -345,8 +354,12 @@ bool ReCab::processRead(SamRecord& samRecord,int processtype, ReCab::quality_t& 
 }
 
 
-int main(int argc, char *argv[])
+int ReCab::execute(int argc, char *argv[])
 {
+    // Shift arguments due to format being ./bam recab and then the args.
+    ++argv;
+    --argc;
+
     bool oldQualityFlag = false;
     bool verboseFlag = false;
     bool maxReadFlag = false;
@@ -399,7 +412,7 @@ int main(int argc, char *argv[])
 
     if (inFile.empty() || outFile.empty() || refFile.empty())
     {
-        printUsage(std::cerr);
+        usage();
         std::cerr << "Missing parameters" << std::endl;
         return EXIT_FAILURE;
     }
@@ -412,7 +425,7 @@ int main(int argc, char *argv[])
   
     if ( optind < argc )
     {
-        printUsage(std::cerr);
+        usage();
         Logger::gLogger->error("Argument with no option");
     }
 
