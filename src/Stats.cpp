@@ -66,6 +66,8 @@ void Stats::usage()
     std::cerr << "\t\t--params      : Print the parameter settings." << std::endl;
     std::cerr << "\tOptional BaseQC Only Parameters:" << std::endl;
     std::cerr << "\t\t--baseSum     : Print an overall summary of the baseQC for the file to stderr." << std::endl;
+    std::cerr << "\t\t--bufferSize  : Size of the pileup buffer for calculating the BaseQC parameters." << std::endl;
+    std::cerr << "\t\t                Default: " << PileupHelper::DEFAULT_WINDOW_SIZE << std::endl;
     std::cerr << std::endl;
 }
 
@@ -89,6 +91,7 @@ int Stats::execute(int argc, char **argv)
     String dbsnp = "";
     PosList *dbsnpListPtr = NULL;
     bool baseSum = false;
+    int bufferSize = PileupHelper::DEFAULT_WINDOW_SIZE;
 
     ParameterList inputParameters;
     BEGIN_LONG_PARAMETERS(longParameterList)
@@ -111,6 +114,7 @@ int Stats::execute(int argc, char **argv)
         LONG_PARAMETER("params", &params)
         LONG_PARAMETER_GROUP("Optional BaseQC Only Parameters")
         LONG_PARAMETER("baseSum", &baseSum)
+        LONG_INTPARAMETER("bufferSize", &bufferSize)
         END_LONG_PARAMETERS();
    
     inputParameters.Add(new LongParameters ("Input Parameters", 
@@ -149,7 +153,7 @@ int Stats::execute(int argc, char **argv)
     }
     ////////////////////////////////////////
     // Setup in case pileup is used.
-    Pileup<PileupElementBaseQCStats> pileup;
+    Pileup<PileupElementBaseQCStats> pileup(bufferSize);
     // Initialize start/end positions.
     myStartPos = 0;
     myEndPos = -1;
