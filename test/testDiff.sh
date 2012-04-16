@@ -7,6 +7,21 @@
 # Diff order/pos but no threshold for pos.
 ../bin/bam diff --in1 testFiles/testDiff1.sam --in2 testFiles/testDiff2.sam --seq --baseQual --tags "OP:i;MD:Z" --posDiff 1 --out results/diffNoThresh.log 2> results/empty.log && diff results/diffNoThresh.log expected/diffNoThresh.log && diff results/empty.log expected/empty.txt \
 && \
+# Diff all but no threshold for pos.
+../bin/bam diff --all --in1 testFiles/testDiff1.sam --in2 testFiles/testDiff2.sam --seq --baseQual --tags "OP:i;MD:Z" --posDiff 1 --out results/diffNoThreshAll.log 2> results/empty.log && diff results/diffNoThreshAll.log expected/diffNoThreshAll.log && diff results/empty.log expected/empty.txt \
+&& \
+# Diff all but no threshold for pos, diffs only.
+../bin/bam diff --all --in1 testFiles/testDiff1.sam --in2 testFiles/testDiff2.sam --posDiff 1 --onlyDiffs --out results/diffNoThreshAllDiffOnly.log 2> results/empty.log && diff results/diffNoThreshAllDiffOnly.log expected/diffNoThreshAllDiffOnly.log && diff results/empty.log expected/empty.txt \
+&& \
+# Diff flag only but no threshold for pos.
+../bin/bam diff --in1 testFiles/testDiff1.sam --in2 testFiles/testDiff2.sam --flag --noCigar --noPos --posDiff 1 --out results/diffFlag.log 2> results/empty.log && diff results/diffFlag.log expected/diffFlag.log && diff results/empty.log expected/empty.txt \
+&& \
+# Diff mapqual, mate, and isize only but no threshold for pos.
+../bin/bam diff --in1 testFiles/testDiff1.sam --in2 testFiles/testDiff2.sam --mapQual --mate --isize --noCigar --noPos --posDiff 1 --out results/diffMateMapQISize.log 2> results/empty.log && diff results/diffMateMapQISize.log expected/diffMateMapQISize.log && diff results/empty.log expected/empty.txt \
+&& \
+# Diff only all tags but no threshold for pos.
+../bin/bam diff --in1 testFiles/testDiff1.sam --in2 testFiles/testDiff2.sam --everyTag --noCigar --noPos --posDiff 1 --out results/diffTagsOnly.log 2> results/empty.log && diff results/diffTagsOnly.log expected/diffTagsOnly.log && diff results/empty.log expected/empty.txt \
+&& \
 # Different order/pos on one of the records reverse the order.
 ../bin/bam diff --in1 testFiles/testDiff2.sam --in2 testFiles/testDiff1.sam --seq --baseQual --tags "OP:i;MD:Z" --out results/diffOrderSam2.log 2> results/empty.log && diff results/diffOrderSam2.log expected/diffOrderSam2.log && diff results/empty.log expected/empty.txt \
 && \
