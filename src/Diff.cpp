@@ -99,7 +99,7 @@ void Diff::description()
 void Diff::usage()
 {
     BamExecutable::usage();
-    std::cerr << "\t./bam diff --in1 <inputFile> --in2 <inputFile> [--out <outputFile>] [--baseQual] [--tags <Tag:Type[;Tag:Type]*>] [--noCigar] [--noPos] [--onlyDiffs] [--recPoolSize <int>] [--posDiff <int>] [--noeof] [--params]" << std::endl;
+    std::cerr << "\t./bam diff --in1 <inputFile> --in2 <inputFile> [--out <outputFile>] [--all] [--flag] [--mapQual] [--mate] [--isize] [--seq] [--baseQual] [--tags <Tag:Type[;Tag:Type]*>] [--everyTag] [--noCigar] [--noPos] [--onlyDiffs] [--recPoolSize <int>] [--posDiff <int>] [--noeof] [--params]" << std::endl;
     std::cerr << "\tRequired Parameters:" << std::endl;
     std::cerr << "\t\t--in1         : first coordinate sorted SAM/BAM file to be diffed" << std::endl;
     std::cerr << "\t\t--in2         : second coordinate sorted SAM/BAM file to be diffed" << std::endl;
