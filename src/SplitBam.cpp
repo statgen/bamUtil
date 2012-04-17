@@ -27,6 +27,7 @@
 #include "SplitBam.h"
 #include "SamFile.h"
 #include "Logger.h"
+#include "BgzfFileType.h"
 
 ////////////////////////////////////////////////////////////////////////
 // SplitBam : 
@@ -85,6 +86,7 @@ void SplitBam::usage()
   std::cerr << "Optional arguments:" << std::endl;
   std::cerr << "-L/--log [logFile]  : log file name. default is listFile.log" << std::endl;
   std::cerr << "-v/--verbose : turn on verbose mode" << std::endl;
+  std::cerr << "-n/--noeof : turn on verbose mode" << std::endl;
 }
 
 // main function
@@ -96,6 +98,7 @@ int SplitBam::execute(int argc, char ** argv)
       { "in", required_argument, NULL, 'i'},
       { "out", required_argument, NULL, 'o'},
       { "verbose", no_argument, NULL, 'v'},
+      { "noeof", no_argument, NULL, 'n'},
       { "log", required_argument, NULL, 'L'},
       { NULL, 0, NULL, 0 },
     };
@@ -103,10 +106,11 @@ int SplitBam::execute(int argc, char ** argv)
   int n_option_index = 0;
   char c;
   bool b_verbose = false;
+  bool noeof = false;
 
   std::string s_in, s_out, s_logger;
 
-  while ( ( c = getopt_long(argc-1, &(argv[1]), "i:o:vL:", getopt_long_options, &n_option_index) ) != -1 ) {
+  while ( ( c = getopt_long(argc-1, &(argv[1]), "i:o:vLn:", getopt_long_options, &n_option_index) ) != -1 ) {
     switch(c) {
     case 'i':
       s_in = optarg;
@@ -116,6 +120,9 @@ int SplitBam::execute(int argc, char ** argv)
       break;
     case 'v':
       b_verbose = true;
+      break;
+    case 'n':
+      noeof = true;
       break;
     case 'L':
       s_logger = optarg;
@@ -129,6 +136,13 @@ int SplitBam::execute(int argc, char ** argv)
   if ( s_logger.empty() ) {
     s_logger = s_out + ".log";
   }
+
+  if(noeof)
+  {
+      // Set that the eof block is not required.
+      BgzfFileType::setRequireEofBlock(false);
+  }
+
 
   // create a logger object, now possible to write logs/warnings/errors
   Logger::gLogger = new Logger(s_logger.c_str(), b_verbose);
@@ -149,6 +163,7 @@ int SplitBam::execute(int argc, char ** argv)
   Logger::gLogger->writeLog("Output BAM prefix : %s",s_out.c_str());
   Logger::gLogger->writeLog("Output log file : %s",s_logger.c_str());
   Logger::gLogger->writeLog("Verbose mode    : %s",b_verbose ? "On" : "Off");
+  Logger::gLogger->writeLog("BGFZ EOF indicator : %s",noeof ? "Off" : "On");
   
   SamFile inBam;
   SamFileHeader inHeader;
