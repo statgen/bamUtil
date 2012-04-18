@@ -24,6 +24,9 @@
 #include "SamFile.h"
 #include "Dedup.h"
 #include "Logger.h"
+#include "SamHelper.h"
+#include "SamFlag.h"
+#include "SamStatus.h"
 
 const uint32_t Dedup::CLIP_OFFSET = 1000L;
 const uint64_t Dedup::UNMAPPED_SINGLE_KEY = 0xffffffffffffffffULL;
@@ -32,6 +35,37 @@ const uint32_t Dedup::EMPTY_RECORD_COUNT =  0xffffffffUL;
 const int Dedup::PAIRED_QUALITY_OFFSET = 10000;
 const int Dedup::MAX_REF_ID = 0xffff;
 const int Dedup::LOOK_BACK = 1000;
+
+
+Dedup::~Dedup()
+{
+    // clean up the maps.
+    // First free any fragment records.
+    for(FragmentMap::iterator iter = myFragmentMap.begin(); 
+        iter != myFragmentMap.end(); iter++)
+    {
+        mySamPool.releaseRecord(iter->second.recordPtr);
+    }
+    myFragmentMap.clear();
+
+    // Free any paired records.
+    for(PairedMap::iterator iterator = myPairedMap.begin(); 
+        iterator != myPairedMap.end(); iterator++)
+    {
+        // These are not duplicates, but we are done with them, so release them.
+        mySamPool.releaseRecord(iterator->second.record1Ptr);
+        mySamPool.releaseRecord(iterator->second.record2Ptr);
+    }
+    myPairedMap.clear();
+
+    // Free any entries in the mate map.
+    for(MateMap::iterator iter = myMateMap.begin(); 
+        iter != myMateMap.end(); iter++)
+    {
+        mySamPool.releaseRecord(iter->second.recordPtr);
+    }
+    myMateMap.clear();
+}
 
 void Dedup::dedupDescription()
 {
@@ -138,18 +172,18 @@ int Dedup::execute(int argc, char** argv)
     SamFile samIn;
 
     samIn.OpenForRead(inFile.c_str());
+    // If the file isn't sorted it will throw an exception.
     samIn.setSortedValidation(SamFile::COORDINATE);
 
     SamFileHeader header;
     samIn.ReadHeader(header);
 
-    Dedup dedup;
-    dedup.buildReadGroupLibraryMap(header);
+    buildReadGroupLibraryMap(header);
 
     int lastReferenceID = -1;
     int lastPosition = -1;
-    dedup.lastReference = -1;
-    dedup.lastCoordinate = -1;
+    lastReference = -1;
+    lastCoordinate = -1;
 
     // for keeping some basic statistics
     uint32_t recordCount = 0;
@@ -160,83 +194,111 @@ int Dedup::execute(int argc, char** argv)
     uint32_t qualCheckFailCount = 0;
 
     // Now we start reading records
-    SamRecord record; 
-    while(samIn.ReadRecord(header, record)) {
-
+    SamRecord* recordPtr;
+    SamStatus::Status returnStatus = SamStatus::SUCCESS;
+    while(returnStatus == SamStatus::SUCCESS)
+    {
+        recordPtr = mySamPool.getRecord();
+        if(recordPtr == NULL)
+        {
+            std::cerr << "Failed to allocate enough records\n";
+            return(-1);
+        }
+        if(!samIn.ReadRecord(header, *recordPtr))
+        {
+            returnStatus = samIn.GetStatus();
+            continue;
+        }
         // Take note of properties of this record
-        int flag = record.getFlag();
-        if ( flag & 0x0001 ) ++pairedCount;
-        if ( flag & 0x0002 ) ++properPairCount;
-        if ( flag & 0x0004 ) ++unmappedCount;
-        if ( flag & 0x0010 ) ++reverseCount;
-        if ( flag & 0x0200 ) ++qualCheckFailCount;
-        if ( ( ( flag & 0x0400 ) > 0 ) && ( ! forceFlag ) ) {
+        int flag = recordPtr->getFlag();
+        if(SamFlag::isPaired(flag))     ++pairedCount;
+        if(SamFlag::isProperPair(flag)) ++properPairCount;
+        if(SamFlag::isReverse(flag))    ++reverseCount;
+        if(SamFlag::isQCFailure(flag))  ++qualCheckFailCount;
+        if(SamFlag::isDuplicate(flag) && !forceFlag)
+        {
             Logger::gLogger->error("There are records already duplicate marked.");
             Logger::gLogger->error("Use -f to clear the duplicate flag and start the deduping procedure over");
         }
 
         // put the record in the appropriate maps:
-        //   single reads go in fragmentMap
-        //   paired reads go in pairedMap
+        //   single reads go in myFragmentMap
+        //   paired reads go in myPairedMap
         recordCount = samIn.GetCurrentRecordCount();
-        dedup.placeRecordInMaps(record, recordCount);
 
         // Let us know if we're moving to a new chromosome
-        if (lastReferenceID != record.getReferenceID()) {
-            lastReferenceID = record.getReferenceID();
+        if (lastReferenceID != recordPtr->getReferenceID())
+        {
+            lastReferenceID = recordPtr->getReferenceID();
             Logger::gLogger->writeLog("Reading ReferenceID %d\n", lastReferenceID);
-        } else {
-            int position = record.get0BasedPosition();
-            // We're assuming the BAM file is sorted.  Otherwise, there is trouble.
-            if ( ( position >= 0 ) && (position < lastPosition ) ) {
-                Logger::gLogger->error("The BAM file is not sorted in the readName %s, reference sequence %s, position %d", 
-                                       record.getReadName(), 
-                                       header.getReferenceLabel(record.getReferenceID()).c_str(), 
-                                       position+1);
-            }
-            lastPosition = position;
         }
+        lastPosition = recordPtr->get0BasedPosition();
 
         // if we have moved to a new position, look back at previous reads for duplicates
-        if (dedup.hasPositionChanged(record)) {
-            dedup.markDuplicatesBefore(record);
+        if (hasPositionChanged(*recordPtr))
+        {
+            markDuplicatesBefore(*recordPtr);
         }
 
+        // Deduping is only for mapped reads.
+        if(!SamFlag::isMapped(flag))
+        {
+            ++unmappedCount;
+            // Release the pointer.
+            mySamPool.releaseRecord(recordPtr);
+        }
+        else
+        {
+            placeRecordInMaps(*recordPtr, recordCount);
+        }
         // let the user know we're not napping
-        if (verboseFlag && (recordCount % 100000 == 0)) {
+        if (verboseFlag && (recordCount % 100000 == 0))
+        {
             Logger::gLogger->writeLog("recordCount=%u singleKeyMap=%u pairedKeyMap=%u, dictSize=%u", 
-                                      recordCount, dedup.fragmentMap.size(), 
-                                      dedup.pairedMap.size(), 
-                                      dedup.readDataMap.size());
+                                      recordCount, myFragmentMap.size(), 
+                                      myPairedMap.size(), 
+                                      myMateMap.size());
         }
     }
 
     // we're finished reading record so clean up the duplicate search and close the input file
-    dedup.markDuplicatesBefore(Dedup::MAX_REF_ID, 0);
+    markDuplicatesBefore(Dedup::MAX_REF_ID, 0);
     samIn.Close();
 
     // print some statistics
-    uint32_t totalDuplicates = dedup.singleDuplicates + 2*dedup.pairedDuplicates;
+    uint32_t totalDuplicates = 
+        singleDuplicates + 2*pairedDuplicates;
     Logger::gLogger->writeLog("--------------------------------------------------------------------------");
     Logger::gLogger->writeLog("SUMMARY STATISTICS OF THE READS");
     Logger::gLogger->writeLog("Total number of reads: %u",recordCount);
-    Logger::gLogger->writeLog("Total number of paired-end reads: %u",pairedCount);
-    Logger::gLogger->writeLog("Total number of properly paired reads: %u",properPairCount);
-    Logger::gLogger->writeLog("Total number of unmapped reads : %u",unmappedCount);
-    Logger::gLogger->writeLog("Total number of reverse strand mapped reads: %u",reverseCount);
-    Logger::gLogger->writeLog("Total number of QC-failed reads : %u",qualCheckFailCount);
-    Logger::gLogger->writeLog("Size of singleKeyMap (must be zero) : %u",dedup.fragmentMap.size());
-    Logger::gLogger->writeLog("Size of pairedKeyMap (must be zero) : %u",dedup.pairedMap.size());
-    Logger::gLogger->writeLog("Total number of duplicate single-ended or mate-unpaired reads : %u",dedup.singleDuplicates);
-    Logger::gLogger->writeLog("Total number of duplicate paired-end reads (both ends mapped) : %u",dedup.pairedDuplicates);
-    Logger::gLogger->writeLog("Total number of duplicated records: %u",totalDuplicates);
+    Logger::gLogger->writeLog("Total number of paired-end reads: %u",
+                              pairedCount);
+    Logger::gLogger->writeLog("Total number of properly paired reads: %u",
+                              properPairCount);
+    Logger::gLogger->writeLog("Total number of unmapped reads : %u",
+                              unmappedCount);
+    Logger::gLogger->writeLog("Total number of reverse strand mapped reads: %u",
+                              reverseCount);
+    Logger::gLogger->writeLog("Total number of QC-failed reads : %u",
+                              qualCheckFailCount);
+    Logger::gLogger->writeLog("Size of singleKeyMap (must be zero) : %u",
+                              myFragmentMap.size());
+    Logger::gLogger->writeLog("Size of pairedKeyMap (must be zero) : %u",
+                              myPairedMap.size());
+    Logger::gLogger->writeLog("Total number of duplicate single-ended or mate-unpaired reads : %u",singleDuplicates);
+    Logger::gLogger->writeLog("Total number of duplicate paired-end reads (both ends mapped) : %u",pairedDuplicates);
+    Logger::gLogger->writeLog("Total number of duplicated records: %u",
+                              totalDuplicates);
     Logger::gLogger->writeLog("--------------------------------------------------------------------------");
-    Logger::gLogger->writeLog("Sorting the indices of %d duplicated records",dedup.duplicateIndices.size());
+    Logger::gLogger->writeLog("Sorting the indices of %d duplicated records",
+                              myDupList.size());
 
     // sort the indices of duplicate records
-    std::sort(dedup.duplicateIndices.begin(), dedup.duplicateIndices.end(), std::less<uint32_t> ());
+    std::sort(myDupList.begin(), myDupList.end(),
+              std::less<uint32_t> ());
 
-    // get ready to write the output file by making a second pass through the input file
+    // get ready to write the output file by making a second pass
+    // through the input file
     samIn.OpenForRead(inFile.c_str());
     samIn.ReadHeader(header);
 
@@ -245,7 +307,8 @@ int Dedup::execute(int argc, char** argv)
     samOut.WriteHeader(header);
 
     // an iterator to run through the duplicate indices
-    std::vector<uint32_t>::iterator currentDupIndex = dedup.duplicateIndices.begin();
+    int currentDupIndex = 0;
+    bool moreDups = !myDupList.empty();
 
     // let the user know what we're doing
     Logger::gLogger->writeLog("\nWriting %s", outFile.c_str());
@@ -254,10 +317,13 @@ int Dedup::execute(int argc, char** argv)
     uint32_t singleDuplicates(0), pairedDuplicates(0);
 
     // start reading records and writing them out
-    while(samIn.ReadRecord(header, record)) {
+    SamRecord record;
+    while(samIn.ReadRecord(header, record))
+    {
         uint32_t currentIndex = samIn.GetCurrentRecordCount();
 
-        bool foundDup = (currentIndex == *currentDupIndex);
+        bool foundDup = moreDups &&
+            (currentIndex == myDupList[currentDupIndex]);
 
         // modify the duplicate flag and write out the record, if it's appropriate
         int flag = record.getFlag();
@@ -301,105 +367,68 @@ int Dedup::execute(int argc, char** argv)
     return 0;
 }
 
-// Now that we've reached coordinate on chromosome reference, look back to find any duplicates
-void Dedup::markDuplicatesBefore(uint32_t reference, uint32_t coordinate) {
+// Now that we've reached coordinate on chromosome reference, look back and
+// clean up any previous positions from being tracked.
+void Dedup::markDuplicatesBefore(uint32_t reference, uint32_t coordinate)
+{
     // Find the key corresponding to the current position
     // We will first search through single reads up to this position
     uint64_t key = makeKey(reference, coordinate, false, 0);
-    SingleKeyToReadDataPointerMapIterator fragmentFinish = fragmentMap.lower_bound(key);
+    FragmentMap::iterator fragmentFinish = myFragmentMap.lower_bound(key);
 
-    // For each key k < fragmentFinish, look through reads indexed by that key to find the
-    //   one with the highest quality, mark the others as duplicates, and clean up the maps
-    for (SingleKeyToReadDataPointerMapIterator iterator = fragmentMap.begin(); iterator != fragmentFinish; iterator++) {
-        if (iterator->second.size() > 1) {
-            int maxQuality = -1;
-            ReadDataPointerVectorIterator maxRead = iterator->second.end();
-            for (ReadDataPointerVectorIterator currentRead = iterator->second.begin(); 
-                 currentRead != iterator->second.end(); 
-                 currentRead++) {
-                if ( (*currentRead)->getPairedBaseQuality() > maxQuality) {
-                    maxQuality = (*currentRead)->getPairedBaseQuality();
-                    maxRead = currentRead;
-                }
-            }
-            if (maxRead == iterator->second.end()) {
-                Logger::gLogger->error("In markDuplicates:  no positive best quality found.");
-            }
-            for (ReadDataPointerVectorIterator currentRead = iterator->second.begin(); 
-                 currentRead != iterator->second.end(); 
-                 currentRead++) {
-                if (currentRead != maxRead) {
-                    if ( (*currentRead)->paired == false) {
-                        duplicateIndices.push_back((*currentRead)->recordCount1);
-                        singleDuplicates++;
-                    }
-                }
-
-                StringToReadDataPointerMapIterator readDataMapIterator = readDataMap.find( (*currentRead)->readName);
-                if (readDataMapIterator == readDataMap.end()) {
-                    Logger::gLogger->error("In markDuplicatesBefore:  Cannot find %s in readDataMap", ((*currentRead)->readName).c_str());
-                }
-                if (readDataMapIterator->second->paired == false) {
-                    delete readDataMapIterator->second; 
-                    readDataMap.erase(readDataMapIterator);
-                }
-            }	    
-        } else {  // in this case, there are no duplicates
-            StringToReadDataPointerMapIterator readDataMapIterator = readDataMap.find(iterator->second.front()->readName);
-            if (readDataMapIterator->second->paired == false) {
-                delete readDataMapIterator->second; 
-                readDataMap.erase(readDataMapIterator);
-            }
+    // For each key k < fragmentFinish, release the record since we are
+    // done with that position and it is not a duplicate.
+    for(FragmentMap::iterator iter = myFragmentMap.begin(); 
+        iter != fragmentFinish; iter++)
+    {
+        // If it is not paired, release the record.
+        if(!iter->second.paired)
+        {
+            mySamPool.releaseRecord(iter->second.recordPtr);
         }
-
     }
-    if (fragmentFinish != fragmentMap.begin()) {
-        fragmentMap.erase(fragmentMap.begin(), fragmentFinish);
+    // Erase the entries from the map.
+    if(fragmentFinish != myFragmentMap.begin())
+    {
+        myFragmentMap.erase(myFragmentMap.begin(), fragmentFinish);
     }
 
     // Now do the same thing with the paired reads
     PairedKey pairedKey(0, key);
-    PairedKeyToReadDataPointerMapIterator pairedFinish = pairedMap.lower_bound(pairedKey);
-    for (PairedKeyToReadDataPointerMapIterator iterator = pairedMap.begin(); iterator != pairedFinish; iterator++) {
-        if (iterator->second.size() > 1) {
-            int maxQuality = -1;
-            ReadDataPointerVectorIterator maxRead = iterator->second.end();	
-            for (ReadDataPointerVectorIterator currentRead = iterator->second.begin(); 
-                 currentRead != iterator->second.end(); 
-                 currentRead++) {
-                if ( (*currentRead)->getPairedBaseQuality() > maxQuality) {
-                    maxQuality = (*currentRead)->getPairedBaseQuality();
-                    maxRead = currentRead;
-                }
-            }
-            if (maxRead == iterator->second.end()) {
-                Logger::gLogger->error("In markDuplicates:  no positive best quality found.");
-            }
-
-            for (ReadDataPointerVectorIterator currentRead = iterator->second.begin(); 
-                 currentRead != iterator->second.end(); 
-                 currentRead++) {
-                if (currentRead != maxRead) {
-                    duplicateIndices.push_back((*currentRead)->recordCount1);
-                    duplicateIndices.push_back((*currentRead)->recordCount2);
-                    pairedDuplicates++;
-                }
-
-                StringToReadDataPointerMapIterator readDataMapIterator = readDataMap.find( (*currentRead)->readName);
-                if (readDataMapIterator == readDataMap.end()) {
-                    Logger::gLogger->error("In markDuplicatesBefore:  Cannot find %s in readDataMap", ((*currentRead)->readName).c_str());
-                }
-                delete readDataMapIterator->second;  
-                readDataMap.erase(readDataMapIterator);
-            }
-        } else { // there are no duplicates
-            StringToReadDataPointerMapIterator readDataMapIterator = readDataMap.find(iterator->second.front()->readName);
-            delete readDataMapIterator->second; 
-            readDataMap.erase(readDataMapIterator);
-        }
+    PairedMap::iterator pairedFinish = myPairedMap.lower_bound(pairedKey);
+    for(PairedMap::iterator iter = myPairedMap.begin(); 
+        iter != pairedFinish; iter++)
+    {
+        PairedData* pairedData = &(iter->second);
+        // These are not duplicates, but we are done with them, so release them.
+        mySamPool.releaseRecord(pairedData->record1Ptr);
+        mySamPool.releaseRecord(pairedData->record2Ptr);
     }
-    if (pairedFinish != pairedMap.begin()) {
-        pairedMap.erase(pairedMap.begin(), pairedFinish);
+    // Erase the entries.
+    if (pairedFinish != myPairedMap.begin())
+    {
+        myPairedMap.erase(myPairedMap.begin(), pairedFinish);
+    }
+
+    // Clean up the Mate map from any reads whose mates were not found.
+    // Loop through the mate map and release records prior to this position.
+    uint64_t stopPos =
+        SamHelper::combineChromPos(reference, 
+                                   coordinate);
+    MateMap::iterator mateIter;
+    for(mateIter = myMateMap.begin(); mateIter != myMateMap.end(); mateIter++)
+    {
+        if(mateIter->first >= stopPos)
+        {
+            break;
+        }
+        // Remove the record since we have passed its mate's position.
+        mySamPool.releaseRecord(mateIter->second.recordPtr);
+    }
+    // Erase the entries.
+    if(mateIter != myMateMap.begin())
+    {
+        myMateMap.erase(myMateMap.begin(), mateIter);
     }
     return;
 }
@@ -415,8 +444,11 @@ void Dedup::markDuplicatesBefore(SamRecord& record) {
 }
 
 // determine whether the position of record is different from the previous record
-bool Dedup::hasPositionChanged(SamRecord& record) {
-    if (lastReference < record.getReferenceID() || lastCoordinate < record.get0BasedPosition()) {
+bool Dedup::hasPositionChanged(SamRecord& record)
+{
+    if (lastReference < record.getReferenceID() || 
+        lastCoordinate < record.get0BasedPosition())
+    {
         lastReference = record.getReferenceID();
         lastCoordinate = record.get0BasedPosition();
         return true;
@@ -425,74 +457,179 @@ bool Dedup::hasPositionChanged(SamRecord& record) {
 }
 
 // when record is read, we will put it into the appropriate maps
-void Dedup::placeRecordInMaps(SamRecord& record, uint32_t recordCount) {
-    int flag = record.getFlag();
+void Dedup::placeRecordInMaps(SamRecord& record, uint32_t recordCount)
+{
+    // Only inside this method if the record is mapped.
 
-    if (flag & 0x0002) properPair++;
-    if (flag & 0x0004) {  // fragment is unmapped so ignore it
-        unmapped++;
-        return; 
-    }
-
-    // save some basic information about the record in a ReadData structure
+    // Get the key for this record.
     uint64_t key = makeKeyFromRecord(record);
-    ReadData* readDataPointer = new ReadData();
-    readDataPointer -> key1 = key;
-    readDataPointer -> key2 = UNMAPPED_SINGLE_KEY;
-    readDataPointer -> recordCount1 = recordCount;
-    readDataPointer -> recordCount2 = EMPTY_RECORD_COUNT;
-    readDataPointer -> readName = record.getReadName();
-    readDataPointer -> baseQuality = getBaseQuality(record);
+    int flag = record.getFlag(); 
+    bool recordPaired = SamFlag::isPaired(flag) && SamFlag::isMateMapped(flag);
+    int sumBaseQual = getBaseQuality(record);
+    
+    // Look in the map to see if an entry for this key exists.
+    FragmentMapInsertReturn ireturn = 
+        myFragmentMap.insert(std::make_pair(key, ReadData()));
 
-    if ( ( (flag & 0x0001) == 0) || (flag & 0x0008) ) {  
-        // if it's a single read or its mate is unmapped, 
-        //   label it as not paired and put it into fragmentMap
-        if ((flag & 0x0001) == 0) singleRead++;
-        readDataPointer -> paired = false;
-        if(readDataMap.insert( std::pair <std::string, ReadData*> (record.getReadName(), readDataPointer)).second == false) {
-            Logger::gLogger -> error("The fragment %s has already been read.", record.getReadName());
-            return;
+    ReadData* readData = &(ireturn.first->second);
+
+    // Mark this record's data in the fragment record if this is the first
+    // entry or if it is a duplicate and the old record is not paired and 
+    // the new record is paired or the has a higher quality.
+    if((ireturn.second == true) ||
+       ((readData->paired == false) && 
+        (recordPaired || (sumBaseQual > readData->sumBaseQual))))
+    {
+        // If there was a previous record, mark it duplicate and release
+        // the old record
+        if(ireturn.second == false)
+        {
+            myDupList.push_back(readData->recordIndex);
+            mySamPool.releaseRecord(readData->recordPtr);
         }
-        fragmentMap[key].push_back(readDataPointer);
+        // Update the stored info to be for this record.
+        readData->sumBaseQual = sumBaseQual;
+        readData->recordIndex = recordCount;
+        readData->paired = recordPaired;
+        if(recordPaired)
+        {
+            readData->recordPtr = NULL;
+        }
+        else
+        {
+            readData->recordPtr = &record;
+        }
+    }
+    else
+    {
+        // The old record is not a duplicate so the new record is
+        // a duplicate if it is not paired.
+        if(recordPaired == false)
+        {
+            // Mark this one as duplicate.
+            myDupList.push_back(recordCount);
+            // Release this record since it isn't needed anymore.
+            mySamPool.releaseRecord(&record);
+            }
+    }
+
+    // Only paired processing is left, so return if not paired.
+    if(recordPaired == false)
+    {
+        // Not paired, no more operations required, so return.
+        return;
+    }
+    
+    // This is a paired record, so check for its mate.
+    uint64_t readPos = 
+        SamHelper::combineChromPos(record.getReferenceID(),
+                                   record.get0BasedPosition());
+    uint64_t matePos =
+        SamHelper::combineChromPos(record.getMateReferenceID(), 
+                                   record.get0BasedMatePosition());
+    SamRecord* mateRecord = NULL;
+    int mateIndex = 0;
+    
+    // Check to see if the mate is prior to this record.
+    if(matePos <= readPos)
+    {
+        // The mate map is stored by the mate position, so look for this 
+        // record's position.
+        // The mate should be in the mate map, so find it.
+        std::pair<MateMap::iterator,MateMap::iterator> matches =
+            myMateMap.equal_range(readPos);
+        // Loop through the elements that matched the pos looking for the mate.
+        for(MateMap::iterator iter = matches.first; 
+            iter != matches.second; iter++)
+        {
+            if(strcmp((*iter).second.recordPtr->getReadName(), 
+                      record.getReadName()) == 0)
+            {
+                // Found the match.
+                ReadData* mateData = &((*iter).second);
+                // Update the quality and track the mate record and index.
+                sumBaseQual += mateData->sumBaseQual;
+                mateIndex = mateData->recordIndex;
+                mateRecord = mateData->recordPtr;
+                // Remove the entry from the map.
+                myMateMap.erase(iter);
+                break;
+            }
+        }
+    }
+    if((mateRecord == NULL) && (matePos >= readPos))
+    {
+        // Haven't gotten to the mate yet, so store this record.
+        MateMap::iterator mateIter = 
+            myMateMap.insert(std::make_pair(matePos, ReadData()));
+        mateIter->second.sumBaseQual = sumBaseQual;
+        mateIter->second.recordPtr = &record;
+        mateIter->second.recordIndex = recordCount;
+        // No more processing for this record is necessary.
         return;
     }
 
-    // We have a paired end read with its mate mapped
-    readDataPointer -> paired = true;
-
-    // Let's determine if we have already seen the mate
-    StringToReadDataPointerMapIterator earlierRead = readDataMap.find(record.getReadName());
-
-    if(earlierRead == readDataMap.end()) { // We haven't seen this read before
-        firstPair++;
-        // put this in fragmentMap, record that we've seen it, and move on to the next record
-        fragmentMap[key].push_back(readDataPointer);
-        readDataMap.insert( std::pair <std::string, ReadData*> (record.getReadName(), readDataPointer));
+    if(mateRecord == NULL)
+    {
+        // Passed the mate, but it was not found.  This is an error.
+        // TODO - handle duplicate marking for Mates on differ chrom!!!
+//         std::cerr << "Could not find mate match for record at index: " 
+//                   << recordCount << ", not marking duplicate or modifying"
+//                   << " in any way.\n";
+        // Don't consider this record to be a duplicate.
+        // Release this record since there is nothing more to do with it.
+        mySamPool.releaseRecord(&record);
         return;
     }
 
-    // We have already seen this read's mate
-    foundPair++;
-    ReadData* readData = earlierRead->second;
+    // Make the paired key.
+    PairedKey pkey(key, makeKeyFromRecord(*mateRecord));
 
-    // Update the information in the ReadData structure
-    fragmentMap[key].push_back(readDataPointer);
-    readData -> baseQuality += getBaseQuality(record);
+    // Check to see if this pair is a duplicate.
+    PairedMapInsertReturn pairedReturn = 
+        myPairedMap.insert(std::make_pair(pkey,PairedData()));
+    PairedData* storedPair = &(pairedReturn.first->second);
 
-    if (key < readData -> key1) {
-        readData -> key2 = readData -> key1;
-        readData -> key1 = key;
-        readData -> recordCount2 = readData -> recordCount1;
-        readData -> recordCount1 = recordCount;
-    } else {
-        readData -> key2 = key;
-        readData -> recordCount2 = recordCount;
+    // Check if we have already found a duplicate pair.
+    // If there is no duplicate found, there is nothing more to do.
+    if(pairedReturn.second == false)
+    {
+        // Duplicate found.
+        // Check to see which one should be kept by checking qualities.
+        if(pairedReturn.first->second.sumBaseQual < sumBaseQual)
+        {
+            // The new pair has higher quality, so keep that.
+            // First mark the previous one as duplicates and release them.
+            myDupList.push_back(storedPair->record1Index);
+            myDupList.push_back(storedPair->record2Index);
+            mySamPool.releaseRecord(storedPair->record1Ptr);
+            mySamPool.releaseRecord(storedPair->record2Ptr);
+            // Store this pair's information.
+            storedPair->sumBaseQual = sumBaseQual;
+            storedPair->record1Ptr = &record;
+            storedPair->record2Ptr = mateRecord;
+            storedPair->record1Index = recordCount;
+            storedPair->record2Index = mateIndex;
+        }
+        else
+        {
+            // The old pair had higher quality so mark the new pair as a
+            // duplicate and release them.
+            myDupList.push_back(mateIndex);
+            myDupList.push_back(recordCount);
+            mySamPool.releaseRecord(&record);
+            mySamPool.releaseRecord(mateRecord);
+        }
     }
-
-    // Put the ReadData structure in the paired key map and go to the next record
-    PairedKey pkey(readData -> key1, readData -> key2);
-    pairedMap[pkey].push_back(readData);
-
+    else
+    {
+        // Store this pair's information.
+        storedPair->sumBaseQual = sumBaseQual;
+        storedPair->record1Ptr = &record;
+        storedPair->record2Ptr = mateRecord;
+        storedPair->record1Index = recordCount;
+        storedPair->record2Index = mateIndex;
+    }
 }
 
 

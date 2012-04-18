@@ -22,6 +22,7 @@
 #include <vector>
 #include <set>
 #include <map>
+#include "SamRecordPool.h"
 
 /*---------------------------------------------------------------/
   /
@@ -36,12 +37,61 @@ public:
     void usage();
     int execute(int argc, char **argv);
 
+    Dedup():
+        mySamPool(),
+        lastCoordinate(-1), lastReference(-1), numLibraries(0), 
+        singleDuplicates(0),
+        pairedDuplicates(0),
+        removeFlag(false),
+        forceFlag(false),
+        verboseFlag(false),
+        singleRead(0),
+        firstPair(0),
+        foundPair(0)
+    {}
+
+    ~Dedup();
+
+private:
+    struct ReadData
+    {
+        int sumBaseQual;
+        SamRecord* recordPtr;
+        int recordIndex;
+        bool paired;
+        ReadData()
+            : sumBaseQual(0), recordPtr(NULL), recordIndex(0), paired(false) {}
+    };
+    struct PairedData
+    {
+        int sumBaseQual;
+        SamRecord* record1Ptr;
+        SamRecord* record2Ptr;
+        int record1Index;
+        int record2Index;
+        PairedData()
+            : sumBaseQual(0), record1Ptr(NULL), record2Ptr(NULL),
+              record1Index(0), record2Index(0) {}
+    };
+
     // Each read is assigned a key based on its referenceID, coordinate, orientation, and libraryID
     // This structure stores the two keys in a paired end read.
     struct PairedKey {
         uint64_t key1;
         uint64_t key2;
-        PairedKey(uint64_t k1, uint64_t k2) : key1(k1), key2(k2) {}
+        PairedKey(uint64_t k1, uint64_t k2)
+        {
+            if(k1 <= k2)
+            {
+                key1 = k1;
+                key2 = k2;
+            }
+            else
+            {
+                key1 = k2;
+                key2 = k1;
+            }
+        }
     };
 
     // Paired key comparison operator used for sorting paired end reads.
@@ -53,45 +103,32 @@ public:
         }
     };
 
-    // This structure stores some basic information from either a single read or paired read
-    struct ReadData {
-        int baseQuality;
-        uint64_t key1, key2;
-        uint32_t recordCount1, recordCount2;
-        bool paired;
-        std::string readName;
-        inline int getPairedBaseQuality() {
-            return baseQuality + ( paired ? PAIRED_QUALITY_OFFSET : 0 );
-        }
-    };
-
     // A map from read group IDs to its libraryID
     typedef std::map< std::string, uint32_t, std::less<std::string> > StringToInt32Map;
     StringToInt32Map rgidLibMap;
 
-    // A map from the read name to its read data
-    typedef std::map< std::string, ReadData*, std::less<std::string> > StringToReadDataPointerMap;
-    typedef std::map< std::string, ReadData*, std::less<std::string> >::iterator StringToReadDataPointerMapIterator;
-    StringToReadDataPointerMap readDataMap; // key -> ReadData*
-
-    // A vector of ReadData's
-    typedef std::vector<ReadData*> ReadDataPointerVector;
-    typedef std::vector<ReadData*>::iterator ReadDataPointerVectorIterator;
-
     // A map from the key of a single read to its read data
-    typedef std::map< uint64_t, ReadDataPointerVector, std::less<uint64_t> > SingleKeyToReadDataPointerMap;
-    typedef std::map< uint64_t, ReadDataPointerVector, std::less<uint64_t> >::iterator SingleKeyToReadDataPointerMapIterator;
-    SingleKeyToReadDataPointerMap fragmentMap;
+    typedef std::map< uint64_t, ReadData, std::less<uint64_t> > FragmentMap;
+    typedef std::pair<FragmentMap::iterator,bool> FragmentMapInsertReturn;
+    FragmentMap myFragmentMap;
+
+    // Map for storing reads until the mate is found.
+    typedef std::multimap<uint64_t, ReadData> MateMap;
+    typedef std::pair<MateMap::iterator,bool> MateMapInsertReturn;
+    MateMap myMateMap;
 
     // A map from the key of a paired read to its read data
-    typedef std::map< PairedKey, ReadDataPointerVector, PairedKeyComparator > PairedKeyToReadDataPointerMap;
-    typedef std::map< PairedKey, ReadDataPointerVector, PairedKeyComparator >::iterator PairedKeyToReadDataPointerMapIterator;
-    PairedKeyToReadDataPointerMap pairedMap;
+    typedef std::map<PairedKey, PairedData, PairedKeyComparator> PairedMap;
+    typedef std::pair<PairedMap::iterator,bool> PairedMapInsertReturn;
+    PairedMap myPairedMap;
 
     // Stores the record counts of duplicates reads
     typedef std::vector< uint32_t > Int32Vector;
     typedef std::vector< uint32_t >::iterator Int32VectorIterator;
-    Int32Vector duplicateIndices;
+    Int32Vector myDupList;
+
+    // Pool of sam records.
+    SamRecordPool mySamPool;
 
     int lastCoordinate;
     int lastReference;
@@ -108,11 +145,9 @@ public:
     static const int LOOK_BACK;
 
     // phased out
-    int unmapped;
     int singleRead;
     int firstPair;
     int foundPair;
-    int properPair;
 
     // builds the read group library map
     void buildReadGroupLibraryMap(SamFileHeader& header);
@@ -141,18 +176,6 @@ public:
     // Same as above, but it uses record's referenceID and coordinate
     void markDuplicatesBefore(uint32_t referenceID, uint32_t coordinate);
 
-public:
-    Dedup(): lastCoordinate(-1), lastReference(-1), numLibraries(0), 
-             singleDuplicates(0),
-             pairedDuplicates(0),
-             removeFlag(false),
-             forceFlag(false),
-             verboseFlag(false),
-             unmapped(0),
-             singleRead(0),
-             firstPair(0),
-             foundPair(0),
-             properPair(0) {}
 };
 
 #endif // __DE_DUP_H
