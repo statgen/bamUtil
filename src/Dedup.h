@@ -152,8 +152,9 @@ private:
     // builds the read group library map
     void buildReadGroupLibraryMap(SamFileHeader& header);
 
-    // When a record is read, we put it into the appropriate maps
-    void placeRecordInMaps(SamRecord & record, uint32_t recordCount);
+    // When a record is read, check if it is a duplicate or
+    // store for future checking.
+    void checkDups(SamRecord & record, uint32_t recordCount);
 
     // Returns the libraryID of a record
     uint32_t getLibraryID(SamRecord& record, bool checkTags = false);
@@ -170,11 +171,12 @@ private:
     // Determines if the current position has changed when we read record
     bool hasPositionChanged(SamRecord & record);
 
-    // Once record is read, look back at previous reads and determine duplicates
-    void markDuplicatesBefore(SamRecord & record);
+    // Once record is read, look back at previous reads and determine 
+    // if any no longer need to be kept for duplicate checking.
+    void cleanupPriorReads(SamRecord & record);
 
     // Same as above, but it uses record's referenceID and coordinate
-    void markDuplicatesBefore(uint32_t referenceID, uint32_t coordinate);
+    void cleanupPriorReads(uint32_t referenceID, uint32_t coordinate);
 
 };
 

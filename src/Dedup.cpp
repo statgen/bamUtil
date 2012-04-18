@@ -237,7 +237,7 @@ int Dedup::execute(int argc, char** argv)
         // if we have moved to a new position, look back at previous reads for duplicates
         if (hasPositionChanged(*recordPtr))
         {
-            markDuplicatesBefore(*recordPtr);
+            cleanupPriorReads(*recordPtr);
         }
 
         // Deduping is only for mapped reads.
@@ -249,7 +249,7 @@ int Dedup::execute(int argc, char** argv)
         }
         else
         {
-            placeRecordInMaps(*recordPtr, recordCount);
+            checkDups(*recordPtr, recordCount);
         }
         // let the user know we're not napping
         if (verboseFlag && (recordCount % 100000 == 0))
@@ -262,7 +262,7 @@ int Dedup::execute(int argc, char** argv)
     }
 
     // we're finished reading record so clean up the duplicate search and close the input file
-    markDuplicatesBefore(Dedup::MAX_REF_ID, 0);
+    cleanupPriorReads(Dedup::MAX_REF_ID, 0);
     samIn.Close();
 
     // print some statistics
@@ -369,7 +369,7 @@ int Dedup::execute(int argc, char** argv)
 
 // Now that we've reached coordinate on chromosome reference, look back and
 // clean up any previous positions from being tracked.
-void Dedup::markDuplicatesBefore(uint32_t reference, uint32_t coordinate)
+void Dedup::cleanupPriorReads(uint32_t reference, uint32_t coordinate)
 {
     // Find the key corresponding to the current position
     // We will first search through single reads up to this position
@@ -434,13 +434,13 @@ void Dedup::markDuplicatesBefore(uint32_t reference, uint32_t coordinate)
 }
 
 // Look at reads before this record and determine duplicates
-void Dedup::markDuplicatesBefore(SamRecord& record) {
+void Dedup::cleanupPriorReads(SamRecord& record) {
     uint32_t coordinate = record.get0BasedPosition();
     uint32_t lookBackCoordinate = coordinate - LOOK_BACK;
     if (lookBackCoordinate < 0) {
         lookBackCoordinate = 0;
     }
-    return markDuplicatesBefore(record.getReferenceID(), lookBackCoordinate);
+    return cleanupPriorReads(record.getReferenceID(), lookBackCoordinate);
 }
 
 // determine whether the position of record is different from the previous record
@@ -456,8 +456,9 @@ bool Dedup::hasPositionChanged(SamRecord& record)
     return false;
 }
 
-// when record is read, we will put it into the appropriate maps
-void Dedup::placeRecordInMaps(SamRecord& record, uint32_t recordCount)
+// When a record is read, check if it is a duplicate or
+// store for future checking.
+void Dedup::checkDups(SamRecord& record, uint32_t recordCount)
 {
     // Only inside this method if the record is mapped.
 
