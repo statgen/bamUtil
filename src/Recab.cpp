@@ -43,7 +43,6 @@
 #define BASEQC_VERSION "0.31"
 #define PROCREAD 0
 #define PROCWRITE 1
-#define MAXITERATION 10000
 #define READSEPARATORS ":_"
 
 void Recab::recabDescription()
@@ -60,7 +59,7 @@ void Recab::description()
 
 void Recab::usage()
 {
-    std::cerr << "Usage: Recab (options) --i <InputBamFile> --o <OutputFile>\n" << std::endl;
+    std::cerr << "Usage: ./bam recab (options) --i <InputBamFile> --o <OutputFile>\n" << std::endl;
     std::cerr << "Required parameters :" << std::endl;
     std::cerr << "--i [infile]  : input BAM file name" << std::endl;
     std::cerr << "--o [outfile] : output recalibration file name" << std::endl;
@@ -184,7 +183,7 @@ bool Recab::processRead(SamRecord& samRecord,int processtype, Recab::quality_t& 
     uint16_t  flag = samRecord.getFlag();
 
     //reverse
-    if(flag & 0x0010)
+    if(SamFlag::isReverse(flag))
         reverse = true;
     else
         reverse = false;
@@ -200,7 +199,6 @@ bool Recab::processRead(SamRecord& samRecord,int processtype, Recab::quality_t& 
     if(qField.empty())
     {
         quality_strings.oldq = samRecord.getQuality();
-        //printf("empty\n");
     }
     else
     {
@@ -362,18 +360,13 @@ int Recab::execute(int argc, char *argv[])
 
     bool oldQualityFlag = false;
     bool verboseFlag = false;
-    bool maxReadFlag = false;
     bool rewriteBam = true;
     int blendedWeight = 0;
-
-    uint64_t skip = 0;
-    uint64_t maxi = 0;
 
     std::string refFile,dbSNPFile,inFile,outFile,logFile,recabFile;
 
     SamFile samIn,samOut;
     Recab recab;
-
 
     //commandline arguments 
     int arg;
@@ -486,35 +479,40 @@ int Recab::execute(int argc, char *argv[])
     bool ok = true;
     Recab::quality_t quality_strings;
 
-    while ((samIn.ReadRecord(samHeader, samRecord) == true) && (!maxReadFlag || maxi<MAXITERATION))
+    int numRecs = 0;
+    while(samIn.ReadRecord(samHeader, samRecord) == true)
     {
-        //skip records
-        if(maxi>=skip)
+        uint16_t  flag = samRecord.getFlag();
+        // Skip Duplicates and 0 mapping quality.
+        if(SamFlag::isDuplicate(flag))
         {
-            uint16_t  flag = samRecord.getFlag();
-            if(flag & 0x0400) continue; // duplicates
-            if(samRecord.getMapQuality() == 0) continue; // 0 Quality reads
-            if(flag & 0x0004)   // unmapped reads
-            {
-                recab.unMappedCount++;
-                continue;
-            }
-            else
-            {
-                recab.mappedCount++;
-            }
-
-            // quality>0 mapped
-            recab.mappedCountQ++;
-            ok = recab.processRead(samRecord,PROCREAD, quality_strings);
+            continue;
         }
+        if(!SamFlag::isMapped(flag))
+        {
+            // Unmapped, skip processing, but increment unmapped count.
+            recab.unMappedCount++;
+            continue;
+        }
+        // This read is not a duplicate and is mapped.
+        recab.mappedCount++;
+        if(samRecord.getMapQuality() == 0)
+        {
+            // 0 mapping quality, so skip processing.
+            continue;
+        }
+        
+        // quality>0 & mapped.
+        recab.mappedCountQ++;
+        ok = recab.processRead(samRecord,PROCREAD, quality_strings);
+
         //Status info
+        numRecs++;
         if(verboseFlag)
         {
-            if(maxi%10000000==0)
-                Logger::gLogger->writeLog("%ld records processed", maxi);
+            if(numRecs%10000000==0)
+                Logger::gLogger->writeLog("%ld records processed", numRecs);
         }
-        maxi++;
     }
 
     now = time(0);
@@ -554,16 +552,14 @@ int Recab::execute(int argc, char *argv[])
         samOut.OpenForWrite(outFile.c_str());
         samIn.ReadHeader(samHeader);
         samOut.WriteHeader(samHeader);
-        maxi = 0;
 
-        while ((samIn.ReadRecord(samHeader, samRecord) == true) && (!maxReadFlag || maxi<MAXITERATION))
+        while(samIn.ReadRecord(samHeader, samRecord) == true)
         {
-            maxi++;
             ////////////
             uint16_t  flag = samRecord.getFlag();
-            if (flag & 0x0400) continue; // duplicates
+            if (SamFlag::isDuplicate(flag)) continue; // duplicates
             if(samRecord.getMapQuality() == 0) continue; // 0 Quality reads
-            if(flag & 0x0004) continue;   // unmapped reads
+            if(!SamFlag::isMapped(flag)) continue;   // unmapped reads
             
             if(recab.processRead(samRecord,PROCWRITE,quality_strings))
             {
