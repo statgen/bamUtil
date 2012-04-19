@@ -41,7 +41,7 @@
 #include "PolishBam.h"
 #include "GapInfo.h"
 #include "Dedup.h"
-#include "ReCab.h"
+#include "Recab.h"
 
 void Usage()
 {
@@ -63,7 +63,7 @@ void Usage()
     RGMergeBam::rgMergeBamDescription();
     PolishBam::polishBamDescription();
     Dedup::dedupDescription();
-    ReCab::recabDescription();
+    Recab::recabDescription();
 
     std::cerr << "\nInformational Tools\n";
     Validate::validateDescription();
@@ -187,7 +187,7 @@ int main(int argc, char ** argv)
     }
     else if(strcmp(argv[1], "recab") == 0)
     {
-        bamExe = new ReCab();
+        bamExe = new Recab();
     }
     else if(strcmp(argv[1], "convert") == 0)
     {
