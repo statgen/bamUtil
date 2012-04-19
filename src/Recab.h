@@ -40,7 +40,7 @@
 #include "BaseAsciiMap.h"
 #include "BamExecutable.h"
 
-class ReCab : public BamExecutable
+class Recab : public BamExecutable
 {
 public:
     static void recabDescription();
@@ -74,8 +74,8 @@ public:
     HashErrorModel hasherrormodel;
     Prediction prediction;
 
-    ReCab();
-    ~ReCab();
+    Recab();
+    ~Recab();
     // conversion table
     static int nt2idx2[256];
     static void conversionTable();

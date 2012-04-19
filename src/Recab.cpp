@@ -25,7 +25,7 @@
 #include <math.h>
 //
 #include "Error.h"
-#include "ReCab.h"
+#include "Recab.h"
 #include "Logger.h"
 #include "Parameters.h"
 #include "SimpleStats.h"
@@ -46,21 +46,21 @@
 #define MAXITERATION 10000
 #define READSEPARATORS ":_"
 
-void ReCab::recabDescription()
+void Recab::recabDescription()
 {
     std::cerr << " recab - Recalibrate\n";
 }
 
 
-void ReCab::description()
+void Recab::description()
 {
     recabDescription();
 }
 
 
-void ReCab::usage()
+void Recab::usage()
 {
-    std::cerr << "Usage: ReCab (options) --i <InputBamFile> --o <OutputFile>\n" << std::endl;
+    std::cerr << "Usage: Recab (options) --i <InputBamFile> --o <OutputFile>\n" << std::endl;
     std::cerr << "Required parameters :" << std::endl;
     std::cerr << "--i [infile]  : input BAM file name" << std::endl;
     std::cerr << "--o [outfile] : output recalibration file name" << std::endl;
@@ -76,7 +76,7 @@ void ReCab::usage()
     std::cerr << "\n" << std::endl;
 }
 
-ReCab::ReCab()
+Recab::Recab()
     : myBaseAsciiMap()
 {
     basecounts=0;
@@ -88,11 +88,11 @@ ReCab::ReCab()
     BMappedCount =0;
 }
 
-ReCab::~ReCab(){
+Recab::~Recab(){
 
 }
 
-int ReCab::nt2idx(char c) {
+int Recab::nt2idx(char c) {
     switch(toupper(c)){
         case 'A': return(0);
         case 'C': return(1);
@@ -103,7 +103,7 @@ int ReCab::nt2idx(char c) {
     }
 }
 
-char ReCab::complement(char c)
+char Recab::complement(char c)
 {
     switch(toupper(c)){
         case 'A': return('T');
@@ -114,15 +114,15 @@ char ReCab::complement(char c)
     }
 }
 
-int ReCab::nt2idx2[256];
+int Recab::nt2idx2[256];
 
-void ReCab::conversionTable(){
+void Recab::conversionTable(){
     for(int i=0; i<256; i++) 
         nt2idx2[i] = nt2idx(i);
 }
 
 // from Hyun
-uint32_t ReCab::addTokenizedStrings(const std::string& str, const std::string& delimiters, std::vector<std::string>& tokens)
+uint32_t Recab::addTokenizedStrings(const std::string& str, const std::string& delimiters, std::vector<std::string>& tokens)
 {
     std::string::size_type delimPos = 0, tokenPos = 0, pos = 0;
     uint32_t numAddedTokens = 0;
@@ -166,7 +166,7 @@ uint32_t ReCab::addTokenizedStrings(const std::string& str, const std::string& d
 }
 
 
-bool ReCab::processRead(SamRecord& samRecord,int processtype, ReCab::quality_t& quality_strings){
+bool Recab::processRead(SamRecord& samRecord,int processtype, Recab::quality_t& quality_strings){
     int offset = 0;
     int offset2 = 0;
     int cycleIdx = 0;
@@ -354,7 +354,7 @@ bool ReCab::processRead(SamRecord& samRecord,int processtype, ReCab::quality_t& 
 }
 
 
-int ReCab::execute(int argc, char *argv[])
+int Recab::execute(int argc, char *argv[])
 {
     // Shift arguments due to format being ./bam recab and then the args.
     ++argv;
@@ -372,7 +372,7 @@ int ReCab::execute(int argc, char *argv[])
     std::string refFile,dbSNPFile,inFile,outFile,logFile,recabFile;
 
     SamFile samIn,samOut;
-    ReCab recab;
+    Recab recab;
 
 
     //commandline arguments 
@@ -484,7 +484,7 @@ int ReCab::execute(int argc, char *argv[])
 
     srand (time(NULL));
     bool ok = true;
-    ReCab::quality_t quality_strings;
+    Recab::quality_t quality_strings;
 
     while ((samIn.ReadRecord(samHeader, samRecord) == true) && (!maxReadFlag || maxi<MAXITERATION))
     {
