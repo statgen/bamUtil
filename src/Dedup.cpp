@@ -27,6 +27,7 @@
 #include "SamHelper.h"
 #include "SamFlag.h"
 #include "SamStatus.h"
+#include "BgzfFileType.h"
 
 const uint32_t Dedup::CLIP_OFFSET = 1000L;
 const uint64_t Dedup::UNMAPPED_SINGLE_KEY = 0xffffffffffffffffULL;
@@ -79,89 +80,93 @@ void Dedup::description()
 }
 
 
-void Dedup::usage() {
-    std::cerr << "Usage: dedup (options) --in=<InputBamFile> --out=<OutputBamFile>\n" << std::endl;
+void Dedup::usage()
+{
+    std::cerr << "Usage: ./bam dedup (options) --in <InputBamFile> --out <OutputBamFile>\n" << std::endl;
     std::cerr << "Required parameters :" << std::endl;
-    std::cerr << "-i/--in [infile]  : input BAM file name (must be sorted)" << std::endl;
-    std::cerr << "-o/--out [outfile] : output BAM file name (same order with original file)" << std::endl;
+    std::cerr << "--in [infile]  : input BAM file name (must be sorted)" << std::endl;
+    std::cerr << "--out [outfile] : output BAM file name (same order with original file)" << std::endl;
     std::cerr << "Optional parameters : (see SAM format specification for details)" << std::endl;
-    std::cerr << "-l/--log [logfile] : log and summary statistics (default: [outfile].log)" << std::endl;
-    std::cerr << "-r/--rm  : Remove duplicates (default is to mark duplicates)" << std::endl;
-    std::cerr << "-f/--force-unmark  : Allow mark-duplicated BAM file and force unmarking the duplicates" << std::endl;
-    std::cerr << "                     Default is to throw errors when trying to run a mark-duplicated BAM" << std::endl;
-    std::cerr << "-v/--verbose  : Turn on verbose mode" << std::endl;
+    std::cerr << "--log [logfile] : log and summary statistics (default: [outfile].log)" << std::endl;
+    std::cerr << "--recab         : Recalibrate in addition to deduping" << std::endl;
+    std::cerr << "--rmDups        : Remove duplicates (default is to mark duplicates)" << std::endl;
+    std::cerr << "--force         : Allow mark-duplicated BAM file and force unmarking the duplicates" << std::endl;
+    std::cerr << "                  Default is to throw errors when trying to run a mark-duplicated BAM" << std::endl;
+    std::cerr << "--verbose       : Turn on verbose mode" << std::endl;
     std::cerr << "\n" << std::endl;
 }
 
 int Dedup::execute(int argc, char** argv) 
 {
-    // Shift arguments due to format being ./bam dedup and then the args.
-    ++argv;
-    --argc;
-
     /* --------------------------------
      * process the arguments
      * -------------------------------*/
-    std::string inFile, outFile, logFile;
+    if(myRecab != NULL)
+    {
+        delete myRecab;
+        myRecab = NULL;
+    }
+
+    String inFile, outFile, logFile;
+    bool recab = false;
     bool removeFlag = false;
     bool verboseFlag = false;
     bool forceFlag = false;
-    char c;
-    int optionIndex = 0;
+    bool noeof = false;
+    bool params = false;
     
-    static struct option getoptLongOptions[] = 
-        {
-            { "in", required_argument, NULL, 'i' },
-            { "out", required_argument, NULL, 'o' },
-            { "rm", no_argument, NULL, 'r' },
-            { "log", no_argument, NULL, 'l' },
-            { "force-unmark", no_argument, NULL, 'c' },
-            { "verbose", no_argument, NULL, 'v' },
-            { NULL, 0, NULL, 0 },
-        };
-  
-    while ( ( c = getopt_long(argc, argv, "i:o:rvl:csf", getoptLongOptions, &optionIndex) ) != -1 ) {
-        switch(c) {
-            case 'i':
-                inFile = optarg;
-                break;
-            case 'o':
-                outFile = optarg;
-                break;
-            case 'r':
-                removeFlag = true;
-                break;
-            case 'v':
-                verboseFlag = true;
-                break;
-            case 'l':
-                logFile = optarg;
-                break;
-            case 'f':
-                forceFlag = true;
-                break;
-            default:
-                usage();
-                std::cerr << "Illegal switch: " << c << std::endl;
-                abort();
-        }
+    ParameterList inputParameters;
+    BEGIN_LONG_PARAMETERS(longParameterList)
+        LONG_PARAMETER_GROUP("Required Parameters")
+        LONG_STRINGPARAMETER("in", &inFile)
+        LONG_STRINGPARAMETER("out", &outFile)
+        LONG_PARAMETER_GROUP("Optional Parameters")
+        LONG_STRINGPARAMETER("log", &logFile)
+        LONG_PARAMETER("recab", &recab)
+        LONG_PARAMETER("rmDups", &removeFlag)
+        LONG_PARAMETER("force", &forceFlag)
+        LONG_PARAMETER("verbose", &verboseFlag)
+        LONG_PARAMETER("noeof", &noeof)
+        LONG_PARAMETER("params", &params)
+        END_LONG_PARAMETERS();
+
+    inputParameters.Add(new LongParameters ("Input Parameters", 
+                                            longParameterList));
+    
+    inputParameters.Read(argc-1, &(argv[1]));
+    
+    // If no eof block is required for a bgzf file, set the bgzf file type to 
+    // not look for it.
+    if(noeof)
+    {
+        // Set that the eof block is not required.
+        BgzfFileType::setRequireEofBlock(false);
     }
 
-    if (inFile.empty()) {
+    if(inFile.IsEmpty())
+    {
         usage();
         std::cerr << "Specify an input file" << std::endl;
         abort();
     }
 
-    if (outFile.empty()) {
+    if(outFile.IsEmpty())
+    {
         usage();
         std::cerr << "Specify an output file" << std::endl;
         abort();
     }
 
-    if (logFile.empty() ) {
+    if(logFile.IsEmpty())
+    {
         logFile = outFile + ".log";
     }
+    
+    if(params)
+    {
+        inputParameters.Status();
+    }
+    
     Logger::gLogger = new Logger(logFile.c_str(), verboseFlag);
 
     /* -------------------------------------------------------------------
@@ -244,7 +249,8 @@ int Dedup::execute(int argc, char** argv)
         if(!SamFlag::isMapped(flag))
         {
             ++unmappedCount;
-            // Release the pointer.
+            // Unmapped, nothing more to do with this record, so
+            // release the pointer.
             mySamPool.releaseRecord(recordPtr);
         }
         else
@@ -381,10 +387,11 @@ void Dedup::cleanupPriorReads(uint32_t reference, uint32_t coordinate)
     for(FragmentMap::iterator iter = myFragmentMap.begin(); 
         iter != fragmentFinish; iter++)
     {
-        // If it is not paired, release the record.
+        // If it is not paired, we are done with this record.
         if(!iter->second.paired)
         {
-            mySamPool.releaseRecord(iter->second.recordPtr);
+            // Unpaired, non-duplicate, so perform any additional handling.
+            handleNonDuplicate(iter->second.recordPtr);
         }
     }
     // Erase the entries from the map.
@@ -400,9 +407,10 @@ void Dedup::cleanupPriorReads(uint32_t reference, uint32_t coordinate)
         iter != pairedFinish; iter++)
     {
         PairedData* pairedData = &(iter->second);
-        // These are not duplicates, but we are done with them, so release them.
-        mySamPool.releaseRecord(pairedData->record1Ptr);
-        mySamPool.releaseRecord(pairedData->record2Ptr);
+        // These are not duplicates, but we are done with them, 
+        // so perform any additional handling.
+        handleNonDuplicate(pairedData->record1Ptr);
+        handleNonDuplicate(pairedData->record2Ptr);
     }
     // Erase the entries.
     if (pairedFinish != myPairedMap.begin())
@@ -422,8 +430,8 @@ void Dedup::cleanupPriorReads(uint32_t reference, uint32_t coordinate)
         {
             break;
         }
-        // Remove the record since we have passed its mate's position.
-        mySamPool.releaseRecord(mateIter->second.recordPtr);
+        // Free up the record since we have passed its mate's position.
+        handleNonDuplicate(mateIter->second.recordPtr);
     }
     // Erase the entries.
     if(mateIter != myMateMap.begin())
@@ -485,11 +493,11 @@ void Dedup::checkDups(SamRecord& record, uint32_t recordCount)
         // the old record
         if(ireturn.second == false)
         {
-            // DUPLICATE!
+            // Mark the old record as a DUPLICATE!
             myDupList.push_back(readData->recordIndex);
             mySamPool.releaseRecord(readData->recordPtr);
         }
-        // Update the stored info to be for this record.
+        // Store this record for later duplicate checking.
         readData->sumBaseQual = sumBaseQual;
         readData->recordIndex = recordCount;
         readData->paired = recordPaired;
@@ -508,10 +516,8 @@ void Dedup::checkDups(SamRecord& record, uint32_t recordCount)
         // a duplicate if it is not paired.
         if(recordPaired == false)
         {
-            // DUPLICATE!
-            // Mark this one as duplicate.
+            // This record is a duplicate, so mark it and release it.
             myDupList.push_back(recordCount);
-            // Release this record since it isn't needed anymore.
             mySamPool.releaseRecord(&record);
             }
     }
@@ -763,4 +769,22 @@ uint32_t Dedup::getLibraryID(SamRecord& record, bool checkTags) {
             }
         }
     }
+}
+
+
+void Dedup::handleNonDuplicate(SamRecord* recordPtr)
+{
+    if(recordPtr == NULL)
+    {
+        return;
+    }
+
+    if(myRecab != NULL)
+    {
+        // Add to recalibration matrix.
+        //TODO  myRecab->addToHashModel(*recordPtr);
+    }
+
+    // Release the record.
+    mySamPool.releaseRecord(recordPtr);
 }

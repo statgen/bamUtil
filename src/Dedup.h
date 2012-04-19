@@ -23,6 +23,7 @@
 #include <set>
 #include <map>
 #include "SamRecordPool.h"
+#include "Recab.h"
 
 /*---------------------------------------------------------------/
   /
@@ -38,6 +39,7 @@ public:
     int execute(int argc, char **argv);
 
     Dedup():
+        myRecab(NULL),
         mySamPool(),
         lastCoordinate(-1), lastReference(-1), numLibraries(0), 
         singleDuplicates(0),
@@ -127,6 +129,9 @@ private:
     typedef std::vector< uint32_t >::iterator Int32VectorIterator;
     Int32Vector myDupList;
 
+    // Pointer to Recalibrator if applicable.
+    Recab* myRecab;
+
     // Pool of sam records.
     SamRecordPool mySamPool;
 
@@ -178,6 +183,11 @@ private:
 
     // Returns the libraryID of a record
     uint32_t getLibraryID(SamRecord& record, bool checkTags = false);
+
+    // Handle records that are not to be marked duplicates.
+    // Performs any additional processing the first time through the file.
+    void handleNonDuplicate(SamRecord* recordPtr);
+
 };
 
 #endif // __DE_DUP_H
