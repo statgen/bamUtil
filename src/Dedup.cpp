@@ -485,6 +485,7 @@ void Dedup::checkDups(SamRecord& record, uint32_t recordCount)
         // the old record
         if(ireturn.second == false)
         {
+            // DUPLICATE!
             myDupList.push_back(readData->recordIndex);
             mySamPool.releaseRecord(readData->recordPtr);
         }
@@ -507,6 +508,7 @@ void Dedup::checkDups(SamRecord& record, uint32_t recordCount)
         // a duplicate if it is not paired.
         if(recordPaired == false)
         {
+            // DUPLICATE!
             // Mark this one as duplicate.
             myDupList.push_back(recordCount);
             // Release this record since it isn't needed anymore.
@@ -579,6 +581,8 @@ void Dedup::checkDups(SamRecord& record, uint32_t recordCount)
 //                   << " in any way.\n";
         // Don't consider this record to be a duplicate.
         // Release this record since there is nothing more to do with it.
+        // TODO - include for recalibration?!?!
+
         mySamPool.releaseRecord(&record);
         return;
     }
@@ -646,20 +650,27 @@ int Dedup::getBaseQuality(SamRecord & record) {
     return quality;
 }
 
+
 // makes a key from the chromosome number, coordinate, orientation, and libraryID
 //   single reads with equal keys are duplicates
-uint64_t Dedup::makeKey(uint32_t referenceID, uint32_t coordinate, bool orientation, uint32_t libraryID) {
-    return ( (0xffff000000000000 & ( static_cast<uint64_t>(referenceID) << 48))  |
-             (0x0000ffffffff0000 & ( static_cast<uint64_t>(coordinate + CLIP_OFFSET) << 16)) |
-             (0x000000000000ff00 & ( static_cast<uint64_t>(orientation) << 8)) |
-             (0x00000000000000ff & ( static_cast<uint64_t>(libraryID))));
+uint64_t Dedup::makeKey(uint32_t referenceID, uint32_t coordinate,
+                        bool orientation, uint32_t libraryID) {
+    return ( (0xffff000000000000 & 
+              (static_cast<uint64_t>(referenceID) << 48))  |
+             (0x0000ffffffff0000 & 
+              (static_cast<uint64_t>(coordinate + CLIP_OFFSET) << 16)) |
+             (0x000000000000ff00 & 
+              (static_cast<uint64_t>(orientation) << 8)) |
+             (0x00000000000000ff & (static_cast<uint64_t>(libraryID))) );
 }
+
 
 // extract the relevant information from the key and make the record
 uint64_t Dedup::makeKeyFromRecord(SamRecord& record) {
     int32_t referenceID = record.getReferenceID();
     bool orientation = (record.getFlag() & 0x0010) > 0;
-    int32_t coordinate = orientation ? record.get0BasedUnclippedEnd() : record.get0BasedUnclippedStart();
+    int32_t coordinate = orientation ? 
+        record.get0BasedUnclippedEnd() : record.get0BasedUnclippedStart();
     if ( ( referenceID < 0 ) || ( coordinate + CLIP_OFFSET < 0 ) ) {
         Logger::gLogger->error("Dedup::makeKeyFromRecord(record) - refID or coordinate is negative. refID = %d, coordinate = %d",
                                referenceID, coordinate + CLIP_OFFSET);
@@ -667,6 +678,7 @@ uint64_t Dedup::makeKeyFromRecord(SamRecord& record) {
     }
     return makeKey(referenceID, coordinate, orientation, getLibraryID(record));
 }
+
 
 // build the read group library map
 void Dedup::buildReadGroupLibraryMap(SamFileHeader& header) {

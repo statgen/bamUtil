@@ -149,28 +149,6 @@ private:
     int firstPair;
     int foundPair;
 
-    // builds the read group library map
-    void buildReadGroupLibraryMap(SamFileHeader& header);
-
-    // When a record is read, check if it is a duplicate or
-    // store for future checking.
-    void checkDups(SamRecord & record, uint32_t recordCount);
-
-    // Returns the libraryID of a record
-    uint32_t getLibraryID(SamRecord& record, bool checkTags = false);
-
-    // Add the base qualities in a read
-    int getBaseQuality(SamRecord& record);
-
-    // Returns the key constructed from those four pieces of information
-    uint64_t makeKey(uint32_t reference, uint32_t coordinate, bool orientation, uint32_t libraryID);
-
-    // Returns the key constructed from a record
-    uint64_t makeKeyFromRecord(SamRecord & record);
-
-    // Determines if the current position has changed when we read record
-    bool hasPositionChanged(SamRecord & record);
-
     // Once record is read, look back at previous reads and determine 
     // if any no longer need to be kept for duplicate checking.
     void cleanupPriorReads(SamRecord & record);
@@ -178,6 +156,28 @@ private:
     // Same as above, but it uses record's referenceID and coordinate
     void cleanupPriorReads(uint32_t referenceID, uint32_t coordinate);
 
+    // Determines if the current position has changed when we read record
+    bool hasPositionChanged(SamRecord & record);
+    
+    // When a record is read, check if it is a duplicate or
+    // store for future checking.
+    void checkDups(SamRecord & record, uint32_t recordCount);
+
+    // Add the base qualities in a read
+    int getBaseQuality(SamRecord& record);
+
+    // Returns the key constructed from those four pieces of information
+    uint64_t makeKey(uint32_t reference, uint32_t coordinate, 
+                     bool orientation, uint32_t libraryID);
+
+    // Returns the key constructed from a record
+    uint64_t makeKeyFromRecord(SamRecord & record);
+
+     // builds the read group library map
+    void buildReadGroupLibraryMap(SamFileHeader& header);
+
+    // Returns the libraryID of a record
+    uint32_t getLibraryID(SamRecord& record, bool checkTags = false);
 };
 
 #endif // __DE_DUP_H
