@@ -43,49 +43,46 @@
 class Recab : public BamExecutable
 {
 public:
+    Recab();
+    ~Recab();
+
     static void recabDescription();
     void description();
     void usage();
     int execute(int argc, char **argv);
 
+private:
     // quality String
     typedef struct {
         std::string oldq;
         std::string newq;
     } quality_t;
 
+    // conversion table
+    static void conversionTable();
+    static int nt2idx(char c);
+    static int nt2idx2[256];
+
+    inline bool processRead(SamRecord& record,int processtype,quality_t& quality_strings);
+
     //quality fields
     std::string qField;
-
 
     //stats
     uint64_t basecounts;
     uint64_t mappedCount;
     uint64_t unMappedCount;
     uint64_t mappedCountQ;
-
     uint64_t BunMappedCount;
     uint64_t BMappedCount;
+    uint64_t zeroMapQualCount;
 
-    uint64_t  zeroMapQualCount;
-
-    GenomeSequence referenceGenome;
+    GenomeSequence myReferenceGenome;
     mmapArrayBool_t dbSNP;
     HashErrorModel hasherrormodel;
     Prediction prediction;
 
-    Recab();
-    ~Recab();
-    // conversion table
-    static int nt2idx2[256];
-    static void conversionTable();
-    static int nt2idx(char c);
-    static char complement(char c);
-    inline bool processRead(SamRecord& record,int processtype,quality_t& quality_strings);
-    static uint32_t addTokenizedStrings(const std::string& str, const std::string& delimiters, std::vector<std::string>& tokens);
 
-private:
-    BaseAsciiMap myBaseAsciiMap;
 };
 
 #endif

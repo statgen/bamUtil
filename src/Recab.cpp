@@ -45,6 +45,8 @@
 #define PROCWRITE 1
 #define READSEPARATORS ":_"
 
+int Recab::nt2idx2[256];
+
 void Recab::recabDescription()
 {
     std::cerr << " recab - Recalibrate\n";
@@ -76,7 +78,6 @@ void Recab::usage()
 }
 
 Recab::Recab()
-    : myBaseAsciiMap()
 {
     basecounts=0;
     mappedCount = 0;
@@ -87,12 +88,240 @@ Recab::Recab()
     BMappedCount =0;
 }
 
-Recab::~Recab(){
-
+Recab::~Recab()
+{
 }
 
-int Recab::nt2idx(char c) {
-    switch(toupper(c)){
+int Recab::execute(int argc, char *argv[])
+{
+    Recab::conversionTable();
+
+    // Shift arguments due to format being ./bam recab and then the args.
+    ++argv;
+    --argc;
+
+    bool oldQualityFlag = false;
+    bool verboseFlag = false;
+    bool rewriteBam = true;
+    int blendedWeight = 0;
+
+    std::string refFile,dbSNPFile,inFile,outFile,logFile,recabFile;
+
+    SamFile samIn,samOut;
+
+    //commandline arguments 
+    int arg;
+    while((arg = getopt(argc, argv, "i:o:vr:s:l:b:q:")) != -1)
+    {
+        switch(arg)
+        {
+            case 'i':
+                inFile = optarg;
+                break;
+            case 'o':
+                outFile = optarg;
+                break;
+            case 'r':
+                refFile = optarg;
+                break;
+            case 's':
+                dbSNPFile = optarg;
+                break;
+            case 'l':
+                logFile = optarg;
+                break;
+            case 'q':
+                qField = optarg;
+                break;
+            case 'b':
+                blendedWeight = atoi(optarg);
+                break;
+            case 'v':
+                verboseFlag = true;
+                break;
+            default:
+                return EXIT_FAILURE;
+        }
+    }
+
+    if (inFile.empty() || outFile.empty() || refFile.empty())
+    {
+        usage();
+        std::cerr << "Missing parameters" << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    if ( logFile.empty() )
+    {
+        logFile = outFile + ".log";
+    }
+    Logger::gLogger = new Logger(logFile.c_str(), verboseFlag);
+  
+    if ( optind < argc )
+    {
+        usage();
+        Logger::gLogger->error("Argument with no option");
+    }
+
+    recabFile = outFile + ".recab";
+
+    ////////////////////////////////////////////
+    Logger::gLogger->writeLog("Open reference");
+
+    myReferenceGenome.setReferenceName(refFile.c_str());
+    myReferenceGenome.useMemoryMap();
+    if (myReferenceGenome.open())
+    {
+        Logger::gLogger->error("Failed to open reference file.");
+        return EXIT_FAILURE;
+    }
+
+    Logger::gLogger->writeLog("Done! Sequence length %u", myReferenceGenome.sequenceLength());
+    //dbSNP
+    bool dbSnpFlag = true;
+    if (dbSNPFile == "")
+    {
+        dbSnpFlag = false;
+        Logger::gLogger->writeLog("Ignore dbSNPFile");
+    }
+    if(myReferenceGenome.loadDBSNP(dbSNP,dbSNPFile.c_str() ))
+    {
+    	Logger::gLogger->error("Failed to open dbSNP file.");
+    }
+
+    ////////////////
+    //////  Errormodel
+    Logger::gLogger->writeLog("Initialize errormodel structure...");
+
+    ////////////////////////////////////////
+    // SAM/BAM file open
+    ////////////////////////////////////////
+    ////////////////////////////////////////
+
+    // Iterate SAM records
+    if(!samIn.OpenForRead(inFile.c_str()))
+    {
+        Logger::gLogger->error("Failed to open SAM/BAM file %s",inFile.c_str() );
+        return EXIT_FAILURE;
+    }
+
+    Logger::gLogger->writeLog("Start iterating SAM/BAM file %s",inFile.c_str());
+
+    time_t now = time(0);
+    tm* localtm = localtime(&now);
+
+    Logger::gLogger->writeLog("Start: %s", asctime(localtm));
+    SamRecord samRecord;
+    SamFileHeader samHeader;
+    samIn.ReadHeader(samHeader);
+
+    srand (time(NULL));
+    bool ok = true;
+    quality_t quality_strings;
+
+    int numRecs = 0;
+    while(samIn.ReadRecord(samHeader, samRecord) == true)
+    {
+        uint16_t  flag = samRecord.getFlag();
+        // Skip Duplicates and 0 mapping quality.
+        if(SamFlag::isDuplicate(flag))
+        {
+            continue;
+        }
+        if(!SamFlag::isMapped(flag))
+        {
+            // Unmapped, skip processing, but increment unmapped count.
+            unMappedCount++;
+            continue;
+        }
+        // This read is not a duplicate and is mapped.
+        mappedCount++;
+        if(samRecord.getMapQuality() == 0)
+        {
+            // 0 mapping quality, so skip processing.
+            continue;
+        }
+        
+        // quality>0 & mapped.
+        mappedCountQ++;
+        ok = processRead(samRecord,PROCREAD, quality_strings);
+
+        //Status info
+        numRecs++;
+        if(verboseFlag)
+        {
+            if(numRecs%10000000==0)
+                Logger::gLogger->writeLog("%ld records processed", numRecs);
+        }
+    }
+
+    now = time(0);
+    localtm = localtime(&now);
+    Logger::gLogger->writeLog("End: %s", asctime(localtm));
+    Logger::gLogger->writeLog("# mapped Reads observed: %ld Q>0: %ld",mappedCount,mappedCountQ);
+    Logger::gLogger->writeLog("# unmapped Reads observed: %ld",unMappedCount);
+    Logger::gLogger->writeLog("# Bases observed: %ld / ZeroQ: %ld - %ld %ld",basecounts,zeroMapQualCount,
+                              BMappedCount,BunMappedCount);
+
+    ////////////////////////
+    ////////////////////////
+    //// Model fitting + prediction
+    prediction.setErrorModel(&(hasherrormodel));
+
+    Logger::gLogger->writeLog("Start model fitting!");
+    std::string modelfile = outFile + ".model";
+    if(prediction.fitModel(true,modelfile))
+        prediction.outModel();
+    else
+        Logger::gLogger->error("Could not fit model!");
+
+    hasherrormodel.addPrediction(prediction.getModel(),blendedWeight);
+
+    Logger::gLogger->writeLog("Writing recalibration table %s",outFile.c_str());
+    if(!(hasherrormodel.writeAllTableMM(recabFile.c_str())))
+        Logger::gLogger->error("Writing errormodel not possible!");
+
+    Logger::gLogger->writeLog("Writing recalibrated file %s",outFile.c_str());
+
+    ////////////////////////
+    ////////////////////////
+    //// Write file
+    if(rewriteBam)
+    {
+        samIn.OpenForRead(inFile.c_str());
+        samOut.OpenForWrite(outFile.c_str());
+        samIn.ReadHeader(samHeader);
+        samOut.WriteHeader(samHeader);
+
+        while(samIn.ReadRecord(samHeader, samRecord) == true)
+        {
+            ////////////
+            uint16_t  flag = samRecord.getFlag();
+            if (SamFlag::isDuplicate(flag)) continue; // duplicates
+            if(samRecord.getMapQuality() == 0) continue; // 0 Quality reads
+            if(!SamFlag::isMapped(flag)) continue;   // unmapped reads
+            
+            if(processRead(samRecord,PROCWRITE,quality_strings))
+            {
+                //Logger::gLogger->writeLog("O: %s",quality_strings.oldq.c_str());
+                //Logger::gLogger->writeLog("R: %s",quality_strings.newq.c_str());
+                //Logger::gLogger->writeLog("---------------------");
+                if(oldQualityFlag)
+                    samRecord.addTag("QQ",'Z',quality_strings.oldq.c_str());
+                samRecord.setQuality(quality_strings.newq.c_str());
+                samOut.WriteRecord(samHeader, samRecord);
+            }
+        }
+    }
+    Logger::gLogger->writeLog("Recalibration successfully finished");
+    return EXIT_SUCCESS;
+}
+
+
+int Recab::nt2idx(char c)
+{
+    switch(toupper(c))
+    {
         case 'A': return(0);
         case 'C': return(1);
         case 'G': return(2);
@@ -102,70 +331,16 @@ int Recab::nt2idx(char c) {
     }
 }
 
-char Recab::complement(char c)
+void Recab::conversionTable()
 {
-    switch(toupper(c)){
-        case 'A': return('T');
-        case 'C': return('G');
-        case 'G': return('C');
-        case 'T': return('A');
-        default:  return(toupper(c));
-    }
-}
-
-int Recab::nt2idx2[256];
-
-void Recab::conversionTable(){
     for(int i=0; i<256; i++) 
         nt2idx2[i] = nt2idx(i);
 }
 
-// from Hyun
-uint32_t Recab::addTokenizedStrings(const std::string& str, const std::string& delimiters, std::vector<std::string>& tokens)
+
+bool Recab::processRead(SamRecord& samRecord,int processtype,
+                        Recab::quality_t& quality_strings)
 {
-    std::string::size_type delimPos = 0, tokenPos = 0, pos = 0;
-    uint32_t numAddedTokens = 0;
-
-    if( str.length() < 1 )  return 0;
-
-    while( true ){
-        delimPos = str.find_first_of(delimiters, pos);
-        tokenPos = str.find_first_not_of(delimiters, pos);
-
-        if(std::string::npos != delimPos){
-            if(std::string::npos != tokenPos){
-                if( tokenPos < delimPos ) {
-                    tokens.push_back(str.substr(pos,delimPos-pos));
-                    ++numAddedTokens;
-                }
-                else {
-                    tokens.push_back("");
-                    ++numAddedTokens;
-                }
-            }
-            else {
-                tokens.push_back("");
-                ++numAddedTokens;
-            }
-            pos = delimPos+1;
-        }
-        else {
-            if( std::string::npos != tokenPos ){
-                tokens.push_back(str.substr(pos));
-                ++numAddedTokens;
-            }
-            else {
-                tokens.push_back("");
-                ++numAddedTokens;
-            }
-            break;
-        }
-    }
-    return numAddedTokens;
-}
-
-
-bool Recab::processRead(SamRecord& samRecord,int processtype, Recab::quality_t& quality_strings){
     int offset = 0;
     int offset2 = 0;
     int cycleIdx = 0;
@@ -188,7 +363,7 @@ bool Recab::processRead(SamRecord& samRecord,int processtype, Recab::quality_t& 
     else
         reverse = false;
 
-    genomeIndex_t mapPos = referenceGenome.getGenomePosition(chromosomeName.c_str(), samRecord.get1BasedPosition());
+    genomeIndex_t mapPos = myReferenceGenome.getGenomePosition(chromosomeName.c_str(), samRecord.get1BasedPosition());
 
     if(mapPos==INVALID_GENOME_INDEX)
     {
@@ -219,18 +394,9 @@ bool Recab::processRead(SamRecord& samRecord,int processtype, Recab::quality_t& 
 
     quality_strings.newq = samRecord.getQuality();
 
-    //get tile information
-    uint16_t tile;
-    if(false){
-        std::string readName = samRecord.getReadName();
-        std::vector<std::string> readNameFields;
-        std::string delimiters = ":_";
-        addTokenizedStrings(readName, delimiters, readNameFields);
-        // try
-        tile = atoi(readNameFields[2].c_str());
-    }
-    else
-    	tile = 0;
+    // TODO : get tile information
+    uint16_t tile = 0;
+
     ////////////////
     ////// iterate sequence
     ////////////////
@@ -259,14 +425,14 @@ bool Recab::processRead(SamRecord& samRecord,int processtype, Recab::quality_t& 
             continue;
         }
         
-        refBase = referenceGenome[refpos];
+        refBase = myReferenceGenome[refpos];
         readBase = samRecord.getSequence(seqpos);
         
         if(reverse ==true)
         {
             cycleIdx = nSeq-seqpos-1;
-            refBase = complement(refBase);
-            readBase = complement(readBase);
+            refBase = BaseAsciiMap::base2complement[(unsigned int)refBase];
+            readBase = BaseAsciiMap::base2complement[(unsigned int)readBase];
         }
         else
         {
@@ -323,8 +489,8 @@ bool Recab::processRead(SamRecord& samRecord,int processtype, Recab::quality_t& 
             {
                 // reverse, so complement the bases.  If they were not set,
                 // the default value will be complemented.
-                prebase= complement(prebase);
-                nexbase = complement(nexbase);
+                prebase = BaseAsciiMap::base2complement[(unsigned int)prebase];
+                nexbase = BaseAsciiMap::base2complement[(unsigned int)nexbase];
             }
         }
 
@@ -333,7 +499,8 @@ bool Recab::processRead(SamRecord& samRecord,int processtype, Recab::quality_t& 
         //read
         if(processtype==PROCREAD)
         {
-            basecv.init(readGroup,cqual,cycleIdx,tile,cread,cprebase,cnexbase,cobs,cobs,cref);
+            basecv.init(readGroup,cqual,cycleIdx,tile,cread,cprebase,cnexbase,
+                        cobs,cobs,cref);
             hasherrormodel.setCell(basecv);
             basecounts++;
         }
@@ -352,227 +519,3 @@ bool Recab::processRead(SamRecord& samRecord,int processtype, Recab::quality_t& 
 }
 
 
-int Recab::execute(int argc, char *argv[])
-{
-    // Shift arguments due to format being ./bam recab and then the args.
-    ++argv;
-    --argc;
-
-    bool oldQualityFlag = false;
-    bool verboseFlag = false;
-    bool rewriteBam = true;
-    int blendedWeight = 0;
-
-    std::string refFile,dbSNPFile,inFile,outFile,logFile,recabFile;
-
-    SamFile samIn,samOut;
-    Recab recab;
-
-    //commandline arguments 
-    int arg;
-    while((arg = getopt(argc, argv, "i:o:vr:s:l:b:q:")) != -1)
-    {
-        switch(arg)
-        {
-            case 'i':
-                inFile = optarg;
-                break;
-            case 'o':
-                outFile = optarg;
-                break;
-            case 'r':
-                refFile = optarg;
-                break;
-            case 's':
-                dbSNPFile = optarg;
-                break;
-            case 'l':
-                logFile = optarg;
-                break;
-            case 'q':
-                recab.qField = optarg;
-                break;
-            case 'b':
-                blendedWeight = atoi(optarg);
-                break;
-            case 'v':
-                verboseFlag = true;
-                break;
-            default:
-                return EXIT_FAILURE;
-        }
-    }
-
-    if (inFile.empty() || outFile.empty() || refFile.empty())
-    {
-        usage();
-        std::cerr << "Missing parameters" << std::endl;
-        return EXIT_FAILURE;
-    }
-
-    if ( logFile.empty() )
-    {
-        logFile = outFile + ".log";
-    }
-    Logger::gLogger = new Logger(logFile.c_str(), verboseFlag);
-  
-    if ( optind < argc )
-    {
-        usage();
-        Logger::gLogger->error("Argument with no option");
-    }
-
-    recab.conversionTable();
-    recabFile = outFile + ".recab";
-
-    ////////////////////////////////////////////
-    Logger::gLogger->writeLog("Open reference");
-
-    recab.referenceGenome.setReferenceName(refFile.c_str());
-    recab.referenceGenome.useMemoryMap();
-    if (recab.referenceGenome.open())
-    {
-        Logger::gLogger->error("Failed to open reference file.");
-        return EXIT_FAILURE;
-    }
-
-    Logger::gLogger->writeLog("Done! Sequence length %u", recab.referenceGenome.sequenceLength());
-    //dbSNP
-    bool dbSnpFlag = true;
-    if (dbSNPFile == "")
-    {
-        dbSnpFlag = false;
-        Logger::gLogger->writeLog("Ignore dbSNPFile");
-    }
-    if(recab.referenceGenome.loadDBSNP(recab.dbSNP,dbSNPFile.c_str() ))
-    {
-    	Logger::gLogger->error("Failed to open dbSNP file.");
-    }
-
-    ////////////////
-    //////  Errormodel
-    Logger::gLogger->writeLog("Initialize errormodel structure...");
-
-    ////////////////////////////////////////
-    // SAM/BAM file open
-    ////////////////////////////////////////
-    ////////////////////////////////////////
-
-    // Iterate SAM records
-    if(!samIn.OpenForRead(inFile.c_str()))
-    {
-        Logger::gLogger->error("Failed to open SAM/BAM file %s",inFile.c_str() );
-        return EXIT_FAILURE;
-    }
-
-    Logger::gLogger->writeLog("Start iterating SAM/BAM file %s",inFile.c_str());
-
-    time_t now = time(0);
-    tm* localtm = localtime(&now);
-
-    Logger::gLogger->writeLog("Start: %s", asctime(localtm));
-    SamRecord samRecord;
-    SamFileHeader samHeader;
-    samIn.ReadHeader(samHeader);
-
-    srand (time(NULL));
-    bool ok = true;
-    Recab::quality_t quality_strings;
-
-    int numRecs = 0;
-    while(samIn.ReadRecord(samHeader, samRecord) == true)
-    {
-        uint16_t  flag = samRecord.getFlag();
-        // Skip Duplicates and 0 mapping quality.
-        if(SamFlag::isDuplicate(flag))
-        {
-            continue;
-        }
-        if(!SamFlag::isMapped(flag))
-        {
-            // Unmapped, skip processing, but increment unmapped count.
-            recab.unMappedCount++;
-            continue;
-        }
-        // This read is not a duplicate and is mapped.
-        recab.mappedCount++;
-        if(samRecord.getMapQuality() == 0)
-        {
-            // 0 mapping quality, so skip processing.
-            continue;
-        }
-        
-        // quality>0 & mapped.
-        recab.mappedCountQ++;
-        ok = recab.processRead(samRecord,PROCREAD, quality_strings);
-
-        //Status info
-        numRecs++;
-        if(verboseFlag)
-        {
-            if(numRecs%10000000==0)
-                Logger::gLogger->writeLog("%ld records processed", numRecs);
-        }
-    }
-
-    now = time(0);
-    localtm = localtime(&now);
-    Logger::gLogger->writeLog("End: %s", asctime(localtm));
-    Logger::gLogger->writeLog("# mapped Reads observed: %ld Q>0: %ld",recab.mappedCount,recab.mappedCountQ);
-    Logger::gLogger->writeLog("# unmapped Reads observed: %ld",recab.unMappedCount);
-    Logger::gLogger->writeLog("# Bases observed: %ld / ZeroQ: %ld - %ld %ld",recab.basecounts,recab.zeroMapQualCount,
-                              recab.BMappedCount,recab.BunMappedCount);
-
-    ////////////////////////
-    ////////////////////////
-    //// Model fitting + prediction
-    recab.prediction.setErrorModel(&(recab.hasherrormodel));
-
-    Logger::gLogger->writeLog("Start model fitting!");
-    std::string modelfile = outFile + ".model";
-    if(recab.prediction.fitModel(true,modelfile))
-        recab.prediction.outModel();
-    else
-        Logger::gLogger->error("Could not fit model!");
-
-    recab.hasherrormodel.addPrediction(recab.prediction.getModel(),blendedWeight);
-
-    Logger::gLogger->writeLog("Writing recalibration table %s",outFile.c_str());
-    if(!(recab.hasherrormodel.writeAllTableMM(recabFile.c_str())))
-        Logger::gLogger->error("Writing errormodel not possible!");
-
-    Logger::gLogger->writeLog("Writing recalibrated file %s",outFile.c_str());
-
-    ////////////////////////
-    ////////////////////////
-    //// Write file
-    if(rewriteBam)
-    {
-        samIn.OpenForRead(inFile.c_str());
-        samOut.OpenForWrite(outFile.c_str());
-        samIn.ReadHeader(samHeader);
-        samOut.WriteHeader(samHeader);
-
-        while(samIn.ReadRecord(samHeader, samRecord) == true)
-        {
-            ////////////
-            uint16_t  flag = samRecord.getFlag();
-            if (SamFlag::isDuplicate(flag)) continue; // duplicates
-            if(samRecord.getMapQuality() == 0) continue; // 0 Quality reads
-            if(!SamFlag::isMapped(flag)) continue;   // unmapped reads
-            
-            if(recab.processRead(samRecord,PROCWRITE,quality_strings))
-            {
-                //Logger::gLogger->writeLog("O: %s",quality_strings.oldq.c_str());
-                //Logger::gLogger->writeLog("R: %s",quality_strings.newq.c_str());
-                //Logger::gLogger->writeLog("---------------------");
-                if(oldQualityFlag)
-                    samRecord.addTag("QQ",'Z',quality_strings.oldq.c_str());
-                samRecord.setQuality(quality_strings.newq.c_str());
-                samOut.WriteRecord(samHeader, samRecord);
-            }
-        }
-    }
-    Logger::gLogger->writeLog("Recalibration successfully finished");
-    return EXIT_SUCCESS;
-}
