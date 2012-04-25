@@ -39,14 +39,13 @@ public:
     int execute(int argc, char **argv);
 
     Dedup():
-        myRecab(NULL),
+        myRecab(),
+        myDoRecab(false),
         mySamPool(),
         lastCoordinate(-1), lastReference(-1), numLibraries(0), 
         singleDuplicates(0),
         pairedDuplicates(0),
-        removeFlag(false),
-        forceFlag(false),
-        verboseFlag(false),
+        myForceFlag(false),
         singleRead(0),
         firstPair(0),
         foundPair(0)
@@ -129,9 +128,10 @@ private:
     typedef std::vector< uint32_t >::iterator Int32VectorIterator;
     Int32Vector myDupList;
 
-    // Pointer to Recalibrator if applicable.
-    Recab* myRecab;
-
+    // Recalibrator logic.
+    Recab myRecab;
+    bool myDoRecab;
+    
     // Pool of sam records.
     SamRecordPool mySamPool;
 
@@ -139,7 +139,7 @@ private:
     int lastReference;
     uint32_t numLibraries;
     uint32_t singleDuplicates, pairedDuplicates;
-    bool removeFlag, forceFlag, verboseFlag;
+    bool myForceFlag;
 
     static const uint32_t CLIP_OFFSET;
     static const uint64_t UNMAPPED_SINGLE_KEY;
@@ -187,7 +187,6 @@ private:
     // Handle records that are not to be marked duplicates.
     // Performs any additional processing the first time through the file.
     void handleNonDuplicate(SamRecord* recordPtr);
-
 };
 
 #endif // __DE_DUP_H

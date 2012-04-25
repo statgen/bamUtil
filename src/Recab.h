@@ -49,7 +49,18 @@ public:
     static void recabDescription();
     void description();
     void usage();
+    void recabSpecificUsage();
     int execute(int argc, char **argv);
+
+    enum PROC_TYPE {
+        ANALYZE,
+        UPDATE
+    };
+
+    bool processRead(SamRecord& record, PROC_TYPE processtype);
+    void modelFitPrediction(const char* outputBase);
+
+    void addRecabSpecificParameters(LongParamContainer& params);
 
 private:
     // quality String
@@ -63,25 +74,32 @@ private:
     static int nt2idx(char c);
     static int nt2idx2[256];
 
-    inline bool processRead(SamRecord& record,int processtype,quality_t& quality_strings);
+    void processParams();
 
-    //quality fields
-    std::string qField;
+    // So external programs can read recab parameters.
+    bool myParamsSetup;
+    String myRefFile;
+    String myDbsnpFile;
+    String myQField;  // Quality TAG
+    int myBlendedWeight;
 
     //stats
-    uint64_t basecounts;
-    uint64_t mappedCount;
-    uint64_t unMappedCount;
-    uint64_t mappedCountQ;
-    uint64_t BunMappedCount;
-    uint64_t BMappedCount;
-    uint64_t zeroMapQualCount;
+    uint64_t myBasecounts;
+    uint64_t myMappedCount;
+    uint64_t myUnMappedCount;
+    uint64_t myMappedCountQ;
+    uint64_t myBunMappedCount;
+    uint64_t myBMappedCount;
+    uint64_t myZeroMapQualCount;
 
-    GenomeSequence myReferenceGenome;
-    mmapArrayBool_t dbSNP;
+    GenomeSequence* myReferenceGenome;
+    mmapArrayBool_t myDbSNP;
     HashErrorModel hasherrormodel;
     Prediction prediction;
 
+    // Make this member data so it reuses the string structures everytime
+    // rather than constructing new ones every time.
+    quality_t myQualityStrings;
 
 };
 

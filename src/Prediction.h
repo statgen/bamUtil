@@ -46,11 +46,11 @@ class Prediction {
    Prediction(HashErrorModel *phasherrormodel);
    Prediction();
    ~Prediction();
-   int fitModel(bool writeModelFlag,std::string  filename);
+   int fitModel(bool writeModelFlag, std::string& filename);
    void outModel();
    void setErrorModel(HashErrorModel *phasherrormodel);
    std::vector<double> getModel();
-   int writeLogRegdata(std::string filename);
+   int writeLogRegdata(std::string& filename);
 };
 
 #endif

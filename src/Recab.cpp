@@ -31,6 +31,7 @@
 #include "SimpleStats.h"
 #include "BaseUtilities.h"
 #include "SamFlag.h"
+#include "BgzfFileType.h"
 
 // STL headers
 #include <map>
@@ -40,12 +41,30 @@
 #include <vector>
 #include <set>
 
-#define BASEQC_VERSION "0.31"
-#define PROCREAD 0
-#define PROCWRITE 1
-#define READSEPARATORS ":_"
-
 int Recab::nt2idx2[256];
+
+Recab::Recab()
+    : myParamsSetup(false),
+      myRefFile(""),
+      myDbsnpFile(""),
+      myQField("")
+{
+    myBasecounts = 0;
+    myMappedCount = 0;
+    myUnMappedCount = 0;
+    myMappedCountQ = 0;
+    myZeroMapQualCount = 0;
+    myBunMappedCount = 0;
+    myBMappedCount = 0;
+
+    Recab::conversionTable();
+}
+
+
+Recab::~Recab()
+{
+}
+
 
 void Recab::recabDescription()
 {
@@ -61,133 +80,87 @@ void Recab::description()
 
 void Recab::usage()
 {
-    std::cerr << "Usage: ./bam recab (options) --i <InputBamFile> --o <OutputFile>\n" << std::endl;
-    std::cerr << "Required parameters :" << std::endl;
-    std::cerr << "--i [infile]  : input BAM file name" << std::endl;
-    std::cerr << "--o [outfile] : output recalibration file name" << std::endl;
-    std::cerr << "--r [reference file]" << std::endl;
-    std::cerr << "Optional parameters : " << std::endl;
-    std::cerr << "--s [known variance file]" << std::endl;
-    std::cerr << "--l [logfile] : log and summary statistics (default: [outfile].log)" << std::endl;
-    std::cerr << "--v : Turn on verbose mode" << std::endl;
-    std::cerr << "--first [n] : First n reads are processed" << std::endl;
-    std::cerr << "--b [weight]: blended model weight" << std::endl;
-    std::cerr << "\n" << std::endl;
-    std::cerr << "version: " << BASEQC_VERSION << std::endl;
+    std::cerr << "Usage: ./bam recab (options) --in <InputBamFile> --out <OutputFile> --refFile <ReferenceFile>\n" << std::endl;
+    std::cerr << "Required General Parameters :" << std::endl;
+    std::cerr << "\t--in [infile]   : input BAM file name" << std::endl;
+    std::cerr << "\t--out [outfile] : output recalibration file name" << std::endl;
+    std::cerr << "Optional General Parameters : " << std::endl;
+    std::cerr << "\t--log [logfile] : log and summary statistics (default: [outfile].log)" << std::endl;
+    std::cerr << "\t--verbose       : Turn on verbose mode" << std::endl;
+    std::cerr << "\t--noeof         : do not expect an EOF block on a bam file." << std::endl;
+    std::cerr << "\t--params        : print the parameter settings" << std::endl;
+   recabSpecificUsage();
     std::cerr << "\n" << std::endl;
 }
 
-Recab::Recab()
+
+void Recab::recabSpecificUsage()
 {
-    basecounts=0;
-    mappedCount = 0;
-    unMappedCount = 0;
-    mappedCountQ = 0;
-    zeroMapQualCount = 0;
-    BunMappedCount =0;
-    BMappedCount =0;
+    std::cerr << "\nRecab Specific Required Parameters\n";
+    std::cerr << "\t--refFile [reference file]    : reference file name" << std::endl;
+    std::cerr << "Recab Specific Optional Parameters : " << std::endl;
+    std::cerr << "\t--dbsnp [known variance file] : dbsnp file of positions" << std::endl;
+    std::cerr << "\t--blended [weight]            : blended model weight" << std::endl;
 }
 
-Recab::~Recab()
-{
-}
 
 int Recab::execute(int argc, char *argv[])
 {
-    Recab::conversionTable();
-
-    // Shift arguments due to format being ./bam recab and then the args.
-    ++argv;
-    --argc;
-
-    bool oldQualityFlag = false;
     bool verboseFlag = false;
-    bool rewriteBam = true;
-    int blendedWeight = 0;
 
-    std::string refFile,dbSNPFile,inFile,outFile,logFile,recabFile;
+    String inFile,outFile,logFile;
+
+    bool noeof = false;
+    bool params = false;
 
     SamFile samIn,samOut;
 
-    //commandline arguments 
-    int arg;
-    while((arg = getopt(argc, argv, "i:o:vr:s:l:b:q:")) != -1)
+    ParameterList inputParameters;
+
+    LongParamContainer parameters;
+
+    parameters.addGroup("Required Generic Parameters");
+    parameters.addString("in", &inFile);
+    parameters.addString("out", &outFile);
+    parameters.addGroup("Optional Generic Parameters");
+    parameters.addString("log", &logFile);
+    parameters.addBool("verbose", &verboseFlag);
+    parameters.addBool("noeof", &noeof);
+    parameters.addBool("params", &params);
+    addRecabSpecificParameters(parameters);
+
+    inputParameters.Add(new LongParameters ("Input Parameters", 
+                                            parameters.getLongParameterList()));
+    
+    inputParameters.Read(argc-1, &(argv[1]));
+    
+    // If no eof block is required for a bgzf file, set the bgzf file type to 
+    // not look for it.
+    if(noeof)
     {
-        switch(arg)
-        {
-            case 'i':
-                inFile = optarg;
-                break;
-            case 'o':
-                outFile = optarg;
-                break;
-            case 'r':
-                refFile = optarg;
-                break;
-            case 's':
-                dbSNPFile = optarg;
-                break;
-            case 'l':
-                logFile = optarg;
-                break;
-            case 'q':
-                qField = optarg;
-                break;
-            case 'b':
-                blendedWeight = atoi(optarg);
-                break;
-            case 'v':
-                verboseFlag = true;
-                break;
-            default:
-                return EXIT_FAILURE;
-        }
+        // Set that the eof block is not required.
+        BgzfFileType::setRequireEofBlock(false);
     }
 
-    if (inFile.empty() || outFile.empty() || refFile.empty())
+    if (inFile.IsEmpty() || outFile.IsEmpty() || myRefFile.IsEmpty())
     {
         usage();
+        inputParameters.Status();
         std::cerr << "Missing parameters" << std::endl;
         return EXIT_FAILURE;
     }
 
-    if ( logFile.empty() )
+    if ( logFile.IsEmpty() )
     {
         logFile = outFile + ".log";
     }
-    Logger::gLogger = new Logger(logFile.c_str(), verboseFlag);
   
-    if ( optind < argc )
+    if(params)
     {
-        usage();
-        Logger::gLogger->error("Argument with no option");
+        inputParameters.Status();
     }
-
-    recabFile = outFile + ".recab";
-
-    ////////////////////////////////////////////
-    Logger::gLogger->writeLog("Open reference");
-
-    myReferenceGenome.setReferenceName(refFile.c_str());
-    myReferenceGenome.useMemoryMap();
-    if (myReferenceGenome.open())
-    {
-        Logger::gLogger->error("Failed to open reference file.");
-        return EXIT_FAILURE;
-    }
-
-    Logger::gLogger->writeLog("Done! Sequence length %u", myReferenceGenome.sequenceLength());
-    //dbSNP
-    bool dbSnpFlag = true;
-    if (dbSNPFile == "")
-    {
-        dbSnpFlag = false;
-        Logger::gLogger->writeLog("Ignore dbSNPFile");
-    }
-    if(myReferenceGenome.loadDBSNP(dbSNP,dbSNPFile.c_str() ))
-    {
-    	Logger::gLogger->error("Failed to open dbSNP file.");
-    }
+    
+    Logger::gLogger = new Logger(logFile.c_str(), verboseFlag);
 
     ////////////////
     //////  Errormodel
@@ -216,35 +189,11 @@ int Recab::execute(int argc, char *argv[])
     samIn.ReadHeader(samHeader);
 
     srand (time(NULL));
-    bool ok = true;
-    quality_t quality_strings;
 
     int numRecs = 0;
     while(samIn.ReadRecord(samHeader, samRecord) == true)
     {
-        uint16_t  flag = samRecord.getFlag();
-        // Skip Duplicates and 0 mapping quality.
-        if(SamFlag::isDuplicate(flag))
-        {
-            continue;
-        }
-        if(!SamFlag::isMapped(flag))
-        {
-            // Unmapped, skip processing, but increment unmapped count.
-            unMappedCount++;
-            continue;
-        }
-        // This read is not a duplicate and is mapped.
-        mappedCount++;
-        if(samRecord.getMapQuality() == 0)
-        {
-            // 0 mapping quality, so skip processing.
-            continue;
-        }
-        
-        // quality>0 & mapped.
-        mappedCountQ++;
-        ok = processRead(samRecord,PROCREAD, quality_strings);
+        processRead(samRecord, ANALYZE);
 
         //Status info
         numRecs++;
@@ -258,63 +207,52 @@ int Recab::execute(int argc, char *argv[])
     now = time(0);
     localtm = localtime(&now);
     Logger::gLogger->writeLog("End: %s", asctime(localtm));
-    Logger::gLogger->writeLog("# mapped Reads observed: %ld Q>0: %ld",mappedCount,mappedCountQ);
-    Logger::gLogger->writeLog("# unmapped Reads observed: %ld",unMappedCount);
-    Logger::gLogger->writeLog("# Bases observed: %ld / ZeroQ: %ld - %ld %ld",basecounts,zeroMapQualCount,
-                              BMappedCount,BunMappedCount);
 
-    ////////////////////////
-    ////////////////////////
-    //// Model fitting + prediction
-    prediction.setErrorModel(&(hasherrormodel));
-
-    Logger::gLogger->writeLog("Start model fitting!");
-    std::string modelfile = outFile + ".model";
-    if(prediction.fitModel(true,modelfile))
-        prediction.outModel();
-    else
-        Logger::gLogger->error("Could not fit model!");
-
-    hasherrormodel.addPrediction(prediction.getModel(),blendedWeight);
-
-    Logger::gLogger->writeLog("Writing recalibration table %s",outFile.c_str());
-    if(!(hasherrormodel.writeAllTableMM(recabFile.c_str())))
-        Logger::gLogger->error("Writing errormodel not possible!");
+    modelFitPrediction(outFile);
 
     Logger::gLogger->writeLog("Writing recalibrated file %s",outFile.c_str());
 
     ////////////////////////
     ////////////////////////
     //// Write file
-    if(rewriteBam)
+    samIn.OpenForRead(inFile.c_str());
+    samOut.OpenForWrite(outFile.c_str());
+    samIn.ReadHeader(samHeader);
+    samOut.WriteHeader(samHeader);
+    
+    while(samIn.ReadRecord(samHeader, samRecord) == true)
     {
-        samIn.OpenForRead(inFile.c_str());
-        samOut.OpenForWrite(outFile.c_str());
-        samIn.ReadHeader(samHeader);
-        samOut.WriteHeader(samHeader);
-
-        while(samIn.ReadRecord(samHeader, samRecord) == true)
+        ////////////
+        uint16_t  flag = samRecord.getFlag();
+        
+        if((SamFlag::isDuplicate(flag)) ||
+           (samRecord.getMapQuality() == 0) ||
+           (!SamFlag::isMapped(flag)))
         {
-            ////////////
-            uint16_t  flag = samRecord.getFlag();
-            if (SamFlag::isDuplicate(flag)) continue; // duplicates
-            if(samRecord.getMapQuality() == 0) continue; // 0 Quality reads
-            if(!SamFlag::isMapped(flag)) continue;   // unmapped reads
-            
-            if(processRead(samRecord,PROCWRITE,quality_strings))
-            {
-                //Logger::gLogger->writeLog("O: %s",quality_strings.oldq.c_str());
-                //Logger::gLogger->writeLog("R: %s",quality_strings.newq.c_str());
-                //Logger::gLogger->writeLog("---------------------");
-                if(oldQualityFlag)
-                    samRecord.addTag("QQ",'Z',quality_strings.oldq.c_str());
-                samRecord.setQuality(quality_strings.newq.c_str());
-                samOut.WriteRecord(samHeader, samRecord);
-            }
+            // Do nothing.
         }
+        else
+        {
+            // Recalibrate.
+            processRead(samRecord,UPDATE);
+        }
+        samOut.WriteRecord(samHeader, samRecord);
     }
+
     Logger::gLogger->writeLog("Recalibration successfully finished");
     return EXIT_SUCCESS;
+}
+
+
+void Recab::addRecabSpecificParameters(LongParamContainer& params)
+{
+    params.addGroup("Required Recab Parameters");
+    params.addString("refFile", &myRefFile);
+    params.addGroup("Optional Recab Parameters");
+    params.addString("dbsnp", &myDbsnpFile);
+    params.addInt("blended", &myBlendedWeight);
+    // params.addString("qualTag", &myQField);
+    myParamsSetup = false;
 }
 
 
@@ -338,8 +276,7 @@ void Recab::conversionTable()
 }
 
 
-bool Recab::processRead(SamRecord& samRecord,int processtype,
-                        Recab::quality_t& quality_strings)
+bool Recab::processRead(SamRecord& samRecord, PROC_TYPE processtype)
 {
     int offset = 0;
     int offset2 = 0;
@@ -352,10 +289,49 @@ bool Recab::processRead(SamRecord& samRecord,int processtype,
     bool reverse;
     char refBase, readBase, prebase,nexbase;
     baseCV basecv;
+    
+    // Check if the parameters have been processed.
+    if(!myParamsSetup)
+    {
+        // This throws an exception if the reference cannot be setup.
+        processParams();
+    }
+
+    uint16_t  flag = samRecord.getFlag();
+
+    // Skip Duplicates.
+    if(SamFlag::isDuplicate(flag))
+    {
+        return(false);
+    }
+    if(!SamFlag::isMapped(flag))
+    {
+        // Unmapped, skip processing, but increment unmapped count if PROC_WRITE
+        if(processtype == ANALYZE)
+        {
+            myUnMappedCount++;
+        }
+        return(false);
+    }
+    // This read is not a duplicate and is mapped.
+    if(processtype == ANALYZE)
+    {
+        myMappedCount++;
+    }
+    if(samRecord.getMapQuality() == 0)
+    {
+        // 0 mapping quality, so skip processing.
+        return(false);
+    }
+    // quality>0 & mapped.
+    if(processtype == ANALYZE)
+    {
+        myMappedCountQ++;
+    }
+   
     std::string chromosomeName = samRecord.getReferenceName();
     std::string readGroup = samRecord.getString("RG").c_str();
 
-    uint16_t  flag = samRecord.getFlag();
 
     //reverse
     if(SamFlag::isReverse(flag))
@@ -363,7 +339,14 @@ bool Recab::processRead(SamRecord& samRecord,int processtype,
     else
         reverse = false;
 
-    genomeIndex_t mapPos = myReferenceGenome.getGenomePosition(chromosomeName.c_str(), samRecord.get1BasedPosition());
+    if(myReferenceGenome == NULL)
+    {
+        throw std::runtime_error("Failed to setup Reference File.\n");
+    }
+
+    genomeIndex_t mapPos = 
+        myReferenceGenome->getGenomePosition(chromosomeName.c_str(), 
+                                             samRecord.get1BasedPosition());
 
     if(mapPos==INVALID_GENOME_INDEX)
     {
@@ -371,16 +354,16 @@ bool Recab::processRead(SamRecord& samRecord,int processtype,
         return false;
     }
 
-    if(qField.empty())
+    if(myQField.IsEmpty())
     {
-        quality_strings.oldq = samRecord.getQuality();
+        myQualityStrings.oldq = samRecord.getQuality();
     }
     else
     {
-        String temp = samRecord.getString(qField.c_str());
-        quality_strings.oldq = temp.c_str();
+        String temp = samRecord.getString(myQField.c_str());
+        myQualityStrings.oldq = temp.c_str();
         //printf("%s\n",samRecord.getQuality());
-        //printf("%s:%s\n",qField.c_str(),temp.c_str());
+        //printf("%s:%s\n",myQField.c_str(),temp.c_str());
     }
 
     std::string aligTypes = "";
@@ -392,7 +375,7 @@ bool Recab::processRead(SamRecord& samRecord,int processtype,
     }
     cigarPtr->getExpandedString(aligTypes);
 
-    quality_strings.newq = samRecord.getQuality();
+    myQualityStrings.newq = samRecord.getQuality();
 
     // TODO : get tile information
     uint16_t tile = 0;
@@ -420,12 +403,12 @@ bool Recab::processRead(SamRecord& samRecord,int processtype,
         seqpos = i + offset2;
         
         //exclude dbSNP sites
-        if(dbSNP[refpos]==true)
+        if(!(myDbsnpFile.IsEmpty()) && (myDbSNP[refpos]==true))
         {
             continue;
         }
         
-        refBase = myReferenceGenome[refpos];
+        refBase = (*myReferenceGenome)[refpos];
         readBase = samRecord.getSequence(seqpos);
         
         if(reverse ==true)
@@ -441,7 +424,7 @@ bool Recab::processRead(SamRecord& samRecord,int processtype,
 
         // Get quality string
         // Is other field definied?
-        cqual = quality_strings.oldq[seqpos]-33;
+        cqual = myQualityStrings.oldq[seqpos]-33;
 
         // skip bases with quality below <5
         if(cqual<5)
@@ -453,9 +436,9 @@ bool Recab::processRead(SamRecord& samRecord,int processtype,
         cref = nt2idx2[(unsigned int)refBase];
 
         if((cobs==cref) && (cobs<4))
-            BMappedCount++;
+            myBMappedCount++;
         else
-            BunMappedCount++;
+            myBunMappedCount++;
 
         // read
         if(flag & SamFlag::FIRST_READ)
@@ -497,25 +480,89 @@ bool Recab::processRead(SamRecord& samRecord,int processtype,
         cprebase = nt2idx2[(unsigned int)prebase];
         cnexbase = nt2idx2[(unsigned int)nexbase];
         //read
-        if(processtype==PROCREAD)
+        if(processtype==ANALYZE)
         {
             basecv.init(readGroup,cqual,cycleIdx,tile,cread,cprebase,cnexbase,
                         cobs,cobs,cref);
             hasherrormodel.setCell(basecv);
-            basecounts++;
+            myBasecounts++;
         }
         //write
-        if(processtype==PROCWRITE)
+        if(processtype==UPDATE)
         {
+            // TODO - implement old quality flag.
+            bool oldQualityFlag = false;
+
             // Update quality score
             basecv.init(readGroup,cqual,cycleIdx,tile,cread,cprebase,cnexbase,cobs,0,0);
             uint8_t qemp = hasherrormodel.getQemp(basecv);
             //if(qemp>4)
-            quality_strings.newq[seqpos] = qemp+33;
+            myQualityStrings.newq[seqpos] = qemp+33;
             // otherwise keep the old one
+
+            if(oldQualityFlag)
+            {
+                samRecord.addTag("QQ", 'Z', myQualityStrings.oldq.c_str());
+            }
+            samRecord.setQuality(myQualityStrings.newq.c_str());
         }
     }
     return true;
 }
 
 
+void Recab::modelFitPrediction(const char* outputBase)
+{
+    Logger::gLogger->writeLog("# mapped Reads observed: %ld Q>0: %ld",myMappedCount,myMappedCountQ);
+    Logger::gLogger->writeLog("# unmapped Reads observed: %ld",myUnMappedCount);
+    Logger::gLogger->writeLog("# Bases observed: %ld / ZeroQ: %ld - %ld %ld",myBasecounts,myZeroMapQualCount,
+                              myBMappedCount,myBunMappedCount);
+
+    ////////////////////////
+    ////////////////////////
+    //// Model fitting + prediction
+    std::string modelfile = outputBase;
+    modelfile += ".model";
+    std::string recabFile = outputBase;
+    recabFile += ".recab";
+
+    prediction.setErrorModel(&(hasherrormodel));
+
+    Logger::gLogger->writeLog("Start model fitting!");
+    if(prediction.fitModel(true,modelfile))
+        prediction.outModel();
+    else
+        Logger::gLogger->error("Could not fit model!");
+
+    hasherrormodel.addPrediction(prediction.getModel(),myBlendedWeight);
+
+    Logger::gLogger->writeLog("Writing recalibration table %s",recabFile.c_str());
+    if(!(hasherrormodel.writeAllTableMM(recabFile.c_str())))
+        Logger::gLogger->error("Writing errormodel not possible!");
+}
+
+
+void Recab::processParams()
+{
+    if(myReferenceGenome == NULL)
+    {
+        Logger::gLogger->writeLog("Open reference");
+        myReferenceGenome = new GenomeSequence(myRefFile);
+        if(myReferenceGenome == NULL)
+        {
+            throw std::runtime_error("Failed to open Reference File.\n");
+        }
+        Logger::gLogger->writeLog("Done! Sequence length %u",
+                                  myReferenceGenome->sequenceLength());
+        //dbSNP
+        if(myDbsnpFile.IsEmpty())
+        {
+            Logger::gLogger->writeLog("No dbSNPFile File");
+        }
+        else if(myReferenceGenome->loadDBSNP(myDbSNP,myDbsnpFile.c_str() ))
+        {
+            Logger::gLogger->error("Failed to open dbSNP file.");
+        }
+    }
+    myParamsSetup = true;
+}

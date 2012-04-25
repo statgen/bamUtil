@@ -84,15 +84,18 @@ void Dedup::usage()
 {
     std::cerr << "Usage: ./bam dedup (options) --in <InputBamFile> --out <OutputBamFile>\n" << std::endl;
     std::cerr << "Required parameters :" << std::endl;
-    std::cerr << "--in [infile]  : input BAM file name (must be sorted)" << std::endl;
-    std::cerr << "--out [outfile] : output BAM file name (same order with original file)" << std::endl;
+    std::cerr << "\t--in [infile]   : input BAM file name (must be sorted)" << std::endl;
+    std::cerr << "\t--out [outfile] : output BAM file name (same order with original file)" << std::endl;
     std::cerr << "Optional parameters : (see SAM format specification for details)" << std::endl;
-    std::cerr << "--log [logfile] : log and summary statistics (default: [outfile].log)" << std::endl;
-    std::cerr << "--recab         : Recalibrate in addition to deduping" << std::endl;
-    std::cerr << "--rmDups        : Remove duplicates (default is to mark duplicates)" << std::endl;
-    std::cerr << "--force         : Allow mark-duplicated BAM file and force unmarking the duplicates" << std::endl;
-    std::cerr << "                  Default is to throw errors when trying to run a mark-duplicated BAM" << std::endl;
-    std::cerr << "--verbose       : Turn on verbose mode" << std::endl;
+    std::cerr << "\t--log [logfile] : log and summary statistics (default: [outfile].log)" << std::endl;
+    std::cerr << "\t--recab         : Recalibrate in addition to deduping" << std::endl;
+    std::cerr << "\t--rmDups        : Remove duplicates (default is to mark duplicates)" << std::endl;
+    std::cerr << "\t--force         : Allow mark-duplicated BAM file and force unmarking the duplicates" << std::endl;
+    std::cerr << "                    Default is to throw errors when trying to run a mark-duplicated BAM" << std::endl;
+    std::cerr << "\t--verbose       : Turn on verbose mode" << std::endl;
+    std::cerr << "\t--noeof         : do not expect an EOF block on a bam file." << std::endl;
+    std::cerr << "\t--params        : print the parameter settings" << std::endl;
+    myRecab.recabSpecificUsage();
     std::cerr << "\n" << std::endl;
 }
 
@@ -101,37 +104,30 @@ int Dedup::execute(int argc, char** argv)
     /* --------------------------------
      * process the arguments
      * -------------------------------*/
-    if(myRecab != NULL)
-    {
-        delete myRecab;
-        myRecab = NULL;
-    }
-
     String inFile, outFile, logFile;
-    bool recab = false;
+    myDoRecab = false;
     bool removeFlag = false;
     bool verboseFlag = false;
-    bool forceFlag = false;
+    myForceFlag = false;
     bool noeof = false;
     bool params = false;
-    
-    ParameterList inputParameters;
-    BEGIN_LONG_PARAMETERS(longParameterList)
-        LONG_PARAMETER_GROUP("Required Parameters")
-        LONG_STRINGPARAMETER("in", &inFile)
-        LONG_STRINGPARAMETER("out", &outFile)
-        LONG_PARAMETER_GROUP("Optional Parameters")
-        LONG_STRINGPARAMETER("log", &logFile)
-        LONG_PARAMETER("recab", &recab)
-        LONG_PARAMETER("rmDups", &removeFlag)
-        LONG_PARAMETER("force", &forceFlag)
-        LONG_PARAMETER("verbose", &verboseFlag)
-        LONG_PARAMETER("noeof", &noeof)
-        LONG_PARAMETER("params", &params)
-        END_LONG_PARAMETERS();
+    LongParamContainer parameters;
+    parameters.addGroup("Required Parameters");
+    parameters.addString("in", &inFile);
+    parameters.addString("out", &outFile);
+    parameters.addGroup("Optional Parameters");
+    parameters.addString("log", &logFile);
+    parameters.addBool("recab", &myDoRecab);
+    parameters.addBool("rmDups", &removeFlag);
+    parameters.addBool("force", &myForceFlag);
+    parameters.addBool("verbose", &verboseFlag);
+    parameters.addBool("noeof", &noeof);
+    parameters.addBool("params", &params);
+    myRecab.addRecabSpecificParameters(parameters);
 
+    ParameterList inputParameters;
     inputParameters.Add(new LongParameters ("Input Parameters", 
-                                            longParameterList));
+                                            parameters.getLongParameterList()));
     
     inputParameters.Read(argc-1, &(argv[1]));
     
@@ -146,6 +142,7 @@ int Dedup::execute(int argc, char** argv)
     if(inFile.IsEmpty())
     {
         usage();
+        inputParameters.Status();
         std::cerr << "Specify an input file" << std::endl;
         abort();
     }
@@ -153,6 +150,7 @@ int Dedup::execute(int argc, char** argv)
     if(outFile.IsEmpty())
     {
         usage();
+        inputParameters.Status();
         std::cerr << "Specify an output file" << std::endl;
         abort();
     }
@@ -220,7 +218,7 @@ int Dedup::execute(int argc, char** argv)
         if(SamFlag::isProperPair(flag)) ++properPairCount;
         if(SamFlag::isReverse(flag))    ++reverseCount;
         if(SamFlag::isQCFailure(flag))  ++qualCheckFailCount;
-        if(SamFlag::isDuplicate(flag) && !forceFlag)
+        if(SamFlag::isDuplicate(flag) && !myForceFlag)
         {
             Logger::gLogger->error("There are records already duplicate marked.");
             Logger::gLogger->error("Use -f to clear the duplicate flag and start the deduping procedure over");
@@ -312,6 +310,12 @@ int Dedup::execute(int argc, char** argv)
     samOut.OpenForWrite(outFile.c_str());
     samOut.WriteHeader(header);
 
+    // If we are recalibrating, output the model information.
+    if(myDoRecab)
+    {
+        myRecab.modelFitPrediction(outFile);
+    }
+
     // an iterator to run through the duplicate indices
     int currentDupIndex = 0;
     bool moreDups = !myDupList.empty();
@@ -331,27 +335,40 @@ int Dedup::execute(int argc, char** argv)
         bool foundDup = moreDups &&
             (currentIndex == myDupList[currentDupIndex]);
 
-        // modify the duplicate flag and write out the record, if it's appropriate
+        // modify the duplicate flag and write out the record,
+        // if it's appropriate
         int flag = record.getFlag();
-        if (foundDup) {                     // this record is a duplicate
-            record.setFlag( flag | 0x400 ); // mark duplicate
+        if (foundDup)
+        {   
+            // this record is a duplicate, so mark it.
+            record.setFlag( flag | 0x400 );
             currentDupIndex++;
             // increment duplicate counters to verify we found them all
-            if ( ( ( flag & 0x0001 ) == 0 ) || ( flag & 0x0008 ) ) { // unpaired or mate unmapped
+            if ( ( ( flag & 0x0001 ) == 0 ) || ( flag & 0x0008 ) )
+            { // unpaired or mate unmapped
                 singleDuplicates++;
             }
-            else {
+            else
+            {
                 pairedDuplicates++;
             }
+
             // write the record if we are not removing duplicates
             if (!removeFlag ) samOut.WriteRecord(header, record);
         }
-        else if (forceFlag ) { 
-            // this is not a duplicate we've identified but we want to remove any duplicate marking
-            record.setFlag( flag & 0xfffffbff ); // unmark duplicate
-            samOut.WriteRecord(header, record);
-        }
-        else { // not a duplicate we've identified and we aren't worried about existing marking
+        else
+        {
+            if(myForceFlag)
+            { 
+                // this is not a duplicate we've identified but we want to
+                // remove any duplicate marking
+                record.setFlag( flag & 0xfffffbff ); // unmark duplicate
+            }
+            // Not a duplicate, so recalibrate if necessary.
+            if(myDoRecab)
+            {
+                myRecab.processRead(record, Recab::UPDATE);
+            }
             samOut.WriteRecord(header, record);
         }
 	
@@ -588,8 +605,7 @@ void Dedup::checkDups(SamRecord& record, uint32_t recordCount)
         // Don't consider this record to be a duplicate.
         // Release this record since there is nothing more to do with it.
         // TODO - include for recalibration?!?!
-
-        mySamPool.releaseRecord(&record);
+        handleNonDuplicate(&record);
         return;
     }
 
@@ -778,11 +794,21 @@ void Dedup::handleNonDuplicate(SamRecord* recordPtr)
     {
         return;
     }
-
-    if(myRecab != NULL)
+    if(myDoRecab)
     {
+        if(myForceFlag)
+        { 
+            // this is not a duplicate we've identified but we want to
+            // remove any duplicate marking
+            uint16_t flag = recordPtr->getFlag();
+            if(SamFlag::isDuplicate(flag))
+            {
+                SamFlag::setNotDuplicate(flag);
+                recordPtr->setFlag(flag); // unmark duplicate
+            }
+        }
         // Add to recalibration matrix.
-        //TODO  myRecab->addToHashModel(*recordPtr);
+        myRecab.processRead(*recordPtr, Recab::ANALYZE);
     }
 
     // Release the record.

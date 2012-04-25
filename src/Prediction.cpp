@@ -41,7 +41,7 @@ Prediction::Prediction(){
 Prediction::~Prediction(){
 }
 
-int Prediction::fitModel(bool writeModelFlag, std::string filename)
+int Prediction::fitModel(bool writeModelFlag, std::string& filename)
 {
   //double rsqcutoff = 0.0001;
   int nrrounds = 30;
@@ -91,7 +91,7 @@ std::vector<double> Prediction::getModel(){
   return model;
 };
 
-int Prediction::writeLogRegdata(std::string filename){
+int Prediction::writeLogRegdata(std::string& filename){
 
 	FILE *pFile;
 	pFile = fopen(filename.c_str(), "w");
