@@ -127,7 +127,7 @@ void PileupElementAsp::addEntry(SamRecord& record)
         base = record.getSequence(cycle);
         qual = record.getQuality(cycle);
     }
-    bool strand = !SamFlag::isFirstFragment(record.getFlag());
+    bool strand = SamFlag::isReverse(record.getFlag());
     uint8_t mq = record.getMapQuality();
 
     // Check to see if this entry matches the reference base.
