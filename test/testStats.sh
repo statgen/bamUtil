@@ -25,7 +25,7 @@
 ../bin/bam stats --basic --in testFilesLibBam/sortedBam.bam --unmapped --qual 2> results/unmappedQualStats.txt \
 && diff results/unmappedQualStats.txt expected/unmappedQualStats.txt \
 && \
-../bin/bam stats --basic --in testFilesLibBam/sortedBam.bam --unmapped --qual --refFile testFilesLibBam/sortedBam.bam.bai 2> results/unmappedQualStats1.txt \
+../bin/bam stats --basic --in testFilesLibBam/sortedBam.bam --unmapped --qual --bamIndex testFilesLibBam/sortedBam.bam.bai 2> results/unmappedQualStats1.txt \
 && diff results/unmappedQualStats1.txt expected/unmappedQualStats.txt \
 && \
 ../bin/bam stats --basic --in testFilesLibBam/testSam.sam --qual --maxNumReads 3 2> results/qualStatsMaxNum.txt \
