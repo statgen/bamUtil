@@ -30,6 +30,7 @@
 AspFileWriter* PileupElementAsp::ourOutputFile = NULL;
 bool PileupElementAsp::ourIgnoreDeletion = false;
 bool PileupElementAsp::ourReportOverMax = true;
+uint16_t PileupElementAsp::ourCurrentReadNameID = 0;
 
 void PileupElementAsp::setOutputFile(AspFileWriter* outputFile)
 {
@@ -140,8 +141,9 @@ void PileupElementAsp::addEntry(SamRecord& record)
     {
         myAllRef = false;
     }
+
     myAspRecord.add(myRefBase, base, qual, cycle, strand, mq, 
-                    record.getReadName());
+                    ourCurrentReadNameID);
 }
 
 

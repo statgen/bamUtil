@@ -24,6 +24,7 @@
 #include "BgzfFileType.h"
 #include "Pileup.h"
 #include "PileupElementAsp.h"
+#include "AspReadNameID.h"
 
 Asp::Asp()
     : BamExecutable(),
@@ -204,13 +205,15 @@ int Asp::execute(int argc, char **argv)
 
     // Read the sam records.
     SamRecord samRecord;
-
+    AspReadNameID myReadNameMap;
     while(getNextSection(samIn))
     {
         // Keep reading records from the file until SamFile::ReadRecord
         // indicates to stop (returns false).
         while(samIn.ReadRecord(samHeader, samRecord))
         {
+            // Determine the read name id for this record.
+            PileupElementAsp::setCurrentReadNameID(myReadNameMap.getReadNameID(samRecord.getReadName()));
             // Pileup the bases for this read.
             pileup.processAlignmentRegion(samRecord, myStartPos, myEndPos);
         }

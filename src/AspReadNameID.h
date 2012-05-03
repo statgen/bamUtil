@@ -16,42 +16,36 @@
  */
 
 //////////////////////////////////////////////////////////////////////////
-// This file contains the processing for the executable option "asp"
-// which generates some base information for SAM/BAM files.
 
 
-#ifndef __ASP_H__
-#define __ASP_H__
+#ifndef __ASP_READNAMEID_H__
+#define __ASP_READNAMEID_H__
 
-#include "StringArray.h"
-#include "BamExecutable.h"
 #include "SamFile.h"
+#include "BaseAsciiMap.h"
+#include <unordered_map>
 
-class Asp : public BamExecutable
+class AspReadNameID
 {
 public:
-    Asp();
-    
-    ~Asp();
-    
-    static void aspDescription();
-    void description();
-    void usage();
-    int execute(int argc, char **argv);
-    
+    AspReadNameID();
+    ~AspReadNameID();
+
+    /// Get the ID associated with the specified read name.
+    uint16_t getReadNameID(const char* readName);
+
 private:
-    void reset();
+    AspReadNameID(const AspReadNameID & readNameID);
 
-    bool getNextSection(SamFile& samIn);
+    static const unsigned int MAX_ID = 0xFFFF;
 
-    // Pointer to the region list file
-    IFILE  myRegionList;
+    uint16_t myNextID;
 
-    int myStartPos;
-    int myEndPos;
-
-    String myRegBuffer;
-    StringArray myRegColumn;
+    std::vector<std::string> myReadNameVector;
+    typedef std::unordered_map<std::string, uint16_t> AspReadNameMapType;
+    //    typedef std::map<std::string, uint16_t> AspReadNameMapType;
+    typedef std::pair<std::string, uint16_t> AspReadNameMapPair;
+    AspReadNameMapType myReadNameMap;
 };
 
 #endif

@@ -260,6 +260,15 @@ void DumpAsp::printDetailed(AspRecord& record)
         }
         std::cout << record.getMQ(i);
     }
+    std::cout << "\t";
+    for(int i = 0; i < record.getNumBases(); i++)
+    {
+        if(i != 0)
+        {
+            std::cout << ":";
+        }
+        std::cout << record.getReadNameID(i);
+    }
 
     std::cout << "\n";
 }

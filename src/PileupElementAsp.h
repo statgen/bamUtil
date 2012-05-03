@@ -43,6 +43,11 @@ public:
     /// quality.
     static void setIgnoreDeletion(bool ignoreDeletion);
     
+    /// Set the current read name ID for the record that will be processed.
+    /// Should be reset for each record.
+    static void setCurrentReadNameID(uint16_t readNameID)
+    { ourCurrentReadNameID = readNameID; }
+
     PileupElementAsp();
 
     /// Constructor that resets the pileup element, does not copy, just resets.
@@ -67,6 +72,8 @@ private:
 
     static bool ourReportOverMax;
     static const char UNKNOWN_REF_BASE = 'U';
+
+    static uint16_t ourCurrentReadNameID;
 
     String myOutputString;
 
