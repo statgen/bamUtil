@@ -49,6 +49,7 @@ public:
     static void recabDescription();
     void description();
     void usage();
+    void recabSpecificUsageLine();
     void recabSpecificUsage();
     int execute(int argc, char **argv);
 

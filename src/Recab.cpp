@@ -80,12 +80,15 @@ void Recab::description()
 
 void Recab::usage()
 {
-    std::cerr << "Usage: ./bam recab (options) --in <InputBamFile> --out <OutputFile> --refFile <ReferenceFile>\n" << std::endl;
+    std::cerr << "Usage: ./bam recab (options) --in <InputBamFile> --out <OutputFile> [--log <logFile>] [--verbose] [--noeof] [--params] ";
+    recabSpecificUsageLine();
+    std::cerr << std::endl << std::endl;
+
     std::cerr << "Required General Parameters :" << std::endl;
-    std::cerr << "\t--in [infile]   : input BAM file name" << std::endl;
-    std::cerr << "\t--out [outfile] : output recalibration file name" << std::endl;
+    std::cerr << "\t--in <infile>   : input BAM file name" << std::endl;
+    std::cerr << "\t--out <outfile> : output recalibration file name" << std::endl;
     std::cerr << "Optional General Parameters : " << std::endl;
-    std::cerr << "\t--log [logfile] : log and summary statistics (default: [outfile].log)" << std::endl;
+    std::cerr << "\t--log <logfile> : log and summary statistics (default: [outfile].log)" << std::endl;
     std::cerr << "\t--verbose       : Turn on verbose mode" << std::endl;
     std::cerr << "\t--noeof         : do not expect an EOF block on a bam file." << std::endl;
     std::cerr << "\t--params        : print the parameter settings" << std::endl;
@@ -94,13 +97,18 @@ void Recab::usage()
 }
 
 
+void Recab::recabSpecificUsageLine()
+{
+    std::cerr << "--refFile <ReferenceFile> [--dbsnp <dbsnpFile>] [--blended <weight>] ";
+}
+
 void Recab::recabSpecificUsage()
 {
     std::cerr << "\nRecab Specific Required Parameters\n";
-    std::cerr << "\t--refFile [reference file]    : reference file name" << std::endl;
+    std::cerr << "\t--refFile <reference file>    : reference file name" << std::endl;
     std::cerr << "Recab Specific Optional Parameters : " << std::endl;
-    std::cerr << "\t--dbsnp [known variance file] : dbsnp file of positions" << std::endl;
-    std::cerr << "\t--blended [weight]            : blended model weight" << std::endl;
+    std::cerr << "\t--dbsnp <known variance file> : dbsnp file of positions" << std::endl;
+    std::cerr << "\t--blended <weight>            : blended model weight" << std::endl;
 }
 
 
