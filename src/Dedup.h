@@ -41,14 +41,13 @@ public:
     Dedup():
         myRecab(),
         myDoRecab(false),
+        myOneChrom(false),
         mySamPool(),
         lastCoordinate(-1), lastReference(-1), numLibraries(0), 
         singleDuplicates(0),
         pairedDuplicates(0),
-        myForceFlag(false),
-        singleRead(0),
-        firstPair(0),
-        foundPair(0)
+        myNumMissingMate(0),
+        myForceFlag(false)
     {}
 
     ~Dedup();
@@ -131,35 +130,25 @@ private:
     // Recalibrator logic.
     Recab myRecab;
     bool myDoRecab;
+    bool myOneChrom;
     
     // Pool of sam records.
     SamRecordPool mySamPool;
-
+    
     int lastCoordinate;
     int lastReference;
     uint32_t numLibraries;
     uint32_t singleDuplicates, pairedDuplicates;
+    int myNumMissingMate;
     bool myForceFlag;
 
+    // Update
     static const uint32_t CLIP_OFFSET;
-    static const uint64_t UNMAPPED_SINGLE_KEY;
-    static const uint64_t UNMAPPED_PAIRED_KEY;
-    static const uint32_t EMPTY_RECORD_COUNT;
-    static const int PAIRED_QUALITY_OFFSET;
-    static const int MAX_REF_ID;
-    static const int LOOK_BACK;
-
-    // phased out
-    int singleRead;
-    int firstPair;
-    int foundPair;
 
     // Once record is read, look back at previous reads and determine 
     // if any no longer need to be kept for duplicate checking.
-    void cleanupPriorReads(SamRecord & record);
-
-    // Same as above, but it uses record's referenceID and coordinate
-    void cleanupPriorReads(uint32_t referenceID, uint32_t coordinate);
+    // Call with NULL to cleanup all records.
+    void cleanupPriorReads(SamRecord* record);
 
     // Determines if the current position has changed when we read record
     bool hasPositionChanged(SamRecord & record);
@@ -171,14 +160,20 @@ private:
     // Add the base qualities in a read
     int getBaseQuality(SamRecord& record);
 
+    // Returns the key constructed for a given record.  Should not be used
+    // for cleaning up prior records.
+    uint64_t makeRecordKey(SamRecord & record);
+
+    // Returns the key for cleaning up keys prior to the record with this
+    // position.  It offsets the key so it is prior to the specified coordinate
+    // allowing for later reads to be clipped.
+    uint64_t makeCleanupKey(int32_t referenceID, int32_t coordinate);
+
     // Returns the key constructed from those four pieces of information
-    uint64_t makeKey(uint32_t reference, uint32_t coordinate, 
+    uint64_t makeKey(int32_t reference, int32_t coordinate, 
                      bool orientation, uint32_t libraryID);
 
-    // Returns the key constructed from a record
-    uint64_t makeKeyFromRecord(SamRecord & record);
-
-     // builds the read group library map
+    // builds the read group library map
     void buildReadGroupLibraryMap(SamFileHeader& header);
 
     // Returns the libraryID of a record
@@ -187,6 +182,10 @@ private:
     // Handle records that are not to be marked duplicates.
     // Performs any additional processing the first time through the file.
     void handleNonDuplicate(SamRecord* recordPtr);
+
+    // Handle records whose mate was not found.  This will handle all processing
+    // including calling handleNonDuplicate. 
+    void handleMissingMate(SamRecord* recordPtr);
 };
 
 #endif // __DE_DUP_H

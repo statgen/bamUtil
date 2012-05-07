@@ -29,14 +29,7 @@
 #include "SamStatus.h"
 #include "BgzfFileType.h"
 
-const uint32_t Dedup::CLIP_OFFSET = 1000L;
-const uint64_t Dedup::UNMAPPED_SINGLE_KEY = 0xffffffffffffffffULL;
-const uint64_t Dedup::UNMAPPED_PAIRED_KEY = 0xfffffffffffffffeULL;
-const uint32_t Dedup::EMPTY_RECORD_COUNT =  0xffffffffUL;
-const int Dedup::PAIRED_QUALITY_OFFSET = 10000;
-const int Dedup::MAX_REF_ID = 0xffff;
-const int Dedup::LOOK_BACK = 1000;
-
+const uint32_t Dedup::CLIP_OFFSET = 1000;
 
 Dedup::~Dedup()
 {
@@ -82,19 +75,22 @@ void Dedup::description()
 
 void Dedup::usage()
 {
-    std::cerr << "Usage: ./bam dedup (options) --in <InputBamFile> --out <OutputBamFile>\n" << std::endl;
+    std::cerr << "Usage: ./bam dedup (options) --in <InputBamFile> --out <OutputBamFile> [--log <logFile>] [--oneChrom] [--rmDups] [--force] [--verbose] [--noeof] [--params] [--recab] ";
+    myRecab.recabSpecificUsageLine();
+    std::cerr << std::endl << std::endl;
     std::cerr << "Required parameters :" << std::endl;
-    std::cerr << "\t--in [infile]   : input BAM file name (must be sorted)" << std::endl;
-    std::cerr << "\t--out [outfile] : output BAM file name (same order with original file)" << std::endl;
+    std::cerr << "\t--in <infile>   : input BAM file name (must be sorted)" << std::endl;
+    std::cerr << "\t--out <outfile> : output BAM file name (same order with original file)" << std::endl;
     std::cerr << "Optional parameters : (see SAM format specification for details)" << std::endl;
-    std::cerr << "\t--log [logfile] : log and summary statistics (default: [outfile].log)" << std::endl;
-    std::cerr << "\t--recab         : Recalibrate in addition to deduping" << std::endl;
+    std::cerr << "\t--log <logfile> : log and summary statistics (default: [outfile].log)" << std::endl;
+    std::cerr << "\t--oneChrom      : Treat reads with mates on different chromosomes as single-ended." << std::endl;
     std::cerr << "\t--rmDups        : Remove duplicates (default is to mark duplicates)" << std::endl;
     std::cerr << "\t--force         : Allow mark-duplicated BAM file and force unmarking the duplicates" << std::endl;
     std::cerr << "                    Default is to throw errors when trying to run a mark-duplicated BAM" << std::endl;
     std::cerr << "\t--verbose       : Turn on verbose mode" << std::endl;
     std::cerr << "\t--noeof         : do not expect an EOF block on a bam file." << std::endl;
     std::cerr << "\t--params        : print the parameter settings" << std::endl;
+    std::cerr << "\t--recab         : Recalibrate in addition to deduping" << std::endl;
     myRecab.recabSpecificUsage();
     std::cerr << "\n" << std::endl;
 }
@@ -109,6 +105,7 @@ int Dedup::execute(int argc, char** argv)
     bool removeFlag = false;
     bool verboseFlag = false;
     myForceFlag = false;
+    myNumMissingMate = 0;
     bool noeof = false;
     bool params = false;
     LongParamContainer parameters;
@@ -117,6 +114,7 @@ int Dedup::execute(int argc, char** argv)
     parameters.addString("out", &outFile);
     parameters.addGroup("Optional Parameters");
     parameters.addString("log", &logFile);
+    parameters.addBool("oneChrom", &myOneChrom);
     parameters.addBool("recab", &myDoRecab);
     parameters.addBool("rmDups", &removeFlag);
     parameters.addBool("force", &myForceFlag);
@@ -240,7 +238,7 @@ int Dedup::execute(int argc, char** argv)
         // if we have moved to a new position, look back at previous reads for duplicates
         if (hasPositionChanged(*recordPtr))
         {
-            cleanupPriorReads(*recordPtr);
+            cleanupPriorReads(recordPtr);
         }
 
         // Deduping is only for mapped reads.
@@ -265,8 +263,9 @@ int Dedup::execute(int argc, char** argv)
         }
     }
 
-    // we're finished reading record so clean up the duplicate search and close the input file
-    cleanupPriorReads(Dedup::MAX_REF_ID, 0);
+    // we're finished reading record so clean up the duplicate search and
+    //  close the input file
+    cleanupPriorReads(NULL);
     samIn.Close();
 
     // print some statistics
@@ -293,6 +292,8 @@ int Dedup::execute(int argc, char** argv)
     Logger::gLogger->writeLog("Total number of duplicate paired-end reads (both ends mapped) : %u",pairedDuplicates);
     Logger::gLogger->writeLog("Total number of duplicated records: %u",
                               totalDuplicates);
+    Logger::gLogger->writeLog("Total number of missing mates: %u",
+                              myNumMissingMate);
     Logger::gLogger->writeLog("--------------------------------------------------------------------------");
     Logger::gLogger->writeLog("Sorting the indices of %d duplicated records",
                               myDupList.size());
@@ -392,12 +393,28 @@ int Dedup::execute(int argc, char** argv)
 
 // Now that we've reached coordinate on chromosome reference, look back and
 // clean up any previous positions from being tracked.
-void Dedup::cleanupPriorReads(uint32_t reference, uint32_t coordinate)
+void Dedup::cleanupPriorReads(SamRecord* record)
 {
-    // Find the key corresponding to the current position
-    // We will first search through single reads up to this position
-    uint64_t key = makeKey(reference, coordinate, false, 0);
-    FragmentMap::iterator fragmentFinish = myFragmentMap.lower_bound(key);
+    // Set where to stop cleaning out the structures.
+    // Initialize to the end of the structures.
+    FragmentMap::iterator fragmentFinish = myFragmentMap.end();
+    PairedMap::iterator pairedFinish = myPairedMap.end();
+    uint64_t mateStopPos = 0;
+
+    // If a record was specified, stop before this record.
+    if(record != NULL)
+    {
+        int32_t reference = record->getReferenceID();
+        int32_t coordinate = record->get0BasedPosition();
+        uint64_t key = makeCleanupKey(reference, coordinate);
+        fragmentFinish = myFragmentMap.lower_bound(key);
+        // Now do the same thing with the paired reads
+        PairedKey pairedKey(0, key);
+        pairedFinish = myPairedMap.lower_bound(pairedKey);
+        mateStopPos =
+            SamHelper::combineChromPos(reference, 
+                                       coordinate);
+    }
 
     // For each key k < fragmentFinish, release the record since we are
     // done with that position and it is not a duplicate.
@@ -418,8 +435,6 @@ void Dedup::cleanupPriorReads(uint32_t reference, uint32_t coordinate)
     }
 
     // Now do the same thing with the paired reads
-    PairedKey pairedKey(0, key);
-    PairedMap::iterator pairedFinish = myPairedMap.lower_bound(pairedKey);
     for(PairedMap::iterator iter = myPairedMap.begin(); 
         iter != pairedFinish; iter++)
     {
@@ -437,18 +452,18 @@ void Dedup::cleanupPriorReads(uint32_t reference, uint32_t coordinate)
 
     // Clean up the Mate map from any reads whose mates were not found.
     // Loop through the mate map and release records prior to this position.
-    uint64_t stopPos =
-        SamHelper::combineChromPos(reference, 
-                                   coordinate);
     MateMap::iterator mateIter;
     for(mateIter = myMateMap.begin(); mateIter != myMateMap.end(); mateIter++)
     {
-        if(mateIter->first >= stopPos)
+        // stop if a record was specified and we have gone past the mate
+        // stop position.  If no record was specified, we want to clean
+        // it all out.
+        if((record != NULL) && (mateIter->first >= mateStopPos))
         {
             break;
         }
-        // Free up the record since we have passed its mate's position.
-        handleNonDuplicate(mateIter->second.recordPtr);
+        // Passed the mate, but it was not found.
+        handleMissingMate(mateIter->second.recordPtr);
     }
     // Erase the entries.
     if(mateIter != myMateMap.begin())
@@ -458,17 +473,8 @@ void Dedup::cleanupPriorReads(uint32_t reference, uint32_t coordinate)
     return;
 }
 
-// Look at reads before this record and determine duplicates
-void Dedup::cleanupPriorReads(SamRecord& record) {
-    uint32_t coordinate = record.get0BasedPosition();
-    uint32_t lookBackCoordinate = coordinate - LOOK_BACK;
-    if (lookBackCoordinate < 0) {
-        lookBackCoordinate = 0;
-    }
-    return cleanupPriorReads(record.getReferenceID(), lookBackCoordinate);
-}
 
-// determine whether the position of record is different from the previous record
+// determine whether the record's position is different from the previous record
 bool Dedup::hasPositionChanged(SamRecord& record)
 {
     if (lastReference < record.getReferenceID() || 
@@ -488,10 +494,20 @@ void Dedup::checkDups(SamRecord& record, uint32_t recordCount)
     // Only inside this method if the record is mapped.
 
     // Get the key for this record.
-    uint64_t key = makeKeyFromRecord(record);
+    uint64_t key = makeRecordKey(record);
     int flag = record.getFlag(); 
     bool recordPaired = SamFlag::isPaired(flag) && SamFlag::isMateMapped(flag);
     int sumBaseQual = getBaseQuality(record);
+
+    int32_t chromID = record.getReferenceID();
+    int32_t mateChromID = record.getMateReferenceID();
+
+    // If we are one-chrom and the mate is not on the same chromosome, 
+    // mark it as not paired.
+    if(myOneChrom && (chromID != mateChromID))
+    {
+        recordPaired = false;
+    }
     
     // Look in the map to see if an entry for this key exists.
     FragmentMapInsertReturn ireturn = 
@@ -548,10 +564,10 @@ void Dedup::checkDups(SamRecord& record, uint32_t recordCount)
     
     // This is a paired record, so check for its mate.
     uint64_t readPos = 
-        SamHelper::combineChromPos(record.getReferenceID(),
+        SamHelper::combineChromPos(chromID,
                                    record.get0BasedPosition());
     uint64_t matePos =
-        SamHelper::combineChromPos(record.getMateReferenceID(), 
+        SamHelper::combineChromPos(mateChromID, 
                                    record.get0BasedMatePosition());
     SamRecord* mateRecord = NULL;
     int mateIndex = 0;
@@ -597,20 +613,13 @@ void Dedup::checkDups(SamRecord& record, uint32_t recordCount)
 
     if(mateRecord == NULL)
     {
-        // Passed the mate, but it was not found.  This is an error.
-        // TODO - handle duplicate marking for Mates on differ chrom!!!
-//         std::cerr << "Could not find mate match for record at index: " 
-//                   << recordCount << ", not marking duplicate or modifying"
-//                   << " in any way.\n";
-        // Don't consider this record to be a duplicate.
-        // Release this record since there is nothing more to do with it.
-        // TODO - include for recalibration?!?!
-        handleNonDuplicate(&record);
+        // Passed the mate, but it was not found.
+        handleMissingMate(&record);
         return;
     }
 
     // Make the paired key.
-    PairedKey pkey(key, makeKeyFromRecord(*mateRecord));
+    PairedKey pkey(key, makeRecordKey(*mateRecord));
 
     // Check to see if this pair is a duplicate.
     PairedMapInsertReturn pairedReturn = 
@@ -673,32 +682,49 @@ int Dedup::getBaseQuality(SamRecord & record) {
 }
 
 
-// makes a key from the chromosome number, coordinate, orientation, and libraryID
-//   single reads with equal keys are duplicates
-uint64_t Dedup::makeKey(uint32_t referenceID, uint32_t coordinate,
-                        bool orientation, uint32_t libraryID) {
-    return ( (0xffff000000000000 & 
-              (static_cast<uint64_t>(referenceID) << 48))  |
-             (0x0000ffffffff0000 & 
-              (static_cast<uint64_t>(coordinate + CLIP_OFFSET) << 16)) |
-             (0x000000000000ff00 & 
-              (static_cast<uint64_t>(orientation) << 8)) |
-             (0x00000000000000ff & (static_cast<uint64_t>(libraryID))) );
+// extract the relevant information from the record and make the key
+uint64_t Dedup::makeRecordKey(SamRecord& record)
+{
+    int32_t referenceID = record.getReferenceID();
+    int32_t coordinate = record.get0BasedUnclippedStart();
+    bool orientation = SamFlag::isReverse(record.getFlag());
+
+    if(orientation)
+    {
+        // Reverse, so get the unclipped end.
+        coordinate = record.get0BasedUnclippedEnd();
+    }
+    return makeKey(referenceID, coordinate, orientation, getLibraryID(record));
 }
 
 
-// extract the relevant information from the key and make the record
-uint64_t Dedup::makeKeyFromRecord(SamRecord& record) {
-    int32_t referenceID = record.getReferenceID();
-    bool orientation = (record.getFlag() & 0x0010) > 0;
-    int32_t coordinate = orientation ? 
-        record.get0BasedUnclippedEnd() : record.get0BasedUnclippedStart();
-    if ( ( referenceID < 0 ) || ( coordinate + CLIP_OFFSET < 0 ) ) {
-        Logger::gLogger->error("Dedup::makeKeyFromRecord(record) - refID or coordinate is negative. refID = %d, coordinate = %d",
-                               referenceID, coordinate + CLIP_OFFSET);
-        return UNMAPPED_SINGLE_KEY; // this represents an unmapped read end
+uint64_t Dedup::makeCleanupKey(int32_t referenceID, int32_t coordinate)
+{
+    int32_t adjustedCoord = coordinate - CLIP_OFFSET;
+    if(adjustedCoord < 0)
+    {
+        adjustedCoord = 0;
     }
-    return makeKey(referenceID, coordinate, orientation, getLibraryID(record));
+    return(makeKey(referenceID, adjustedCoord, false, 0));
+}
+
+
+// makes a key from the specified parameters.
+uint64_t Dedup::makeKey(int32_t referenceID, int32_t coordinate,
+                        bool orientation, uint32_t libraryID)
+{
+    if((referenceID < 0) || (coordinate < 0))
+    {
+        Logger::gLogger->error("Dedup::makeKey - refID or coordinate is negative. refID = %d, coordinate = %d",
+                               referenceID, coordinate);
+    }
+    return ( (0xffff000000000000 & 
+              (static_cast<uint64_t>(referenceID) << 48))  |
+             (0x0000ffffffff0000 & 
+              (static_cast<uint64_t>(coordinate) << 16)) |
+             (0x000000000000ff00 & 
+              (static_cast<uint64_t>(orientation) << 8)) |
+             (0x00000000000000ff & (static_cast<uint64_t>(libraryID))) );
 }
 
 
@@ -813,4 +839,40 @@ void Dedup::handleNonDuplicate(SamRecord* recordPtr)
 
     // Release the record.
     mySamPool.releaseRecord(recordPtr);
+}
+
+
+void Dedup::handleMissingMate(SamRecord* recordPtr)
+{
+    static bool firstDifferChrom = true;
+    static bool firstSameChrom = true;
+
+    if(recordPtr == NULL)
+    {
+        return;
+    }
+
+    // Passed the mate, but it was not found.
+    if(recordPtr->getMateReferenceID() != recordPtr->getReferenceID())
+    {
+        if(firstDifferChrom)
+        {
+            std::cerr << "Mate on different chromosome was not found.\n"
+                      << "If you are running single chromosome, consider "
+                      << "using --oneChrom to treat reads with mates on "
+                      << "different chromosomes as single-ended.\n";
+            firstDifferChrom = false;
+        }
+    }
+    else if(firstSameChrom)
+    {
+        std::cerr << "ERROR: Records with missing mate can't be checked for "
+                  << "duplicates.";
+        firstSameChrom = false;
+    }
+
+    // Don't consider this record to be a duplicate.
+    // Release this record since there is nothing more to do with it.
+    ++myNumMissingMate;
+    handleNonDuplicate(recordPtr);
 }
