@@ -81,7 +81,7 @@ void Bam2FastQ::description()
 void Bam2FastQ::usage()
 {
     BamExecutable::usage();
-    std::cerr << "\t./bam bam2FastQ --in <inputFile> [--outBase <outputFileBase>] [--firstOut <1stReadInPairOutFile>] [--secondOut <2ndReadInPairOutFile>] [--unpairedOut <unpairedOutFile>] [--noeof] [--params]" << std::endl;
+    std::cerr << "\t./bam bam2FastQ --in <inputFile> [--readName] [--refFile <referenceFile>] [--outBase <outputFileBase>] [--firstOut <1stReadInPairOutFile>] [--secondOut <2ndReadInPairOutFile>] [--unpairedOut <unpairedOutFile>] [--firstRNExt <firstInPairReadNameExt>] [--secondRNExt <secondInPairReadNameExt>] [--rnPlus] [--noReverseComp] [--noeof] [--params]" << std::endl;
     std::cerr << "\tRequired Parameters:" << std::endl;
     std::cerr << "\t\t--in       : the SAM/BAM file to convert to FastQ" << std::endl;
     std::cerr << "\tOptional Parameters:" << std::endl;
@@ -97,9 +97,9 @@ void Bam2FastQ::usage()
     std::cerr << "\t\t--unpairedOut   : Output name for unpaired reads" << std::endl;
     std::cerr << "\t\t                  over-rides setting of outBase" << std::endl;
     std::cerr << "\t\t--firstRNExt    : read name extension to use for first read in a pair\n" 
-              << "\t\t                  default is " << DEFAULT_FIRST_EXT << std::endl;
+              << "\t\t                  default is \"" << DEFAULT_FIRST_EXT << "\"\n";
     std::cerr << "\t\t--secondRNExt   : read name extension to use for second read in a pair\n" 
-              << "\t\t                  default is " << DEFAULT_SECOND_EXT << std::endl;
+              << "\t\t                  default is \"" << DEFAULT_SECOND_EXT << "\"\n";
     std::cerr << "\t\t--rnPlus        : Add the Read Name/extension to the '+' line of the fastq records\n";
     std::cerr << "\t\t--noReverseComp : Do not reverse complement reads marked as reverse\n";
     std::cerr << "\t\t--noeof         : Do not expect an EOF block on a bam file." << std::endl;
