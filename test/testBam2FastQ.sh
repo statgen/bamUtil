@@ -106,15 +106,15 @@ diff results/testBam2FastQBamCoord.log expected/testBam2FastQCoord.log
 let "status |= $?"
 
 ##########################################
-# Test with files that specify sortorder
+# Test with files that specify sortorder with reference for converting '='
 # Test clipping files sorted by read name.
-../bin/bam bam2FastQ --in testFiles/testBam2FastQReadNameSO.sam --outBase results/testBam2FastQReadNameSO 2> results/testBam2FastQReadNameSO.log
+../bin/bam bam2FastQ --in testFiles/testBam2FastQReadNameSO.sam --refFile testFilesLibBam/chr1_partial.fa --outBase results/testBam2FastQReadNameSO 2> results/testBam2FastQReadNameSO.log
 let "status |= $?"
 diff results/testBam2FastQReadNameSO.fastq expected/testBam2FastQReadName.fastq
 let "status |= $?"
-diff results/testBam2FastQReadNameSO_1.fastq expected/testBam2FastQReadName_1.fastq
+diff results/testBam2FastQReadNameSO_1.fastq expected/testBam2FastQReadNameSO_1.fastq
 let "status |= $?"
-diff results/testBam2FastQReadNameSO_2.fastq expected/testBam2FastQReadName_2.fastq
+diff results/testBam2FastQReadNameSO_2.fastq expected/testBam2FastQReadNameSO_2.fastq
 let "status |= $?"
 diff results/testBam2FastQReadNameSO.log expected/testBam2FastQReadName.log
 let "status |= $?"
@@ -130,7 +130,6 @@ diff results/testBam2FastQCoordSO_2.fastq expected/testBam2FastQCoord_2.fastq
 let "status |= $?"
 diff results/testBam2FastQCoordSO.log expected/testBam2FastQCoord.log
 let "status |= $?"
-
 
 
 if [ $status != 0 ]
