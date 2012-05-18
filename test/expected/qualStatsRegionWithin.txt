@@ -1,20 +1,20 @@
 Number of records read = 6
 
 TotalReads	6.00
-MappedReads	6.00
+MappedReads	5.00
 PairedReads	6.00
 ProperPair	0.00
 DuplicateReads	0.00
 QCFailureReads	0.00
 
-MappingRate(%)	100.00
+MappingRate(%)	83.33
 PairedReads(%)	100.00
 ProperPair(%)	0.00
 DupRate(%)	0.00
 QCFailRate(%)	0.00
 
-TotalBases	35.00
-BasesInMappedReads	35.00
+TotalBases	31.00
+BasesInMappedReads	27.00
 
 Quality	Count
 33	0
@@ -27,7 +27,7 @@ Quality	Count
 40	0
 41	0
 42	0
-43	0
+43	1
 44	0
 45	0
 46	0
@@ -35,18 +35,18 @@ Quality	Count
 48	0
 49	0
 50	0
-51	0
-52	0
-53	0
-54	0
+51	2
+52	1
+53	2
+54	1
 55	0
 56	0
-57	0
+57	1
 58	0
-59	4
+59	3
 60	0
 61	0
-62	14
+62	13
 63	0
 64	0
 65	0

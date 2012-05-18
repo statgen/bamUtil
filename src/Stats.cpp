@@ -23,6 +23,7 @@
 #include "BgzfFileType.h"
 #include "Pileup.h"
 #include "PileupElementBaseQCStats.h"
+#include "SamFlag.h"
 
 void Stats::statsDescription()
 {
@@ -40,7 +41,7 @@ void Stats::usage()
 {
     BamExecutable::usage();
     std::cerr << "\t./bam stats --in <inputFile> [--basic] [--qual] [--phred] [--pBaseQC <outputFileName>] [--cBaseQC <outputFileName>] [--maxNumReads <maxNum>]"
-              << "[--unmapped] [--bamIndex <bamIndexFile>] [--regionList <regFileName>] [--requiredFlags <integerRequiredFlags>] [--excludeFlags <integerExcludeFlags>] [--noeof] [--params] [--baseSum] [--bufferSize <buffSize>] [--minMapQual <minMapQ>] [--dbsnp <dbsnpFile>]" << std::endl;
+              << "[--unmapped] [--bamIndex <bamIndexFile>] [--regionList <regFileName>] [--requiredFlags <integerRequiredFlags>] [--excludeFlags <integerExcludeFlags>] [--noeof] [--params] [--withinRegion] [--baseSum] [--bufferSize <buffSize>] [--minMapQual <minMapQ>] [--dbsnp <dbsnpFile>]" << std::endl;
     std::cerr << "\tRequired Parameters:" << std::endl;
     std::cerr << "\t\t--in : the SAM/BAM file to calculate stats for" << std::endl;
     std::cerr << "\tTypes of Statistics that can be generated:" << std::endl;
@@ -66,6 +67,9 @@ void Stats::usage()
     std::cerr << "\t\t                  (specify an integer representation of the flags)\n";
     std::cerr << "\t\t--noeof         : Do not expect an EOF block on a bam file." << std::endl;
     std::cerr << "\t\t--params        : Print the parameter settings." << std::endl;
+    std::cerr << "\tOptional phred/qual Only Parameters:" << std::endl;
+    std::cerr << "\t\t--withinRegion  : Only count qualities if they fall within regions specified.\n";
+    std::cerr << "\t\t                  Only applicable if regionList is also specified.\n";
     std::cerr << "\tOptional BaseQC Only Parameters:" << std::endl;
     std::cerr << "\t\t--baseSum       : Print an overall summary of the baseQC for the file to stderr." << std::endl;
     std::cerr << "\t\t--bufferSize    : Size of the pileup buffer for calculating the BaseQC parameters." << std::endl;
@@ -93,6 +97,7 @@ int Stats::execute(int argc, char **argv)
     String regionList = "";
     int excludeFlags = 0;
     int requiredFlags = 0;
+    bool withinRegion = false;
     int minMapQual = 0;
     String dbsnp = "";
     PosList *dbsnpListPtr = NULL;
@@ -118,6 +123,8 @@ int Stats::execute(int argc, char **argv)
         LONG_INTPARAMETER("requiredFlags", &requiredFlags)
         LONG_PARAMETER("noeof", &noeof)
         LONG_PARAMETER("params", &params)
+        LONG_PARAMETER_GROUP("Optional phred/qual Only Parameters")
+        LONG_PARAMETER("withinRegion", &withinRegion)
         LONG_PARAMETER_GROUP("Optional BaseQC Only Parameters")
         LONG_PARAMETER("baseSum", &baseSum)
         LONG_INTPARAMETER("bufferSize", &bufferSize)
@@ -345,6 +352,12 @@ int Stats::execute(int argc, char **argv)
         phredCount[i] = 0;
     }
     
+    int refPos = 0;
+    Cigar* cigarPtr = NULL;
+    char cigarChar = '?';
+    // Exclude clips from the qual/phred counts if unmapped reads are excluded.
+    bool qualExcludeClips = excludeFlags & SamFlag::UNMAPPED;
+
     //////////////////////////////////
     // When not reading by sections, getNextSection returns true
     // the first time, then false the next time.
@@ -370,8 +383,51 @@ int Stats::execute(int argc, char **argv)
                 else
                 {
                     int index = 0;
+                    cigarPtr = samRecord.getCigarInfo();
+                    cigarChar = '?';
+                    refPos = samRecord.get0BasedPosition();
+                    if(!qualExcludeClips && (cigarPtr != NULL))
+                    {
+                        // Offset the reference position by any soft clips
+                        // by subtracting the queryIndex of this start position.
+                        // refPos is now the start position of the clips.
+                        refPos -= cigarPtr->getQueryIndex(0);
+                    }
+
                     while(qual[index] != 0)
                     {
+                        // Skip this quality if it is clipped and we are skipping clips.
+                        if(cigarPtr != NULL)
+                        {
+                            cigarChar = cigarPtr->getCigarCharOpFromQueryIndex(index);
+                        }
+                        if(qualExcludeClips && Cigar::isClip(cigarChar))
+                        {
+                            // Skip a clipped quality.
+                            ++index;
+                            // Increment the position.
+                            continue;
+                        }
+
+                        if(withinRegion && (myEndPos != -1) && (refPos >= myEndPos))
+                        {
+                            // We have hit the end of the region, stop processing this
+                            // quality string.
+                            break;
+                        }
+
+                        if(withinRegion && (refPos < myStartPos))
+                        {
+                            // This position is not in the target.
+                            ++index;
+                            // Update the position if this is found in the reference or a clip.
+                            if(Cigar::foundInReference(cigarChar) || Cigar::isClip(cigarChar))
+                            {
+                                ++refPos;
+                            }
+                            continue;
+                        }
+
                         // Check for valid quality.
                         if((qual[index] < START_QUAL) || (qual[index] > MAX_QUAL))
                         {
@@ -387,13 +443,24 @@ int Stats::execute(int argc, char **argv)
                                           << ".  Must be between "
                                           << START_QUAL << " and " << MAX_QUAL << ".\n";
                             }
+                            // Skip an invalid quality.
                             ++index;
+                            // Update the position if this is found in the reference or a clip.
+                            if(Cigar::foundInReference(cigarChar) || Cigar::isClip(cigarChar))
+                            {
+                                ++refPos;
+                            }
                             continue;
                         }
                         
                         // Increment the count for this quality.
                         ++(qualCount[(int)(qual[index])]);
                         ++(phredCount[(int)(qual[index]) - PHRED_DIFF]);
+                        // Update the position if this is found in the reference or a clip.
+                        if(Cigar::foundInReference(cigarChar) || Cigar::isClip(cigarChar))
+                        {
+                            ++refPos;
+                        }
                         ++index;
                     }
                 }
