@@ -4,6 +4,8 @@
 ../bin/bam stats --basic --in testFilesLibBam/testSam.sam 2> results/basicStats.txt \
 && diff results/basicStats.txt expected/basicStats.txt \
 && \
+
+
 ../bin/bam stats --basic --in testFilesLibBam/testSam.sam --qual 2> results/qualStats.txt \
 && diff results/qualStats.txt expected/qualStats.txt \
 && \
@@ -33,6 +35,12 @@
 && \
 ../bin/bam stats --in testFilesLibBam/sortedBam.bam --unmapped --qual --maxNumReads 1 2> results/unmappedQualStatsMaxNum.txt \
 && diff results/unmappedQualStatsMaxNum.txt expected/unmappedQualStatsMaxNum.txt \
+&& \
+../bin/bam stats --basic --in testFilesLibBam/testSam.sam --excludeFlags 12 --qual 2> results/qualExcludeUnmappedStats.txt \
+&& diff results/qualExcludeUnmappedStats.txt expected/qualExcludeUnmappedStats.txt \
+&& \
+../bin/bam stats --basic --in testFilesLibBam/testSam.sam --requiredFlags 12 --qual 2> results/qualRequiredUnmappedStats.txt \
+&& diff results/qualRequiredUnmappedStats.txt expected/qualRequiredUnmappedStats.txt \
 && \
 ../bin/bam stats --in testFiles/testStatsBaseQC.sam --cBaseQC results/statsBaseQCsam.txt 2> results/statsBaseQCsam.log \
 && diff results/statsBaseQCsam.txt expected/statsBaseQC.txt && diff results/statsBaseQCsam.log expected/statsBaseQC.log \
