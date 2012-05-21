@@ -129,6 +129,8 @@ private:
     static const char* SEQ_DIFF_TAG;
     static const char* QUAL_DIFF_TAG;
     static const char* TAGS_DIFF_TAG;
+    static const char POS_DIFF_TYPE = 'Z';
+    static const char MATE_DIFF_TYPE = 'Z';
     static const char CIGAR_DIFF_TYPE = 'Z';
     static const char SEQ_DIFF_TYPE = 'Z';
     static const char QUAL_DIFF_TYPE = 'Z';

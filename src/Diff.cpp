@@ -506,6 +506,8 @@ bool Diff::lessThan(SamRecord* rec1, SamRecord* rec2, int threshold)
 
 void Diff::writeBamDiffs(SamRecord* rec1, SamRecord* rec2)
 {
+    static String tempString;
+
     if((rec1 == NULL) && (rec2 != NULL))
     {
         // If myBamOnly2 file has not open yet, initialize it.
@@ -543,7 +545,10 @@ void Diff::writeBamDiffs(SamRecord* rec1, SamRecord* rec2)
         //  Add the fields from rec2.
         if(myCompPos && (!myOnlyDiffs || myDiffStruct.posDiff))
         {
-            rec1->addIntTag(POS_DIFF_TAG,rec2->get1BasedPosition());
+            tempString = rec2->getReferenceName();
+            tempString += ':';
+            tempString += rec2->get1BasedPosition();
+            rec1->addTag(POS_DIFF_TAG, POS_DIFF_TYPE, tempString.c_str());
         }
         if(myCompCigar && (!myOnlyDiffs || myDiffStruct.cigarDiff))
         {
@@ -559,7 +564,10 @@ void Diff::writeBamDiffs(SamRecord* rec1, SamRecord* rec2)
         }
         if(myCompMate && (!myOnlyDiffs || myDiffStruct.mateDiff))
         {
-            rec1->addIntTag(MATE_DIFF_TAG, rec2->get1BasedMatePosition());
+            tempString = rec2->getMateReferenceName();
+            tempString += ':';
+            tempString += rec2->get1BasedMatePosition();
+            rec1->addTag(MATE_DIFF_TAG, MATE_DIFF_TYPE, tempString.c_str());
         }
         if(myCompISize && (!myOnlyDiffs || myDiffStruct.isizeDiff))
         {
