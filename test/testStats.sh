@@ -4,6 +4,8 @@
 ../bin/bam stats --basic --in testFilesLibBam/testSam.sam 2> results/basicStats.txt \
 && diff results/basicStats.txt expected/basicStats.txt \
 && \
+
+
 ../bin/bam stats --basic --in testFilesLibBam/testSam.sam --qual 2> results/qualStats.txt \
 && diff results/qualStats.txt expected/qualStats.txt \
 && \
@@ -33,6 +35,27 @@
 && \
 ../bin/bam stats --in testFilesLibBam/sortedBam.bam --unmapped --qual --maxNumReads 1 2> results/unmappedQualStatsMaxNum.txt \
 && diff results/unmappedQualStatsMaxNum.txt expected/unmappedQualStatsMaxNum.txt \
+&& \
+../bin/bam stats --basic --in testFiles/testStatsQual.bam --qual 2> results/qualStatsQual.txt \
+&& diff results/qualStatsQual.txt expected/qualStats.txt \
+&& \
+../bin/bam stats --basic --in testFiles/testStatsQual.bam --qual --regionList testFiles/testStatsQual.bed 2> results/qualStatsQualRegion.txt \
+&& diff results/qualStatsQualRegion.txt expected/qualStatsRegion.txt \
+&& \
+../bin/bam stats --basic --in testFiles/testStatsQual.bam --qual --regionList testFiles/testStatsQual.bed --withinRegion 2> results/qualStatsQualRegionWithin.txt \
+&& diff results/qualStatsQualRegionWithin.txt expected/qualStatsRegionWithin.txt \
+&& \
+../bin/bam stats --basic --in testFiles/testStatsQual.bam --qual --excludeFlags 12 --regionList testFiles/testStatsQual.bed --withinRegion 2> results/qualStatsQualRegionWithinExclude.txt \
+&& diff results/qualStatsQualRegionWithinExclude.txt expected/qualStatsRegionWithinExclude.txt \
+&& \
+../bin/bam stats --basic --in testFiles/testStatsQual.bam --qual --excludeFlags 12 --regionList testFiles/testStatsQual.bed 2> results/qualStatsQualRegionExclude.txt \
+&& diff results/qualStatsQualRegionExclude.txt expected/qualStatsRegionExclude.txt \
+&& \
+../bin/bam stats --basic --in testFiles/testStatsQual.bam --excludeFlags 12 --qual 2> results/qualExcludeUnmappedStats.txt \
+&& diff results/qualExcludeUnmappedStats.txt expected/qualExcludeUnmappedStats.txt \
+&& \
+../bin/bam stats --basic --in testFiles/testStatsQual.bam --requiredFlags 12 --qual 2> results/qualRequiredUnmappedStats.txt \
+&& diff results/qualRequiredUnmappedStats.txt expected/qualRequiredUnmappedStats.txt \
 && \
 ../bin/bam stats --in testFiles/testStatsBaseQC.sam --cBaseQC results/statsBaseQCsam.txt 2> results/statsBaseQCsam.log \
 && diff results/statsBaseQCsam.txt expected/statsBaseQC.txt && diff results/statsBaseQCsam.log expected/statsBaseQC.log \
