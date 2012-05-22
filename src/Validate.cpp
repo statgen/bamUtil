@@ -153,6 +153,9 @@ int Validate::execute(int argc, char **argv)
     // Open the file for reading.   
     if(!samIn.OpenForRead(inFile))
     {
+        fprintf(stderr, "Failed opening the SAM/BAM file, returning: %d (%s)\n",
+                samIn.GetStatus(), 
+                SamStatus::getStatusString(samIn.GetStatus()));
         fprintf(stderr, "%s\n", samIn.GetStatusMessage());
         return(samIn.GetStatus());
     }
@@ -170,6 +173,9 @@ int Validate::execute(int argc, char **argv)
     SamFileHeader samHeader;
     if(!samIn.ReadHeader(samHeader))
     {
+        fprintf(stderr, "Failed header validation, returning: %d (%s)\n", 
+                samIn.GetStatus(), 
+                SamStatus::getStatusString(samIn.GetStatus()));
         fprintf(stderr, "%s\n", samIn.GetStatusMessage());
         return(samIn.GetStatus());
     }

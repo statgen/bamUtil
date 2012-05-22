@@ -1,0 +1,11 @@
+
+The following parameters are available.  Ones with "[]" are in effect:
+
+Input Parameters
+ --in [testFiles/testInvalid2.sam], --noeof, --refFile [], --maxErrors [-1],
+               --verbose [ON], --printableErrors [100], --disableStatistics,
+               --params [ON]
+   SortOrder : --so_flag, --so_coord, --so_query
+
+Failed header validation, returning: 5 (FAIL_PARSE)
+FAIL_PARSE: SAM/BAM Header line failure: Skipping PG line that has a repeated ID field.
