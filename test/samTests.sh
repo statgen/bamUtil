@@ -21,6 +21,13 @@ then
     ERROR=true
 fi
 
+../bin/bam validate --params --in testFiles/testInvalid2.bam  --v 2> results/validateInvalid2Bam.txt
+diff results/validateInvalid2Bam.txt expected/invalid2Bam.txt
+if [ $? -ne 0 ]
+then
+    ERROR=true
+fi
+
 ../bin/bam validate --params --in testFiles/nonExistentFile.sam --refFile testFilesLibBam/chr1_partial.fa --v 2> results/nonExistentFile.txt
 diff results/nonExistentFile.txt expected/nonExistentFile.txt
 if [ $? -ne 0 ]
