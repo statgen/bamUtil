@@ -24,6 +24,7 @@
 #include <map>
 #include "SamRecordPool.h"
 #include "Recab.h"
+#include "SamFlag.h"
 
 /*---------------------------------------------------------------/
   /
@@ -47,7 +48,8 @@ public:
         singleDuplicates(0),
         pairedDuplicates(0),
         myNumMissingMate(0),
-        myForceFlag(false)
+        myForceFlag(false),
+        myMinQual(15)
     {}
 
     ~Dedup();
@@ -74,31 +76,96 @@ private:
               record1Index(0), record2Index(0) {}
     };
 
+
+    struct DupKey
+    {
+        int32_t reference;
+        int32_t coordinate;
+        bool orientation;
+        uint32_t libraryID;
+        DupKey()
+            : reference(0), coordinate(0), orientation(false), libraryID(0) {}
+        DupKey(int32_t ref, int32_t coord, bool orient, uint32_t lib)
+            : reference(ref), coordinate(coord), orientation(orient), libraryID(lib) {}
+        inline void updateKey(SamRecord& record, uint32_t libID)
+        {
+            reference = record.getReferenceID();
+            coordinate = record.get0BasedUnclippedStart();
+            orientation = SamFlag::isReverse(record.getFlag());
+            if(orientation)
+            {
+                // Reverse, so get the unclipped end.
+                coordinate = record.get0BasedUnclippedEnd();
+            }
+            libraryID = libID;
+        }
+        inline void cleanupKey(int32_t referenceID, int32_t coordinate)
+        {
+            reference = referenceID;
+            coordinate = coordinate - CLIP_OFFSET;
+            orientation = false;
+            libraryID = 0;
+        }
+        inline bool operator <(const DupKey& key) const
+        {
+            if(reference == key.reference)
+            {
+                // same reference, so check the coordinate.
+                if(coordinate == key.coordinate)
+                {
+                    // Same coordinate, so check orientation.
+                    if(orientation == key.orientation)
+                    {
+                        // Same orientation, so check library id.
+                        return(libraryID < key.libraryID);
+                    }
+                    // Different orientations, so this is less than the
+                    // other if this orientation is false.
+                    return(!orientation);
+                }
+                // Same Ref, & different coordinates, so just check that.
+                return(coordinate < key.coordinate);
+            }
+            // Different references, so less than is determined by 
+            // checking the reference only.
+            return(reference < key.reference);
+        }
+        inline DupKey&  operator = (const DupKey& key)
+        {
+            reference = key.reference;
+            coordinate = key.coordinate;
+            orientation = key.orientation;
+            libraryID = key.libraryID;
+            return(*this);
+        }
+    };
+    
     // Each read is assigned a key based on its referenceID, coordinate, orientation, and libraryID
     // This structure stores the two keys in a paired end read.
     struct PairedKey {
-        uint64_t key1;
-        uint64_t key2;
-        PairedKey(uint64_t k1, uint64_t k2)
+        DupKey key1;
+        DupKey key2;
+        PairedKey(DupKey k1, DupKey k2)
         {
-            if(k1 <= k2)
-            {
-                key1 = k1;
-                key2 = k2;
-            }
-            else
+            if(k2 < k1)
             {
                 key1 = k2;
                 key2 = k1;
             }
+            else
+            {
+                key1 = k1;
+                key2 = k2;
+            }
         }
     };
+
 
     // Paired key comparison operator used for sorting paired end reads.
     struct PairedKeyComparator {
         inline bool operator() (const PairedKey& lhs, const PairedKey& rhs) const {
             if (lhs.key2 < rhs.key2) return true;
-            if (lhs.key2 > rhs.key2) return false;
+            if (rhs.key2 < lhs.key2) return false;
             return lhs.key1 < rhs.key1;
         }
     };
@@ -108,7 +175,7 @@ private:
     StringToInt32Map rgidLibMap;
 
     // A map from the key of a single read to its read data
-    typedef std::map< uint64_t, ReadData, std::less<uint64_t> > FragmentMap;
+    typedef std::map< DupKey, ReadData > FragmentMap;
     typedef std::pair<FragmentMap::iterator,bool> FragmentMapInsertReturn;
     FragmentMap myFragmentMap;
 
@@ -141,8 +208,9 @@ private:
     uint32_t singleDuplicates, pairedDuplicates;
     int myNumMissingMate;
     bool myForceFlag;
+    int myMinQual;
 
-    // Update
+    static const int DEFAULT_MIN_QUAL;
     static const uint32_t CLIP_OFFSET;
 
     // Once record is read, look back at previous reads and determine 
@@ -159,19 +227,6 @@ private:
 
     // Add the base qualities in a read
     int getBaseQuality(SamRecord& record);
-
-    // Returns the key constructed for a given record.  Should not be used
-    // for cleaning up prior records.
-    uint64_t makeRecordKey(SamRecord & record);
-
-    // Returns the key for cleaning up keys prior to the record with this
-    // position.  It offsets the key so it is prior to the specified coordinate
-    // allowing for later reads to be clipped.
-    uint64_t makeCleanupKey(int32_t referenceID, int32_t coordinate);
-
-    // Returns the key constructed from those four pieces of information
-    uint64_t makeKey(int32_t reference, int32_t coordinate, 
-                     bool orientation, uint32_t libraryID);
 
     // builds the read group library map
     void buildReadGroupLibraryMap(SamFileHeader& header);

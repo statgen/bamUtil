@@ -25,10 +25,10 @@
 #include "Dedup.h"
 #include "Logger.h"
 #include "SamHelper.h"
-#include "SamFlag.h"
 #include "SamStatus.h"
 #include "BgzfFileType.h"
 
+const int Dedup::DEFAULT_MIN_QUAL = 15;
 const uint32_t Dedup::CLIP_OFFSET = 1000;
 
 Dedup::~Dedup()
@@ -75,14 +75,16 @@ void Dedup::description()
 
 void Dedup::usage()
 {
-    std::cerr << "Usage: ./bam dedup (options) --in <InputBamFile> --out <OutputBamFile> [--log <logFile>] [--oneChrom] [--rmDups] [--force] [--verbose] [--noeof] [--params] [--recab] ";
+    std::cerr << "Usage: ./bam dedup (options) --in <InputBamFile> --out <OutputBamFile> [--minQual <minPhred>] [--log <logFile>] [--oneChrom] [--rmDups] [--force] [--verbose] [--noeof] [--params] [--recab] ";
     myRecab.recabSpecificUsageLine();
     std::cerr << std::endl << std::endl;
     std::cerr << "Required parameters :" << std::endl;
     std::cerr << "\t--in <infile>   : input BAM file name (must be sorted)" << std::endl;
     std::cerr << "\t--out <outfile> : output BAM file name (same order with original file)" << std::endl;
     std::cerr << "Optional parameters : (see SAM format specification for details)" << std::endl;
-    std::cerr << "\t--log <logfile> : log and summary statistics (default: [outfile].log)" << std::endl;
+    std::cerr << "\t--minQual <int> : only add scores over this phred quality when determining a read's quality (default: "
+              << DEFAULT_MIN_QUAL << ")" << std::endl;
+    std::cerr << "\t--log <logfile> : log and summary statistics (default: [outfile].log, or stderr if --out starts with '-')" << std::endl;
     std::cerr << "\t--oneChrom      : Treat reads with mates on different chromosomes as single-ended." << std::endl;
     std::cerr << "\t--rmDups        : Remove duplicates (default is to mark duplicates)" << std::endl;
     std::cerr << "\t--force         : Allow mark-duplicated BAM file and force unmarking the duplicates" << std::endl;
@@ -106,6 +108,7 @@ int Dedup::execute(int argc, char** argv)
     bool verboseFlag = false;
     myForceFlag = false;
     myNumMissingMate = 0;
+    myMinQual = DEFAULT_MIN_QUAL;
     bool noeof = false;
     bool params = false;
     LongParamContainer parameters;
@@ -113,6 +116,7 @@ int Dedup::execute(int argc, char** argv)
     parameters.addString("in", &inFile);
     parameters.addString("out", &outFile);
     parameters.addGroup("Optional Parameters");
+    parameters.addInt("minQual", & myMinQual);
     parameters.addString("log", &logFile);
     parameters.addBool("oneChrom", &myOneChrom);
     parameters.addBool("recab", &myDoRecab);
@@ -395,6 +399,9 @@ int Dedup::execute(int argc, char** argv)
 // clean up any previous positions from being tracked.
 void Dedup::cleanupPriorReads(SamRecord* record)
 {
+    static DupKey emptyKey;
+    static DupKey tempKey2;
+
     // Set where to stop cleaning out the structures.
     // Initialize to the end of the structures.
     FragmentMap::iterator fragmentFinish = myFragmentMap.end();
@@ -406,10 +413,10 @@ void Dedup::cleanupPriorReads(SamRecord* record)
     {
         int32_t reference = record->getReferenceID();
         int32_t coordinate = record->get0BasedPosition();
-        uint64_t key = makeCleanupKey(reference, coordinate);
-        fragmentFinish = myFragmentMap.lower_bound(key);
+        tempKey2.cleanupKey(reference, coordinate);
+        fragmentFinish = myFragmentMap.lower_bound(tempKey2);
         // Now do the same thing with the paired reads
-        PairedKey pairedKey(0, key);
+        PairedKey pairedKey(emptyKey, tempKey2);
         pairedFinish = myPairedMap.lower_bound(pairedKey);
         mateStopPos =
             SamHelper::combineChromPos(reference, 
@@ -494,7 +501,10 @@ void Dedup::checkDups(SamRecord& record, uint32_t recordCount)
     // Only inside this method if the record is mapped.
 
     // Get the key for this record.
-    uint64_t key = makeRecordKey(record);
+    static DupKey key;
+    static DupKey mateKey;
+    key.updateKey(record, getLibraryID(record));
+
     int flag = record.getFlag(); 
     bool recordPaired = SamFlag::isPaired(flag) && SamFlag::isMateMapped(flag);
     int sumBaseQual = getBaseQuality(record);
@@ -552,7 +562,7 @@ void Dedup::checkDups(SamRecord& record, uint32_t recordCount)
             // This record is a duplicate, so mark it and release it.
             myDupList.push_back(recordCount);
             mySamPool.releaseRecord(&record);
-            }
+        }
     }
 
     // Only paired processing is left, so return if not paired.
@@ -619,7 +629,8 @@ void Dedup::checkDups(SamRecord& record, uint32_t recordCount)
     }
 
     // Make the paired key.
-    PairedKey pkey(key, makeRecordKey(*mateRecord));
+    mateKey.updateKey(*mateRecord, getLibraryID(*mateRecord));
+    PairedKey pkey(key, mateKey);
 
     // Check to see if this pair is a duplicate.
     PairedMapInsertReturn pairedReturn = 
@@ -631,8 +642,32 @@ void Dedup::checkDups(SamRecord& record, uint32_t recordCount)
     if(pairedReturn.second == false)
     {
         // Duplicate found.
-        // Check to see which one should be kept by checking qualities.
+        bool keepStored = true;
         if(pairedReturn.first->second.sumBaseQual < sumBaseQual)
+        {
+            // The new pair has higher quality, so keep that.
+            keepStored = false;
+        }
+        else if(pairedReturn.first->second.sumBaseQual == sumBaseQual)
+        {
+            // Same quality, so keep the one with the earlier record1Index.
+            if(mateIndex < storedPair->record2Index)
+            {
+                // The new pair has an earlier first read, so keep that.
+                keepStored = false;
+            }
+        }
+        // Check to see which one should be kept by checking qualities.
+        if(keepStored)
+        {
+            // The old pair had higher quality so mark the new pair as a
+            // duplicate and release them.
+            myDupList.push_back(mateIndex);
+            myDupList.push_back(recordCount);
+            mySamPool.releaseRecord(&record);
+            mySamPool.releaseRecord(mateRecord);
+        }
+        else
         {
             // The new pair has higher quality, so keep that.
             // First mark the previous one as duplicates and release them.
@@ -646,15 +681,6 @@ void Dedup::checkDups(SamRecord& record, uint32_t recordCount)
             storedPair->record2Ptr = mateRecord;
             storedPair->record1Index = recordCount;
             storedPair->record2Index = mateIndex;
-        }
-        else
-        {
-            // The old pair had higher quality so mark the new pair as a
-            // duplicate and release them.
-            myDupList.push_back(mateIndex);
-            myDupList.push_back(recordCount);
-            mySamPool.releaseRecord(&record);
-            mySamPool.releaseRecord(mateRecord);
         }
     }
     else
@@ -674,57 +700,15 @@ int Dedup::getBaseQuality(SamRecord & record) {
     const char* baseQualities = record.getQuality();
     int readLength = record.getReadLength();
     int quality = 0.;
+    if(strcmp(baseQualities, "*") == 0)
+    {
+        return(0);
+    }
     for(int i=0; i < readLength; ++i) {
         int q = static_cast<int>(baseQualities[i])-33;
-        if ( q >= 15 ) quality += q;
+        if ( q >= myMinQual ) quality += q;
     }
     return quality;
-}
-
-
-// extract the relevant information from the record and make the key
-uint64_t Dedup::makeRecordKey(SamRecord& record)
-{
-    int32_t referenceID = record.getReferenceID();
-    int32_t coordinate = record.get0BasedUnclippedStart();
-    bool orientation = SamFlag::isReverse(record.getFlag());
-
-    if(orientation)
-    {
-        // Reverse, so get the unclipped end.
-        coordinate = record.get0BasedUnclippedEnd();
-    }
-    return makeKey(referenceID, coordinate, orientation, getLibraryID(record));
-}
-
-
-uint64_t Dedup::makeCleanupKey(int32_t referenceID, int32_t coordinate)
-{
-    int32_t adjustedCoord = coordinate - CLIP_OFFSET;
-    if(adjustedCoord < 0)
-    {
-        adjustedCoord = 0;
-    }
-    return(makeKey(referenceID, adjustedCoord, false, 0));
-}
-
-
-// makes a key from the specified parameters.
-uint64_t Dedup::makeKey(int32_t referenceID, int32_t coordinate,
-                        bool orientation, uint32_t libraryID)
-{
-    if((referenceID < 0) || (coordinate < 0))
-    {
-        Logger::gLogger->error("Dedup::makeKey - refID or coordinate is negative. refID = %d, coordinate = %d",
-                               referenceID, coordinate);
-    }
-    return ( (0xffff000000000000 & 
-              (static_cast<uint64_t>(referenceID) << 48))  |
-             (0x0000ffffffff0000 & 
-              (static_cast<uint64_t>(coordinate) << 16)) |
-             (0x000000000000ff00 & 
-              (static_cast<uint64_t>(orientation) << 8)) |
-             (0x00000000000000ff & (static_cast<uint64_t>(libraryID))) );
 }
 
 
@@ -867,7 +851,7 @@ void Dedup::handleMissingMate(SamRecord* recordPtr)
     else if(firstSameChrom)
     {
         std::cerr << "ERROR: Records with missing mate can't be checked for "
-                  << "duplicates.";
+                  << "duplicates.\n";
         firstSameChrom = false;
     }
 
