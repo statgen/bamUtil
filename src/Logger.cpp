@@ -26,7 +26,15 @@ Logger* Logger::gLogger = NULL;
 Logger::Logger(const char* filename, bool verbose) 
 {
   b_verbose = verbose;
-  fp_log = fopen(filename, "w");
+  if((filename != NULL) && (filename[0] == '-'))
+  {
+      // write to stderr.
+      fp_log = stderr;
+  }
+  else
+  {
+      fp_log = fopen(filename, "w");
+  }
   if ( fp_log == NULL ) {
     fprintf(stderr,"ERROR: Cannot open the log file %s. Check if the directory exists and you have the permission to create a file", filename);
     abort();
