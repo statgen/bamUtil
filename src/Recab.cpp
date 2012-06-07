@@ -150,11 +150,27 @@ int Recab::execute(int argc, char *argv[])
         BgzfFileType::setRequireEofBlock(false);
     }
 
-    if (inFile.IsEmpty() || outFile.IsEmpty() || myRefFile.IsEmpty())
+    if(inFile.IsEmpty())
     {
         usage();
         inputParameters.Status();
-        std::cerr << "Missing parameters" << std::endl;
+        std::cerr << "Missing required --in parameter" << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    if(outFile.IsEmpty())
+    {
+        usage();
+        inputParameters.Status();
+        std::cerr << "Missing required --out parameter" << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    if(myRefFile.IsEmpty())
+    {
+        usage();
+        inputParameters.Status();
+        std::cerr << "Missing required --refFile parameter" << std::endl;
         return EXIT_FAILURE;
     }
 
