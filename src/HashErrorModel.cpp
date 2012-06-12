@@ -20,215 +20,172 @@
 #include <iostream>
 #include <stdio.h>
 #include "HashErrorModel.h"
+#include "BaseUtilities.h"
 #include <math.h>
 
 
-HashErrorModel::HashErrorModel(){
+HashErrorModel::HashErrorModel()
+{
 	lastElement = 0;
-	//set minimum size
-	mismatchTable.rehash((std::size_t) MINSIZE);
 }
 
-HashErrorModel::~HashErrorModel() {
-};
+HashErrorModel::~HashErrorModel() 
+{
+}
 
-//ReadGroup handling
-uint8_t HashErrorModel::mapReadGroup(std::string readgroup) {
 
-    if(readgroupDic.find(readgroup) != readgroupDic.end())
-        return 	readgroupDic[readgroup];
+void HashErrorModel::setCell(const BaseData& data)
+{
+    SMatches& matchInfo = mismatchTable[data];
+
+    int myMatch = matchInfo.m;
+
+    if(BaseUtilities::areEqual(data.refBase, data.curBase))
+    {
+        ++(matchInfo.m);
+    }
     else
     {
-    	lastElement++;
-    	readgroupDic[readgroup] = lastElement;
-    	rereadgroupDic[lastElement] = readgroup;
-    	return lastElement;
+        ++(matchInfo.mm);
     }
 }
 
-uint64_t HashErrorModel::calcKey(baseCV basecv) {
-
-	//Key construction
-    uint16_t rg = mapReadGroup(basecv.rg);
-    return (
-       	 (0xffff000000000000 & ( static_cast<uint64_t>(basecv.tile)    << 48 ) ) |
-    	 (0x0000ffff00000000 & ( static_cast<uint64_t>(rg)             << 32 ) ) |
-	     (0x00000000ff000000 & ( static_cast<uint64_t>(basecv.q)       << 24 ) ) |
-	     (0x0000000000ff0000 & ( static_cast<uint64_t>(basecv.pos)     << 16 ) ) |
-	   	 (0x000000000000f000 & ( static_cast<uint64_t>(basecv.read)    << 12 ) ) |
-         (0x0000000000000f00 & ( static_cast<uint64_t>(basecv.prebase) << 8  ) ) |
-	     //(0x00000000000000f0 & ( static_cast<uint64_t>(basecv.nexbase) << 4  ) ) |
-	     (0x000000000000000f & ( static_cast<uint64_t>(basecv.curbase)     ) )
-	     );
-}
-
-baseCV HashErrorModel::revKey(uint64_t key) {
-
-	baseCV basecv;
-	//Key construction
-    basecv.tile =    static_cast<uint8_t> ((key & 0xffff000000000000) >> 48);
-    uint16_t rg =    static_cast<uint16_t>((key & 0x0000ffff00000000) >> 32);
-    basecv.rg = rereadgroupDic[rg];
-    basecv.q =       static_cast<uint8_t>((key &  0x00000000ff000000) >> 24);
-    basecv.pos =     static_cast<uint16_t>((key & 0x0000000000ff0000) >> 16);
-    basecv.read =    static_cast<uint8_t>((key &  0x000000000000f000) >> 12);
-    basecv.prebase = static_cast<uint8_t>((key &  0x0000000000000f00) >> 8);
-    //basecv.nexbase = static_cast<uint8_t>((key &  0x00000000000000f0) >> 4);
-    basecv.curbase = static_cast<uint8_t>(key &   0x000000000000000f);
-    return basecv;
-}
-
-void HashErrorModel::setCell(baseCV basecv){
-	uint64_t key = calcKey(basecv);
-
-	SMatches smatch = {0,0,0.0};
-	HashMatch::iterator it = mismatchTable.insert(HashMatch::value_type(key, smatch)).first;
-	if(basecv.obs==basecv.ref)
-	  it->second.m++;
-	else{
-	  it->second.mm++;
-	}
-}
-
-uint8_t HashErrorModel::getQemp(baseCV basecv){
-	double qs;
-	uint64_t key = calcKey(basecv);
-    uint64_t match =  mismatchTable[key].m;
-    uint64_t mismatch = mismatchTable[key].mm;
-    qs = log10((double)(mismatch+1)/(double)(mismatch+match+1)) * (-10.0);
+uint8_t HashErrorModel::getQemp(const BaseData& data)
+{
+    double qs;
+    SMatches& matchMismatch = mismatchTable[data];
+    qs = log10((double)(matchMismatch.mm+1)/(double)(matchMismatch.mm+matchMismatch.m+1)) * (-10.0);
     return floor(qs + 0.5);
 }
 
 
-int HashErrorModel::writeAllTableMM(String filename){
-
+int HashErrorModel::writeAllTableMM(String filename, 
+                                    const std::vector<std::string>& id2rg)
+{
     FILE *pFile;
-	pFile = fopen(filename.c_str(), "w");
-	if(!pFile) return 0;
+    pFile = fopen(filename.c_str(), "w");
+    if(!pFile) return 0;
+    
+    int maxId = id2rg.size() - 1;
 
-	for(HashMatch::const_iterator it = mismatchTable.begin();
-	    it != mismatchTable.end();
-	    ++it)
-	{
-		baseCV basecv = revKey(it->first);
-	    uint64_t m = it->second.m;
-	    uint64_t mm = it->second.mm;
-	    uint8_t qemp = it->second.qemp;
-		fprintf(pFile,"%s %d %d %d %d %d %d %d - %ld %ld %d\n",basecv.rg.c_str(),basecv.q,basecv.pos,basecv.read,basecv.tile,basecv.prebase,basecv.nexbase,basecv.curbase,m,mm,qemp);
-	}
-   fclose(pFile);
-   return 1;
+    for(HashMatch::const_iterator it = mismatchTable.begin();
+        it != mismatchTable.end();
+        ++it)
+    {
+        if(it->first.rgid <= maxId)
+        {
+            fprintf(pFile,"%s %d %d %d %d %d %d %d - %ld %ld %d\n",
+                    id2rg[it->first.rgid].c_str(), it->first.qual, it->first.cycle,
+                    it->first.read, 0, BaseAsciiMap::base2int[(int)(it->first.preBase)], 0, BaseAsciiMap::base2int[(int)(it->first.curBase)],
+                    it->second.m, it->second.mm, it->second.qemp);
+        }
+    }
+    fclose(pFile);
+    return 1;
 }
 
-
-int HashErrorModel::getKeyLength(){
-	// pos 0..119
-	//return 7-1+120
-	//return 6;
-	return 5; // next information
-};
 
 uint32_t HashErrorModel::getSize(){
 	return mismatchTable.size();
 };
 
-void HashErrorModel::setModel(Model model){
-  this->model = model;
+
+void HashErrorModel::addPrediction(Model model,int blendedWeight)
+{
+    for(HashMatch::iterator it = mismatchTable.begin();
+        it != mismatchTable.end();
+        ++it)
+    {
+        Covariates cov;
+        cov.setCovariates(it->first);
+        int j = 1;
+        double qemp = model[0]; //slope
+        for(std::vector<uint16_t>::const_iterator itv = 
+                cov.covariates.begin();
+            itv != cov.covariates.end();
+            ++itv)
+            {
+                qemp += model[j]*(double)(*itv);
+                j++;
+            }
+        //phred-score transformation
+        //conservative (otherwise +0.5)
+        //blended Model?
+        int phred = 0;
+        if(blendedWeight==9999){
+            uint64_t m = it->second.m;
+            uint64_t mm = it->second.mm;
+            qemp = (mm-blendedWeight)/(m+mm-blendedWeight);
+        }
+        else{
+            if(blendedWeight>0){
+                uint64_t m = it->second.m;
+                uint64_t mm = it->second.mm;
+                //qemp = (mm+qemp*blendedWeight)/(m+mm+blendedWeight);
+                qemp = (mm+qemp*mm)/(2.0*(m+mm));
+            }
+        }
+        phred = trunc((-10.0*log10(1.0-(1.0/(1.0+exp(-qemp)))))+0.5);
+        it->second.qemp = phred;
+    }
 };
 
-void HashErrorModel::addPrediction(Model model,int blendedWeight){
-	this->model = model;
-	for(HashMatch::iterator it = mismatchTable.begin();
-	    it != mismatchTable.end();
-	    ++it)
-	{
-		baseCV basecv = revKey(it->first);
-		basecv.setCovariates();
-		int j = 1;
-		double qemp = model[0]; //slope
-		for(std::vector<uint16_t>::const_iterator itv = basecv.covariates.begin();
-		    itv != basecv.covariates.end();
-		    ++itv)
-		{
-			qemp += model[j]*(double)(*itv);
-			j++;
-		}
-		//phred-score transformation
-		//conservative (otherwise +0.5)
-		//blended Model?
-		int phred = 0;
-		if(blendedWeight==9999){
-			uint64_t m = it->second.m;
-			uint64_t mm = it->second.mm;
-			qemp = (mm-blendedWeight)/(m+mm-blendedWeight);
-		}
-		else{
-			if(blendedWeight>0){
-				uint64_t m = it->second.m;
-				uint64_t mm = it->second.mm;
-				//qemp = (mm+qemp*blendedWeight)/(m+mm+blendedWeight);
-				qemp = (mm+qemp*mm)/(2.0*(m+mm));
-			}
-		}
-		phred = trunc((-10.0*log10(1.0-(1.0/(1.0+exp(-qemp)))))+0.5);
-		it->second.qemp = phred;
-	}
-};
 
+void HashErrorModel::setDataforPrediction(Matrix & X, Vector & succ, Vector & total,bool binarizeFlag)
+{
+    int i = 0;
+    for(HashMatch::const_iterator it = mismatchTable.begin();
+        it != mismatchTable.end();
+        ++it)
+    {
+        Covariates cov;
+        cov.setCovariates(it->first);
+        if(i == 0)
+        {
+            uint32_t rows = getSize();
+            succ.Dimension(rows);
+            total.Dimension(rows);
+            X.Dimension(rows, cov.covariates.size() + 1);
+            X.Zero();
+        }
 
-void HashErrorModel::setDataforPrediction(Matrix & X, Vector & succ, Vector & total,bool binarizeFlag){
+        // The first column of the design matrix is constant one, for the slope
+        X[i][0] = 1.0;
 
-	int cols = getKeyLength()+1;
-	uint32_t rows = getSize();
-
-	succ.Dimension(rows);
-	total.Dimension(rows);
-	X.Dimension(rows, cols);
-	X.Zero();
-
-	int i = 0;
-	for(HashMatch::const_iterator it = mismatchTable.begin();
-	    it != mismatchTable.end();
-	    ++it)
-	{
-		// The first column of the design matrix is constant one, for the slope
-		X[i][0] = 1.0;
-
-		baseCV basecv = revKey(it->first);
-		basecv.setCovariates();
-		int j = 0;
-
-		//binarize a couple of co-variates
-		for(std::vector<uint16_t>::const_iterator itv = basecv.covariates.begin();
-		    itv != basecv.covariates.end();
-		    ++itv)
-		{
-            if(binarizeFlag){
-				//hardcoded pos is 2
-				if(j==1){
-				  uint16_t pos = (uint16_t)*itv;
-				  // hardcoded
-				  pos += 7;
-				  X[i][pos] = 1;
-				}
-				else
-				{
-				  if(j>1)
-					X[i][j] = (uint16_t)*itv;
-				  else
-					X[i][j+1] = (uint16_t)*itv;
-				}
-				j++;
+        int j = 0;
+                
+        //binarize a couple of co-variates
+        for(std::vector<uint16_t>::const_iterator itv = cov.covariates.begin();
+            itv != cov.covariates.end();
+            ++itv)
+        {
+            if(binarizeFlag)
+            {
+                //hardcoded pos is 2
+                if(j==1){
+                    uint16_t pos = (uint16_t)*itv;
+                    // hardcoded
+                    pos += 7;
+                    X[i][pos] = 1;
+                }
+                else
+                {
+                    if(j>1)
+                        X[i][j] = (uint16_t)*itv;
+                    else
+                        X[i][j+1] = (uint16_t)*itv;
+                }
+                j++;
             }
             else
             {
-				X[i][j+1] = (uint16_t)*itv;
-				j++;
+                X[i][j+1] = (uint16_t)*itv;
+                j++;
             }
-		}
+        }
         total[i] = it->second.mm + it->second.m;
         succ[i] = it->second.m;
-	    i++;
-	}
+        i++;
+    }
 }
 

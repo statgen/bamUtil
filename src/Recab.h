@@ -70,11 +70,6 @@ private:
         std::string newq;
     } quality_t;
 
-    // conversion table
-    static void conversionTable();
-    static int nt2idx(char c);
-    static int nt2idx2[256];
-
     void processParams();
 
     // So external programs can read recab parameters.
@@ -102,6 +97,9 @@ private:
     // rather than constructing new ones every time.
     quality_t myQualityStrings;
 
+    std::map<std::string, uint16_t> myRg2Id;
+    typedef std::pair<std::map<std::string, uint16_t>::iterator, bool> RgInsertReturn;
+    std::vector<std::string> myId2Rg;
 };
 
 #endif

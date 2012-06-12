@@ -21,9 +21,9 @@
 
 #include <stdint.h>
 #include <vector>
-#include <tr1/unordered_map>
+#include <map>
 #include "StringArray.h"
-#include "BaseCV.h"
+#include "Covariates.h"
 #include "MathMatrix.h"
 #include "MathVector.h"
 
@@ -43,29 +43,18 @@ class HashErrorModel {
    } SMatches;
 
 
-   typedef std::tr1::unordered_map<uint64_t,HashErrorModel::SMatches> HashMatch;
-   typedef std::tr1::unordered_map<std::string,uint16_t > RGdict;
-   typedef std::tr1::unordered_map<uint16_t,std::string > ReRGdict;
+   typedef std::map<BaseData,HashErrorModel::SMatches> HashMatch;
 
-
-   Model model;
-   RGdict readgroupDic;
-   ReRGdict rereadgroupDic;
    HashMatch mismatchTable;
    uint16_t lastElement;
 
    HashErrorModel();
    ~HashErrorModel();
 
-   void setCell(baseCV basecv);
-   uint8_t mapReadGroup(std::string readgroup);
-   uint64_t calcKey(baseCV basecv);
-   uint8_t getQemp(baseCV basecv);
-   int writeAllTableMM(String filename);
-   baseCV revKey(uint64_t key);
-   int getKeyLength();
+   void setCell(const BaseData& data);
+   uint8_t getQemp(const BaseData& data);
+    int writeAllTableMM(String filename, const std::vector<std::string>& id2rg);
    uint32_t getSize();
-   void setModel(Model model);
    void setDataforPrediction(Matrix & X, Vector & succ, Vector& total,bool binarizeFlag);
    void addPrediction(Model model, int blendedWeight);
 };

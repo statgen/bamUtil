@@ -63,30 +63,30 @@ int Prediction::fitModel(bool writeModelFlag, std::string& filename)
 
 void Prediction::outModel()
 {
-  int cols = phasherrormodel->getKeyLength()+1;
-  if(fullmodel)
-  printf("Model\n");
-  printf("Effect Variance SE\n");
-  for(int i=0;i<cols;i++)
-  {
-      double effect = lrengine.B[i] ;
-      double variance = lrengine.covB[i][i] + 1e-30;
-	  double serror = sqrt(variance);
-	  printf("%f %f %f \n",
-			  effect, variance, serror);
-  }
+    if(fullmodel)
+        printf("Model\n");
+    printf("Effect Variance SE\n");
+    for(int i=0;i<lrengine.B.Length();i++)
+    {
+        double effect = lrengine.B[i];
+        double variance = lrengine.covB[i][i] + 1e-30;
+        double serror = sqrt(variance);
+        printf("%f %f %f \n",
+               effect, variance, serror);
+    }
 }
 
-void Prediction::setErrorModel(HashErrorModel *phasherrormodel){
+void Prediction::setErrorModel(HashErrorModel *phasherrormodel)
+{
    this->phasherrormodel = phasherrormodel;
 }
 
-std::vector<double> Prediction::getModel(){
+std::vector<double> Prediction::getModel()
+{
   std::vector<double> model;
 
-  int cols =  phasherrormodel->getKeyLength()+1;
   if(fullmodel)
-    for(int i=0;i<cols;i++)
+    for(int i=0;i<lrengine.B.Length();i++)
       model.push_back(lrengine.B[i]);
   return model;
 };
