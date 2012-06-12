@@ -506,14 +506,6 @@ bool Recab::processRead(SamRecord& samRecord, PROC_TYPE processtype)
         if(processtype==ANALYZE)
         {
             hasherrormodel.setCell(data);
-            if(data.read == 1 && data.cycle == 100 && data.qual == 10 && data.preBase == 'N' && data.curBase == 'T')
-            {
-                std::cout << samRecord.getReadName()
-                          << "; qual = " << (int)(data.qual) << "; cycle = " << data.cycle
-                          << "; read = " << data.read << "; preBase = " << data.preBase
-                          << "; curBase = " << data.curBase << "; refBase = " << data.refBase
-                          << std::endl;
-            }
             myBasecounts++;
         }
         //write
