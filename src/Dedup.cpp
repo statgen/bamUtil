@@ -75,7 +75,7 @@ void Dedup::description()
 
 void Dedup::usage()
 {
-    std::cerr << "Usage: ./bam dedup (options) --in <InputBamFile> --out <OutputBamFile> [--minQual <minPhred>] [--log <logFile>] [--oneChrom] [--rmDups] [--force] [--verbose] [--noeof] [--params] [--recab] ";
+    std::cerr << "Usage: ./bam dedup --in <InputBamFile> --out <OutputBamFile> [--minQual <minPhred>] [--log <logFile>] [--oneChrom] [--rmDups] [--force] [--verbose] [--noeof] [--params] [--recab] ";
     myRecab.recabSpecificUsageLine();
     std::cerr << std::endl << std::endl;
     std::cerr << "Required parameters :" << std::endl;
