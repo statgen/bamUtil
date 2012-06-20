@@ -38,11 +38,9 @@ public:
 
     int rgid;
 
-    char refBase; // Not part of key.
-
     BaseData()
         : qual(0), cycle(0), read(false), preBase('?'), 
-          curBase('?'), rgid(0), refBase('?')
+          curBase('?'), rgid(0)
     {}
 
     BaseData(const BaseData& other)
@@ -53,7 +51,6 @@ public:
         preBase = other.preBase;
         curBase = other.curBase;
         rgid = other.rgid;
-        refBase = other.refBase;
     }
 
     inline bool operator <(const BaseData& other) const

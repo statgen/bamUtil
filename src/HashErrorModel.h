@@ -51,8 +51,8 @@ class HashErrorModel {
    HashErrorModel();
    ~HashErrorModel();
 
-   void setCell(const BaseData& data);
-   uint8_t getQemp(const BaseData& data);
+   void setCell(const BaseData& data, char refBase);
+   uint8_t getQemp(BaseData& data);
     int writeAllTableMM(String filename, const std::vector<std::string>& id2rg);
    uint32_t getSize();
    void setDataforPrediction(Matrix & X, Vector & succ, Vector& total,bool binarizeFlag);

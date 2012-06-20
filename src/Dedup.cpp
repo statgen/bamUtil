@@ -372,7 +372,7 @@ int Dedup::execute(int argc, char** argv)
             // Not a duplicate, so recalibrate if necessary.
             if(myDoRecab)
             {
-                myRecab.processRead(record, Recab::UPDATE);
+                myRecab.processReadApplyTable(record);
             }
             samOut.WriteRecord(header, record);
         }
@@ -818,7 +818,7 @@ void Dedup::handleNonDuplicate(SamRecord* recordPtr)
             }
         }
         // Add to recalibration matrix.
-        myRecab.processRead(*recordPtr, Recab::ANALYZE);
+        myRecab.processReadBuildTable(*recordPtr);
     }
 
     // Release the record.

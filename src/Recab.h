@@ -53,17 +53,15 @@ public:
     void recabSpecificUsage();
     int execute(int argc, char **argv);
 
-    enum PROC_TYPE {
-        ANALYZE,
-        UPDATE
-    };
-
-    bool processRead(SamRecord& record, PROC_TYPE processtype);
+    bool processReadBuildTable(SamRecord& record);
+    bool processReadApplyTable(SamRecord& record);
     void modelFitPrediction(const char* outputBase);
 
     void addRecabSpecificParameters(LongParamContainer& params);
 
 private:
+    static const int DEFAULT_MIN_BASE_QUAL = 5;
+
     // quality String
     typedef struct {
         std::string oldq;
@@ -77,6 +75,7 @@ private:
     String myRefFile;
     String myDbsnpFile;
     String myQField;  // Quality TAG
+    int myMinBaseQual;
     int myBlendedWeight;
 
     //stats
@@ -84,9 +83,13 @@ private:
     uint64_t myMappedCount;
     uint64_t myUnMappedCount;
     uint64_t myMappedCountQ;
-    uint64_t myBunMappedCount;
-    uint64_t myBMappedCount;
+    uint64_t myBMismatchCount;
+    uint64_t myBMatchCount;
     uint64_t myZeroMapQualCount;
+    uint64_t myNumDBSnpSkips;
+    uint64_t myDupCount;
+    uint64_t myMapQual0Count;
+    uint64_t myMapQual255Count;
 
     GenomeSequence* myReferenceGenome;
     mmapArrayBool_t myDbSNP;

@@ -51,9 +51,14 @@ Recab::Recab()
     myMappedCount = 0;
     myUnMappedCount = 0;
     myMappedCountQ = 0;
-    myZeroMapQualCount = 0;
-    myBunMappedCount = 0;
-    myBMappedCount = 0;
+    myBMismatchCount = 0;
+    myBMatchCount = 0;
+    myNumDBSnpSkips = 0;
+    myDupCount = 0;
+    myMapQual0Count = 0;
+    myMapQual255Count = 0;
+    myBlendedWeight = 0;
+    myMinBaseQual = DEFAULT_MIN_BASE_QUAL;
 }
 
 
@@ -95,7 +100,7 @@ void Recab::usage()
 
 void Recab::recabSpecificUsageLine()
 {
-    std::cerr << "--refFile <ReferenceFile> [--dbsnp <dbsnpFile>] [--blended <weight>] ";
+    std::cerr << "--refFile <ReferenceFile> [--dbsnp <dbsnpFile>] [--minBaseQual <minBaseQual>] [--blended <weight>] ";
 }
 
 void Recab::recabSpecificUsage()
@@ -104,6 +109,7 @@ void Recab::recabSpecificUsage()
     std::cerr << "\t--refFile <reference file>    : reference file name" << std::endl;
     std::cerr << "Recab Specific Optional Parameters : " << std::endl;
     std::cerr << "\t--dbsnp <known variance file> : dbsnp file of positions" << std::endl;
+    std::cerr << "\t--minBaseQual <minBaseQual>   : minimum base quality of bases to include in the recalibration table" << std::endl;
     std::cerr << "\t--blended <weight>            : blended model weight" << std::endl;
 }
 
@@ -213,7 +219,7 @@ int Recab::execute(int argc, char *argv[])
     int numRecs = 0;
     while(samIn.ReadRecord(samHeader, samRecord) == true)
     {
-        processRead(samRecord, ANALYZE);
+        processReadBuildTable(samRecord);
 
         //Status info
         numRecs++;
@@ -242,20 +248,8 @@ int Recab::execute(int argc, char *argv[])
     
     while(samIn.ReadRecord(samHeader, samRecord) == true)
     {
-        ////////////
-        uint16_t  flag = samRecord.getFlag();
-        
-        if((SamFlag::isDuplicate(flag)) ||
-           (samRecord.getMapQuality() == 0) ||
-           (!SamFlag::isMapped(flag)))
-        {
-            // Do nothing.
-        }
-        else
-        {
-            // Recalibrate.
-            processRead(samRecord,UPDATE);
-        }
+        // Recalibrate.
+        processReadApplyTable(samRecord);
         samOut.WriteRecord(samHeader, samRecord);
     }
 
@@ -270,13 +264,14 @@ void Recab::addRecabSpecificParameters(LongParamContainer& params)
     params.addString("refFile", &myRefFile);
     params.addGroup("Optional Recab Parameters");
     params.addString("dbsnp", &myDbsnpFile);
+    params.addInt("minBaseQual", &myMinBaseQual);
     params.addInt("blended", &myBlendedWeight);
     // params.addString("qualTag", &myQField);
     myParamsSetup = false;
 }
 
 
-bool Recab::processRead(SamRecord& samRecord, PROC_TYPE processtype)
+bool Recab::processReadBuildTable(SamRecord& samRecord)
 {
     static BaseData data;
     static std::string chromosomeName;
@@ -297,33 +292,33 @@ bool Recab::processRead(SamRecord& samRecord, PROC_TYPE processtype)
     // Skip Duplicates.
     if(SamFlag::isDuplicate(flag))
     {
+        myDupCount++;
         return(false);
     }
     if(!SamFlag::isMapped(flag))
     {
-        // Unmapped, skip processing, but increment unmapped count if PROC_WRITE
-        if(processtype == ANALYZE)
-        {
-            myUnMappedCount++;
-        }
+        // Unmapped, skip processing
+        myUnMappedCount++;
         return(false);
     }
     // This read is not a duplicate and is mapped.
-    if(processtype == ANALYZE)
-    {
-        myMappedCount++;
-    }
+    myMappedCount++;
+
     if(samRecord.getMapQuality() == 0)
     {
         // 0 mapping quality, so skip processing.
+        myMapQual0Count++;
+        return(false);
+    }
+    if(samRecord.getMapQuality() == 255)
+    {
+        // 255 mapping quality, so skip processing.
+        myMapQual255Count++;
         return(false);
     }
     // quality>0 & mapped.
-    if(processtype == ANALYZE)
-    {
-        myMappedCountQ++;
-    }
-   
+    myMappedCountQ++;
+    
     chromosomeName = samRecord.getReferenceName();
     readGroup = samRecord.getString("RG").c_str();
 
@@ -389,7 +384,6 @@ bool Recab::processRead(SamRecord& samRecord, PROC_TYPE processtype)
     ////////////////
     genomeIndex_t refPos = 0;
     int32_t refOffset = 0;
-    bool prevMatch = false;
     int32_t prevRefOffset = Cigar::INDEX_NA;
     int32_t seqPos = 0;
     int seqIncr = 1;
@@ -399,18 +393,19 @@ bool Recab::processRead(SamRecord& samRecord, PROC_TYPE processtype)
         seqIncr = -1;
     }
 
-    // TODO - what is prebase??????
+    // read
+    if(!SamFlag::isPaired(flag) || SamFlag::isFirstFragment(flag))
+        // Mark as first if it is not paired or if it is the
+        // first in the pair.
+        data.read = 0;
+    else
+        data.read = 1;
 
-    //    for (int cycle = 0; cycle < seqLen; cycle++, seqPos += seqIncr)
-    int cycle = 0;
-    int cycleIncr = 1;
-    seqIncr = 1;
-    if(reverse)
-    {
-        cycle = seqLen - 1;
-        cycleIncr = -1;
-    }
-    for (int seqPos = 0; seqPos < seqLen; seqPos++, cycle += cycleIncr)
+    // Set unsetbase for curBase.
+    // This will be used for the prebase of cycle 0.
+    data.curBase = 'K';
+
+    for (data.cycle = 0; data.cycle < seqLen; data.cycle++, seqPos += seqIncr)
     {
         // Get the reference offset.
         refOffset = cigarPtr->getRefOffset(seqPos);
@@ -418,125 +413,217 @@ bool Recab::processRead(SamRecord& samRecord, PROC_TYPE processtype)
         {
             // Not a match/mismatch, so continue to the next one which will
             // not have a previous match/mismatch.
-            prevMatch = false;
+            // Set the current to a 'N' & the previous ref offset to
+            // a negative so the next one won't be kept.
+            data.curBase = 'N';
+            prevRefOffset = -2;
             continue;
         }
 
-        if(refOffset != (prevRefOffset + seqIncr))
-        {
-            // The previous cigar operation was not a match.
-            prevMatch = false;
-        }
+        // This one is a match.
+        // Store the previous current base in preBase.
+        data.preBase = data.curBase;
 
-        if(prevMatch)
+        // Get the current base before checking if we are going to
+        // process this position so it will be set for the next position.
+        data.curBase = samRecord.getSequence(seqPos);
+        if(reverse)
         {
-            // Since the previous one was a match, carry over
-            // the already calculated info.
-            data.preBase = data.curBase;
+            // Complement the current base.
+            // The prebase is already complemented.
+            data.curBase = 
+                BaseAsciiMap::base2complement[(unsigned int)(data.curBase)];
+        }
+        
+        refPos = mapPos + refOffset;
+
+        // Check to see if we should process this position.
+        // Do not process if it is cycle 0 and:
+        //   1) current base is 'N'
+        //   2) current base is in dbsnp
+        if(data.cycle == 0)
+        {
+            if((BaseUtilities::isAmbiguous(data.curBase)) ||
+               (!(myDbsnpFile.IsEmpty()) && myDbSNP[refPos]))
+            {
+                // Save the pervious reference offset.
+                prevRefOffset = refOffset;
+                continue;
+            }
         }
         else
         {
-            // The previous position was not a match, so there is no
-            // previous.
-            data.preBase = 'K';
+            // Do not process if it is not cycle 0 and:
+            //   1) previous reference position not adjacent (not a match/mismatch)
+            //      unless it is cycle 0.
+            //   2) previous base is 'N', or cycle 0
+            //   3) current base is 'N'
+            //   4) previous base is in dbsnp or cycle 0
+            //   5) current base is in dbsnp
+            if((refOffset != (prevRefOffset + seqIncr)) ||
+               (data.preBase == 'K') ||
+               (BaseUtilities::isAmbiguous(data.preBase)) ||
+               (BaseUtilities::isAmbiguous(data.curBase)) ||
+               (!(myDbsnpFile.IsEmpty()) && 
+                (myDbSNP[refPos] || myDbSNP[refPos - 1])))
+            {
+                // Save the pervious reference offset.
+                prevRefOffset = refOffset;
+                continue;
+            }
+        }
+        
+        // Save the pervious reference offset.
+        prevRefOffset = refOffset;
+
+        // Set the reference & read bases in the Covariates
+        char refBase = (*myReferenceGenome)[refPos];
+        
+        if(reverse)
+        {
+            refBase = BaseAsciiMap::base2complement[(unsigned int)(refBase)];
         }
 
-        // Set the next round values.
-        prevMatch = true;
-        prevRefOffset = refOffset;
-        
+        // Get quality char
+        data.qual = 
+            BaseUtilities::getPhredBaseQuality(myQualityStrings.oldq[seqPos]);
+
+        // skip bases with quality below the minimum set.
+        if(data.qual < myMinBaseQual)
+        {
+            continue;
+        }
+
+        if(BaseUtilities::areEqual(refBase, data.curBase)
+           && (BaseAsciiMap::base2int[(unsigned int)(data.curBase)] < 4))
+            myBMatchCount++;
+        else
+            myBMismatchCount++;
+
+        hasherrormodel.setCell(data, refBase);
+        myBasecounts++;
+    }
+    return true;
+}
+
+
+bool Recab::processReadApplyTable(SamRecord& samRecord)
+{
+    static BaseData data;
+    static std::string chromosomeName;
+    static std::string readGroup;
+    static std::string aligTypes;
+
+    int seqLen = samRecord.getReadLength();
+
+    uint16_t  flag = samRecord.getFlag();
+   
+    readGroup = samRecord.getString("RG").c_str();
+
+    // Look for the read group in the map.
+    // TODO - extra string constructor??
+    RgInsertReturn insertRet = 
+        myRg2Id.insert(std::pair<std::string, uint16_t>(readGroup, 0));
+    if(insertRet.second == true)
+    {
+        // New element inserted.
+        insertRet.first->second = myId2Rg.size();
+        myId2Rg.push_back(readGroup);
+    }
+
+    data.rgid = insertRet.first->second;
+
+    if(myQField.IsEmpty())
+    {
+        myQualityStrings.oldq = samRecord.getQuality();
+    }
+    else
+    {
+        myQualityStrings.oldq = samRecord.getString(myQField.c_str()).c_str();
+    }
+
+    myQualityStrings.newq = samRecord.getQuality();
+
+    ////////////////
+    ////// iterate sequence
+    ////////////////
+    int32_t seqPos = 0;
+    int seqIncr = 1;
+
+    bool reverse;
+    if(SamFlag::isReverse(flag))
+    {
+        reverse = true;
+        seqPos = seqLen - 1;
+        seqIncr = -1;
+    }
+    else
+        reverse = false;
+
+    // Check which read - this will be the same for all positions, so 
+    // do this outside of the smaller loop.
+    if(!SamFlag::isPaired(flag) || SamFlag::isFirstFragment(flag))
+        // Mark as first if it is not paired or if it is the
+        // first in the pair.
+        data.read = 0;
+    else
+        data.read = 1;
+
+    // Set unsetbase for curBase.
+    // This will be used for the prebase of cycle 0.
+    data.curBase = 'K';
+
+    for (data.cycle = 0; data.cycle < seqLen; data.cycle++, seqPos += seqIncr)
+    {
+        // Set the preBase to the previous cycle's current base.
+        // For cycle 0, curBase was set to a default value.
+        data.preBase = data.curBase;
 
         // Get the current base.
         data.curBase = samRecord.getSequence(seqPos);
 
-        // Set the cycle
-        data.cycle = cycle;
-
         if(reverse)
         {
-            // Complement the current base before checking for
-            // dbsnps so it is done for the next position's prebase.
-            data.curBase = BaseAsciiMap::base2complement[(unsigned int)(data.curBase)];
+            // Complement the current base.
+            data.curBase =
+                BaseAsciiMap::base2complement[(unsigned int)(data.curBase)];
         }
 
-        if(data.curBase == 'N')
-        {
-            data.curBase = 'K';
-        }
-
-        //exclude dbSNP sites
-        refPos = mapPos + refOffset;
-        if(!(myDbsnpFile.IsEmpty()) && (myDbSNP[refPos]==true))
-        {
-            continue;
-        }
-        
-        // Set the reference & read bases in the Covariates
-        data.refBase = (*myReferenceGenome)[refPos];
-        
-        if(reverse)
-        {
-            data.refBase = BaseAsciiMap::base2complement[(unsigned int)(data.refBase)];
-        }
-
-        // Get quality string
+        // Get quality
         data.qual = 
             BaseUtilities::getPhredBaseQuality(myQualityStrings.oldq[seqPos]);
 
-        // TODO - make this configurable.
-        // skip bases with quality below <5
-        if(data.qual < 5)
-        {
-            continue;
-        }
-
-        if(BaseUtilities::areEqual(data.refBase, data.curBase)
-           && (BaseAsciiMap::base2int[(unsigned int)(data.curBase)] < 4))
-            myBMappedCount++;
-        else
-            myBunMappedCount++;
-
-        // read
-        if(flag & SamFlag::FIRST_READ)
-            data.read = 0;
-        else
-            data.read = 1;
-
-        //read
-        if(processtype==ANALYZE)
-        {
-            hasherrormodel.setCell(data);
-            myBasecounts++;
-        }
-        //write
-        if(processtype==UPDATE)
-        {
-            // TODO - implement old quality flag.
-            bool oldQualityFlag = false;
-
-            // Update quality score
-            uint8_t qemp = hasherrormodel.getQemp(data);
-            //if(qemp>4)
-            myQualityStrings.newq[seqPos] = qemp+33;
-            // otherwise keep the old one
-
-            if(oldQualityFlag)
-            {
-                samRecord.addTag("QQ", 'Z', myQualityStrings.oldq.c_str());
-            }
-            samRecord.setQuality(myQualityStrings.newq.c_str());
-        }
+        // Update quality score
+        uint8_t qemp = hasherrormodel.getQemp(data);
+        //if(qemp>4)
+        myQualityStrings.newq[seqPos] = qemp+33;
+        // otherwise keep the old one
     }
+
+    // TODO - implement old quality flag.
+    bool oldQualityFlag = false;
+        
+    if(oldQualityFlag)
+    {
+        samRecord.addTag("QQ", 'Z', myQualityStrings.oldq.c_str());
+    }
+    samRecord.setQuality(myQualityStrings.newq.c_str());
+
     return true;
 }
 
 
 void Recab::modelFitPrediction(const char* outputBase)
 {
-    Logger::gLogger->writeLog("# mapped Reads observed: %ld Q>0: %ld",myMappedCount,myMappedCountQ);
-    Logger::gLogger->writeLog("# unmapped Reads observed: %ld",myUnMappedCount);
-    Logger::gLogger->writeLog("# Bases observed: %ld / ZeroQ: %ld - %ld %ld",myBasecounts,myZeroMapQualCount,
-                              myBMappedCount,myBunMappedCount);
+    Logger::gLogger->writeLog("# mapped Reads observed: %ld Q>0: %ld", myMappedCount, myMappedCountQ);
+    Logger::gLogger->writeLog("# unmapped Reads observed: %ld", myUnMappedCount);
+    Logger::gLogger->writeLog("# Duplicate Reads skipped: %ld", myDupCount);
+    Logger::gLogger->writeLog("# Mapping Quality 0 Reads skipped: %ld", myMapQual0Count);
+    Logger::gLogger->writeLog("# Mapping Quality 255 Reads skipped: %ld", myMapQual255Count);
+    Logger::gLogger->writeLog("# Bases observed: %ld - #match: %ld; #mismatch: %ld",
+                              myBasecounts, myBMatchCount, myBMismatchCount);
+    Logger::gLogger->writeLog("# Bases Skipped for DBSNP: %ld, for Map Qual = 0: %ld, for MapQual = 255: %ld", 
+                              myNumDBSnpSkips, myMapQual0Count, myMapQual255Count);
     ////////////////////////
     ////////////////////////
     //// Model fitting + prediction
@@ -579,7 +666,7 @@ void Recab::processParams()
         {
             Logger::gLogger->writeLog("No dbSNPFile File");
         }
-        else if(myReferenceGenome->loadDBSNP(myDbSNP,myDbsnpFile.c_str() ))
+        else if(myReferenceGenome->loadDBSNP(myDbSNP,myDbsnpFile.c_str()))
         {
             Logger::gLogger->error("Failed to open dbSNP file.");
         }

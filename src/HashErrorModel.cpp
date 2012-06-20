@@ -34,13 +34,11 @@ HashErrorModel::~HashErrorModel()
 }
 
 
-void HashErrorModel::setCell(const BaseData& data)
+void HashErrorModel::setCell(const BaseData& data, char refBase)
 {
     SMatches& matchInfo = mismatchTable[data];
 
-    int myMatch = matchInfo.m;
-
-    if(BaseUtilities::areEqual(data.refBase, data.curBase))
+    if(BaseUtilities::areEqual(refBase, data.curBase))
     {
         ++(matchInfo.m);
     }
@@ -50,10 +48,48 @@ void HashErrorModel::setCell(const BaseData& data)
     }
 }
 
-uint8_t HashErrorModel::getQemp(const BaseData& data)
+uint8_t HashErrorModel::getQemp(BaseData& data)
 {
     double qs;
+
+    if(BaseUtilities::isAmbiguous(data.preBase))
+    {
+        // Prebase is 'N', average the 4 options.
+        qs = 0;
+        data.preBase = 'A';
+        qs += getQemp(data);
+        data.preBase = 'C';
+        qs += getQemp(data);
+        data.preBase = 'G';
+        qs += getQemp(data);
+        data.preBase = 'T';
+        qs += getQemp(data);
+        data.preBase = 'N';
+        // Divide by four to get the average.
+        qs /= 4;
+        return(qs);
+    }
+
+    if(BaseUtilities::isAmbiguous(data.curBase))
+    {
+        // Curbase is 'N', average the 4 options.
+        qs = 0;
+        data.curBase = 'A';
+        qs += getQemp(data);
+        data.curBase = 'C';
+        qs += getQemp(data);
+        data.curBase = 'G';
+        qs += getQemp(data);
+        data.curBase = 'T';
+        qs += getQemp(data);
+        data.curBase = 'N';
+        // Divide by four to get the average.
+        qs /= 4;
+        return(qs);
+    }
+
     SMatches& matchMismatch = mismatchTable[data];
+
     qs = log10((double)(matchMismatch.mm+1)/(double)(matchMismatch.mm+matchMismatch.m+1)) * (-10.0);
     return floor(qs + 0.5);
 }
@@ -74,10 +110,20 @@ int HashErrorModel::writeAllTableMM(String filename,
     {
         if(it->first.rgid <= maxId)
         {
-            fprintf(pFile,"%s %d %d %d %d %d %d %d - %ld %ld %d\n",
-                    id2rg[it->first.rgid].c_str(), it->first.qual, it->first.cycle,
-                    it->first.read, 0, BaseAsciiMap::base2int[(int)(it->first.preBase)], 0, BaseAsciiMap::base2int[(int)(it->first.curBase)],
-                    it->second.m, it->second.mm, it->second.qemp);
+//TODO             fprintf(pFile,"%s %d %d %d %d %d %d %d - %ld %ld %d\n",
+//                     id2rg[it->first.rgid].c_str(), it->first.qual, it->first.cycle,
+//                     it->first.read, 0, BaseAsciiMap::base2int[(int)(it->first.preBase)], 0, BaseAsciiMap::base2int[(int)(it->first.curBase)],
+//                     it->second.m, it->second.mm, it->second.qemp);
+            int16_t cycle = it->first.cycle + 1;
+            if(it->first.read)
+            {
+                // 2nd.
+                cycle = -cycle;
+            }
+            fprintf(pFile,"%s,%d,%d,%c%c,%ld,%ld,%d\n",
+                    id2rg[it->first.rgid].c_str(), it->first.qual, cycle, 
+                    it->first.preBase, it->first.curBase,
+                    it->second.m + it->second.mm, it->second.mm, it->second.qemp);
         }
     }
     fclose(pFile);
@@ -100,31 +146,33 @@ void HashErrorModel::addPrediction(Model model,int blendedWeight)
         cov.setCovariates(it->first);
         int j = 1;
         double qemp = model[0]; //slope
-        for(std::vector<uint16_t>::const_iterator itv = 
-                cov.covariates.begin();
-            itv != cov.covariates.end();
-            ++itv)
-            {
-                qemp += model[j]*(double)(*itv);
-                j++;
-            }
+        for(std::vector<uint16_t>::const_iterator itv = cov.covariates.begin();
+            itv != cov.covariates.end(); ++itv)
+        {
+            qemp += model[j]*(double)(*itv);
+            j++;
+        }
         //phred-score transformation
         //conservative (otherwise +0.5)
         //blended Model?
         int phred = 0;
-        if(blendedWeight==9999){
+        if(blendedWeight==9999)
+        {
             uint64_t m = it->second.m;
             uint64_t mm = it->second.mm;
             qemp = (mm-blendedWeight)/(m+mm-blendedWeight);
         }
-        else{
-            if(blendedWeight>0){
+        else
+        {
+            if(blendedWeight>0)
+            {
                 uint64_t m = it->second.m;
                 uint64_t mm = it->second.mm;
                 //qemp = (mm+qemp*blendedWeight)/(m+mm+blendedWeight);
                 qemp = (mm+qemp*mm)/(2.0*(m+mm));
             }
         }
+
         phred = trunc((-10.0*log10(1.0-(1.0/(1.0+exp(-qemp)))))+0.5);
         it->second.qemp = phred;
     }
