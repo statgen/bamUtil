@@ -77,6 +77,7 @@ private:
     String myQField;  // Quality TAG
     int myMinBaseQual;
     int myBlendedWeight;
+    bool myNoLogReg;
 
     //stats
     uint64_t myBasecounts;

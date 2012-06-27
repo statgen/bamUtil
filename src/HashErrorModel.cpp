@@ -23,6 +23,7 @@
 #include "BaseUtilities.h"
 #include <math.h>
 
+bool HashErrorModel::ourUseLogReg = true;
 
 HashErrorModel::HashErrorModel()
 {
@@ -89,9 +90,16 @@ uint8_t HashErrorModel::getQemp(BaseData& data)
     }
 
     SMatches& matchMismatch = mismatchTable[data];
-
-    qs = log10((double)(matchMismatch.mm+1)/(double)(matchMismatch.mm+matchMismatch.m+1)) * (-10.0);
-    return floor(qs + 0.5);
+    if(ourUseLogReg)
+    {
+        return(matchMismatch.qemp);
+    }
+    else
+    {
+        qs = log10((double)(matchMismatch.mm+1)/
+                   (double)(matchMismatch.mm+matchMismatch.m+1)) * (-10.0);
+        return floor(qs + 0.5);
+    }
 }
 
 

@@ -58,6 +58,7 @@ Recab::Recab()
     myMapQual0Count = 0;
     myMapQual255Count = 0;
     myBlendedWeight = 0;
+    myNoLogReg = false;
     myMinBaseQual = DEFAULT_MIN_BASE_QUAL;
 }
 
@@ -100,7 +101,7 @@ void Recab::usage()
 
 void Recab::recabSpecificUsageLine()
 {
-    std::cerr << "--refFile <ReferenceFile> [--dbsnp <dbsnpFile>] [--minBaseQual <minBaseQual>] [--blended <weight>] ";
+    std::cerr << "--refFile <ReferenceFile> [--dbsnp <dbsnpFile>] [--minBaseQual <minBaseQual>] [--blended <weight>] [--noLogReg]";
 }
 
 void Recab::recabSpecificUsage()
@@ -109,8 +110,9 @@ void Recab::recabSpecificUsage()
     std::cerr << "\t--refFile <reference file>    : reference file name" << std::endl;
     std::cerr << "Recab Specific Optional Parameters : " << std::endl;
     std::cerr << "\t--dbsnp <known variance file> : dbsnp file of positions" << std::endl;
-    std::cerr << "\t--minBaseQual <minBaseQual>   : minimum base quality of bases to include in the recalibration table" << std::endl;
+    std::cerr << "\t--minBaseQual <minBaseQual>   : minimum base quality of bases to recalibrate" << std::endl;
     std::cerr << "\t--blended <weight>            : blended model weight" << std::endl;
+    std::cerr << "\t--noLogReg                    : toggle whether or not logistic regression should be used for calculating the new quality (default is to use logistic regression" << std::endl;
 }
 
 
@@ -266,6 +268,7 @@ void Recab::addRecabSpecificParameters(LongParamContainer& params)
     params.addString("dbsnp", &myDbsnpFile);
     params.addInt("minBaseQual", &myMinBaseQual);
     params.addInt("blended", &myBlendedWeight);
+    params.addBool("noLogReg", &myNoLogReg);
     // params.addString("qualTag", &myQField);
     myParamsSetup = false;
 }
@@ -455,10 +458,9 @@ bool Recab::processReadBuildTable(SamRecord& samRecord)
         {
             // Do not process if it is not cycle 0 and:
             //   1) previous reference position not adjacent (not a match/mismatch)
-            //      unless it is cycle 0.
-            //   2) previous base is 'N', or cycle 0
+            //   2) previous base is 'N'
             //   3) current base is 'N'
-            //   4) previous base is in dbsnp or cycle 0
+            //   4) previous base is in dbsnp
             //   5) current base is in dbsnp
             if((refOffset != (prevRefOffset + seqIncr)) ||
                (data.preBase == 'K') ||
@@ -593,6 +595,12 @@ bool Recab::processReadApplyTable(SamRecord& samRecord)
         data.qual = 
             BaseUtilities::getPhredBaseQuality(myQualityStrings.oldq[seqPos]);
 
+        // skip bases with quality below the minimum set.
+        if(data.qual < myMinBaseQual)
+        {
+            continue;
+        }
+
         // Update quality score
         uint8_t qemp = hasherrormodel.getQemp(data);
         //if(qemp>4)
@@ -671,5 +679,8 @@ void Recab::processParams()
             Logger::gLogger->error("Failed to open dbSNP file.");
         }
     }
+
+    HashErrorModel::setUseLogReg(!myNoLogReg);
+
     myParamsSetup = true;
 }

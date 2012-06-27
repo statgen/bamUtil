@@ -33,6 +33,9 @@
 class HashErrorModel {
     
   public:
+
+    static void setUseLogReg(bool useLogReg) { ourUseLogReg = useLogReg; }
+
     
    typedef std::vector<double> Model;
    typedef std::vector<uint64_t> Matches;
@@ -57,6 +60,9 @@ class HashErrorModel {
    uint32_t getSize();
    void setDataforPrediction(Matrix & X, Vector & succ, Vector& total,bool binarizeFlag);
    void addPrediction(Model model, int blendedWeight);
+
+private:
+    static bool ourUseLogReg;
 };
 
 #endif
