@@ -450,8 +450,6 @@ bool Recab::processReadBuildTable(SamRecord& samRecord)
         if(data.cycle == 0)
         {
             if(!(myDbsnpFile.IsEmpty()) && myDbSNP[refPos])
-                //            if((BaseUtilities::isAmbiguous(data.curBase)) ||
-                //               (!(myDbsnpFile.IsEmpty()) && myDbSNP[refPos]))
             {
                 // Save the pervious reference offset.
                 prevRefOffset = refOffset;
@@ -462,14 +460,10 @@ bool Recab::processReadBuildTable(SamRecord& samRecord)
         {
             // Do not process if it is not cycle 0 and:
             //   1) previous reference position not adjacent (not a match/mismatch)
-            //TODO            //   2) previous base is 'N'
-            //TODO            //   3) current base is 'N'
-            //   4) previous base is in dbsnp
-            //   5) current base is in dbsnp
+            //   2) previous base is in dbsnp
+            //   3) current base is in dbsnp
             if((refOffset != (prevRefOffset + seqIncr)) ||
                (data.preBase == 'K') ||
-               //               (BaseUtilities::isAmbiguous(data.preBase)) ||
-               //               (BaseUtilities::isAmbiguous(data.curBase)) ||
                (!(myDbsnpFile.IsEmpty()) && 
                 (myDbSNP[refPos] || myDbSNP[refPos - 1])))
             {
