@@ -53,41 +53,41 @@ uint8_t HashErrorModel::getQemp(BaseData& data)
 {
     double qs;
 
-    if(BaseUtilities::isAmbiguous(data.preBase))
-    {
-        // Prebase is 'N', average the 4 options.
-        qs = 0;
-        data.preBase = 'A';
-        qs += getQemp(data);
-        data.preBase = 'C';
-        qs += getQemp(data);
-        data.preBase = 'G';
-        qs += getQemp(data);
-        data.preBase = 'T';
-        qs += getQemp(data);
-        data.preBase = 'N';
-        // Divide by four to get the average.
-        qs /= 4;
-        return(qs);
-    }
+//     if(BaseUtilities::isAmbiguous(data.preBase))
+//     {
+//         // Prebase is 'N', average the 4 options.
+//         qs = 0;
+//         data.preBase = 'A';
+//         qs += getQemp(data);
+//         data.preBase = 'C';
+//         qs += getQemp(data);
+//         data.preBase = 'G';
+//         qs += getQemp(data);
+//         data.preBase = 'T';
+//         qs += getQemp(data);
+//         data.preBase = 'N';
+//         // Divide by four to get the average.
+//         qs /= 4;
+//         return(qs);
+//     }
 
-    if(BaseUtilities::isAmbiguous(data.curBase))
-    {
-        // Curbase is 'N', average the 4 options.
-        qs = 0;
-        data.curBase = 'A';
-        qs += getQemp(data);
-        data.curBase = 'C';
-        qs += getQemp(data);
-        data.curBase = 'G';
-        qs += getQemp(data);
-        data.curBase = 'T';
-        qs += getQemp(data);
-        data.curBase = 'N';
-        // Divide by four to get the average.
-        qs /= 4;
-        return(qs);
-    }
+//     if(BaseUtilities::isAmbiguous(data.curBase))
+//     {
+//         // Curbase is 'N', average the 4 options.
+//         qs = 0;
+//         data.curBase = 'A';
+//         qs += getQemp(data);
+//         data.curBase = 'C';
+//         qs += getQemp(data);
+//         data.curBase = 'G';
+//         qs += getQemp(data);
+//         data.curBase = 'T';
+//         qs += getQemp(data);
+//         data.curBase = 'N';
+//         // Divide by four to get the average.
+//         qs /= 4;
+//         return(qs);
+//     }
 
     SMatches& matchMismatch = mismatchTable[data];
     if(ourUseLogReg)

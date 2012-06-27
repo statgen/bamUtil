@@ -60,6 +60,7 @@ Recab::Recab()
     myBlendedWeight = 0;
     myNoLogReg = false;
     myMinBaseQual = DEFAULT_MIN_BASE_QUAL;
+    myMaxBaseQual = DEFAULT_MAX_BASE_QUAL;
 }
 
 
@@ -101,7 +102,7 @@ void Recab::usage()
 
 void Recab::recabSpecificUsageLine()
 {
-    std::cerr << "--refFile <ReferenceFile> [--dbsnp <dbsnpFile>] [--minBaseQual <minBaseQual>] [--blended <weight>] [--noLogReg]";
+    std::cerr << "--refFile <ReferenceFile> [--dbsnp <dbsnpFile>] [--minBaseQual <minBaseQual>] [--maxBaseQual <maxBaseQual>] [--blended <weight>] [--noLogReg]";
 }
 
 void Recab::recabSpecificUsage()
@@ -110,7 +111,8 @@ void Recab::recabSpecificUsage()
     std::cerr << "\t--refFile <reference file>    : reference file name" << std::endl;
     std::cerr << "Recab Specific Optional Parameters : " << std::endl;
     std::cerr << "\t--dbsnp <known variance file> : dbsnp file of positions" << std::endl;
-    std::cerr << "\t--minBaseQual <minBaseQual>   : minimum base quality of bases to recalibrate" << std::endl;
+    std::cerr << "\t--minBaseQual <minBaseQual>   : minimum base quality of bases to recalibrate (default: " << DEFAULT_MIN_BASE_QUAL << ")" << std::endl;
+    std::cerr << "\t--maxBaseQual <maxBaseQual>   : maximum recalibrated base quality (default: " << DEFAULT_MAX_BASE_QUAL << ")" << std::endl;
     std::cerr << "\t--blended <weight>            : blended model weight" << std::endl;
     std::cerr << "\t--noLogReg                    : toggle whether or not logistic regression should be used for calculating the new quality (default is to use logistic regression" << std::endl;
 }
@@ -267,6 +269,7 @@ void Recab::addRecabSpecificParameters(LongParamContainer& params)
     params.addGroup("Optional Recab Parameters");
     params.addString("dbsnp", &myDbsnpFile);
     params.addInt("minBaseQual", &myMinBaseQual);
+    params.addInt("maxBaseQual", &myMaxBaseQual);
     params.addInt("blended", &myBlendedWeight);
     params.addBool("noLogReg", &myNoLogReg);
     // params.addString("qualTag", &myQField);
@@ -442,12 +445,13 @@ bool Recab::processReadBuildTable(SamRecord& samRecord)
 
         // Check to see if we should process this position.
         // Do not process if it is cycle 0 and:
-        //   1) current base is 'N'
+        //TODO        //   1) current base is 'N'
         //   2) current base is in dbsnp
         if(data.cycle == 0)
         {
-            if((BaseUtilities::isAmbiguous(data.curBase)) ||
-               (!(myDbsnpFile.IsEmpty()) && myDbSNP[refPos]))
+            if(!(myDbsnpFile.IsEmpty()) && myDbSNP[refPos])
+                //            if((BaseUtilities::isAmbiguous(data.curBase)) ||
+                //               (!(myDbsnpFile.IsEmpty()) && myDbSNP[refPos]))
             {
                 // Save the pervious reference offset.
                 prevRefOffset = refOffset;
@@ -458,14 +462,14 @@ bool Recab::processReadBuildTable(SamRecord& samRecord)
         {
             // Do not process if it is not cycle 0 and:
             //   1) previous reference position not adjacent (not a match/mismatch)
-            //   2) previous base is 'N'
-            //   3) current base is 'N'
+            //TODO            //   2) previous base is 'N'
+            //TODO            //   3) current base is 'N'
             //   4) previous base is in dbsnp
             //   5) current base is in dbsnp
             if((refOffset != (prevRefOffset + seqIncr)) ||
                (data.preBase == 'K') ||
-               (BaseUtilities::isAmbiguous(data.preBase)) ||
-               (BaseUtilities::isAmbiguous(data.curBase)) ||
+               //               (BaseUtilities::isAmbiguous(data.preBase)) ||
+               //               (BaseUtilities::isAmbiguous(data.curBase)) ||
                (!(myDbsnpFile.IsEmpty()) && 
                 (myDbSNP[refPos] || myDbSNP[refPos - 1])))
             {
@@ -603,9 +607,11 @@ bool Recab::processReadApplyTable(SamRecord& samRecord)
 
         // Update quality score
         uint8_t qemp = hasherrormodel.getQemp(data);
-        //if(qemp>4)
+        if(qemp > myMaxBaseQual)
+        {
+            qemp = myMaxBaseQual;
+        }
         myQualityStrings.newq[seqPos] = qemp+33;
-        // otherwise keep the old one
     }
 
     // TODO - implement old quality flag.

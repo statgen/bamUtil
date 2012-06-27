@@ -61,6 +61,7 @@ public:
 
 private:
     static const int DEFAULT_MIN_BASE_QUAL = 5;
+    static const int DEFAULT_MAX_BASE_QUAL = 50;
 
     // quality String
     typedef struct {
@@ -76,6 +77,7 @@ private:
     String myDbsnpFile;
     String myQField;  // Quality TAG
     int myMinBaseQual;
+    int myMaxBaseQual;
     int myBlendedWeight;
     bool myNoLogReg;
 
