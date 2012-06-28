@@ -365,7 +365,7 @@ bool Recab::processReadBuildTable(SamRecord& samRecord)
 
     if(mapPos==INVALID_GENOME_INDEX)
     {
-    	Logger::gLogger->warning("INVALID_GENOME_INDEX (%u) and record skipped... Reference in BAM is different from the ref used here!", mapPos);
+    	Logger::gLogger->warning("INVALID_GENOME_INDEX (chrom:pos %s:%ld) and record skipped... Reference in BAM is different from the ref used here!", chromosomeName.c_str(), samRecord.get1BasedPosition());
         return false;
     }
 
