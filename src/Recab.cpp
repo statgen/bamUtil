@@ -369,7 +369,6 @@ bool Recab::processReadBuildTable(SamRecord& samRecord)
         return false;
     }
 
-    myQualityStrings.oldq = samRecord.getQuality();
     if(!myQField.IsEmpty())
     {
         // Check if there is an old quality.
@@ -379,8 +378,16 @@ bool Recab::processReadBuildTable(SamRecord& samRecord)
             // There is an old quality, so use that.
             myQualityStrings.oldq = oldQPtr->c_str();
         }
+        else
+        {
+            myQualityStrings.oldq = samRecord.getQuality();
+        }
         //printf("%s\n",samRecord.getQuality());
         //printf("%s:%s\n",myQField.c_str(),temp.c_str());
+    }
+    else
+    {
+        myQualityStrings.oldq = samRecord.getQuality();
     }
 
     aligTypes = "";
@@ -541,16 +548,24 @@ bool Recab::processReadApplyTable(SamRecord& samRecord)
 
     data.rgid = insertRet.first->second;
 
-    if(myQField.IsEmpty())
+    if(!myQField.IsEmpty())
     {
-        myQualityStrings.oldq = samRecord.getQuality();
+        // Check if there is an old quality.
+        String* oldQPtr = samRecord.getStringTag(myQField.c_str());
+        if(oldQPtr != NULL)
+        {
+            // There is an old quality, so use that.
+            myQualityStrings.oldq = oldQPtr->c_str();
+        }
+        else
+        {
+            myQualityStrings.oldq = samRecord.getQuality();
+        }
     }
     else
     {
-        myQualityStrings.oldq = samRecord.getString(myQField.c_str()).c_str();
+        myQualityStrings.oldq = samRecord.getQuality();
     }
-
-    myQualityStrings.newq = samRecord.getQuality();
 
     ////////////////
     ////// iterate sequence
@@ -604,6 +619,7 @@ bool Recab::processReadApplyTable(SamRecord& samRecord)
         // skip bases with quality below the minimum set.
         if(data.qual < myMinBaseQual)
         {
+            myQualityStrings.newq[seqPos] = myQualityStrings.oldq[seqPos];
             continue;
         }
 
