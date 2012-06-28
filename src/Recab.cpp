@@ -45,7 +45,8 @@ Recab::Recab()
     : myParamsSetup(false),
       myRefFile(""),
       myDbsnpFile(""),
-      myQField("")
+      myQField(""),
+      myStoreQualTag("")
 {
     myBasecounts = 0;
     myMappedCount = 0;
@@ -115,6 +116,9 @@ void Recab::recabSpecificUsage()
     std::cerr << "\t--maxBaseQual <maxBaseQual>   : maximum recalibrated base quality (default: " << DEFAULT_MAX_BASE_QUAL << ")" << std::endl;
     std::cerr << "\t--blended <weight>            : blended model weight" << std::endl;
     std::cerr << "\t--noLogReg                    : toggle whether or not logistic regression should be used for calculating the new quality (default is to use logistic regression" << std::endl;
+    std::cerr << "\t--qualField <quality tag>     : tag to get the starting base quality (default is to get it from the Quality field" << std::endl;
+    std::cerr << "\t--storeQualTag <quality tag>  : tag to store the previous quality into" << std::endl;
+
 }
 
 
@@ -272,7 +276,8 @@ void Recab::addRecabSpecificParameters(LongParamContainer& params)
     params.addInt("maxBaseQual", &myMaxBaseQual);
     params.addInt("blended", &myBlendedWeight);
     params.addBool("noLogReg", &myNoLogReg);
-    // params.addString("qualTag", &myQField);
+    params.addString("qualField", &myQField);
+    params.addString("storeQualTag", &myStoreQualTag);
     myParamsSetup = false;
 }
 
@@ -364,13 +369,16 @@ bool Recab::processReadBuildTable(SamRecord& samRecord)
         return false;
     }
 
-    if(myQField.IsEmpty())
+    myQualityStrings.oldq = samRecord.getQuality();
+    if(!myQField.IsEmpty())
     {
-        myQualityStrings.oldq = samRecord.getQuality();
-    }
-    else
-    {
-        myQualityStrings.oldq = samRecord.getString(myQField.c_str()).c_str();
+        // Check if there is an old quality.
+        String* oldQPtr = samRecord.getStringTag(myQField.c_str());
+        if(oldQPtr != NULL)
+        {
+            // There is an old quality, so use that.
+            myQualityStrings.oldq = oldQPtr->c_str();
+        }
         //printf("%s\n",samRecord.getQuality());
         //printf("%s:%s\n",myQField.c_str(),temp.c_str());
     }
@@ -608,12 +616,9 @@ bool Recab::processReadApplyTable(SamRecord& samRecord)
         myQualityStrings.newq[seqPos] = qemp+33;
     }
 
-    // TODO - implement old quality flag.
-    bool oldQualityFlag = false;
-        
-    if(oldQualityFlag)
+    if(!myStoreQualTag.IsEmpty())
     {
-        samRecord.addTag("QQ", 'Z', myQualityStrings.oldq.c_str());
+        samRecord.addTag(myStoreQualTag, 'Z', myQualityStrings.oldq.c_str());
     }
     samRecord.setQuality(myQualityStrings.newq.c_str());
 

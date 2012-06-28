@@ -76,6 +76,7 @@ private:
     String myRefFile;
     String myDbsnpFile;
     String myQField;  // Quality TAG
+    String myStoreQualTag;  // Store old quality into this TAG
     int myMinBaseQual;
     int myMaxBaseQual;
     int myBlendedWeight;
