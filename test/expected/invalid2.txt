@@ -1,0 +1,41 @@
+
+The following parameters are available.  Ones with "[]" are in effect:
+
+Input Parameters
+ --in [testFiles/testInvalid2.sam], --noeof, --refFile [], --maxErrors [-1],
+               --verbose [ON], --printableErrors [100], --disableStatistics,
+               --params [ON]
+   SortOrder : --so_flag, --so_coord, --so_query
+
+1 invalid SAM/BAM Header lines were skipped due to:
+SAM/BAM Header line failure: Skipping PG line that has a repeated ID field.
+
+Record 6
+INVALID_CIGAR (WARNING) : CIGAR does not evaluate to the same length as SEQ, (9 != 8).
+
+Record 7
+INVALID_CIGAR (WARNING) : CIGAR does not evaluate to the same length as SEQ, (8 != 9).
+
+
+Number of records read = 10
+Number of valid records = 8
+
+Error Counts:
+	INVALID_CIGAR: 2
+
+TotalReads	10.00
+MappedReads	7.00
+PairedReads	10.00
+ProperPair	0.00
+DuplicateReads	0.00
+QCFailureReads	0.00
+
+MappingRate(%)	70.00
+PairedReads(%)	100.00
+ProperPair(%)	0.00
+DupRate(%)	0.00
+QCFailRate(%)	0.00
+
+TotalBases	48.00
+BasesInMappedReads	40.00
+Returning: 7 (INVALID)

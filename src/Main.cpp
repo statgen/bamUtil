@@ -42,6 +42,7 @@
 #include "GapInfo.h"
 #include "Dedup.h"
 #include "Recab.h"
+#include "Bam2FastQ.h"
 
 void Usage()
 {
@@ -76,6 +77,9 @@ void Usage()
     DumpRefInfo::dumpRefInfoDescription();
     DumpIndex::dumpIndexDescription();
     ReadReference::readReferenceDescription();
+
+    std::cerr << "\nAdditional Tools\n";
+    Bam2FastQ::bam2FastQDescription();
 
     std::cerr << "\nDummy/Example Tools\n";
     ReadReference::readReferenceDescription();
@@ -188,6 +192,10 @@ int main(int argc, char ** argv)
     else if(strcmp(argv[1], "recab") == 0)
     {
         bamExe = new Recab();
+    }
+    else if(strcmp(argv[1], "bam2FastQ") == 0)
+    {
+        bamExe = new Bam2FastQ();
     }
     else if(strcmp(argv[1], "convert") == 0)
     {

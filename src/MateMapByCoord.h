@@ -29,7 +29,13 @@ class MateMapByCoord
 {
 public:
 
-    MateMapByCoord();
+    /// mateCoord set to false (default) means to store the records in the
+    /// map based on the record's coordinate.  That way the first record in
+    /// the map has the earliest position.
+    /// mateCoord set to true means to store the records in the map based on
+    /// the mate's coordinate.  That way the first record in the map has 
+    /// the earliest mate position.
+    MateMapByCoord(bool mateCoord = false);
     ~MateMapByCoord();
 
     /// Return the mate of the specified record, or NULL if mate is not found.
@@ -55,6 +61,7 @@ private:
     typedef std::multimap<uint64_t, SamRecord*> MATE_MAP;
     
     MATE_MAP myMateBuffer;
+    bool myMateCoord;
 };
 
 

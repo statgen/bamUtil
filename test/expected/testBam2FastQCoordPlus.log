@@ -1,0 +1,9 @@
+Paired Read, 7 but couldn't find mate, so writing as unpaired (single-ended)
+Paired Read, 1 but couldn't find mate, so writing as unpaired (single-ended)
+Paired Read, 12 but couldn't find mate, so writing as unpaired (single-ended)
+Both reads of 26 are first fragment, so splitting one to be in the 2nd fastq.
+
+Found 20 read pairs.
+Found 4 unpaired reads.
+Failed to find mates for 3 reads, so they were written as unpaired
+  (not included in either of the above counts).
