@@ -2,7 +2,7 @@
 The following parameters are available.  Ones with "[]" are in effect:
 
 Input Parameters
- --in [testFiles/testInvalid2.sam], --noeof, --refFile [], --maxErrors [-1],
+ --in [testFiles/testInvalid2.bam], --noeof, --refFile [], --maxErrors [-1],
                --verbose [ON], --printableErrors [100], --disableStatistics,
                --params [ON]
    SortOrder : --so_flag, --so_coord, --so_query

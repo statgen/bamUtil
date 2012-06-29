@@ -337,7 +337,7 @@ int Stats::execute(int argc, char **argv)
     // Quality histogram.
     const int MAX_QUAL = 126;
     const int START_QUAL = 33;
-    int qualCount[MAX_QUAL+1];
+    uint64_t qualCount[MAX_QUAL+1];
     for(int i = 0; i <= MAX_QUAL; i++)
     {
         qualCount[i] = 0;
@@ -346,7 +346,7 @@ int Stats::execute(int argc, char **argv)
     const int START_PHRED = 0;
     const int PHRED_DIFF = START_QUAL - START_PHRED;
     const int MAX_PHRED = MAX_QUAL - PHRED_DIFF;
-    int phredCount[MAX_PHRED+1];
+    uint64_t phredCount[MAX_PHRED+1];
     for(int i = 0; i <= MAX_PHRED; i++)
     {
         phredCount[i] = 0;
