@@ -103,7 +103,7 @@ void Recab::usage()
 
 void Recab::recabSpecificUsageLine()
 {
-    std::cerr << "--refFile <ReferenceFile> [--dbsnp <dbsnpFile>] [--minBaseQual <minBaseQual>] [--maxBaseQual <maxBaseQual>] [--blended <weight>] [--logReg]";
+    std::cerr << "--refFile <ReferenceFile> [--dbsnp <dbsnpFile>] [--minBaseQual <minBaseQual>] [--maxBaseQual <maxBaseQual>] [--blended <weight>] [--recabLogReg]";
 }
 
 void Recab::recabSpecificUsage()
@@ -115,7 +115,7 @@ void Recab::recabSpecificUsage()
     std::cerr << "\t--minBaseQual <minBaseQual>   : minimum base quality of bases to recalibrate (default: " << DEFAULT_MIN_BASE_QUAL << ")" << std::endl;
     std::cerr << "\t--maxBaseQual <maxBaseQual>   : maximum recalibrated base quality (default: " << DEFAULT_MAX_BASE_QUAL << ")" << std::endl;
     std::cerr << "\t--blended <weight>            : blended model weight" << std::endl;
-    std::cerr << "\t--logReg                    : use logistic regression for calculating the new quality" << std::endl;
+    std::cerr << "\t--recabLogReg                 : use logistic regression for calculating the new quality" << std::endl;
     std::cerr << "\t--qualField <quality tag>     : tag to get the starting base quality (default is to get it from the Quality field" << std::endl;
     std::cerr << "\t--storeQualTag <quality tag>  : tag to store the previous quality into" << std::endl;
 
@@ -275,7 +275,7 @@ void Recab::addRecabSpecificParameters(LongParamContainer& params)
     params.addInt("minBaseQual", &myMinBaseQual);
     params.addInt("maxBaseQual", &myMaxBaseQual);
     params.addInt("blended", &myBlendedWeight);
-    params.addBool("logReg", &myLogReg);
+    params.addBool("recabLogReg", &myLogReg);
     params.addString("qualField", &myQField);
     params.addString("storeQualTag", &myStoreQualTag);
     myParamsSetup = false;
