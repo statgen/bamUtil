@@ -99,10 +99,10 @@ private:
             }
             libraryID = libID;
         }
-        inline void cleanupKey(int32_t referenceID, int32_t coordinate)
+        inline void cleanupKey(int32_t referenceID, int32_t coord)
         {
             reference = referenceID;
-            coordinate = coordinate - CLIP_OFFSET;
+            coordinate = coord - CLIP_OFFSET;
             orientation = false;
             libraryID = 0;
         }
