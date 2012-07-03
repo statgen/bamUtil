@@ -59,7 +59,7 @@ Recab::Recab()
     myMapQual0Count = 0;
     myMapQual255Count = 0;
     myBlendedWeight = 0;
-    myNoLogReg = false;
+    myLogReg = false;
     myMinBaseQual = DEFAULT_MIN_BASE_QUAL;
     myMaxBaseQual = DEFAULT_MAX_BASE_QUAL;
 }
@@ -103,7 +103,7 @@ void Recab::usage()
 
 void Recab::recabSpecificUsageLine()
 {
-    std::cerr << "--refFile <ReferenceFile> [--dbsnp <dbsnpFile>] [--minBaseQual <minBaseQual>] [--maxBaseQual <maxBaseQual>] [--blended <weight>] [--noLogReg]";
+    std::cerr << "--refFile <ReferenceFile> [--dbsnp <dbsnpFile>] [--minBaseQual <minBaseQual>] [--maxBaseQual <maxBaseQual>] [--blended <weight>] [--logReg]";
 }
 
 void Recab::recabSpecificUsage()
@@ -115,7 +115,7 @@ void Recab::recabSpecificUsage()
     std::cerr << "\t--minBaseQual <minBaseQual>   : minimum base quality of bases to recalibrate (default: " << DEFAULT_MIN_BASE_QUAL << ")" << std::endl;
     std::cerr << "\t--maxBaseQual <maxBaseQual>   : maximum recalibrated base quality (default: " << DEFAULT_MAX_BASE_QUAL << ")" << std::endl;
     std::cerr << "\t--blended <weight>            : blended model weight" << std::endl;
-    std::cerr << "\t--noLogReg                    : toggle whether or not logistic regression should be used for calculating the new quality (default is to use logistic regression" << std::endl;
+    std::cerr << "\t--logReg                    : use logistic regression for calculating the new quality" << std::endl;
     std::cerr << "\t--qualField <quality tag>     : tag to get the starting base quality (default is to get it from the Quality field" << std::endl;
     std::cerr << "\t--storeQualTag <quality tag>  : tag to store the previous quality into" << std::endl;
 
@@ -275,7 +275,7 @@ void Recab::addRecabSpecificParameters(LongParamContainer& params)
     params.addInt("minBaseQual", &myMinBaseQual);
     params.addInt("maxBaseQual", &myMaxBaseQual);
     params.addInt("blended", &myBlendedWeight);
-    params.addBool("noLogReg", &myNoLogReg);
+    params.addBool("logReg", &myLogReg);
     params.addString("qualField", &myQField);
     params.addString("storeQualTag", &myStoreQualTag);
     myParamsSetup = false;
@@ -460,8 +460,7 @@ bool Recab::processReadBuildTable(SamRecord& samRecord)
 
         // Check to see if we should process this position.
         // Do not process if it is cycle 0 and:
-        //TODO        //   1) current base is 'N'
-        //   2) current base is in dbsnp
+        //   1) current base is in dbsnp
         if(data.cycle == 0)
         {
             if(!(myDbsnpFile.IsEmpty()) && myDbSNP[refPos])
@@ -474,7 +473,8 @@ bool Recab::processReadBuildTable(SamRecord& samRecord)
         else
         {
             // Do not process if it is not cycle 0 and:
-            //   1) previous reference position not adjacent (not a match/mismatch)
+            //   1) previous reference position not adjacent 
+            //      (not a match/mismatch)
             //   2) previous base is in dbsnp
             //   3) current base is in dbsnp
             if((refOffset != (prevRefOffset + seqIncr)) ||
@@ -701,7 +701,7 @@ void Recab::processParams()
         }
     }
 
-    HashErrorModel::setUseLogReg(!myNoLogReg);
+    HashErrorModel::setUseLogReg(myLogReg);
 
     myParamsSetup = true;
 }

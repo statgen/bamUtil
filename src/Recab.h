@@ -80,7 +80,7 @@ private:
     int myMinBaseQual;
     int myMaxBaseQual;
     int myBlendedWeight;
-    bool myNoLogReg;
+    bool myLogReg;
 
     //stats
     uint64_t myBasecounts;
