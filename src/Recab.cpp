@@ -59,6 +59,7 @@ Recab::Recab()
     myMapQual0Count = 0;
     myMapQual255Count = 0;
     myBlendedWeight = 0;
+    myNumQualTagErrors = 0;
     myLogReg = false;
     myMinBaseQual = DEFAULT_MIN_BASE_QUAL;
     myMaxBaseQual = DEFAULT_MAX_BASE_QUAL;
@@ -373,13 +374,19 @@ bool Recab::processReadBuildTable(SamRecord& samRecord)
     {
         // Check if there is an old quality.
         String* oldQPtr = samRecord.getStringTag(myQField.c_str());
-        if(oldQPtr != NULL)
+        if((oldQPtr != NULL) && (oldQPtr->Length() == seqLen))
         {
             // There is an old quality, so use that.
             myQualityStrings.oldq = oldQPtr->c_str();
         }
         else
         {
+            // Tag was not found, so use the current quality.
+            ++myNumQualTagErrors;
+            if(myNumQualTagErrors == 1)
+            {
+                Logger::gLogger->warning("Recab: %s tag was not found/invalid, so using the quality field in records without the tag", myQField.c_str());
+            }
             myQualityStrings.oldq = samRecord.getQuality();
         }
         //printf("%s\n",samRecord.getQuality());
@@ -552,7 +559,7 @@ bool Recab::processReadApplyTable(SamRecord& samRecord)
     {
         // Check if there is an old quality.
         String* oldQPtr = samRecord.getStringTag(myQField.c_str());
-        if(oldQPtr != NULL)
+        if((oldQPtr != NULL) && (oldQPtr->Length() == seqLen))
         {
             // There is an old quality, so use that.
             myQualityStrings.oldq = oldQPtr->c_str();
@@ -644,7 +651,7 @@ bool Recab::processReadApplyTable(SamRecord& samRecord)
 
 void Recab::modelFitPrediction(const char* outputBase)
 {
-    Logger::gLogger->writeLog("# mapped Reads observed: %ld Q>0: %ld", myMappedCount, myMappedCountQ);
+    Logger::gLogger->writeLog("# mapped Reads observed: %ld; Q>0: %ld", myMappedCount, myMappedCountQ);
     Logger::gLogger->writeLog("# unmapped Reads observed: %ld", myUnMappedCount);
     Logger::gLogger->writeLog("# Duplicate Reads skipped: %ld", myDupCount);
     Logger::gLogger->writeLog("# Mapping Quality 0 Reads skipped: %ld", myMapQual0Count);
@@ -653,6 +660,11 @@ void Recab::modelFitPrediction(const char* outputBase)
                               myBasecounts, myBMatchCount, myBMismatchCount);
     Logger::gLogger->writeLog("# Bases Skipped for DBSNP: %ld, for Map Qual = 0: %ld, for MapQual = 255: %ld", 
                               myNumDBSnpSkips, myMapQual0Count, myMapQual255Count);
+    if(myNumQualTagErrors != 0)
+    {
+        Logger::gLogger->warning("%ld records did not have tag %s or it was invalid, so the quality field was used for those records.", myNumQualTagErrors, myQField.c_str());
+    }
+
     ////////////////////////
     ////////////////////////
     //// Model fitting + prediction
@@ -693,7 +705,7 @@ void Recab::processParams()
         //dbSNP
         if(myDbsnpFile.IsEmpty())
         {
-            Logger::gLogger->writeLog("No dbSNPFile File");
+            Logger::gLogger->writeLog("No dbSNP File");
         }
         else if(myReferenceGenome->loadDBSNP(myDbSNP,myDbsnpFile.c_str()))
         {

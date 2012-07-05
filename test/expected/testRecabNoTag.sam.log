@@ -1,0 +1,22 @@
+Initialize errormodel structure...
+Start iterating SAM/BAM file testFiles/testRecab.sam
+Start: TIME
+
+Open reference
+Done! Sequence length 11520
+No dbSNP File
+WARNING: Recab: ZQ tag was not found/invalid, so using the quality field in records without the tag
+End: TIME
+
+# mapped Reads observed: 201; Q>0: 201
+# unmapped Reads observed: 0
+# Duplicate Reads skipped: 0
+# Mapping Quality 0 Reads skipped: 0
+# Mapping Quality 255 Reads skipped: 0
+# Bases observed: 1005 - #match: 996; #mismatch: 9
+# Bases Skipped for DBSNP: 0, for Map Qual = 0: 0, for MapQual = 255: 0
+WARNING: 201 records did not have tag ZQ or it was invalid, so the quality field was used for those records.
+Start model fitting!
+Writing recalibration table results/testRecabNoTag.sam.recab
+Writing recalibrated file results/testRecabNoTag.sam
+Recalibration successfully finished

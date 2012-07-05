@@ -273,8 +273,6 @@ int Dedup::execute(int argc, char** argv)
     samIn.Close();
 
     // print some statistics
-    uint32_t totalDuplicates = 
-        singleDuplicates + 2*pairedDuplicates;
     Logger::gLogger->writeLog("--------------------------------------------------------------------------");
     Logger::gLogger->writeLog("SUMMARY STATISTICS OF THE READS");
     Logger::gLogger->writeLog("Total number of reads: %u",recordCount);
@@ -292,10 +290,6 @@ int Dedup::execute(int argc, char** argv)
                               myFragmentMap.size());
     Logger::gLogger->writeLog("Size of pairedKeyMap (must be zero) : %u",
                               myPairedMap.size());
-    Logger::gLogger->writeLog("Total number of duplicate single-ended or mate-unpaired reads : %u",singleDuplicates);
-    Logger::gLogger->writeLog("Total number of duplicate paired-end reads (both ends mapped) : %u",pairedDuplicates);
-    Logger::gLogger->writeLog("Total number of duplicated records: %u",
-                              totalDuplicates);
     Logger::gLogger->writeLog("Total number of missing mates: %u",
                               myNumMissingMate);
     Logger::gLogger->writeLog("--------------------------------------------------------------------------");

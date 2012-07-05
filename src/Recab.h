@@ -94,6 +94,7 @@ private:
     uint64_t myDupCount;
     uint64_t myMapQual0Count;
     uint64_t myMapQual255Count;
+    uint64_t myNumQualTagErrors;
 
     GenomeSequence* myReferenceGenome;
     mmapArrayBool_t myDbSNP;

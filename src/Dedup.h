@@ -45,8 +45,6 @@ public:
         myOneChrom(false),
         mySamPool(),
         lastCoordinate(-1), lastReference(-1), numLibraries(0), 
-        singleDuplicates(0),
-        pairedDuplicates(0),
         myNumMissingMate(0),
         myForceFlag(false),
         myMinQual(15)
@@ -205,7 +203,6 @@ private:
     int lastCoordinate;
     int lastReference;
     uint32_t numLibraries;
-    uint32_t singleDuplicates, pairedDuplicates;
     int myNumMissingMate;
     bool myForceFlag;
     int myMinQual;
