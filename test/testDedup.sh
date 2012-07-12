@@ -10,6 +10,24 @@ let "status |= $?"
 diff results/testDedup.sam.log expected/testDedup.sam.log
 let "status |= $?"
 
+../bin/bam dedup --recab --in testFiles/testDedup.sam --out results/testDedupRecab.sam --refFile testFilesLibBam/chr1_partial.fa 2> results/testDedupRecab.txt
+let "status |= $?"
+diff results/testDedupRecab.txt expected/testDedupRecab.txt
+let "status |= $?"
+diff results/testDedupRecab.sam expected/testDedupRecab.sam
+let "status |= $?"
+diff results/testDedupRecab.sam.log expected/testDedupRecab.sam.log
+let "status |= $?"
+
+../bin/bam recab --in results/testDedup.sam --out results/testDedupRecab2Step.sam --refFile testFilesLibBam/chr1_partial.fa 2> results/testDedupRecab2Step.txt
+let "status |= $?"
+diff results/testDedupRecab2Step.txt expected/empty.txt
+let "status |= $?"
+diff results/testDedupRecab2Step.sam expected/testDedupRecab.sam
+let "status |= $?"
+diff -I "Start: .*" -I "End: .*" results/testDedupRecab2Step.sam.log expected/testDedupRecab2Step.sam.log
+let "status |= $?"
+
 ###############
 # Recalibration
 ../bin/bam recab --in testFiles/testRecab.sam --out results/testRecab.sam --refFile testFilesLibBam/chr1_partial.fa > results/testRecab.txt 2> results/testRecab.log

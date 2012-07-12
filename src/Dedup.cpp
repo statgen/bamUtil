@@ -351,6 +351,11 @@ int Dedup::execute(int argc, char** argv)
             {
                 pairedDuplicates++;
             }
+            // recalibrate if necessary.
+            if(myDoRecab)
+            {
+                myRecab.processReadApplyTable(record);
+            }
 
             // write the record if we are not removing duplicates
             if (!removeFlag ) samOut.WriteRecord(header, record);

@@ -1,0 +1,42 @@
+Reading ReferenceID 0
+
+Open reference
+Done! Sequence length 11520
+No dbSNP File
+Reading ReferenceID 1
+
+Reading ReferenceID 23
+
+WARNING: INVALID_GENOME_INDEX (chrom:pos 2:64) and record skipped... Reference in BAM is different from the ref used here!
+WARNING: INVALID_GENOME_INDEX (chrom:pos 2:62) and record skipped... Reference in BAM is different from the ref used here!
+WARNING: INVALID_GENOME_INDEX (chrom:pos MT:178) and record skipped... Reference in BAM is different from the ref used here!
+WARNING: INVALID_GENOME_INDEX (chrom:pos MT:1) and record skipped... Reference in BAM is different from the ref used here!
+WARNING: INVALID_GENOME_INDEX (chrom:pos MT:178) and record skipped... Reference in BAM is different from the ref used here!
+WARNING: INVALID_GENOME_INDEX (chrom:pos MT:1) and record skipped... Reference in BAM is different from the ref used here!
+--------------------------------------------------------------------------
+SUMMARY STATISTICS OF THE READS
+Total number of reads: 29
+Total number of paired-end reads: 29
+Total number of properly paired reads: 8
+Total number of unmapped reads : 0
+Total number of reverse strand mapped reads: 14
+Total number of QC-failed reads : 0
+Size of singleKeyMap (must be zero) : 0
+Size of pairedKeyMap (must be zero) : 0
+Total number of missing mates: 1
+--------------------------------------------------------------------------
+Sorting the indices of 12 duplicated records
+# mapped Reads observed: 17; Q>0: 6
+# unmapped Reads observed: 0
+# Duplicate Reads skipped: 0
+# Mapping Quality 0 Reads skipped: 11
+# Mapping Quality 255 Reads skipped: 0
+# Bases observed: 0 - #match: 0; #mismatch: 0
+# Bases Skipped for DBSNP: 0, for Map Qual = 0: 11, for MapQual = 255: 0
+Start model fitting!
+Writing recalibration table results/testDedupRecab.sam.recab
+
+Writing results/testDedupRecab.sam
+Successfully marked 0 unpaired and 6 paired duplicate reads
+
+Dedup complete!

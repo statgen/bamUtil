@@ -80,6 +80,7 @@ private:
     int myMinBaseQual;
     int myMaxBaseQual;
     int myBlendedWeight;
+    bool mySkipFitModel;
     bool myLogReg;
 
     //stats

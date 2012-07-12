@@ -60,6 +60,7 @@ Recab::Recab()
     myMapQual255Count = 0;
     myBlendedWeight = 0;
     myNumQualTagErrors = 0;
+    mySkipFitModel = false;
     myLogReg = false;
     myMinBaseQual = DEFAULT_MIN_BASE_QUAL;
     myMaxBaseQual = DEFAULT_MAX_BASE_QUAL;
@@ -104,7 +105,7 @@ void Recab::usage()
 
 void Recab::recabSpecificUsageLine()
 {
-    std::cerr << "--refFile <ReferenceFile> [--dbsnp <dbsnpFile>] [--minBaseQual <minBaseQual>] [--maxBaseQual <maxBaseQual>] [--blended <weight>] [--useLogReg]";
+    std::cerr << "--refFile <ReferenceFile> [--dbsnp <dbsnpFile>] [--minBaseQual <minBaseQual>] [--maxBaseQual <maxBaseQual>] [--blended <weight>] [--skipFitModel] [--useLogReg]";
 }
 
 void Recab::recabSpecificUsage()
@@ -116,7 +117,9 @@ void Recab::recabSpecificUsage()
     std::cerr << "\t--minBaseQual <minBaseQual>   : minimum base quality of bases to recalibrate (default: " << DEFAULT_MIN_BASE_QUAL << ")" << std::endl;
     std::cerr << "\t--maxBaseQual <maxBaseQual>   : maximum recalibrated base quality (default: " << DEFAULT_MAX_BASE_QUAL << ")" << std::endl;
     std::cerr << "\t--blended <weight>            : blended model weight" << std::endl;
-    std::cerr << "\t--useLogReg                 : use logistic regression for calculating the new quality" << std::endl;
+    std::cerr << "\t--skipFitModel                : do not check if the logistic regression model fits the data" << std::endl;
+    std::cerr << "\t--useLogReg                   : use logistic regression calculated quality for the new quality" << std::endl;
+    std::cerr << "\t                                ignores setting of skipFitModel." << 
     std::cerr << "\t--qualField <quality tag>     : tag to get the starting base quality (default is to get it from the Quality field" << std::endl;
     std::cerr << "\t--storeQualTag <quality tag>  : tag to store the previous quality into" << std::endl;
 
@@ -276,6 +279,7 @@ void Recab::addRecabSpecificParameters(LongParamContainer& params)
     params.addInt("minBaseQual", &myMinBaseQual);
     params.addInt("maxBaseQual", &myMaxBaseQual);
     params.addInt("blended", &myBlendedWeight);
+    params.addBool("skipFitModel", &mySkipFitModel);
     params.addBool("useLogReg", &myLogReg);
     params.addString("qualField", &myQField);
     params.addString("storeQualTag", &myStoreQualTag);
@@ -397,6 +401,12 @@ bool Recab::processReadBuildTable(SamRecord& samRecord)
         myQualityStrings.oldq = samRecord.getQuality();
     }
 
+    if(myQualityStrings.oldq.length() != (unsigned int)seqLen)
+    {
+        Logger::gLogger->warning("Quality is not the correct length, so skipping recalibration on that record.");
+        return(false);
+    }
+
     aligTypes = "";
     Cigar* cigarPtr = samRecord.getCigarInfo();
 
@@ -405,7 +415,6 @@ bool Recab::processReadBuildTable(SamRecord& samRecord)
         Logger::gLogger->warning("Failed to get the cigar");
         return(false);
     }
-    myQualityStrings.newq = samRecord.getQuality();
 
     ////////////////
     ////// iterate sequence
@@ -574,6 +583,14 @@ bool Recab::processReadApplyTable(SamRecord& samRecord)
         myQualityStrings.oldq = samRecord.getQuality();
     }
 
+    if(myQualityStrings.oldq.length() != (unsigned int)seqLen)
+    {
+        Logger::gLogger->warning("Quality is not the correct length, so skipping recalibration on that record.");
+        return(false);
+    }
+
+    myQualityStrings.newq.resize(seqLen);
+
     ////////////////
     ////// iterate sequence
     ////////////////
@@ -667,22 +684,25 @@ void Recab::modelFitPrediction(const char* outputBase)
 
     ////////////////////////
     ////////////////////////
-    //// Model fitting + prediction
-    std::string modelfile = outputBase;
-    modelfile += ".model";
+    if(myLogReg || !mySkipFitModel)
+    {
+        //// Model fitting + prediction
+        std::string modelfile = outputBase;
+        modelfile += ".model";
+        
+        prediction.setErrorModel(&(hasherrormodel));
+        
+        Logger::gLogger->writeLog("Start model fitting!");
+        if(prediction.fitModel(true,modelfile))
+            prediction.outModel();
+        else
+            Logger::gLogger->error("Could not fit model!");
+        
+        hasherrormodel.addPrediction(prediction.getModel(),myBlendedWeight);
+    }
+
     std::string recabFile = outputBase;
     recabFile += ".recab";
-
-    prediction.setErrorModel(&(hasherrormodel));
-
-    Logger::gLogger->writeLog("Start model fitting!");
-    if(prediction.fitModel(true,modelfile))
-        prediction.outModel();
-    else
-        Logger::gLogger->error("Could not fit model!");
-
-    hasherrormodel.addPrediction(prediction.getModel(),myBlendedWeight);
-
     Logger::gLogger->writeLog("Writing recalibration table %s",recabFile.c_str());
     if(!(hasherrormodel.writeAllTableMM(recabFile.c_str(),
                                         myId2Rg)))
