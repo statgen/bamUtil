@@ -36,7 +36,7 @@ public:
     char preBase;
     char curBase;
 
-    int rgid;
+    int32_t rgid;
 
     BaseData()
         : qual(0), cycle(0), read(false), preBase('?'), 
@@ -51,6 +51,27 @@ public:
         preBase = other.preBase;
         curBase = other.curBase;
         rgid = other.rgid;
+    }
+
+    inline uint64_t getKey() const
+    {
+        return( ((uint64_t)(read & 0x1) << 63) |
+                ((uint64_t)(qual & 0x7F) << 56) | 
+                ((uint64_t)cycle << 40) | 
+                ((uint64_t)(BaseAsciiMap::base2int[(int)preBase]) << 36) | 
+                ((uint64_t)(BaseAsciiMap::base2int[(int)curBase]) << 32) | 
+                (rgid) );
+    }
+
+    inline void parseKey(uint64_t key)
+    {
+        read = (key >> 63);
+        qual = (key >> 56) & 0x7F;
+        cycle = (key >> 40) & 0xFF;
+        preBase = BaseAsciiMap::int2base[(key >> 36) & 0xF];
+        curBase = BaseAsciiMap::int2base[(key >> 32) & 0xF];
+        rgid = key & 0xFFFFFFFF;
+           
     }
 
     inline bool operator <(const BaseData& other) const

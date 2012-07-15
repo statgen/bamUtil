@@ -21,7 +21,7 @@
 
 #include <stdint.h>
 #include <vector>
-#include <map>
+#include <unordered_map>
 #include "StringArray.h"
 #include "Covariates.h"
 #include "MathMatrix.h"
@@ -32,24 +32,23 @@
 
 class HashErrorModel {
     
-  public:
+public:
 
     static void setUseLogReg(bool useLogReg) { ourUseLogReg = useLogReg; }
-
     
-   typedef std::vector<double> Model;
-   typedef std::vector<uint64_t> Matches;
-   typedef struct{
-	   uint64_t m;
-	   uint64_t mm;
-	   uint8_t qemp;
-   } SMatches;
-
-
-   typedef std::map<BaseData,HashErrorModel::SMatches> HashMatch;
-
-   HashMatch mismatchTable;
-   uint16_t lastElement;
+    
+    typedef std::vector<double> Model;
+    typedef std::vector<uint64_t> Matches;
+    typedef struct{
+        uint64_t m;
+        uint64_t mm;
+        uint8_t qemp;
+    } SMatches;
+    
+    typedef std::unordered_map<uint64_t, HashErrorModel::SMatches> HashMatch;
+    
+    HashMatch mismatchTable;
+    uint16_t lastElement;
 
    HashErrorModel();
    ~HashErrorModel();

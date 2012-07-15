@@ -37,7 +37,7 @@ HashErrorModel::~HashErrorModel()
 
 void HashErrorModel::setCell(const BaseData& data, char refBase)
 {
-    SMatches& matchInfo = mismatchTable[data];
+    SMatches& matchInfo = mismatchTable[data.getKey()];
 
     if(BaseUtilities::areEqual(refBase, data.curBase))
     {
@@ -53,7 +53,7 @@ uint8_t HashErrorModel::getQemp(BaseData& data)
 {
     double qs;
 
-    SMatches& matchMismatch = mismatchTable[data];
+    SMatches& matchMismatch = mismatchTable[data.getKey()];
     if(ourUseLogReg)
     {
         return(matchMismatch.qemp);
@@ -76,25 +76,28 @@ int HashErrorModel::writeAllTableMM(String filename,
     
     int maxId = id2rg.size() - 1;
 
+    BaseData data;
+
     for(HashMatch::const_iterator it = mismatchTable.begin();
         it != mismatchTable.end();
         ++it)
     {
-        if(it->first.rgid <= maxId)
+        data.parseKey(it->first);
+        if(data.rgid <= maxId)
         {
 //TODO             fprintf(pFile,"%s %d %d %d %d %d %d %d - %ld %ld %d\n",
 //                     id2rg[it->first.rgid].c_str(), it->first.qual, it->first.cycle,
 //                     it->first.read, 0, BaseAsciiMap::base2int[(int)(it->first.preBase)], 0, BaseAsciiMap::base2int[(int)(it->first.curBase)],
 //                     it->second.m, it->second.mm, it->second.qemp);
-            int16_t cycle = it->first.cycle + 1;
-            if(it->first.read)
+            int16_t cycle = data.cycle + 1;
+            if(data.read)
             {
                 // 2nd.
                 cycle = -cycle;
             }
             fprintf(pFile,"%s,%d,%d,%c%c,%ld,%ld,%d\n",
-                    id2rg[it->first.rgid].c_str(), it->first.qual, cycle, 
-                    it->first.preBase, it->first.curBase,
+                    id2rg[data.rgid].c_str(), data.qual, cycle, 
+                    data.preBase, data.curBase,
                     it->second.m + it->second.mm, it->second.mm, it->second.qemp);
         }
     }
@@ -110,12 +113,14 @@ uint32_t HashErrorModel::getSize(){
 
 void HashErrorModel::addPrediction(Model model,int blendedWeight)
 {
+    BaseData data;
     for(HashMatch::iterator it = mismatchTable.begin();
         it != mismatchTable.end();
         ++it)
     {
         Covariates cov;
-        cov.setCovariates(it->first);
+        data.parseKey(it->first);
+        cov.setCovariates(data);
         int j = 1;
         double qemp = model[0]; //slope
         for(std::vector<uint16_t>::const_iterator itv = cov.covariates.begin();
@@ -154,12 +159,14 @@ void HashErrorModel::addPrediction(Model model,int blendedWeight)
 void HashErrorModel::setDataforPrediction(Matrix & X, Vector & succ, Vector & total,bool binarizeFlag)
 {
     int i = 0;
+    BaseData data;
     for(HashMatch::const_iterator it = mismatchTable.begin();
         it != mismatchTable.end();
         ++it)
     {
+        data.parseKey(it->first);
         Covariates cov;
-        cov.setCovariates(it->first);
+        cov.setCovariates(data);
         if(i == 0)
         {
             uint32_t rows = getSize();
