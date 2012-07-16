@@ -38,15 +38,13 @@ void SplitChromosome::description()
 void SplitChromosome::usage()
 {
     BamExecutable::usage();
-    std::cerr << "\t./bam splitChromosome --in <inputFilename>  --out <outputFileBaseName> [--bamIndex <bamIndexFile>] [--noeof] [--bamout|--samout] [--params]"<< std::endl;
+    std::cerr << "\t./bam splitChromosome --in <inputFilename>  --out <outputFileBaseName> [--noeof] [--bamout|--samout] [--params]"<< std::endl;
     std::cerr << "\tRequired Parameters:" << std::endl;
     std::cerr << "\t\t--in       : the BAM file to be split" << std::endl;
-    std::cerr << "\t\t--out      : the base filename for the SAM/BAM files to write into.  Does not include the extension." << std::endl;    
-    std::cerr << "\t\t             _N will be appended to the basename where N indicates the Chromosome." << std::endl;
+    std::cerr << "\t\t--out      : the base filename for the SAM/BAM files to write into.  Does not include the extension.\n";
+    std::cerr << "                 CHROM.bam or CHROM.sam will be appended to the basename where CHROM is the chromosome name.\n";
     std::cerr << "\tOptional Parameters:" << std::endl;
     std::cerr << "\t\t--noeof  : do not expect an EOF block on a bam file." << std::endl;
-    std::cerr << "\t\t--bamIndex : the path/name of the bam index file" << std::endl;
-    std::cerr << "\t\t             (if not specified, uses the --in value + \".bai\")" << std::endl;
     std::cerr << "\t\t--bamout : write the output files in BAM format (default)." << std::endl;
     std::cerr << "\t\t--samout : write the output files in SAM format." << std::endl;
     std::cerr << "\t\t--params : print the parameter settings" << std::endl;
