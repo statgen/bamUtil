@@ -40,6 +40,8 @@
 #include "RGMergeBam.h"
 #include "PolishBam.h"
 #include "GapInfo.h"
+#include "Dedup.h"
+#include "Recab.h"
 #include "Bam2FastQ.h"
 
 void Usage()
@@ -51,9 +53,6 @@ void Usage()
     WriteRegion::writeRegionDescription();
     SplitChromosome::splitChromosomeDescription();
     SplitBam::splitBamDescription();
-    TrimBam::trimBamDescription();
-    RGMergeBam::rgMergeBamDescription();
-    PolishBam::polishBamDescription();
     FindCigars::findCigarsDescription();
 
     std::cerr << "\nTools to Modify & write SAM/BAM Files: " << std::endl;
@@ -61,6 +60,11 @@ void Usage()
     Filter::filterDescription();
     Revert::revertDescription();
     Squeeze::squeezeDescription();
+    TrimBam::trimBamDescription();
+    RGMergeBam::rgMergeBamDescription();
+    PolishBam::polishBamDescription();
+    Dedup::dedupDescription();
+    Recab::recabDescription();
 
     std::cerr << "\nInformational Tools\n";
     Validate::validateDescription();
@@ -180,6 +184,14 @@ int main(int argc, char ** argv)
     else if(strcmp(argv[1], "gapInfo") == 0)
     {
         bamExe = new GapInfo();
+    }
+    else if(strcmp(argv[1], "dedup") == 0)
+    {
+        bamExe = new Dedup();
+    }
+    else if(strcmp(argv[1], "recab") == 0)
+    {
+        bamExe = new Recab();
     }
     else if(strcmp(argv[1], "bam2FastQ") == 0)
     {

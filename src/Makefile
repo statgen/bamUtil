@@ -1,6 +1,7 @@
 EXE=bam
-TOOLBASE = BamExecutable Validate Convert Diff DumpHeader SplitChromosome WriteRegion DumpIndex ReadIndexedBam DumpRefInfo Filter ReadReference Revert Squeeze FindCigars Stats PileupElementBaseQCStats ClipOverlap MateMapByCoord SplitBam TrimBam RGMergeBam PolishBam GapInfo Logger Bam2FastQ
+TOOLBASE = BamExecutable Validate Convert Diff DumpHeader SplitChromosome WriteRegion DumpIndex ReadIndexedBam DumpRefInfo Filter ReadReference Revert Squeeze FindCigars Stats PileupElementBaseQCStats ClipOverlap MateMapByCoord SplitBam TrimBam RGMergeBam PolishBam GapInfo Logger Bam2FastQ Dedup Prediction LogisticRegression MathCholesky HashErrorModel Recab
 SRCONLY = Main.cpp
+HDRONLY = Covariates.h
 
 DATE=$(shell date)
 USER=$(shell whoami)
