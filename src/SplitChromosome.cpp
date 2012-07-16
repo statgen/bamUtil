@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2010  Regents of the University of Michigan
+ *  Copyright (C) 2010-2012  Regents of the University of Michigan
  *
  *   This program is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -61,7 +61,6 @@ int SplitChromosome::execute(int argc, char **argv)
     // Extract command line arguments.
     String inFile = "";
     String outFileBase = "";
-    String indexFile = "";
     bool noeof = false;
     bool bamOut = false;
     bool samOut = false;
@@ -71,7 +70,6 @@ int SplitChromosome::execute(int argc, char **argv)
     BEGIN_LONG_PARAMETERS(longParameterList)
         LONG_STRINGPARAMETER("in", &inFile)
         LONG_STRINGPARAMETER("out", &outFileBase)
-        LONG_STRINGPARAMETER("bamIndex", &indexFile)
         LONG_PARAMETER("noeof", &noeof)
         LONG_PARAMETER("params", &params)
         LONG_PARAMETER_GROUP("Output Type")
@@ -116,12 +114,6 @@ int SplitChromosome::execute(int argc, char **argv)
                   << "but was not specified" << std::endl;
         return(-1);
     }
-    if(indexFile == "")
-    {
-        // In file was not specified, so set it to the in file
-        // + ".bai"
-        indexFile = inFile + ".bai";
-    }
 
     if(params)
     {
@@ -132,12 +124,11 @@ int SplitChromosome::execute(int argc, char **argv)
     // Open the file for reading.   
     samIn.OpenForRead(inFile);
 
-    // Open the bam index file for reading.
-    samIn.ReadBamIndex(indexFile);
-
     // Read the sam header.
     SamFileHeader samHeader;
     samIn.ReadHeader(samHeader);
+
+    samIn.setSortedValidation(SamFile::COORDINATE);
 
     // Read the sam records.
     SamRecord samRecord;
@@ -148,57 +139,65 @@ int SplitChromosome::execute(int argc, char **argv)
     // Do not open the file until there is a record to write into it.
     SamFileWriter outFile;
 
-    // Loop through each Reference.
-    //    for(int i = 0; i < 23; i++)
-    for(int i = -1; i < 23; i++)
+    String outputName;
+    
+    int32_t prevRefID = -2;
+
+    int numSectionRecords = 0;
+
+    // Keep reading records until they aren't more.
+    while(samIn.ReadRecord(samHeader, samRecord))
     {
-        String outputName = outFileBase;
-        outputName += "_";
-
-        int numSectionRecords = 0;
-        samIn.SetReadSection(i);
-        // Keep reading records until they aren't more.
-        while(samIn.ReadRecord(samHeader, samRecord))
+        // Check if this is the first record in the section
+        if(samRecord.getReferenceID() != prevRefID)
         {
-            // If this is the first record in the section, 
-            // open the file and write the header.
-            if(numSectionRecords == 0)
+            if(numSectionRecords != 0)
             {
-                const char* refName = samRecord.getReferenceName();
-                if(strcmp(refName, "*") == 0)
-                {
-                    outputName += "unknownChrom";
-                }
-                else
-                {
-                    outputName += refName;
-                }
-                // Append the extension.
-                if(bamOut)
-                {
-                    outputName += ".bam";
-                }
-                else
-                {
-                    outputName += ".sam";
-                }
-                outFile.OpenForWrite(outputName.c_str());
-                outFile.WriteHeader(samHeader);
+                std::cerr << "Reference Name: "
+                          << samHeader.getReferenceLabel(prevRefID)
+                          << " has " << numSectionRecords << " records\n";
             }
+            outputName = outFileBase;
 
-            numSectionRecords++;            
-
-            // Successfully read a record from the file, so write it.
-            outFile.WriteRecord(samHeader, samRecord);
+            // Open a new file (will close the previous one)
+            const char* refName = samRecord.getReferenceName();
+            if(strcmp(refName, "*") == 0)
+            {
+                outputName += "UnknownChrom";
+            }
+            else
+            {
+                outputName += refName;
+            }
+            // Append the extension.
+            if(bamOut)
+            {
+                outputName += ".bam";
+            }
+            else
+            {
+                outputName += ".sam";
+            }
+            outFile.OpenForWrite(outputName.c_str());
+            outFile.WriteHeader(samHeader);
+            numSectionRecords = 0;
+            prevRefID = samRecord.getReferenceID();
         }
 
-        if(numSectionRecords != 0)
-        {
-            std::cerr << "Reference Name: " << samRecord.getReferenceName() << " has " << numSectionRecords 
-                      << " records" << std::endl;
-        }
+        numSectionRecords++;            
+
+        // Successfully read a record from the file, so write it.
+        outFile.WriteRecord(samHeader, samRecord);
     }
-   
+
+    // Output the last chromosome's info.
+    if(numSectionRecords != 0)
+    {
+        std::cerr << "Reference Name: "
+                  << samHeader.getReferenceLabel(prevRefID)
+                  << " has " << numSectionRecords << " records\n";
+    }
+
     std::cerr << "Number of records = " << samIn.GetCurrentRecordCount() 
               << std::endl;
 
