@@ -17,7 +17,7 @@
 
 //////////////////////////////////////////////////////////////////////////
 // This file contains the processing for the executable option "splitChromosome"
-// which splits a sorted/indexed BAM file into one file per chromosome.
+// which splits a sorted BAM file into one file per chromosome.
 
 #ifndef __SPLIT_CHROMOSOME_H__
 #define __SPLIT_CHROMOSOME_H__
