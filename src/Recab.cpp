@@ -699,13 +699,20 @@ void Recab::modelFitPrediction(const char* outputBase)
             Logger::gLogger->error("Could not fit model!");
         
         hasherrormodel.addPrediction(prediction.getModel(),myBlendedWeight);
+
+        std::string recabFile = outputBase;
+        recabFile += ".recab";
+        Logger::gLogger->writeLog("Writing recalibration table %s",recabFile.c_str());
+        if(!(hasherrormodel.writeTableQemp(recabFile,
+                                           myId2Rg, true)))
+            Logger::gLogger->error("Writing errormodel not possible!");
     }
 
-    std::string recabFile = outputBase;
-    recabFile += ".recab";
-    Logger::gLogger->writeLog("Writing recalibration table %s",recabFile.c_str());
-    if(!(hasherrormodel.writeAllTableMM(recabFile.c_str(),
-                                        myId2Rg)))
+    std::string qempFile = outputBase;
+    qempFile += ".qemp";
+    Logger::gLogger->writeLog("Writing recalibration table %s",qempFile.c_str());
+    if(!(hasherrormodel.writeTableQemp(qempFile,
+                                       myId2Rg, false)))
         Logger::gLogger->error("Writing errormodel not possible!");
 }
 

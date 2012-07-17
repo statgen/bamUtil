@@ -16,5 +16,6 @@ End: TIME
 # Bases Skipped for DBSNP: 0, for Map Qual = 0: 0, for MapQual = 255: 0
 Start model fitting!
 Writing recalibration table results/testRecab.sam.recab
+Writing recalibration table results/testRecab.sam.qemp
 Writing recalibrated file results/testRecab.sam
 Recalibration successfully finished

@@ -38,6 +38,8 @@ diff results/testRecab.txt expected/testRecab.txt
 let "status |= $?"
 diff results/testRecab.log expected/empty.log
 let "status |= $?"
+#diff results/testRecab.sam.qemp expected/testRecab.sam.qemp
+#let "status |= $?"
 diff -I "Start: .*" -I "End: .*" results/testRecab.sam.log expected/testRecab.sam.log
 let "status |= $?"
 

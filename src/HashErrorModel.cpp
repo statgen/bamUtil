@@ -47,28 +47,35 @@ void HashErrorModel::setCell(const BaseData& data, char refBase)
     {
         ++(matchInfo.mm);
     }
+    matchInfo.qempSimple = 255;
 }
 
 uint8_t HashErrorModel::getQemp(BaseData& data)
 {
-    double qs;
-
     SMatches& matchMismatch = mismatchTable[data.getKey()];
     if(ourUseLogReg)
     {
-        return(matchMismatch.qemp);
+        return(matchMismatch.qempLogReg);
     }
-    else
-    {
-        qs = log10((double)(matchMismatch.mm+1)/
-                   (double)(matchMismatch.mm+matchMismatch.m+1)) * (-10.0);
-        return floor(qs + 0.5);
-    }
+    return(getQemp(matchMismatch));
 }
 
 
-int HashErrorModel::writeAllTableMM(String filename, 
-                                    const std::vector<std::string>& id2rg)
+uint8_t HashErrorModel::getQemp(SMatches& matchInfo)
+{
+    if(matchInfo.qempSimple == 255)
+    {
+        double qs = log10((double)(matchInfo.mm+1)/
+                          (double)(matchInfo.mm+matchInfo.m+1)) * (-10.0);
+        matchInfo.qempSimple = floor(qs + 0.5);
+    }
+    return(matchInfo.qempSimple);
+}
+
+
+int HashErrorModel::writeTableQemp(std::string& filename, 
+                                   const std::vector<std::string>& id2rg,
+                                   bool logReg)
 {
     FILE *pFile;
     pFile = fopen(filename.c_str(), "w");
@@ -78,27 +85,30 @@ int HashErrorModel::writeAllTableMM(String filename,
 
     BaseData data;
 
-    for(HashMatch::const_iterator it = mismatchTable.begin();
+    for(HashMatch::iterator it = mismatchTable.begin();
         it != mismatchTable.end();
         ++it)
     {
         data.parseKey(it->first);
         if(data.rgid <= maxId)
         {
-//TODO             fprintf(pFile,"%s %d %d %d %d %d %d %d - %ld %ld %d\n",
-//                     id2rg[it->first.rgid].c_str(), it->first.qual, it->first.cycle,
-//                     it->first.read, 0, BaseAsciiMap::base2int[(int)(it->first.preBase)], 0, BaseAsciiMap::base2int[(int)(it->first.curBase)],
-//                     it->second.m, it->second.mm, it->second.qemp);
             int16_t cycle = data.cycle + 1;
             if(data.read)
             {
                 // 2nd.
                 cycle = -cycle;
             }
+
+            uint8_t qemp = getQemp(it->second);
+            if(logReg)
+            {
+                qemp = it->second.qempLogReg;
+            }
+            
             fprintf(pFile,"%s,%d,%d,%c%c,%ld,%ld,%d\n",
                     id2rg[data.rgid].c_str(), data.qual, cycle, 
                     data.preBase, data.curBase,
-                    it->second.m + it->second.mm, it->second.mm, it->second.qemp);
+                    it->second.m + it->second.mm, it->second.mm, qemp);
         }
     }
     fclose(pFile);
@@ -151,7 +161,7 @@ void HashErrorModel::addPrediction(Model model,int blendedWeight)
         }
 
         phred = trunc((-10.0*log10(1.0-(1.0/(1.0+exp(-qemp)))))+0.5);
-        it->second.qemp = phred;
+        it->second.qempLogReg = phred;
     }
 };
 

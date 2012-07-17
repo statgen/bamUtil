@@ -42,24 +42,28 @@ public:
     typedef struct{
         uint64_t m;
         uint64_t mm;
-        uint8_t qemp;
+        uint8_t qempSimple;
+        uint8_t qempLogReg;
     } SMatches;
     
     typedef std::unordered_map<uint64_t, HashErrorModel::SMatches> HashMatch;
     
     HashMatch mismatchTable;
     uint16_t lastElement;
-
-   HashErrorModel();
-   ~HashErrorModel();
-
-   void setCell(const BaseData& data, char refBase);
-   uint8_t getQemp(BaseData& data);
-    int writeAllTableMM(String filename, const std::vector<std::string>& id2rg);
-   uint32_t getSize();
-   void setDataforPrediction(Matrix & X, Vector & succ, Vector& total,bool binarizeFlag);
-   void addPrediction(Model model, int blendedWeight);
-
+    
+    HashErrorModel();
+    ~HashErrorModel();
+    
+    void setCell(const BaseData& data, char refBase);
+    uint8_t getQemp(BaseData& data);
+    uint8_t getQemp(SMatches& matchInfo);
+    int writeTableQemp(std::string& filename, 
+                       const std::vector<std::string>& id2rg,
+                       bool logReg);
+    uint32_t getSize();
+    void setDataforPrediction(Matrix & X, Vector & succ, Vector& total,bool binarizeFlag);
+    void addPrediction(Model model, int blendedWeight);
+    
 private:
     static bool ourUseLogReg;
 };

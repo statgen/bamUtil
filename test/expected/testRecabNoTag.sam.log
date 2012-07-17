@@ -18,5 +18,6 @@ End: TIME
 WARNING: 201 records did not have tag ZQ or it was invalid, so the quality field was used for those records.
 Start model fitting!
 Writing recalibration table results/testRecabNoTag.sam.recab
+Writing recalibration table results/testRecabNoTag.sam.qemp
 Writing recalibrated file results/testRecabNoTag.sam
 Recalibration successfully finished

@@ -35,6 +35,7 @@ Sorting the indices of 12 duplicated records
 # Bases Skipped for DBSNP: 0, for Map Qual = 0: 11, for MapQual = 255: 0
 Start model fitting!
 Writing recalibration table results/testDedupRecab.sam.recab
+Writing recalibration table results/testDedupRecab.sam.qemp
 
 Writing results/testDedupRecab.sam
 Successfully marked 0 unpaired and 6 paired duplicate reads
