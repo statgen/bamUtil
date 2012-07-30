@@ -496,7 +496,7 @@ bool Recab::processReadBuildTable(SamRecord& samRecord)
             if((refOffset != (prevRefOffset + seqIncr)) ||
                (data.preBase == 'K') ||
                (!(myDbsnpFile.IsEmpty()) && 
-                (myDbSNP[refPos] || myDbSNP[refPos - 1])))
+                (myDbSNP[refPos] || myDbSNP[refPos - seqIncr])))
             {
                 // Save the pervious reference offset.
                 prevRefOffset = refOffset;
