@@ -35,20 +35,28 @@ class HashErrorModel {
 public:
 
     static void setUseLogReg(bool useLogReg) { ourUseLogReg = useLogReg; }
+    static void setUseFast(bool useFast) { ourUseFast = useFast; }
     
     
     typedef std::vector<double> Model;
-    typedef std::vector<uint64_t> Matches;
-    typedef struct{
-        uint64_t m;
-        uint64_t mm;
+    struct SMatches{
+        SMatches() : m(0), mm(0), qempSimple(0), qempLogReg(0) {}
+        uint32_t m;
+        uint32_t mm;
         uint8_t qempSimple;
         uint8_t qempLogReg;
-    } SMatches;
+    };
+    struct SMatchesFast{
+        SMatchesFast() : m(0), mm(0), qempSimple(0) {}
+        uint32_t m;
+        uint32_t mm;
+        uint8_t qempSimple;
+    };
     
     typedef std::unordered_map<uint64_t, HashErrorModel::SMatches> HashMatch;
     
     HashMatch mismatchTable;
+    std::vector<SMatchesFast> mismatchTableFast;
     uint16_t lastElement;
     
     HashErrorModel();
@@ -56,16 +64,17 @@ public:
     
     void setCell(const BaseData& data, char refBase);
     uint8_t getQemp(BaseData& data);
-    uint8_t getQemp(SMatches& matchInfo);
+    uint8_t getQempSimple(uint32_t matches, uint32_t mismatches);
     int writeTableQemp(std::string& filename, 
                        const std::vector<std::string>& id2rg,
                        bool logReg);
-    uint32_t getSize();
+
     void setDataforPrediction(Matrix & X, Vector & succ, Vector& total,bool binarizeFlag);
     void addPrediction(Model model, int blendedWeight);
     
 private:
     static bool ourUseLogReg;
+    static bool ourUseFast;
 };
 
 #endif

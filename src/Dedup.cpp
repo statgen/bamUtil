@@ -185,8 +185,6 @@ int Dedup::execute(int argc, char** argv)
 
     buildReadGroupLibraryMap(header);
 
-    int lastReferenceID = -1;
-    int lastPosition = -1;
     lastReference = -1;
     lastCoordinate = -1;
 
@@ -230,14 +228,6 @@ int Dedup::execute(int argc, char** argv)
         //   single reads go in myFragmentMap
         //   paired reads go in myPairedMap
         recordCount = samIn.GetCurrentRecordCount();
-
-        // Let us know if we're moving to a new chromosome
-        if (lastReferenceID != recordPtr->getReferenceID())
-        {
-            lastReferenceID = recordPtr->getReferenceID();
-            Logger::gLogger->writeLog("Reading ReferenceID %d\n", lastReferenceID);
-        }
-        lastPosition = recordPtr->get0BasedPosition();
 
         // if we have moved to a new position, look back at previous reads for duplicates
         if (hasPositionChanged(*recordPtr))
@@ -483,10 +473,14 @@ void Dedup::cleanupPriorReads(SamRecord* record)
 // determine whether the record's position is different from the previous record
 bool Dedup::hasPositionChanged(SamRecord& record)
 {
-    if (lastReference < record.getReferenceID() || 
+    if (lastReference != record.getReferenceID() || 
         lastCoordinate < record.get0BasedPosition())
     {
-        lastReference = record.getReferenceID();
+        if (lastReference != record.getReferenceID())
+        {
+            lastReference = record.getReferenceID();
+            Logger::gLogger->writeLog("Reading ReferenceID %d\n", lastReference);
+        }
         lastCoordinate = record.get0BasedPosition();
         return true;
     }

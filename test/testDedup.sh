@@ -43,6 +43,19 @@ let "status |= $?"
 diff -I "Start: .*" -I "End: .*" results/testRecab.sam.log expected/testRecab.sam.log
 let "status |= $?"
 
+../bin/bam recab --fast --in testFiles/testRecab.sam --out results/testRecabFast.sam --refFile testFilesLibBam/chr1_partial.fa > results/testRecabFast.txt 2> results/testRecabFast.log
+let "status |= $?"
+diff results/testRecabFast.sam expected/testRecab.sam
+let "status |= $?"
+diff results/testRecabFast.txt expected/empty.txt
+let "status |= $?"
+diff results/testRecabFast.log expected/empty.log
+let "status |= $?"
+#diff results/testRecab.sam.qemp expected/testRecab.sam.qemp
+#let "status |= $?"
+diff -I "Start: .*" -I "End: .*" results/testRecabFast.sam.log expected/testRecabFast.sam.log
+let "status |= $?"
+
 # Store the original quality
 ../bin/bam recab --in testFiles/testRecab.sam --out results/testRecabStoreQ.sam --refFile testFilesLibBam/chr1_partial.fa --storeQualTag OQ > results/testRecabStoreQ.txt 2> results/testRecabStoreQ.log
 let "status |= $?"

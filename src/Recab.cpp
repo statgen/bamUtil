@@ -61,6 +61,9 @@ Recab::Recab()
     myBlendedWeight = 0;
     myNumQualTagErrors = 0;
     mySkipFitModel = false;
+    myFast = false;
+    myKeepPrevDbsnp = false;
+    myKeepPrevNonAdjacent = false;
     myLogReg = false;
     myMinBaseQual = DEFAULT_MIN_BASE_QUAL;
     myMaxBaseQual = DEFAULT_MAX_BASE_QUAL;
@@ -105,7 +108,7 @@ void Recab::usage()
 
 void Recab::recabSpecificUsageLine()
 {
-    std::cerr << "--refFile <ReferenceFile> [--dbsnp <dbsnpFile>] [--minBaseQual <minBaseQual>] [--maxBaseQual <maxBaseQual>] [--blended <weight>] [--skipFitModel] [--useLogReg]";
+    std::cerr << "--refFile <ReferenceFile> [--dbsnp <dbsnpFile>] [--minBaseQual <minBaseQual>] [--maxBaseQual <maxBaseQual>] [--blended <weight>] [--skipFitModel] [--fast] [--keepPrevDbsnp] [--keepPrevNonAdjacent] [--useLogReg]";
 }
 
 void Recab::recabSpecificUsage()
@@ -118,8 +121,17 @@ void Recab::recabSpecificUsage()
     std::cerr << "\t--maxBaseQual <maxBaseQual>   : maximum recalibrated base quality (default: " << DEFAULT_MAX_BASE_QUAL << ")" << std::endl;
     std::cerr << "\t--blended <weight>            : blended model weight" << std::endl;
     std::cerr << "\t--skipFitModel                : do not check if the logistic regression model fits the data" << std::endl;
+    std::cerr << "\t--fast                        : use a compact representation that only allows:" << std::endl;
+    std::cerr << "\t                                   * at most " << (BaseData::getFastMaxRG() + 1) << " Read Groups" << std::endl;
+    std::cerr << "\t                                   * maximum quality " << BaseData::getFastMaxQual() << std::endl;
+    std::cerr << "\t                                   * at most " << BaseData::getFastMaxCycles() << " cycles" << std::endl;
+    std::cerr << "\t                                automatically enables skipFitModel, but is overridden by useLogReg" << std::endl;
+    std::cerr << "\t--keepPrevDbsnp               : do not exclude entries where the previous base is in dbsnp when building the recalibration table" << std::endl;
+    std::cerr << "\t                                By default they are excluded from the table." << std::endl;
+    std::cerr << "\t--keepPrevNonAdjacent         : do not exclude entries where the previous base is not adjacent (not a Cigar M/X/=) when building the recalibration table" << std::endl;
+    std::cerr << "\t                                By default they are excluded from the table (except the first cycle)." << std::endl;
     std::cerr << "\t--useLogReg                   : use logistic regression calculated quality for the new quality" << std::endl;
-    std::cerr << "\t                                ignores setting of skipFitModel." << 
+    std::cerr << "\t                                ignores setting of skipFitModel and fast." << 
     std::cerr << "\t--qualField <quality tag>     : tag to get the starting base quality (default is to get it from the Quality field" << std::endl;
     std::cerr << "\t--storeQualTag <quality tag>  : tag to store the previous quality into" << std::endl;
 
@@ -280,6 +292,9 @@ void Recab::addRecabSpecificParameters(LongParamContainer& params)
     params.addInt("maxBaseQual", &myMaxBaseQual);
     params.addInt("blended", &myBlendedWeight);
     params.addBool("skipFitModel", &mySkipFitModel);
+    params.addBool("fast", &myFast);
+    params.addBool("keepPrevDbsnp", &myKeepPrevDbsnp);
+    params.addBool("keepPrevNonAdjacent", &myKeepPrevNonAdjacent);
     params.addBool("useLogReg", &myLogReg);
     params.addString("qualField", &myQField);
     params.addString("storeQualTag", &myStoreQualTag);
@@ -493,10 +508,11 @@ bool Recab::processReadBuildTable(SamRecord& samRecord)
             //      (not a match/mismatch)
             //   2) previous base is in dbsnp
             //   3) current base is in dbsnp
-            if((refOffset != (prevRefOffset + seqIncr)) ||
+            if((!myKeepPrevNonAdjacent && (refOffset != (prevRefOffset + seqIncr))) ||
                (data.preBase == 'K') ||
                (!(myDbsnpFile.IsEmpty()) && 
-                (myDbSNP[refPos] || myDbSNP[refPos - seqIncr])))
+                (myDbSNP[refPos] ||
+                 (!myKeepPrevDbsnp && myDbSNP[refPos - seqIncr]))))
             {
                 // Save the pervious reference offset.
                 prevRefOffset = refOffset;
@@ -740,7 +756,20 @@ void Recab::processParams()
         }
     }
 
+    if(myLogReg && myFast)
+    {
+        Logger::gLogger->writeLog("Cannot use both --fast & --useLogReg, so just using --useLogReg");
+        myFast = false;
+    }
+
+    if(myFast)
+    {
+        // Set skipFit.
+        mySkipFitModel = true;
+    }
+
     HashErrorModel::setUseLogReg(myLogReg);
+    HashErrorModel::setUseFast(myFast);
 
     myParamsSetup = true;
 }

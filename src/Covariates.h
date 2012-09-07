@@ -22,6 +22,7 @@
 #include <stdint.h>
 #include <string>
 #include <vector>
+#include <stdexcept>
 #include "BaseAsciiMap.h"
 
 // TODO - move logic for looping through a read and extracting each covariate 
@@ -71,6 +72,70 @@ public:
         preBase = BaseAsciiMap::int2base[(key >> 36) & 0xF];
         curBase = BaseAsciiMap::int2base[(key >> 32) & 0xF];
         rgid = key & 0xFFFFFFFF;
+           
+    }
+
+    inline static uint32_t getFastKeySize()
+    {
+        return(0x0FFFFFFF);
+    }
+
+
+    inline static int32_t getFastMaxRG()
+    {
+        return(0xFF);
+    }
+
+
+    inline static uint32_t getFastMaxQual()
+    {
+        return(0x3F);
+    }
+
+
+    inline static int32_t getFastMaxCycles()
+    {
+        return(0x7F);
+    }
+
+
+    inline uint32_t getFastKey() const
+    {
+        if(rgid > getFastMaxRG())
+        {
+            String errorMsg = "RECAB: Cannot use --fast option with more than ";
+            errorMsg += (getFastMaxRG() + 1);
+            errorMsg += " read groups";
+            throw(std::runtime_error(errorMsg.c_str()));
+        }
+        if(qual > getFastMaxQual())
+        {
+            String errorMsg = "RECAB: Cannot use --fast option with qualities > ";
+            errorMsg += getFastMaxQual();
+            throw(std::runtime_error(errorMsg.c_str()));
+        }
+        if(cycle > getFastMaxCycles())
+        {
+            String errorMsg = "RECAB: Cannot use --fast option with cycles > ";
+            errorMsg += getFastMaxCycles();
+            throw(std::runtime_error(errorMsg.c_str()));
+        }
+        return( ((uint32_t)(read & 0x1) << 27) |
+                ((uint32_t)(cycle & 0x7F) << 20) | 
+                ((uint32_t)(qual & 0x3F) << 14) | 
+                ((uint32_t)(BaseAsciiMap::base2int[(int)preBase] & 0x7) << 11) | 
+                ((uint32_t)(BaseAsciiMap::base2int[(int)curBase] & 0x7) << 8) | 
+                rgid );
+    }
+
+    inline void parseFastKey(uint32_t key)
+    {
+        read = (key >> 27);
+        cycle = (key >> 20) & 0x7F;
+        qual = (key >> 14) & 0x3F;
+        preBase = BaseAsciiMap::int2base[(key >> 11) & 0x7];
+        curBase = BaseAsciiMap::int2base[(key >> 8) & 0x7];
+        rgid = key & 0xFF;
            
     }
 

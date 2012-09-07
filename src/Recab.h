@@ -81,6 +81,9 @@ private:
     int myMaxBaseQual;
     int myBlendedWeight;
     bool mySkipFitModel;
+    bool myFast;
+    bool myKeepPrevDbsnp;
+    bool myKeepPrevNonAdjacent;
     bool myLogReg;
 
     //stats

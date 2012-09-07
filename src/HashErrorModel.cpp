@@ -24,6 +24,7 @@
 #include <math.h>
 
 bool HashErrorModel::ourUseLogReg = true;
+bool HashErrorModel::ourUseFast = false;
 
 HashErrorModel::HashErrorModel()
 {
@@ -37,6 +38,24 @@ HashErrorModel::~HashErrorModel()
 
 void HashErrorModel::setCell(const BaseData& data, char refBase)
 {
+    if(ourUseFast)
+    {
+        if(mismatchTableFast.empty())
+        {
+            mismatchTableFast.resize(BaseData::getFastKeySize());
+        }
+        SMatchesFast& matchInfo = mismatchTableFast[data.getFastKey()];
+        if(BaseUtilities::areEqual(refBase, data.curBase))
+        {
+            ++(matchInfo.m);
+        }
+        else
+        {
+            ++(matchInfo.mm);
+        }
+        matchInfo.qempSimple = 255;
+        return;
+    }
     SMatches& matchInfo = mismatchTable[data.getKey()];
 
     if(BaseUtilities::areEqual(refBase, data.curBase))
@@ -52,24 +71,42 @@ void HashErrorModel::setCell(const BaseData& data, char refBase)
 
 uint8_t HashErrorModel::getQemp(BaseData& data)
 {
+    if(ourUseFast)
+    {
+        SMatchesFast& matchInfo = mismatchTableFast[data.getFastKey()];
+        if(matchInfo.qempSimple == 255)
+        {
+            matchInfo.qempSimple = 
+                getQempSimple(matchInfo.m, matchInfo.mm);
+        }
+        return(matchInfo.qempSimple);
+    }
+    
     SMatches& matchMismatch = mismatchTable[data.getKey()];
     if(ourUseLogReg)
     {
         return(matchMismatch.qempLogReg);
     }
-    return(getQemp(matchMismatch));
+    if(matchMismatch.qempSimple == 255)
+    {
+        matchMismatch.qempSimple = 
+            getQempSimple(matchMismatch.m, matchMismatch.mm);
+    }
+    return(matchMismatch.qempSimple);
 }
 
 
-uint8_t HashErrorModel::getQemp(SMatches& matchInfo)
+uint8_t HashErrorModel::getQempSimple(uint32_t matches, uint32_t mismatches)
 {
-    if(matchInfo.qempSimple == 255)
+    double qs = 40;
+    //   if(mismatches != 0)
     {
-        double qs = log10((double)(matchInfo.mm+1)/
-                          (double)(matchInfo.mm+matchInfo.m+1)) * (-10.0);
-        matchInfo.qempSimple = floor(qs + 0.5);
+        qs = log10((double)(mismatches+1)/
+                   (double)(matches + mismatches+1)) * (-10.0);
+//         qs = log10((double)(mismatches)/
+//                    (double)(matches + mismatches)) * (-10.0);
     }
-    return(matchInfo.qempSimple);
+    return(floor(qs + 0.5));
 }
 
 
@@ -85,6 +122,42 @@ int HashErrorModel::writeTableQemp(std::string& filename,
 
     BaseData data;
 
+    if(ourUseFast)
+    {
+        for(unsigned int i = 0; i < mismatchTableFast.size(); i++)
+        {
+            SMatchesFast& matchInfo = mismatchTableFast[i];
+            if((matchInfo.m == 0) && (matchInfo.mm == 0))
+            {
+                // No data, so continue to the next entry.
+                continue;
+            }
+            data.parseFastKey(i);
+            
+            if(data.rgid <= maxId)
+            {
+                int16_t cycle = data.cycle + 1;
+                if(data.read)
+                {
+                    // 2nd.
+                    cycle = -cycle;
+                }
+                
+                if(matchInfo.qempSimple == 255)
+                {
+                    matchInfo.qempSimple = 
+                        getQempSimple(matchInfo.m, matchInfo.mm);
+                }
+                fprintf(pFile,"%s,%d,%d,%c%c,%d,%d,%d\n",
+                        id2rg[data.rgid].c_str(), data.qual, cycle, 
+                        data.preBase, data.curBase,
+                        matchInfo.m + matchInfo.mm, matchInfo.mm, 
+                        matchInfo.qempSimple);
+            }
+        }
+        fclose(pFile);
+        return(1);
+    }
     for(HashMatch::iterator it = mismatchTable.begin();
         it != mismatchTable.end();
         ++it)
@@ -99,13 +172,18 @@ int HashErrorModel::writeTableQemp(std::string& filename,
                 cycle = -cycle;
             }
 
-            uint8_t qemp = getQemp(it->second);
+            if(it->second.qempSimple == 255)
+            {
+                it->second.qempSimple = 
+                    getQempSimple(it->second.m, it->second.mm);
+            }
+            uint8_t qemp = it->second.qempSimple;
             if(logReg)
             {
                 qemp = it->second.qempLogReg;
             }
             
-            fprintf(pFile,"%s,%d,%d,%c%c,%ld,%ld,%d\n",
+            fprintf(pFile,"%s,%d,%d,%c%c,%d,%d,%d\n",
                     id2rg[data.rgid].c_str(), data.qual, cycle, 
                     data.preBase, data.curBase,
                     it->second.m + it->second.mm, it->second.mm, qemp);
@@ -116,14 +194,14 @@ int HashErrorModel::writeTableQemp(std::string& filename,
 }
 
 
-uint32_t HashErrorModel::getSize(){
-	return mismatchTable.size();
-};
-
-
 void HashErrorModel::addPrediction(Model model,int blendedWeight)
 {
     BaseData data;
+    if(ourUseFast)
+    {
+        return;
+    }
+
     for(HashMatch::iterator it = mismatchTable.begin();
         it != mismatchTable.end();
         ++it)
@@ -145,16 +223,16 @@ void HashErrorModel::addPrediction(Model model,int blendedWeight)
         int phred = 0;
         if(blendedWeight==9999)
         {
-            uint64_t m = it->second.m;
-            uint64_t mm = it->second.mm;
+            uint32_t m = it->second.m;
+            uint32_t mm = it->second.mm;
             qemp = (mm-blendedWeight)/(m+mm-blendedWeight);
         }
         else
         {
             if(blendedWeight>0)
             {
-                uint64_t m = it->second.m;
-                uint64_t mm = it->second.mm;
+                uint32_t m = it->second.m;
+                uint32_t mm = it->second.mm;
                 //qemp = (mm+qemp*blendedWeight)/(m+mm+blendedWeight);
                 qemp = (mm+qemp*mm)/(2.0*(m+mm));
             }
@@ -170,6 +248,12 @@ void HashErrorModel::setDataforPrediction(Matrix & X, Vector & succ, Vector & to
 {
     int i = 0;
     BaseData data;
+
+    if(ourUseFast)
+    {
+        return;
+    }
+
     for(HashMatch::const_iterator it = mismatchTable.begin();
         it != mismatchTable.end();
         ++it)
@@ -179,7 +263,8 @@ void HashErrorModel::setDataforPrediction(Matrix & X, Vector & succ, Vector & to
         cov.setCovariates(data);
         if(i == 0)
         {
-            uint32_t rows = getSize();
+            uint32_t rows = mismatchTable.size();
+
             succ.Dimension(rows);
             total.Dimension(rows);
             X.Dimension(rows, cov.covariates.size() + 1);
