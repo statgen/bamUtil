@@ -19,6 +19,7 @@
 #include <sstream>
 #include <iostream>
 #include <stdio.h>
+#include <stdexcept>
 #include "HashErrorModel.h"
 #include "BaseUtilities.h"
 #include <math.h>
@@ -74,6 +75,13 @@ uint8_t HashErrorModel::getQemp(BaseData& data)
     if(ourUseFast)
     {
         SMatchesFast& matchInfo = mismatchTableFast[data.getFastKey()];
+
+        // If no matches or mismatches, return the original quality.
+        if((matchInfo.m == 0) && (matchInfo.mm == 0))
+        {
+            return(data.qual);
+        }
+
         if(matchInfo.qempSimple == 255)
         {
             matchInfo.qempSimple = 
@@ -82,17 +90,26 @@ uint8_t HashErrorModel::getQemp(BaseData& data)
         return(matchInfo.qempSimple);
     }
     
-    SMatches& matchMismatch = mismatchTable[data.getKey()];
-    if(ourUseLogReg)
+    // If it is not in the table, return the original quality.
+    try 
     {
-        return(matchMismatch.qempLogReg);
+        SMatches& matchMismatch = mismatchTable.at(data.getKey());
+        if(ourUseLogReg)
+        {
+            return(matchMismatch.qempLogReg);
+        }
+        if(matchMismatch.qempSimple == 255)
+        {
+            matchMismatch.qempSimple = 
+                getQempSimple(matchMismatch.m, matchMismatch.mm);
+        }
+        return(matchMismatch.qempSimple);
     }
-    if(matchMismatch.qempSimple == 255)
+    catch(std::out_of_range& oor)
     {
-        matchMismatch.qempSimple = 
-            getQempSimple(matchMismatch.m, matchMismatch.mm);
+        // just return the original quality.
+        return(data.qual);
     }
-    return(matchMismatch.qempSimple);
 }
 
 

@@ -7,7 +7,7 @@ TEST_COMMAND = ln -sfT $(ACTUAL_PATH)/bam/test/testFiles testFilesLibBam; \
                ./testClipOverlap.sh && ./testSplitBam.sh && \
                ./testTrimBam.sh && ./testPolishBam.sh && \
                ./testRGMergeBam.sh && ./testGapInfo.sh && \
-               ./testBam2FastQ.sh && ./testDedup.sh
+               ./testBam2FastQ.sh && ./testDedup.sh && ./testRecab.sh
 
 TEST_CLEAN = rm -f testFilesLibBam
 

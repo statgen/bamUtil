@@ -126,13 +126,17 @@ void Recab::recabSpecificUsage()
     std::cerr << "\t                                   * maximum quality " << BaseData::getFastMaxQual() << std::endl;
     std::cerr << "\t                                   * at most " << BaseData::getFastMaxCycles() << " cycles" << std::endl;
     std::cerr << "\t                                automatically enables skipFitModel, but is overridden by useLogReg" << std::endl;
-    std::cerr << "\t--keepPrevDbsnp               : do not exclude entries where the previous base is in dbsnp when building the recalibration table" << std::endl;
+    std::cerr << "\t                                uses up to about 2.25G more memory than running without --fast." << std::endl;
+    std::cerr << "\t--keepPrevDbsnp               : do not exclude entries where the previous base is in dbsnp when\n";
+    std::cerr << "\t                                building the recalibration table" << std::endl;
     std::cerr << "\t                                By default they are excluded from the table." << std::endl;
-    std::cerr << "\t--keepPrevNonAdjacent         : do not exclude entries where the previous base is not adjacent (not a Cigar M/X/=) when building the recalibration table" << std::endl;
+    std::cerr << "\t--keepPrevNonAdjacent         : do not exclude entries where the previous base is not adjacent\n";
+    std::cerr << "\t                                (not a Cigar M/X/=) when building the recalibration table" << std::endl;
     std::cerr << "\t                                By default they are excluded from the table (except the first cycle)." << std::endl;
     std::cerr << "\t--useLogReg                   : use logistic regression calculated quality for the new quality" << std::endl;
-    std::cerr << "\t                                ignores setting of skipFitModel and fast." << 
-    std::cerr << "\t--qualField <quality tag>     : tag to get the starting base quality (default is to get it from the Quality field" << std::endl;
+    std::cerr << "\t                                ignores setting of skipFitModel and fast." << std::endl;
+    std::cerr << "\t--qualField <quality tag>     : tag to get the starting base quality\n";
+    std::cerr << "\t                                (default is to get it from the Quality field)" << std::endl;
     std::cerr << "\t--storeQualTag <quality tag>  : tag to store the previous quality into" << std::endl;
 
 }
@@ -496,8 +500,9 @@ bool Recab::processReadBuildTable(SamRecord& samRecord)
         {
             if(!(myDbsnpFile.IsEmpty()) && myDbSNP[refPos])
             {
-                // Save the pervious reference offset.
-                prevRefOffset = refOffset;
+                // Save the previous reference offset.
+                ++myNumDBSnpSkips;
+               prevRefOffset = refOffset;
                 continue;
             }
         }
@@ -509,18 +514,24 @@ bool Recab::processReadBuildTable(SamRecord& samRecord)
             //   2) previous base is in dbsnp
             //   3) current base is in dbsnp
             if((!myKeepPrevNonAdjacent && (refOffset != (prevRefOffset + seqIncr))) ||
-               (data.preBase == 'K') ||
-               (!(myDbsnpFile.IsEmpty()) && 
-                (myDbSNP[refPos] ||
-                 (!myKeepPrevDbsnp && myDbSNP[refPos - seqIncr]))))
+               (data.preBase == 'K'))
             {
-                // Save the pervious reference offset.
+                // Save the previous reference offset.
                 prevRefOffset = refOffset;
                 continue;
             }
-        }
+            if(!(myDbsnpFile.IsEmpty()) && 
+               (myDbSNP[refPos] ||
+                (!myKeepPrevDbsnp && myDbSNP[refPos - seqIncr])))
+            {
+                ++myNumDBSnpSkips;
+                // Save the previous reference offset.
+                prevRefOffset = refOffset;
+                continue;
+            }
+       }
         
-        // Save the pervious reference offset.
+        // Save the previous reference offset.
         prevRefOffset = refOffset;
 
         // Set the reference & read bases in the Covariates
@@ -557,7 +568,6 @@ bool Recab::processReadBuildTable(SamRecord& samRecord)
 bool Recab::processReadApplyTable(SamRecord& samRecord)
 {
     static BaseData data;
-    static std::string chromosomeName;
     static std::string readGroup;
     static std::string aligTypes;
 
