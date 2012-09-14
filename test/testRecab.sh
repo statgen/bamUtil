@@ -106,6 +106,66 @@ let "status |= $?"
 diff -I "Start: .*" -I "End: .*" results/testRecabDBSNP.sam.log expected/testRecabDBSNP.sam.log
 let "status |= $?"
 
+###############
+# Test with DBSNP.gz
+../bin/bam recab --in testFiles/testRecab.sam --out results/testRecabDBSNPgz.sam --refFile testFilesLibBam/chr1_partial.fa --dbsnp testFiles/dbsnp1.txt.gz --skipFit > results/testRecabDBSNPgz.txt 2> results/testRecabDBSNPgz.log
+let "status |= $?"
+diff results/testRecabDBSNPgz.sam expected/testRecabDBSNP.sam
+let "status |= $?"
+diff results/testRecabDBSNPgz.txt expected/empty.txt
+let "status |= $?"
+diff results/testRecabDBSNPgz.log expected/testRecabDBSNPgz.log
+let "status |= $?"
+#diff results/testRecabDBSNP.sam.qemp expected/testRecab.sam.qemp
+#let "status |= $?"
+diff -I "Start: .*" -I "End: .*" results/testRecabDBSNPgz.sam.log expected/testRecabDBSNPgz.sam.log
+let "status |= $?"
+
+###############
+# Test with DBSNP, keeping even if previous is dbsnp
+../bin/bam recab --in testFiles/testRecab.sam --out results/testRecabDBSNPkeepPrev.sam --refFile testFilesLibBam/chr1_partial.fa --dbsnp testFiles/dbsnp1.txt --keepPrevDbsnp --skipFit > results/testRecabDBSNPkeepPrev.txt 2> results/testRecabDBSNPkeepPrev.log
+let "status |= $?"
+diff results/testRecabDBSNPkeepPrev.sam expected/testRecabDBSNPkeepPrev.sam
+let "status |= $?"
+diff results/testRecabDBSNPkeepPrev.txt expected/empty.txt
+let "status |= $?"
+diff results/testRecabDBSNPkeepPrev.log expected/testRecabDBSNPkeepPrev.log
+let "status |= $?"
+#diff results/testRecabDBSNPkeepPrev.sam.qemp expected/testRecab.sam.qemp
+#let "status |= $?"
+diff -I "Start: .*" -I "End: .*" results/testRecabDBSNPkeepPrev.sam.log expected/testRecabDBSNPkeepPrev.sam.log
+let "status |= $?"
+
+###############
+# Recalibration with indels
+../bin/bam recab --in testFiles/testRecab2.sam --out results/testRecab2.sam --skipFit --refFile testFilesLibBam/chr1_partial.fa > results/testRecab2.txt 2> results/testRecab2.log
+let "status |= $?"
+diff results/testRecab2.sam expected/testRecab2.sam
+let "status |= $?"
+diff results/testRecab2.txt expected/empty.txt
+let "status |= $?"
+diff results/testRecab2.log expected/empty.log
+let "status |= $?"
+#diff results/testRecab2.sam.qemp expected/testRecab2.sam.qemp
+#let "status |= $?"
+diff -I "Start: .*" -I "End: .*" results/testRecab2.sam.log expected/testRecab2.sam.log
+let "status |= $?"
+
+###############
+# Recalibration with indels keeping even if previous is not match/mismatch
+../bin/bam recab --in testFiles/testRecab2.sam --out results/testRecab2Keep.sam --keepPrevNonAdjacent --skipFit --refFile testFilesLibBam/chr1_partial.fa > results/testRecab2Keep.txt 2> results/testRecab2Keep.log
+let "status |= $?"
+diff results/testRecab2Keep.sam expected/testRecab2Keep.sam
+let "status |= $?"
+diff results/testRecab2Keep.txt expected/empty.txt
+let "status |= $?"
+diff results/testRecab2Keep.log expected/empty.log
+let "status |= $?"
+#diff results/testRecab2Keep.sam.qemp expected/testRecab2Keep.sam.qemp
+#let "status |= $?"
+diff -I "Start: .*" -I "End: .*" results/testRecab2Keep.sam.log expected/testRecab2Keep.sam.log
+let "status |= $?"
+
 if [ $status != 0 ]
 then
   echo failed testRecab.sh

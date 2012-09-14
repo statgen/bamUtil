@@ -463,20 +463,6 @@ bool Recab::processReadBuildTable(SamRecord& samRecord)
 
     for (data.cycle = 0; data.cycle < seqLen; data.cycle++, seqPos += seqIncr)
     {
-        // Get the reference offset.
-        refOffset = cigarPtr->getRefOffset(seqPos);
-        if(refOffset == Cigar::INDEX_NA)
-        {
-            // Not a match/mismatch, so continue to the next one which will
-            // not have a previous match/mismatch.
-            // Set the current to a 'N' & the previous ref offset to
-            // a negative so the next one won't be kept.
-            data.curBase = 'N';
-            prevRefOffset = -2;
-            continue;
-        }
-
-        // This one is a match.
         // Store the previous current base in preBase.
         data.preBase = data.curBase;
 
@@ -491,6 +477,19 @@ bool Recab::processReadBuildTable(SamRecord& samRecord)
                 BaseAsciiMap::base2complement[(unsigned int)(data.curBase)];
         }
         
+        // Get the reference offset.
+        refOffset = cigarPtr->getRefOffset(seqPos);
+        if(refOffset == Cigar::INDEX_NA)
+        {
+            // Not a match/mismatch, so continue to the next one which will
+            // not have a previous match/mismatch.
+            // Set previous ref offset to a negative so
+            // the next one won't be kept.
+            prevRefOffset = -2;
+            continue;
+        }
+
+        // This one is a match.
         refPos = mapPos + refOffset;
 
         // Check to see if we should process this position.
@@ -502,7 +501,7 @@ bool Recab::processReadBuildTable(SamRecord& samRecord)
             {
                 // Save the previous reference offset.
                 ++myNumDBSnpSkips;
-               prevRefOffset = refOffset;
+                prevRefOffset = refOffset;
                 continue;
             }
         }
