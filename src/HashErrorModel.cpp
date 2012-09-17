@@ -115,6 +115,7 @@ uint8_t HashErrorModel::getQemp(BaseData& data)
 
 uint8_t HashErrorModel::getQempSimple(uint32_t matches, uint32_t mismatches)
 {
+    // TODO, if this is used, then make it take the configuration from Recab.cpp
     double qs = 40;
     //   if(mismatches != 0)
     {

@@ -176,6 +176,67 @@ let "status |= $?"
 diff -I "Start: .*" -I "End: .*" results/testRecab2Keep.sam.log expected/testRecab2Keep.sam.log
 let "status |= $?"
 
+
+###############
+# Recalibration max quality
+../bin/bam recab --in testFiles/testRecab51.sam --out results/testRecabMaxQual50.sam --skipFit --refFile testFilesLibBam/chr1_partial.fa > results/testRecabMaxQual50.txt 2> results/testRecabMaxQual50.log
+let "status |= $?"
+diff results/testRecabMaxQual50.sam expected/testRecabMaxQual50.sam
+let "status |= $?"
+diff results/testRecabMaxQual50.txt expected/empty.txt
+let "status |= $?"
+diff results/testRecabMaxQual50.log expected/empty.log
+let "status |= $?"
+diff results/testRecabMaxQual50.sam.qemp expected/testRecabMaxQual51.sam.qemp
+let "status |= $?"
+diff -I "Start: .*" -I "End: .*" results/testRecabMaxQual50.sam.log expected/testRecabMaxQual50.sam.log
+let "status |= $?"
+
+###############
+# Recalibration min quality
+../bin/bam recab --in testFiles/testRecab51.sam --out results/testRecabMinQual28.sam --skipFit --minBaseQual 28 --refFile testFilesLibBam/chr1_partial.fa > results/testRecabMinQual28.txt 2> results/testRecabMinQual28.log
+let "status |= $?"
+diff results/testRecabMinQual28.sam expected/testRecabMinQual28.sam
+let "status |= $?"
+diff results/testRecabMinQual28.txt expected/empty.txt
+let "status |= $?"
+diff results/testRecabMinQual28.log expected/empty.log
+let "status |= $?"
+diff results/testRecabMinQual28.sam.qemp expected/testRecabMinQual28.sam.qemp
+let "status |= $?"
+diff -I "Start: .*" -I "End: .*" results/testRecabMinQual28.sam.log expected/testRecabMinQual28.sam.log
+let "status |= $?"
+
+###############
+# Recalibration max quality
+../bin/bam recab --in testFiles/testRecab51.sam --out results/testRecabMaxQual51.sam --maxBaseQual 51 --skipFit --refFile testFilesLibBam/chr1_partial.fa > results/testRecabMaxQual51.txt 2> results/testRecabMaxQual51.log
+let "status |= $?"
+diff results/testRecabMaxQual51.sam expected/testRecabMaxQual51.sam
+let "status |= $?"
+diff results/testRecabMaxQual51.txt expected/empty.txt
+let "status |= $?"
+diff results/testRecabMaxQual51.log expected/empty.log
+let "status |= $?"
+diff results/testRecabMaxQual51.sam.qemp expected/testRecabMaxQual51.sam.qemp
+let "status |= $?"
+diff -I "Start: .*" -I "End: .*" results/testRecabMaxQual51.sam.log expected/testRecabMaxQual51.sam.log
+let "status |= $?"
+
+###############
+# Recalibration max quality
+../bin/bam recab --in testFiles/testRecab51.sam --out results/testRecabMaxQual49.sam --maxBaseQual 49 --skipFit --refFile testFilesLibBam/chr1_partial.fa > results/testRecabMaxQual49.txt 2> results/testRecabMaxQual49.log
+let "status |= $?"
+diff results/testRecabMaxQual49.sam expected/testRecabMaxQual49.sam
+let "status |= $?"
+diff results/testRecabMaxQual49.txt expected/empty.txt
+let "status |= $?"
+diff results/testRecabMaxQual49.log expected/empty.log
+let "status |= $?"
+diff results/testRecabMaxQual49.sam.qemp expected/testRecabMaxQual51.sam.qemp
+let "status |= $?"
+diff -I "Start: .*" -I "End: .*" results/testRecabMaxQual49.sam.log expected/testRecabMaxQual49.sam.log
+let "status |= $?"
+
 if [ $status != 0 ]
 then
   echo failed testRecab.sh
