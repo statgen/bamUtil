@@ -80,7 +80,7 @@ private:
     int myMinBaseQual;
     int myMaxBaseQual;
     int myBlendedWeight;
-    bool mySkipFitModel;
+    bool myFitModel;
     bool myFast;
     bool myKeepPrevDbsnp;
     bool myKeepPrevNonAdjacent;

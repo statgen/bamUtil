@@ -60,7 +60,7 @@ Recab::Recab()
     myMapQual255Count = 0;
     myBlendedWeight = 0;
     myNumQualTagErrors = 0;
-    mySkipFitModel = false;
+    myFitModel = false;
     myFast = false;
     myKeepPrevDbsnp = false;
     myKeepPrevNonAdjacent = false;
@@ -108,7 +108,7 @@ void Recab::usage()
 
 void Recab::recabSpecificUsageLine()
 {
-    std::cerr << "--refFile <ReferenceFile> [--dbsnp <dbsnpFile>] [--minBaseQual <minBaseQual>] [--maxBaseQual <maxBaseQual>] [--blended <weight>] [--skipFitModel] [--fast] [--keepPrevDbsnp] [--keepPrevNonAdjacent] [--useLogReg]";
+    std::cerr << "--refFile <ReferenceFile> [--dbsnp <dbsnpFile>] [--minBaseQual <minBaseQual>] [--maxBaseQual <maxBaseQual>] [--blended <weight>] [--fitModel] [--fast] [--keepPrevDbsnp] [--keepPrevNonAdjacent] [--useLogReg]";
 }
 
 void Recab::recabSpecificUsage()
@@ -120,12 +120,13 @@ void Recab::recabSpecificUsage()
     std::cerr << "\t--minBaseQual <minBaseQual>   : minimum base quality of bases to recalibrate (default: " << DEFAULT_MIN_BASE_QUAL << ")" << std::endl;
     std::cerr << "\t--maxBaseQual <maxBaseQual>   : maximum recalibrated base quality (default: " << DEFAULT_MAX_BASE_QUAL << ")" << std::endl;
     std::cerr << "\t--blended <weight>            : blended model weight" << std::endl;
-    std::cerr << "\t--skipFitModel                : do not check if the logistic regression model fits the data" << std::endl;
+    std::cerr << "\t--fitModel                    : check if the logistic regression model fits the data" << std::endl;
+    std::cerr << "\t                                overriden by fast, but automatically applied by useLogReg" << std::endl;
     std::cerr << "\t--fast                        : use a compact representation that only allows:" << std::endl;
     std::cerr << "\t                                   * at most " << (BaseData::getFastMaxRG() + 1) << " Read Groups" << std::endl;
     std::cerr << "\t                                   * maximum quality " << BaseData::getFastMaxQual() << std::endl;
     std::cerr << "\t                                   * at most " << BaseData::getFastMaxCycles() << " cycles" << std::endl;
-    std::cerr << "\t                                automatically enables skipFitModel, but is overridden by useLogReg" << std::endl;
+    std::cerr << "\t                                overrides fitModel, but is overridden by useLogReg" << std::endl;
     std::cerr << "\t                                uses up to about 2.25G more memory than running without --fast." << std::endl;
     std::cerr << "\t--keepPrevDbsnp               : do not exclude entries where the previous base is in dbsnp when\n";
     std::cerr << "\t                                building the recalibration table" << std::endl;
@@ -134,7 +135,7 @@ void Recab::recabSpecificUsage()
     std::cerr << "\t                                (not a Cigar M/X/=) when building the recalibration table" << std::endl;
     std::cerr << "\t                                By default they are excluded from the table (except the first cycle)." << std::endl;
     std::cerr << "\t--useLogReg                   : use logistic regression calculated quality for the new quality" << std::endl;
-    std::cerr << "\t                                ignores setting of skipFitModel and fast." << std::endl;
+    std::cerr << "\t                                automatically applies fitModel and overrides fast." << std::endl;
     std::cerr << "\t--qualField <quality tag>     : tag to get the starting base quality\n";
     std::cerr << "\t                                (default is to get it from the Quality field)" << std::endl;
     std::cerr << "\t--storeQualTag <quality tag>  : tag to store the previous quality into" << std::endl;
@@ -295,7 +296,7 @@ void Recab::addRecabSpecificParameters(LongParamContainer& params)
     params.addInt("minBaseQual", &myMinBaseQual);
     params.addInt("maxBaseQual", &myMaxBaseQual);
     params.addInt("blended", &myBlendedWeight);
-    params.addBool("skipFitModel", &mySkipFitModel);
+    params.addBool("fitModel", &myFitModel);
     params.addBool("fast", &myFast);
     params.addBool("keepPrevDbsnp", &myKeepPrevDbsnp);
     params.addBool("keepPrevNonAdjacent", &myKeepPrevNonAdjacent);
@@ -709,7 +710,7 @@ void Recab::modelFitPrediction(const char* outputBase)
 
     ////////////////////////
     ////////////////////////
-    if(myLogReg || !mySkipFitModel)
+    if(myLogReg || myFitModel)
     {
         //// Model fitting + prediction
         std::string modelfile = outputBase;
@@ -773,8 +774,13 @@ void Recab::processParams()
 
     if(myFast)
     {
-        // Set skipFit.
-        mySkipFitModel = true;
+        myFitModel = false;
+    }
+
+   if(myLogReg)
+    {
+        // Set fitModel.
+        myFitModel = true;
     }
 
     HashErrorModel::setUseLogReg(myLogReg);

@@ -10,7 +10,7 @@ let "status |= $?"
 diff results/testDedup.sam.log expected/testDedup.sam.log
 let "status |= $?"
 
-../bin/bam dedup --recab --in testFiles/testDedup.sam --out results/testDedupRecab.sam --refFile testFiles/ref_partial.fa --skipFit 2> results/testDedupRecab.txt
+../bin/bam dedup --recab --in testFiles/testDedup.sam --out results/testDedupRecab.sam --refFile testFiles/ref_partial.fa 2> results/testDedupRecab.txt
 let "status |= $?"
 diff results/testDedupRecab.txt expected/testDedupRecab.txt
 let "status |= $?"
@@ -19,7 +19,7 @@ let "status |= $?"
 diff results/testDedupRecab.sam.log expected/testDedupRecab.sam.log
 let "status |= $?"
 
-../bin/bam recab --in results/testDedup.sam --out results/testDedupRecab2Step.sam --refFile testFiles/ref_partial.fa --skipFit 2> results/testDedupRecab2Step.txt
+../bin/bam recab --in results/testDedup.sam --out results/testDedupRecab2Step.sam --refFile testFiles/ref_partial.fa 2> results/testDedupRecab2Step.txt
 let "status |= $?"
 diff results/testDedupRecab2Step.txt expected/empty.txt
 let "status |= $?"
