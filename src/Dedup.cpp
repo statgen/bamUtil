@@ -79,19 +79,20 @@ void Dedup::usage()
     myRecab.recabSpecificUsageLine();
     std::cerr << std::endl << std::endl;
     std::cerr << "Required parameters :" << std::endl;
-    std::cerr << "\t--in <infile>   : input BAM file name (must be sorted)" << std::endl;
-    std::cerr << "\t--out <outfile> : output BAM file name (same order with original file)" << std::endl;
-    std::cerr << "Optional parameters : (see SAM format specification for details)" << std::endl;
-    std::cerr << "\t--minQual <int> : only add scores over this phred quality when determining a read's quality (default: "
+    std::cerr << "\t--in <infile>   : Input BAM file name (must be sorted)" << std::endl;
+    std::cerr << "\t--out <outfile> : Output BAM file name (same order with original file)" << std::endl;
+    std::cerr << "Optional parameters : " << std::endl;
+    std::cerr << "\t--minQual <int> : Only add scores over this phred quality when determining a read's quality (default: "
               << DEFAULT_MIN_QUAL << ")" << std::endl;
-    std::cerr << "\t--log <logfile> : log and summary statistics (default: [outfile].log, or stderr if --out starts with '-')" << std::endl;
+    std::cerr << "\t--log <logfile> : Log and summary statistics (default: [outfile].log, or stderr if --out starts with '-')" << std::endl;
     std::cerr << "\t--oneChrom      : Treat reads with mates on different chromosomes as single-ended." << std::endl;
     std::cerr << "\t--rmDups        : Remove duplicates (default is to mark duplicates)" << std::endl;
-    std::cerr << "\t--force         : Allow mark-duplicated BAM file and force unmarking the duplicates" << std::endl;
-    std::cerr << "                    Default is to throw errors when trying to run a mark-duplicated BAM" << std::endl;
+    std::cerr << "\t--force         : Allow an already mark-duplicated BAM file, unmarking any previously marked " << std::endl;
+    std::cerr << "\t                  duplicates and apply this duplicate marking logic.  Default is to throw errors" << std::endl;
+    std::cerr << "\t                  and exit when trying to run on an already mark-duplicated BAM" << std::endl;
     std::cerr << "\t--verbose       : Turn on verbose mode" << std::endl;
-    std::cerr << "\t--noeof         : do not expect an EOF block on a bam file." << std::endl;
-    std::cerr << "\t--params        : print the parameter settings" << std::endl;
+    std::cerr << "\t--noeof         : Do not expect an EOF block on a bam file." << std::endl;
+    std::cerr << "\t--params        : Print the parameter settings" << std::endl;
     std::cerr << "\t--recab         : Recalibrate in addition to deduping" << std::endl;
     myRecab.recabSpecificUsage();
     std::cerr << "\n" << std::endl;
@@ -146,7 +147,7 @@ int Dedup::execute(int argc, char** argv)
         usage();
         inputParameters.Status();
         std::cerr << "Specify an input file" << std::endl;
-        abort();
+        return EXIT_FAILURE;
     }
 
     if(outFile.IsEmpty())
@@ -154,7 +155,7 @@ int Dedup::execute(int argc, char** argv)
         usage();
         inputParameters.Status();
         std::cerr << "Specify an output file" << std::endl;
-        abort();
+        return EXIT_FAILURE;
     }
 
     if(logFile.IsEmpty())
