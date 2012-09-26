@@ -7,10 +7,10 @@ Reading ReferenceID 1
 
 Reading ReferenceID 23
 
-WARNING: INVALID_GENOME_INDEX (chrom:pos MT:178) and record skipped... Reference in BAM is different from the ref used here!
 WARNING: INVALID_GENOME_INDEX (chrom:pos MT:1) and record skipped... Reference in BAM is different from the ref used here!
 WARNING: INVALID_GENOME_INDEX (chrom:pos MT:178) and record skipped... Reference in BAM is different from the ref used here!
 WARNING: INVALID_GENOME_INDEX (chrom:pos MT:1) and record skipped... Reference in BAM is different from the ref used here!
+WARNING: INVALID_GENOME_INDEX (chrom:pos MT:178) and record skipped... Reference in BAM is different from the ref used here!
 --------------------------------------------------------------------------
 SUMMARY STATISTICS OF THE READS
 Total number of reads: 29

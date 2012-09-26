@@ -645,10 +645,24 @@ void Dedup::checkDups(SamRecord& record, uint32_t recordCount)
         else if(pairedReturn.first->second.sumBaseQual == sumBaseQual)
         {
             // Same quality, so keep the one with the earlier record1Index.
-            if(mateIndex < storedPair->record2Index)
+            if(key.coordinate > mateKey.coordinate)
             {
-                // The new pair has an earlier first read, so keep that.
-                keepStored = false;
+                // Mate has lower coordinate so compare its index.
+                if(mateIndex < storedPair->record1Index)
+                {
+                    // The new pair has an earlier lower coordinate read,
+                    // so keep that.
+                    keepStored = false;
+                }
+            }
+            else
+            {
+                if(recordCount < storedPair->record1Index)
+                {
+                    // The new pair has an earlier lower coordinate read,
+                    // so keep that.
+                    keepStored = false;
+                }
             }
         }
         // Check to see which one should be kept by checking qualities.
@@ -670,21 +684,51 @@ void Dedup::checkDups(SamRecord& record, uint32_t recordCount)
             mySamPool.releaseRecord(storedPair->record1Ptr);
             mySamPool.releaseRecord(storedPair->record2Ptr);
             // Store this pair's information.
-            storedPair->sumBaseQual = sumBaseQual;
-            storedPair->record1Ptr = &record;
-            storedPair->record2Ptr = mateRecord;
-            storedPair->record1Index = recordCount;
-            storedPair->record2Index = mateIndex;
+            if(key.coordinate > mateKey.coordinate)
+            {
+                // Mate has a lower coordinate, so make mate
+                // record1.
+                storedPair->sumBaseQual = sumBaseQual;
+                storedPair->record1Ptr = mateRecord;
+                storedPair->record2Ptr = &record;
+                storedPair->record1Index = mateIndex;
+                storedPair->record2Index = recordCount;
+            }
+            else
+            {
+                // This record has a lower coordinate, so make it
+                // record1.
+                storedPair->sumBaseQual = sumBaseQual;
+                storedPair->record1Ptr = &record;
+                storedPair->record2Ptr = mateRecord;
+                storedPair->record1Index = recordCount;
+                storedPair->record2Index = mateIndex;
+            }
         }
     }
     else
     {
         // Store this pair's information.
         storedPair->sumBaseQual = sumBaseQual;
-        storedPair->record1Ptr = &record;
-        storedPair->record2Ptr = mateRecord;
-        storedPair->record1Index = recordCount;
-        storedPair->record2Index = mateIndex;
+
+        if(key.coordinate > mateKey.coordinate)
+        {
+            // Mate has a lower coordinate, so make mate
+            // record1.
+            storedPair->record1Ptr = mateRecord;
+            storedPair->record2Ptr = &record;
+            storedPair->record1Index = mateIndex;
+            storedPair->record2Index = recordCount;
+        }
+        else
+        {
+            // This record has a lower coordinate, so make it
+            // record1.
+            storedPair->record1Ptr = &record;
+            storedPair->record2Ptr = mateRecord;
+            storedPair->record1Index = recordCount;
+            storedPair->record2Index = mateIndex;
+        }
     }
 }
 
