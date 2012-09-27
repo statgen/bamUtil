@@ -238,6 +238,42 @@ private:
     // Handle records whose mate was not found.  This will handle all processing
     // including calling handleNonDuplicate. 
     void handleMissingMate(SamRecord* recordPtr);
+
+    inline int getFirstIndex(const DupKey& key1, 
+                             int key1Index,
+                             const DupKey& key2,
+                             int key2Index)
+    {
+        if(key1.reference < key2.reference)
+        {
+            // key1 has a smaller chromosome
+            return(key1Index);
+        }
+        if(key1.reference > key2.reference)
+        {
+            // key2 has a smaller chromosome
+            return(key2Index);
+        }
+        // Same chromosome, so check the coordinate.
+        if(key1.coordinate < key2.coordinate)
+        {
+            // key1 has a smaller coordinate
+            return(key1Index);
+        }
+        if(key1.coordinate < key2.coordinate)
+        {
+            // key2 has a smaller coordinate
+            return(key2Index);
+        }
+
+        // Same chromosome & Coordinate, so return the
+        // smaller index.
+        if(key1Index < key2Index)
+        {
+            return(key1Index);
+        }
+        return(key2Index);
+    }
 };
 
 #endif // __DE_DUP_H

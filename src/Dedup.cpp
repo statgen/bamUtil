@@ -631,6 +631,10 @@ void Dedup::checkDups(SamRecord& record, uint32_t recordCount)
         myPairedMap.insert(std::make_pair(pkey,PairedData()));
     PairedData* storedPair = &(pairedReturn.first->second);
 
+    // Get the index for "record 1" - the one with the earlier coordinate.
+    int record1Index = getFirstIndex(key, recordCount,
+                                          mateKey, mateIndex);
+
     // Check if we have already found a duplicate pair.
     // If there is no duplicate found, there is nothing more to do.
     if(pairedReturn.second == false)
@@ -645,24 +649,11 @@ void Dedup::checkDups(SamRecord& record, uint32_t recordCount)
         else if(pairedReturn.first->second.sumBaseQual == sumBaseQual)
         {
             // Same quality, so keep the one with the earlier record1Index.
-            if(key.coordinate > mateKey.coordinate)
+            if(record1Index < storedPair->record1Index)
             {
-                // Mate has lower coordinate so compare its index.
-                if(mateIndex < storedPair->record1Index)
-                {
-                    // The new pair has an earlier lower coordinate read,
-                    // so keep that.
-                    keepStored = false;
-                }
-            }
-            else
-            {
-                if(recordCount < storedPair->record1Index)
-                {
-                    // The new pair has an earlier lower coordinate read,
-                    // so keep that.
-                    keepStored = false;
-                }
+                // The new pair has an earlier lower coordinate read,
+                // so keep that.
+                keepStored = false;
             }
         }
         // Check to see which one should be kept by checking qualities.
@@ -684,7 +675,7 @@ void Dedup::checkDups(SamRecord& record, uint32_t recordCount)
             mySamPool.releaseRecord(storedPair->record1Ptr);
             mySamPool.releaseRecord(storedPair->record2Ptr);
             // Store this pair's information.
-            if(key.coordinate > mateKey.coordinate)
+            if(record1Index == mateIndex)
             {
                 // Mate has a lower coordinate, so make mate
                 // record1.
@@ -711,7 +702,7 @@ void Dedup::checkDups(SamRecord& record, uint32_t recordCount)
         // Store this pair's information.
         storedPair->sumBaseQual = sumBaseQual;
 
-        if(key.coordinate > mateKey.coordinate)
+        if(record1Index == mateIndex)
         {
             // Mate has a lower coordinate, so make mate
             // record1.
