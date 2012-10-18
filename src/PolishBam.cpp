@@ -439,8 +439,13 @@ int PolishBam::execute(int argc, char ** argv)
   //SamFileHeader outHeader;
   samHeader.resetHeaderRecordIter();
 
+  Logger::gLogger->writeLog("Adding %d HD, %d RG, and %d PG headers",vsHDHeaders.size(), vsRGHeaders.size(), vsPGHeaders.size());
+  int numHdSuccess = 0;
   for(unsigned int i=0; i < vsHDHeaders.size(); ++i) {
-    samHeader.addHeaderLine(vsHDHeaders[i].c_str());
+      if(samHeader.addHeaderLine(vsHDHeaders[i].c_str()))
+      {
+          ++numHdSuccess;
+      }
   }
 
   /*
@@ -467,16 +472,24 @@ int PolishBam::execute(int argc, char ** argv)
     outHeader.addHeaderLine(s.c_str());
     }*/
 
+  int numRgSuccess = 0;
   for(unsigned int i=0; i < vsRGHeaders.size(); ++i) {
-    samHeader.addHeaderLine(vsRGHeaders[i].c_str());
+      if(samHeader.addHeaderLine(vsRGHeaders[i].c_str()))
+      {
+          ++numRgSuccess;
+      }
   }
 
+  int numPgSuccess = 0;
   for(unsigned int i=0; i < vsPGHeaders.size(); ++i) {
-    samHeader.addHeaderLine(vsPGHeaders[i].c_str());
+      if(samHeader.addHeaderLine(vsPGHeaders[i].c_str()))
+      {
+          ++numPgSuccess;
+      }
   }
 
   samOut.WriteHeader(samHeader);
-  Logger::gLogger->writeLog("Adding %d HD, %d RG, and %d PG headers",vsHDHeaders.size(), vsRGHeaders.size(), vsPGHeaders.size());
+  Logger::gLogger->writeLog("Successfully added %d HD, %d RG, and %d PG headers",numHdSuccess, numRgSuccess, numPgSuccess);
   Logger::gLogger->writeLog("Finished writing output headers");
 
   // parse RG tag and get RG ID to append
