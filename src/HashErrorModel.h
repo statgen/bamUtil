@@ -21,7 +21,13 @@
 
 #include <stdint.h>
 #include <vector>
+
+#ifdef __GXX_EXPERIMENTAL_CXX0X__
 #include <unordered_map>
+#else
+#include <map>
+#endif
+
 #include "StringArray.h"
 #include "Covariates.h"
 #include "MathMatrix.h"
@@ -53,8 +59,13 @@ public:
         uint8_t qempSimple;
     };
     
+
+    #ifdef __GXX_EXPERIMENTAL_CXX0X__
     typedef std::unordered_map<uint64_t, HashErrorModel::SMatches> HashMatch;
-    
+    #else
+    typedef std::map<uint64_t, HashErrorModel::SMatches> HashMatch;
+    #endif
+
     HashMatch mismatchTable;
     std::vector<SMatchesFast> mismatchTableFast;
     uint16_t lastElement;
