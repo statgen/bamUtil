@@ -15,6 +15,7 @@ Finished reading the reference file testFiles/testFasta.fa
 Finished checking the consistency of SQ tags
 Creating the header of new output file
 Adding 1 HD, 1 RG, and 1 PG headers
+Successfully added 1 HD, 1 RG, and 1 PG headers
 Finished writing output headers
 Writing output BAM file
 Successfully written 10 records
