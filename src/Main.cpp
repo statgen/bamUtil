@@ -43,6 +43,7 @@
 #include "Dedup.h"
 #include "Recab.h"
 #include "Bam2FastQ.h"
+#include "ExtractPosition.h"
 
 void Usage()
 {
@@ -74,6 +75,7 @@ void Usage()
 
     std::cerr << "\nTools to Print Information In Readable Format\n";
     DumpHeader::dumpHeaderDescription();
+    ExtractPosition::extractPositionDescription();
     DumpRefInfo::dumpRefInfoDescription();
     DumpIndex::dumpIndexDescription();
     ReadReference::readReferenceDescription();
@@ -188,6 +190,10 @@ int main(int argc, char ** argv)
     else if(strcmp(argv[1], "dedup") == 0)
     {
         bamExe = new Dedup();
+    }
+    else if(strcmp(argv[1], "extractPosition") == 0)
+    {
+        bamExe = new ExtractPosition();
     }
     else if(strcmp(argv[1], "recab") == 0)
     {
