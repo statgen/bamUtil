@@ -94,6 +94,7 @@ private:
     uint64_t myBMismatchCount;
     uint64_t myBMatchCount;
     uint64_t myZeroMapQualCount;
+    uint64_t mySubMinQual;
     uint64_t myNumDBSnpSkips;
     uint64_t myDupCount;
     uint64_t myMapQual0Count;

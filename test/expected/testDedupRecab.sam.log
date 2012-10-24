@@ -40,7 +40,7 @@ Sorting the indices of 16 duplicated records
 # Mapping Quality 0 Reads skipped: 11
 # Mapping Quality 255 Reads skipped: 0
 # Bases observed: 12 - #match: 5; #mismatch: 7
-# Bases Skipped for DBSNP: 0, for Map Qual = 0: 11, for MapQual = 255: 0
+# Bases Skipped for DBSNP: 0, for Map Qual = 0: 11, for MapQual = 255: 0, for BaseQual < 5: 0
 Writing recalibration table results/testDedupRecab.sam.qemp
 
 Writing results/testDedupRecab.sam

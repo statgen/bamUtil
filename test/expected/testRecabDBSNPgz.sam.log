@@ -12,7 +12,7 @@ End: TIME
 # Mapping Quality 0 Reads skipped: 0
 # Mapping Quality 255 Reads skipped: 0
 # Bases observed: 305 - #match: 301; #mismatch: 4
-# Bases Skipped for DBSNP: 700, for Map Qual = 0: 0, for MapQual = 255: 0
+# Bases Skipped for DBSNP: 700, for Map Qual = 0: 0, for MapQual = 255: 0, for BaseQual < 5: 0
 Writing recalibration table results/testRecabDBSNPgz.sam.qemp
 Writing recalibrated file results/testRecabDBSNPgz.sam
 Recalibration successfully finished

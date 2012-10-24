@@ -54,6 +54,7 @@ Recab::Recab()
     myMappedCountQ = 0;
     myBMismatchCount = 0;
     myBMatchCount = 0;
+    mySubMinQual = 0;
     myNumDBSnpSkips = 0;
     myDupCount = 0;
     myMapQual0Count = 0;
@@ -549,6 +550,7 @@ bool Recab::processReadBuildTable(SamRecord& samRecord)
         // skip bases with quality below the minimum set.
         if(data.qual < myMinBaseQual)
         {
+            ++mySubMinQual;
             continue;
         }
 
@@ -701,8 +703,8 @@ void Recab::modelFitPrediction(const char* outputBase)
     Logger::gLogger->writeLog("# Mapping Quality 255 Reads skipped: %ld", myMapQual255Count);
     Logger::gLogger->writeLog("# Bases observed: %ld - #match: %ld; #mismatch: %ld",
                               myBasecounts, myBMatchCount, myBMismatchCount);
-    Logger::gLogger->writeLog("# Bases Skipped for DBSNP: %ld, for Map Qual = 0: %ld, for MapQual = 255: %ld", 
-                              myNumDBSnpSkips, myMapQual0Count, myMapQual255Count);
+    Logger::gLogger->writeLog("# Bases Skipped for DBSNP: %ld, for Map Qual = 0: %ld, for MapQual = 255: %ld, for BaseQual < %ld: %ld", 
+                              myNumDBSnpSkips, myMapQual0Count, myMapQual255Count, myMinBaseQual, mySubMinQual);
     if(myNumQualTagErrors != 0)
     {
         Logger::gLogger->warning("%ld records did not have tag %s or it was invalid, so the quality field was used for those records.", myNumQualTagErrors, myQField.c_str());
