@@ -44,8 +44,9 @@ void TrimBam::usage()
     std::cerr << "\t./bam trimBam [inFile] [outFile] [num-bases-to-trim-on-each-side]\n";
     std::cerr << "Alternately, the number of bases from each side can be specified (either or both -L/-R (--left/--right) can be specified):\n";
     std::cerr << "\t./bam trimBam [inFile] [outFile] -L [num-bases-to-trim-from-left] -R [num-bases-to-trim-from-right]\n";
-    std::cerr << "By default Left/Right is as the reads are in the SAM/BAM file.\n";
-    std::cerr << "Optionally --reverse/-r can be specified to reverse the left/right for reverse reads\n";
+    std::cerr << "By default reverse strands are reversed and then the left & right are trimmed .\n";
+    std::cerr << "This means that --left actually trims from the right of the read in the SAM/BAM for reverse reads.\n";
+    std::cerr << "Optionally --ignoreStrand/-i can be specified to ignore the strand information and treat forward/reverse the same.\n";
     std::cerr << "trimBam will modify the sequences to 'N', and the quality string to '!'\n";
 }
 
@@ -57,7 +58,7 @@ int TrimBam::execute(int argc, char ** argv)
   int numTrimBaseL = 0;
   int numTrimBaseR = 0;
   bool noeof = false;
-  bool reverse = false;
+  bool ignoreStrand = false;
   std::string inName = "";
   std::string outName = "";
 
@@ -72,7 +73,7 @@ int TrimBam::execute(int argc, char ** argv)
       // Input options
       { "left", required_argument, NULL, 'L'},
       { "right", required_argument, NULL, 'R'},
-      { "reverse", no_argument, NULL, 'r'},
+      { "ignoreStrand", no_argument, NULL, 'i'},
       { "noeof", no_argument, NULL, 'n'},
       { NULL, 0, NULL, 0 },
   };
@@ -91,7 +92,7 @@ int TrimBam::execute(int argc, char ** argv)
  int n_option_index = 0;
   // Process any additional parameters
   while ( ( c = getopt_long(argc, argv,
-                            "L:R:rn", getopt_long_options, &n_option_index) )
+                            "L:R:in", getopt_long_options, &n_option_index) )
           != -1 )
   {
       switch(c) 
@@ -102,8 +103,8 @@ int TrimBam::execute(int argc, char ** argv)
           case 'R':
               numTrimBaseR = atoi(optarg);
               break;
-          case 'r':
-              reverse = true;
+          case 'i':
+              ignoreStrand = true;
               break;
           case 'n':
               noeof = true;
@@ -144,9 +145,9 @@ int TrimBam::execute(int argc, char ** argv)
               numTrimBaseL);
       fprintf(stderr,"\t#Bases to trim from the right of forward strands: %d\n",
               numTrimBaseR);
-      if(reverse)
+      if(!ignoreStrand)
       {
-          // When using the reverse option, reverse strands are treated the opposite.
+          // By default, reverse strands are treated the opposite.
           fprintf(stderr,"\t#Bases to trim from the left of reverse strands : %d\n",
                   numTrimBaseR);
           fprintf(stderr,"\t#Bases to trim from the right of reverse strands : %d\n",
@@ -154,6 +155,7 @@ int TrimBam::execute(int argc, char ** argv)
       }
       else
       {
+          // ignore strand, treating forward & reverse strands the same
           fprintf(stderr,"\t#Bases to trim from the left of reverse strands : %d\n",
                   numTrimBaseL);
           fprintf(stderr,"\t#Bases to trim from the right of reverse strands : %d\n",
@@ -188,10 +190,10 @@ int TrimBam::execute(int argc, char ** argv)
      strcpy(qual,samRecord.getQuality());
 
      // Number of bases to trim from the left/right,
-     // set based on reverse flag and strand info.
+     // set based on ignoreStrand flag and strand info.
      int trimLeft = numTrimBaseL;
      int trimRight = numTrimBaseR;
-     if(reverse)
+     if(!ignoreStrand)
      {
          if(SamFlag::isReverse(samRecord.getFlag()))
          {

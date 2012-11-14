@@ -38,25 +38,25 @@ then
 fi
 
 
-../bin/bam trimBam testFiles/testTrim.sam results/trimSamL1R2rev.sam -r -L 1 -R 2 2> results/testTrimL1R2rev.log
+../bin/bam trimBam testFiles/testTrim.sam results/trimSamL1R2is.sam -L 1 -i -R 2 2> results/testTrimL1R2is.log
 if [ $? -ne 0 ]
 then
     ERROR=true
 fi
 
-diff results/trimSamL1R2rev.sam expected/trimSamL1R2rev.sam && diff results/testTrimL1R2rev.log expected/testTrimL1R2rev.log
+diff results/trimSamL1R2is.sam expected/trimSamL1R2is.sam && diff results/testTrimL1R2is.log expected/testTrimL1R2is.log
 if [ $? -ne 0 ]
 then
     ERROR=true
 fi
 
-../bin/bam trimBam testFiles/testTrim.sam results/trimSamL1R2reverse.sam --reverse --left 1 --right 2 2> results/testTrimL1R2reverse.log
+../bin/bam trimBam testFiles/testTrim.sam results/trimSamL1R2ignoreStrand.sam --ignoreStrand --left 1 --right 2 2> results/testTrimL1R2ignoreStrand.log
 if [ $? -ne 0 ]
 then
     ERROright=true
 fi
 
-diff results/trimSamL1R2reverse.sam expected/trimSamL1R2rev.sam && diff results/testTrimL1R2reverse.log expected/testTrimL1R2reverse.log
+diff results/trimSamL1R2ignoreStrand.sam expected/trimSamL1R2is.sam && diff results/testTrimL1R2ignoreStrand.log expected/testTrimL1R2ignoreStrand.log
 if [ $? -ne 0 ]
 then
     ERROR=true
