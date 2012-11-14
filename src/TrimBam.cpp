@@ -45,7 +45,7 @@ void TrimBam::usage()
     std::cerr << "Alternately, the number of bases from each side can be specified (either or both -L/-R (--left/--right) can be specified):\n";
     std::cerr << "\t./bam trimBam [inFile] [outFile] -L [num-bases-to-trim-from-left] -R [num-bases-to-trim-from-right]\n";
     std::cerr << "By default Left/Right is as the reads are in the SAM/BAM file.\n";
-    std::cerr << "Optionally --reverse/-r can be specified to reverse the left/right for reverese reads\n";
+    std::cerr << "Optionally --reverse/-r can be specified to reverse the left/right for reverse reads\n";
     std::cerr << "trimBam will modify the sequences to 'N', and the quality string to '!'\n";
 }
 
