@@ -24,6 +24,35 @@ then
     ERROR=true
 fi
 
+# Files with same headers, but differ RGs
+../bin/bam rgMergeBam -o results/mergeSam1.sam -i testFiles/sortedSam.sam -i testFiles/sortedSam1.sam
+if [ $? -ne 0 ]
+then
+    ERROR=true
+fi
+
+diff results/mergeSam1.sam expected/mergeSam1.sam
+if [ $? -ne 0 ]
+then
+    ERROR=true
+fi
+
+
+# Files with same headers, but differ RGs, swap the order
+../bin/bam rgMergeBam -o results/mergeSam2.sam -i testFiles/sortedSam1.sam -i testFiles/sortedSam.sam
+if [ $? -ne 0 ]
+then
+    ERROR=true
+fi
+
+diff results/mergeSam2.sam expected/mergeSam2.sam
+if [ $? -ne 0 ]
+then
+    ERROR=true
+fi
+
+
+
 if($ERROR == true)
 then
   exit 1

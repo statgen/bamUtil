@@ -55,7 +55,7 @@ uint64_t UNMAPPED_GENOMIC_COORDINATE = 0xfffffffffffffffeULL;
 
 // function declarations
 bool parseListFile(std::string& listFile, vector<std::string>& bamFiles, vector<ReadGroup>& readGroups, vector<ReadGroup>& uniqReadGroups);
-bool equalHeaders(SamFileHeader& header1, SamFileHeader& header2);
+void parseOutRG(SamFileHeader& header, std::string& noRgString, SamFileHeader* newHeader);
 uint64_t getGenomicCoordinate(SamRecord& r);
 void addReadGroupToHeader(SamFileHeader& header, ReadGroup& rg);
 void addReadGroupTag(SamRecord& record, ReadGroup& rg);
@@ -80,6 +80,8 @@ void RGMergeBam::usage()
      std::cerr << "RGAMerge merges multiple sorted BAM files while appending readgroup taggs\n";
      std::cerr << "Required parameters :" << std::endl;
      std::cerr << "--out/-o : Output BAM file (sorted)" << std::endl;
+     std::cerr << "--in/-i  : BAM file to be input, must be more than one of these options." << std::endl;
+     std::cerr << "            cannot be used with --list/-l" << std::endl;
      std::cerr << "--list/-l : RGAList File. Tab-delimited list consisting of following columns (with headers):" << std::endl;
      std::cerr << "\tBAM* : Input BAM file name to be merged" << std::endl;
      std::cerr << "\tID* : Unique read group identifier" << std::endl;
@@ -104,6 +106,7 @@ int RGMergeBam::execute(int argc, char ** argv)
     {
       // Input options
       { "list", required_argument, NULL, 'l'},
+      { "in", required_argument, NULL, 'i'},
       { "out", required_argument, NULL, 'o'},
       { "verbose", no_argument, NULL, 'v'},
       { "log", required_argument, NULL, 'L'},
@@ -118,11 +121,15 @@ int RGMergeBam::execute(int argc, char ** argv)
   int n_option_index = 0;
   char c;
   bool b_verbose = false;
+  vector<std::string> vs_in_bam_files; // input BAM files
 
   std::string s_list, s_out, s_logger;
 
-  while ( ( c = getopt_long(argc, argv, "l:o:vL:", getopt_long_options, &n_option_index) ) != -1 ) {
+  while ( ( c = getopt_long(argc, argv, "l:i:o:vL:", getopt_long_options, &n_option_index) ) != -1 ) {
     switch(c) {
+    case 'i':
+      vs_in_bam_files.push_back(optarg);
+      break;
     case 'l':
       s_list = optarg;
       break;
@@ -155,34 +162,59 @@ int RGMergeBam::execute(int argc, char ** argv)
   }
 
   // check the required arguments are nonempty
-  if ( s_list.empty() || s_out.empty() ) {
+  if ( (vs_in_bam_files.empty() && s_list.empty()) || s_out.empty() ) {
     usage();
     Logger::gLogger->error("At least one of the required argument is missing");
   }
 
-  Logger::gLogger->writeLog("Input list file : %s",s_list.c_str());
+  if(!vs_in_bam_files.empty() && !s_list.empty())
+  {
+      Logger::gLogger->error("Cannot specify both --in/-i and --list/-l");
+  }
+
+  if(!s_list.empty())
+  {
+      Logger::gLogger->writeLog("Input list file : %s",s_list.c_str());
+  }
+  else
+  {
+      std::string bamList = "";
+      for(unsigned int i = 0; i < vs_in_bam_files.size(); i++)
+      {
+          if(i != 0)
+          {
+              bamList += ", ";
+          }
+          bamList += vs_in_bam_files[i];
+      }
+      Logger::gLogger->writeLog("Input list file : %s", bamList.c_str());
+  }
   Logger::gLogger->writeLog("Output BAM file : %s",s_out.c_str());
   Logger::gLogger->writeLog("Output log file : %s",s_logger.c_str());
   Logger::gLogger->writeLog("Verbose mode    : %s",b_verbose ? "On" : "Off");
   
-  vector<std::string> vs_in_bam_files; // input BAM files
   vector<ReadGroup> v_readgroups;      // readGroups corresponding to BAM file
   vector<ReadGroup> v_uniq_readgroups; // unique readGroups written to header
 
-  // parse the list file and fill the vectors above
-  if ( parseListFile(s_list, vs_in_bam_files, v_readgroups, v_uniq_readgroups) == false ) {
-    Logger::gLogger->error("Error in parsing the list file %s",s_list.c_str());
+  // If the list file is being used instead of the individual bams, parse it.
+  if(!s_list.empty())
+  {
+      // parse the list file and fill the vectors above
+      if ( parseListFile(s_list, vs_in_bam_files, v_readgroups, v_uniq_readgroups) == false ) {
+          Logger::gLogger->error("Error in parsing the list file %s",s_list.c_str());
+      }
+      if ( vs_in_bam_files.size() != v_readgroups.size() ) {
+          Logger::gLogger->error("parseListFile gave different size for vs_in_bam_files, v_readgroups: %d, %d", vs_in_bam_files.size(), v_readgroups.size());
+      }
   }
 
   // sanity check
   uint32_t n_bams = vs_in_bam_files.size();
   Logger::gLogger->writeLog("Total of %d BAM files are being merged",n_bams);
 
-  if ( n_bams != v_readgroups.size() ) {
-    Logger::gLogger->error("parseListFile gave different size for vs_in_bam_files, v_readgroups");
-  }
-  else if ( n_bams < 2 ) {
-    Logger::gLogger->error("At least two BAM files should exist in the list to merge");
+  if ( n_bams < 2 )
+  {
+      Logger::gLogger->error("At least two BAM files must be specified for merging");
   }
 
   // create SamFile and SamFileHeader object for each BAM file
@@ -191,33 +223,59 @@ int RGMergeBam::execute(int argc, char ** argv)
 
   // read each BAM file and its header, 
   // making sure that the headers are identical
-  for(uint32_t i=0; i < n_bams; ++i) {
-    if ( ! p_in_bams[i].OpenForRead(vs_in_bam_files[i].c_str()) ) {
-      Logger::gLogger->error("Cannot open BAM file %s for reading",vs_in_bam_files[i].c_str());
-    }
-    p_in_bams[i].setSortedValidation(SamFile::COORDINATE);
 
-    p_in_bams[i].ReadHeader(p_headers[i]);
-    if ( i > 0 ) {
-      if ( ! equalHeaders(p_headers[0], p_headers[i]) ) {
-	Logger::gLogger->error("The headers are not identical at index %d",i);
+  std::string firstHeaderNoRG = "";
+  std::string headerNoRG = "";
+  SamFileHeader newHeader;
+
+  std::string firstHeaderString = "";
+  for(uint32_t i=0; i < n_bams; ++i)
+  {
+      if ( ! p_in_bams[i].OpenForRead(vs_in_bam_files[i].c_str()) )
+      {
+          Logger::gLogger->error("Cannot open BAM file %s for reading",vs_in_bam_files[i].c_str());
       }
-    }
+      p_in_bams[i].setSortedValidation(SamFile::COORDINATE);
+      
+      p_in_bams[i].ReadHeader(p_headers[i]);
+
+      // Extract the RGs from this header.
+      if(i == 0)
+      {
+          // First header, so store it as the first header
+          newHeader = p_headers[i];
+          // Determine the header without RG.
+          parseOutRG(p_headers[i], firstHeaderNoRG, NULL);
+      }
+      else
+      {
+          parseOutRG(p_headers[i], headerNoRG, &newHeader);
+          if(firstHeaderNoRG != headerNoRG)
+          {
+              Logger::gLogger->error("The headers are not identical at index %d",i);
+          }
+          if(newHeader.getReferenceInfo() != p_headers[i].getReferenceInfo())
+          {
+              Logger::gLogger->error("The headers are not identical at index %d",i);
+          }
+      }
   }
 
   // first header will be the new header to be written to output
   // adding all possible readGroups to the new header
-  for(uint32_t i=0; i < v_uniq_readgroups.size(); ++i) {
-    addReadGroupToHeader(p_headers[0], v_uniq_readgroups[i]);
+  for(uint32_t i=0; i < v_uniq_readgroups.size(); ++i)
+  {
+    addReadGroupToHeader(newHeader, v_uniq_readgroups[i]);
   }
 
   // Write an output file with new headers
   SamFile bam_out;
-  if ( !bam_out.OpenForWrite(s_out.c_str()) ) {
+  if ( !bam_out.OpenForWrite(s_out.c_str()) )
+  {
     Logger::gLogger->error("Cannot open BAM file %s for writing",s_out.c_str());
   }
   bam_out.setSortedValidation(SamFile::COORDINATE);
-  bam_out.WriteHeader(p_headers[0]);
+  bam_out.WriteHeader(newHeader);
 
   // create SamRecords and GenomicCoordinates for each input BAM file
   SamRecord* p_records = new SamRecord[n_bams];
@@ -257,13 +315,18 @@ int RGMergeBam::execute(int argc, char ** argv)
       }
     }
 
-    // If every file eached EOF, exit the loop
+    // If every file reached EOF, exit the loop
     if ( min_idx < 0 ) break;
 
-    // add readGroup tag to the record to write and write to output BAM file
-    //Logger::gLogger->writeLog("%d",min_idx);
-    addReadGroupTag(p_records[min_idx], v_readgroups[min_idx]);
-    bam_out.WriteRecord(p_headers[0], p_records[min_idx]);
+
+    // If adding read groups, add the tag.
+    if(!v_readgroups.empty())
+    {
+        // add readGroup tag to the record to write and write to output BAM file
+        //Logger::gLogger->writeLog("%d",min_idx);
+        addReadGroupTag(p_records[min_idx], v_readgroups[min_idx]);
+    }
+    bam_out.WriteRecord(newHeader, p_records[min_idx]);
     ++nWrittenRecords;
     if ( nWrittenRecords % 1000000 == 0 ) {
       Logger::gLogger->writeLog("Writing %u records to the output file",nWrittenRecords);
@@ -403,13 +466,34 @@ bool parseListFile(std::string& listFile, vector<std::string>& bamFiles, vector<
   return true;
 }
 
-// Compare the identity of two headers
-bool equalHeaders(SamFileHeader& header1, SamFileHeader& header2) {
-  std::string s1, s2;
-  header1.getHeaderString(s1);
-  header2.getHeaderString(s2);
-  return ( s1.compare(s2) == 0 );
+
+void parseOutRG(SamFileHeader& header, std::string& noRgString, SamFileHeader* newHeader)
+{
+    noRgString.clear();
+    SamHeaderRecord* rec = header.getNextHeaderRecord();
+    while(rec != NULL)
+    {
+        if(rec->getType() != SamHeaderRecord::RG)
+        {
+            rec->appendString(noRgString);
+        }
+        else if(newHeader != NULL)
+        {
+            // This is an RG line, so add it to the new header.
+            if(!newHeader->addRecordCopy((SamHeaderRG&)(*rec)))
+            {
+                // Failed to add the RG, exit.
+                Logger::gLogger->error("Failed to add readgroup to header, %s",
+                                       newHeader->getErrorMessage());
+            }
+        }
+        rec = header.getNextHeaderRecord();
+    }
+
+    // Append the comments.
+    header.appendCommentLines(noRgString);
 }
+
 
 // make a 64-bit genomic coordinate [24bit-chr][32bit-pos][8bit-orientation]
 uint64_t getGenomicCoordinate(SamRecord& r) {
@@ -430,7 +514,7 @@ void addReadGroupToHeader(SamFileHeader& header, ReadGroup& rg) {
   }
 }
 
-// add a readgroup tag to ech SamRecord
+// add a readgroup tag to each SamRecord
 void addReadGroupTag(SamRecord& record, ReadGroup& rg) {
   if ( record.addTag("RG",'Z',rg.s_id.c_str()) == false ) {
     Logger::gLogger->error("Failed to add readgroup tag %s",rg.s_id.c_str());
