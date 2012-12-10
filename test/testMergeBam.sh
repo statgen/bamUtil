@@ -1,6 +1,6 @@
 ERROR=false
 
-../bin/bam rgMergeBam --out results/mergeBam.bam --list testFiles/mergeBam.list
+../bin/bam mergeBam --out results/mergeBam.bam --list testFiles/mergeBam.list
 if [ $? -ne 0 ]
 then
     ERROR=true
@@ -12,7 +12,7 @@ then
     ERROR=true
 fi
 
-../bin/bam rgMergeBam -o results/mergeSam.sam -l testFiles/mergeSam.list
+../bin/bam mergeBam -o results/mergeSam.sam -l testFiles/mergeSam.list
 if [ $? -ne 0 ]
 then
     ERROR=true
@@ -25,7 +25,7 @@ then
 fi
 
 # Files with same headers, but differ RGs
-../bin/bam rgMergeBam -o results/mergeSam1.sam -i testFiles/sortedSam.sam -i testFiles/sortedSam1.sam
+../bin/bam mergeBam -o results/mergeSam1.sam -i testFiles/sortedSam.sam -i testFiles/sortedSam1.sam
 if [ $? -ne 0 ]
 then
     ERROR=true
@@ -39,7 +39,7 @@ fi
 
 
 # Files with same headers, but differ RGs, swap the order
-../bin/bam rgMergeBam -o results/mergeSam2.sam -i testFiles/sortedSam1.sam -i testFiles/sortedSam.sam
+../bin/bam mergeBam -o results/mergeSam2.sam -i testFiles/sortedSam1.sam -i testFiles/sortedSam.sam
 if [ $? -ne 0 ]
 then
     ERROR=true

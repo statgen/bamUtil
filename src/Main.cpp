@@ -37,7 +37,7 @@
 #include "ClipOverlap.h"
 #include "SplitBam.h"
 #include "TrimBam.h"
-#include "RGMergeBam.h"
+#include "MergeBam.h"
 #include "PolishBam.h"
 #include "GapInfo.h"
 #include "Dedup.h"
@@ -61,7 +61,7 @@ void Usage()
     Revert::revertDescription();
     Squeeze::squeezeDescription();
     TrimBam::trimBamDescription();
-    RGMergeBam::rgMergeBamDescription();
+    MergeBam::mergeBamDescription();
     PolishBam::polishBamDescription();
     Dedup::dedupDescription();
     Recab::recabDescription();
@@ -173,9 +173,10 @@ int main(int argc, char ** argv)
     {
         bamExe = new TrimBam();
     }
-    else if(strcmp(argv[1], "rgMergeBam") == 0)
+    else if((strcmp(argv[1], "mergeBam") == 0) ||
+            (strcmp(argv[1], "rgMergeBam") == 0))
     {
-        bamExe = new RGMergeBam();
+        bamExe = new MergeBam();
     }
     else if(strcmp(argv[1], "polishBam") == 0)
     {

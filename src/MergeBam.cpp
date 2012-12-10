@@ -25,20 +25,20 @@
 #include <unistd.h>
 #include <getopt.h>
 #include "SamFile.h"
-#include "RGMergeBam.h"
+#include "MergeBam.h"
 #include "Logger.h"
 
 ////////////////////////////////////////////////////////////////////////
-// RGMergeBam : Merge multiple BAM files appending ReadGroup IDs
+// MergeBam : Merge multiple BAM files appending ReadGroup IDs if necessary
 //
-// rgMergeBam merges multiple sorted BAM files into one BAM file like
+// mergeBam merges multiple sorted BAM files into one BAM file like
 //   'samtools merge' command, but merges BAM headers.
-// (1) check the HD and SQ tags are identical across the BAM files
-// (2) 
+// (1) check that all non-RG header lines are identical across the BAM files
+// (2) add all RG lines from all BAMs into the output BAM.
+// (3) Ensure that input/output BAM records are sorted
+// Optionally add Read Groups
 // (1) Add @RG headers from a tabular input file containing the fields' info
 // (2) Add RG:Z:[RGID] tag for each record based on the source BAM file
-// (3) Ensure that the headers are identical across the input files
-//     and that input/output BAM records are sorted
 //
 ///////////////////////////////////////////////////////////////////////
 
@@ -61,23 +61,22 @@ void addReadGroupToHeader(SamFileHeader& header, ReadGroup& rg);
 void addReadGroupTag(SamRecord& record, ReadGroup& rg);
 uint32_t addTokenizedStrings(const std::string& str, const std::string& delimiters, vector<std::string>& tokens);
 
-void RGMergeBam::rgMergeBamDescription()
+void MergeBam::mergeBamDescription()
 {
-    std::cerr << " rgMergeBam - merge multiple BAMs and headers appending ReadGroupIDs" << std::endl;
+    std::cerr << " mergeBam - merge multiple BAMs and headers appending ReadGroupIDs if necessary" << std::endl;
 }
 
 
-void RGMergeBam::description()
+void MergeBam::description()
 {
-    rgMergeBamDescription();
+    mergeBamDescription();
 }
 
 
-void RGMergeBam::usage()
+void MergeBam::usage()
 {
     BamExecutable::usage();
-     std::cerr << "Usage: rgMergeBam [-v] [--log logFile] --list <listFile> --out <outFile>\n" << std::endl;
-     std::cerr << "RGAMerge merges multiple sorted BAM files while appending readgroup taggs\n";
+     std::cerr << "Usage: mergeBam [-v] [--log logFile] --list <listFile> --out <outFile>\n" << std::endl;
      std::cerr << "Required parameters :" << std::endl;
      std::cerr << "--out/-o : Output BAM file (sorted)" << std::endl;
      std::cerr << "--in/-i  : BAM file to be input, must be more than one of these options." << std::endl;
@@ -100,7 +99,7 @@ void RGMergeBam::usage()
 }
 
 // main function
-int RGMergeBam::execute(int argc, char ** argv)
+int MergeBam::execute(int argc, char ** argv)
 {
   static struct option getopt_long_options[] = 
     {
@@ -113,8 +112,8 @@ int RGMergeBam::execute(int argc, char ** argv)
       { NULL, 0, NULL, 0 },
     };
 
-  // Adjust the arguments since it is called as ./bam rgMergeBam instead of
-  // just rgMergeBam.
+  // Adjust the arguments since it is called as ./bam mergeBam instead of
+  // just mergeBam.
   --argc;
   ++argv;
 

@@ -16,18 +16,18 @@
  */
 
 //////////////////////////////////////////////////////////////////////////
-// This file contains the processing for the executable option "rgMergeBam"
-// which merges multiple BAM files appending ReadGroup IDs.
+// This file contains the processing for the executable option "mergeBam"
+// which merges multiple BAM files appending ReadGroup IDs if necessary.
 
-#ifndef __RG_MERGE_BAM_H__
-#define __RG_MERGE_BAM_H__
+#ifndef __MERGE_BAM_H__
+#define __MERGE_BAM_H__
 
 #include "BamExecutable.h"
 
-class RGMergeBam : public BamExecutable
+class MergeBam : public BamExecutable
 {
 public:
-    static void rgMergeBamDescription();
+    static void mergeBamDescription();
     void description();
     void usage();
     int execute(int argc, char **argv);
