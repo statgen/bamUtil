@@ -80,16 +80,7 @@ int ReadIndexedBam::readIndexedBam(const char* inputFilename,
     SamValidationErrors samInvalidErrors;
 
     // Get the number of references.
-    int numReferences = 0;
-    const SamReferenceInfo* refInfoPtr = samHeader.getReferenceInfo();
-    if(refInfoPtr == NULL)
-    {
-        std::cerr << "Unable to get reference information.\n";
-    }
-    else
-    {
-        numReferences = refInfoPtr->getNumEntries();
-    }
+    int numReferences = samHeader.getReferenceInfo().getNumEntries();
 
     // Loop through each Reference.
     for(int i = -1; i < numReferences; i++)

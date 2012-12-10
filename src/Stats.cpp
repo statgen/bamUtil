@@ -256,21 +256,18 @@ int Stats::execute(int argc, char **argv)
         IFILE fdbSnp;
         fdbSnp = ifopen(dbsnp,"r");
         // Determine how many entries.
-        const SamReferenceInfo* refInfo = samHeader.getReferenceInfo();
-        if(refInfo != NULL)
+        const SamReferenceInfo& refInfo = samHeader.getReferenceInfo();
+        int maxRefLen = 0;
+        for(int i = 0; i < refInfo.getNumEntries(); i++)
         {
-            int maxRefLen = 0;
-            for(int i = 0; i < refInfo->getNumEntries(); i++)
+            int refLen = refInfo.getReferenceLength(i);
+            if(refLen >= maxRefLen)
             {
-                int refLen = refInfo->getReferenceLength(i);
-                if(refLen >= maxRefLen)
-                {
-                    maxRefLen = refLen + 1;
-                }
+                maxRefLen = refLen + 1;
             }
-
-            dbsnpListPtr = new PosList(refInfo->getNumEntries(),maxRefLen);
         }
+        
+        dbsnpListPtr = new PosList(refInfo.getNumEntries(),maxRefLen);
 
         if(fdbSnp==NULL)
         {
@@ -279,10 +276,6 @@ int Stats::execute(int argc, char **argv)
         else if(dbsnpListPtr == NULL)
         {
             std::cerr << "Failed to init the memory allocation for the dbsnpList.\n";
-        }
-        else if(refInfo == NULL)
-        {
-            std::cerr << "Failed to get the reference information from the bam file.\n";
         }
         else
         {
