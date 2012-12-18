@@ -1,10 +1,11 @@
-Failed to find expected overlapping mates for 2 records.
-Due to hitting the max record poolSize, had to default clip 9 records.
 Overlap Statistics:
 Number of overlapping pairs: 14
 Average # Reference Bases Overlapped: 19.5714
 Variance of Reference Bases overlapped: 19.6484
+Number of times orientation causes additional clipping: 4
 Number of times the forward strand was clipped: 8
 Number of times the reverse strand was clipped: 6
-Number of times orientation causes additional clipping: 4
-Completed ClipOverlap.
+WARNING: did not find expected overlapping mates for 2 records.
+WARNING: 9 record pool failures
+Due to hitting the max record poolSize, default handled 9 records.
+Completed ClipOverlap with WARNINGS.

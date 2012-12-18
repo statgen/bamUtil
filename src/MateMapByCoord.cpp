@@ -71,7 +71,6 @@ SamRecord* MateMapByCoord::getMate(SamRecord& record)
             break;
         }
     }
-
     return(mate);
 }
 
