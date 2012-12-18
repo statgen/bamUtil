@@ -398,7 +398,8 @@ bool Recab::processReadBuildTable(SamRecord& samRecord)
     if(!myQField.IsEmpty())
     {
         // Check if there is an old quality.
-        String* oldQPtr = samRecord.getStringTag(myQField.c_str());
+        const String* oldQPtr = 
+            samRecord.getStringTag(myQField.c_str());
         if((oldQPtr != NULL) && (oldQPtr->Length() == seqLen))
         {
             // There is an old quality, so use that.
@@ -595,7 +596,8 @@ bool Recab::processReadApplyTable(SamRecord& samRecord)
     if(!myQField.IsEmpty())
     {
         // Check if there is an old quality.
-        String* oldQPtr = samRecord.getStringTag(myQField.c_str());
+        const String* oldQPtr =
+            samRecord.getStringTag(myQField.c_str());
         if((oldQPtr != NULL) && (oldQPtr->Length() == seqLen))
         {
             // There is an old quality, so use that.
