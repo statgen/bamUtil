@@ -26,7 +26,6 @@
 #include "SamFlag.h"
 #include "SamHelper.h"
 #include "OverlapClipLowerBaseQual.h"
-#include "OverlapBaseQualMap.h"
 
 
 ClipOverlap::ClipOverlap()
