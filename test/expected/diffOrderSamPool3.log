@@ -1,0 +1,2 @@
+WARNING: Matching records may incorrectly be reported as mismatches due to running out of available records 2 times.
+Try increasing --recPoolSize from 3 or setting it to -1 (unlimited).

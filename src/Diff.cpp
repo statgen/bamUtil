@@ -57,6 +57,7 @@ Diff::Diff()
       myMaxAllowedRecs(1000000),
       myAllocatedRecs(0),
       myThreshold(100000),
+      myNumPoolOverflows(0),
       myFile1(),
       myFile2(),
       myDiffFileName("-"),
@@ -122,7 +123,8 @@ void Diff::usage()
     std::cerr << "\t\t--noPos       : do not diff the positions." << std::endl;
     std::cerr << "\t\t--onlyDiffs   : only print the fields that are different, otherwise for any diff all the fields that are compared are printed." << std::endl;
     std::cerr << "\t\t--recPoolSize : number of records to allow to be stored at a time, default value: " << myMaxAllowedRecs << std::endl;
-    std::cerr << "\t\t--posDiff     : max base pair difference between possibly matching records" << myThreshold << std::endl;
+    std::cerr << "\t\t                Set to -1 for unlimited number of records" << std::endl;
+    std::cerr << "\t\t--posDiff     : max base pair difference between possibly matching records, default value: " << myThreshold << std::endl;
     std::cerr << "\t\t--noeof       : do not expect an EOF block on a bam file." << std::endl;
     std::cerr << "\t\t--params      : print the parameter settings" << std::endl;
     std::cerr << std::endl;
@@ -138,6 +140,7 @@ int Diff::execute(int argc, char **argv)
     bool noPos = false;
     bool noeof = false;
     bool params = false;
+    myNumPoolOverflows = 0;
 
     ParameterList inputParameters;
     BEGIN_LONG_PARAMETERS(longParameterList)
@@ -278,7 +281,7 @@ int Diff::execute(int argc, char **argv)
 
     if((rec1 == NULL) || (rec2 == NULL))
     {
-        fprintf(stderr, "Failed to allocate initial records, exiting!");
+        fprintf(stderr, "Failed to allocate initial records, exiting!\n");
         return(-1);
     }
 
@@ -335,7 +338,8 @@ int Diff::execute(int argc, char **argv)
         // Prune the unmatched lists for any records that are further from
         // the current record than the threshold.
         tempRecord = myFile2Unmatched.getFirst();
-        // Do not need to check for null, because less than returns false if tempRecord is null
+        // Do not need to check for null, because less than returns false if
+        // tempRecord is null
         while(lessThan(tempRecord, rec1, myThreshold))
         {
             // this record is more than the specified distance, so remove it
@@ -424,6 +428,22 @@ int Diff::execute(int argc, char **argv)
             need2 = true;
         }
     }
+
+    if(myNumPoolOverflows != 0)
+    {
+        std::cerr << "WARNING: Matching records may incorrectly be reported as "
+                  << "mismatches due to running out of available records " 
+                  << myNumPoolOverflows
+                  << " time";
+        if(myNumPoolOverflows != 1)
+        {
+            std::cerr << "s";
+        }
+        std::cerr << ".\nTry increasing --recPoolSize from "
+                  << myMaxAllowedRecs << " or setting it "
+                  << "to -1 (unlimited).\n";
+    }
+
 
     if(myFile1.file.GetStatus() != SamStatus::NO_MORE_RECS)
     {
@@ -920,7 +940,9 @@ SamRecord* Diff::getSamRecord()
         // There are no more free ones and we have already hit the
         // max number allowed to be allocated, so flush the first record from
         // the larger list.
-        if(myFile1Unmatched.size() <= myFile2Unmatched.size())
+        ++myNumPoolOverflows;
+
+        if(myFile1Unmatched.size() >= myFile2Unmatched.size())
         {
             // remove from file1.
             returnSam = myFile1Unmatched.removeFirst();

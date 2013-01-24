@@ -158,6 +158,7 @@ private:
     int myMaxAllowedRecs;
     int myAllocatedRecs;
     int myThreshold;
+    int myNumPoolOverflows;
 
     FileInfo myFile1;
     FileInfo myFile2;
