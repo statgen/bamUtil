@@ -86,7 +86,7 @@ int ClipOverlap::execute(int argc, char **argv)
     String outFile = "";
     String storeOrig = "";
     bool readName = false;
-    bool stats;
+    bool stats = false;
     int poolSize = DEFAULT_POOL_SIZE;
     bool noeof = false;
     bool params = false;
