@@ -148,7 +148,14 @@ int MergeBam::execute(int argc, char ** argv)
   }
 
   if ( s_logger.empty() ) {
-    s_logger = s_out + ".log";
+      if(s_out.empty())
+      {
+          s_logger = "-";
+      }
+      else
+      {
+          s_logger = s_out + ".log";
+      }
   }
 
   // create a logger object, now possible to write logs/warnings/errors
