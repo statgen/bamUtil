@@ -476,6 +476,11 @@ bool parseListFile(std::string& listFile, vector<std::string>& bamFiles, vector<
 void parseOutRG(SamFileHeader& header, std::string& noRgString, SamFileHeader* newHeader)
 {
     noRgString.clear();
+
+    // strings for comparing if two RGs with same ID are the same.
+    static std::string prevString;
+    static std::string newString;
+
     SamHeaderRecord* rec = header.getNextHeaderRecord();
     while(rec != NULL)
     {
@@ -485,12 +490,34 @@ void parseOutRG(SamFileHeader& header, std::string& noRgString, SamFileHeader* n
         }
         else if(newHeader != NULL)
         {
-            // This is an RG line, so add it to the new header.
-            if(!newHeader->addRecordCopy((SamHeaderRG&)(*rec)))
+            // This is an RG line.
+            // Check to see if it already exists.
+            SamHeaderRG* rgPtr = newHeader->getRG(rec->getTagValue("ID"));
+
+            if(rgPtr != NULL)
             {
-                // Failed to add the RG, exit.
-                Logger::gLogger->error("Failed to add readgroup to header, %s",
-                                       newHeader->getErrorMessage());
+                // This RG already exists, check that they are the same.
+                // If they are the same, there is nothing to do.
+                bool status = true;
+                status &= rgPtr->appendString(prevString);
+                status &= rec->appendString(newString);
+                if(prevString != newString)
+                {
+                    // They are not identical, so report an error.
+                    Logger::gLogger->error("Failed to add readgroup to header, "
+                                           "duplicate, but non-identical RG ID, %s",
+                                           rec->getTagValue("ID"));
+                }
+            }
+            else
+            {
+                // This RG does not exist yet, so add it to the new header.
+                if(!newHeader->addRecordCopy((SamHeaderRG&)(*rec)))
+                {
+                    // Failed to add the RG, exit.
+                    Logger::gLogger->error("Failed to add readgroup to header, %s",
+                                           newHeader->getErrorMessage());
+                }
             }
         }
         rec = header.getNextHeaderRecord();
