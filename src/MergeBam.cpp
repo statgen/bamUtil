@@ -55,7 +55,7 @@ uint64_t UNMAPPED_GENOMIC_COORDINATE = 0xfffffffffffffffeULL;
 
 // function declarations
 bool parseListFile(std::string& listFile, vector<std::string>& bamFiles, vector<ReadGroup>& readGroups, vector<ReadGroup>& uniqReadGroups);
-void parseOutRG(SamFileHeader& header, std::string& noRgString, SamFileHeader* newHeader);
+void parseOutRG(SamFileHeader& header, std::string& noRgPgString, SamFileHeader* newHeader);
 uint64_t getGenomicCoordinate(SamRecord& r);
 void addReadGroupToHeader(SamFileHeader& header, ReadGroup& rg);
 void addReadGroupTag(SamRecord& record, ReadGroup& rg);
@@ -230,8 +230,8 @@ int MergeBam::execute(int argc, char ** argv)
   // read each BAM file and its header, 
   // making sure that the headers are identical
 
-  std::string firstHeaderNoRG = "";
-  std::string headerNoRG = "";
+  std::string firstHeaderNoRGPG = "";
+  std::string headerNoRGPG = "";
   SamFileHeader newHeader;
 
   std::string firstHeaderString = "";
@@ -251,12 +251,12 @@ int MergeBam::execute(int argc, char ** argv)
           // First header, so store it as the first header
           newHeader = p_headers[i];
           // Determine the header without RG.
-          parseOutRG(p_headers[i], firstHeaderNoRG, NULL);
+          parseOutRG(p_headers[i], firstHeaderNoRGPG, NULL);
       }
       else
       {
-          parseOutRG(p_headers[i], headerNoRG, &newHeader);
-          if(firstHeaderNoRG != headerNoRG)
+          parseOutRG(p_headers[i], headerNoRGPG, &newHeader);
+          if(firstHeaderNoRGPG != headerNoRGPG)
           {
               Logger::gLogger->error("The headers are not identical at index %d",i);
           }
@@ -473,58 +473,100 @@ bool parseListFile(std::string& listFile, vector<std::string>& bamFiles, vector<
 }
 
 
-void parseOutRG(SamFileHeader& header, std::string& noRgString, SamFileHeader* newHeader)
+void parseOutRG(SamFileHeader& header, std::string& noRgPgString, SamFileHeader* newHeader)
 {
-    noRgString.clear();
-
+    noRgPgString.clear();
     // strings for comparing if two RGs with same ID are the same.
-    static std::string prevString;
-    static std::string newString;
+    static std::string prevString = "";
+    static std::string newString = "";
 
     SamHeaderRecord* rec = header.getNextHeaderRecord();
     while(rec != NULL)
     {
-        if(rec->getType() != SamHeaderRecord::RG)
+        if(rec->getType() == SamHeaderRecord::RG)
         {
-            rec->appendString(noRgString);
+            if(newHeader != NULL)
+            {
+                // This is an RG line.
+                // First check if this RG is already included in the new header.
+                SamHeaderRG* prevRG = newHeader->getRG(rec->getTagValue("ID"));
+                
+                if(prevRG != NULL)
+                {
+                    // This RG already exists, check that they are the same.
+                    // If they are the same, there is nothing to do.
+                    bool status = true;
+                    prevString.clear();
+                    newString.clear();
+                    status &= prevRG->appendString(prevString);
+                    status &= rec->appendString(newString);
+                    if(prevString != newString)
+                    {
+                        // They are not identical, so report an error.
+                        Logger::gLogger->error("Failed to add readgroup to header, "
+                                               "duplicate, but non-identical RG ID, %s",
+                                               rec->getTagValue("ID"));
+                    }
+                }
+                else
+                {
+                    // This RG does not exist yet, so add it to the new header.
+                    if(!newHeader->addRecordCopy((SamHeaderRG&)(*rec)))
+                    {
+                        // Failed to add the RG, exit.
+                        Logger::gLogger->error("Failed to add readgroup to header, %s",
+                                               newHeader->getErrorMessage());
+                    }
+                }
+            }
         }
-        else if(newHeader != NULL)
+        else if(rec->getType() == SamHeaderRecord::PG)
         {
-            // This is an RG line.
-            // Check to see if it already exists.
-            SamHeaderRG* rgPtr = newHeader->getRG(rec->getTagValue("ID"));
-
-            if(rgPtr != NULL)
+            if(newHeader != NULL)
             {
-                // This RG already exists, check that they are the same.
-                // If they are the same, there is nothing to do.
-                bool status = true;
-                status &= rgPtr->appendString(prevString);
-                status &= rec->appendString(newString);
-                if(prevString != newString)
+                // This is a PG line.
+                // First check if this PG is already included in the new header.
+                SamHeaderPG* prevPG = newHeader->getPG(rec->getTagValue("ID"));
+                
+                if(prevPG != NULL)
                 {
-                    // They are not identical, so report an error.
-                    Logger::gLogger->error("Failed to add readgroup to header, "
-                                           "duplicate, but non-identical RG ID, %s",
-                                           rec->getTagValue("ID"));
+                    // This PG already exists, check if they are the same.
+                    // If they are the same, there is nothing to do.
+                    bool status = true;
+                    prevString.clear();
+                    newString.clear();
+                    status &= prevPG->appendString(prevString);
+                    status &= rec->appendString(newString);
+                    if(prevString != newString)
+                    {
+                        // They are not identical, ignore for now.
+                        // TODO: change the ID, and add it.
+                        Logger::gLogger->warning("Warning: dropping duplicate, "
+                                                 "but non-identical PG ID, %s",
+                                                 rec->getTagValue("ID"));
+                    }
+                }
+                else
+                {
+                    // This PG does not exist yet, so add it to the new header.
+                    if(!newHeader->addRecordCopy((SamHeaderPG&)(*rec)))
+                    {
+                        // Failed to add the PG, exit.
+                        Logger::gLogger->error("Failed to add PG to header, %s",
+                                               newHeader->getErrorMessage());
+                    }
                 }
             }
-            else
-            {
-                // This RG does not exist yet, so add it to the new header.
-                if(!newHeader->addRecordCopy((SamHeaderRG&)(*rec)))
-                {
-                    // Failed to add the RG, exit.
-                    Logger::gLogger->error("Failed to add readgroup to header, %s",
-                                           newHeader->getErrorMessage());
-                }
-            }
+        }
+        else
+        {
+            rec->appendString(noRgPgString);
         }
         rec = header.getNextHeaderRecord();
     }
 
     // Append the comments.
-    header.appendCommentLines(noRgString);
+    header.appendCommentLines(noRgPgString);
 }
 
 

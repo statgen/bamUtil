@@ -66,7 +66,7 @@ then
 fi
 
 # Files with same headers, and same RG ids, but different values.
-`../bin/bam mergeBam -o results/mergeSam4.sam -i testFiles/sortedSam.sam -i testFiles/sortedSam2.sam 2> results/mergeSam4.log`
+../bin/bam mergeBam -o results/mergeSam4.sam -i testFiles/sortedSam.sam -i testFiles/sortedSam2.sam 2> results/mergeSam4.log
 if [ $? -eq 0 ]
 then
     echo "Merge passed when expected to fail."
