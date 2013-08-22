@@ -473,11 +473,8 @@ int Stats::execute(int argc, char **argv)
         pileup.flushPileup();
     }
 
-    // Flush the rest of the pileup.
     if((baseQCPtr != NULL) || baseSum)
     {
-        // Pileup the bases.
-        pileup.processAlignmentRegion(samRecord, myStartPos, myEndPos, dbsnpListPtr);
         PileupElementBaseQCStats::printSummary();
         ifclose(baseQCPtr);
     }
