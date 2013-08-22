@@ -26,10 +26,14 @@
 #include "BgzfFileType.h"
 #include "SamTags.h"
 #include "SamFlag.h"
+#include "SamRecordHelper.h"
 
 const char* Diff::FLAG_DIFF_TAG = "ZF";
 const char* Diff::POS_DIFF_TAG = "ZP";
 const char* Diff::CIGAR_DIFF_TAG = "ZC";
+const char* Diff::MAPQ_DIFF_TAG = "ZM";
+const char* Diff::MATE_DIFF_TAG = "ZN";
+const char* Diff::ISIZE_DIFF_TAG = "ZI";
 const char* Diff::SEQ_DIFF_TAG = "ZS";
 const char* Diff::QUAL_DIFF_TAG = "ZQ";
 const char* Diff::TAGS_DIFF_TAG = "ZT";
@@ -38,16 +42,22 @@ Diff::Diff()
     : myFreeSamRecords(),
       myFile1Unmatched(),
       myFile2Unmatched(),
+      myCompAll(false),
       myCompCigar(true),
       myCompPos(true),
       myCompBaseQual(false),
       myCompSeq(false),
+      myCompFlag(false),
+      myCompMapQ(false),
+      myCompMate(false),
+      myCompISize(false),
       myTags(""),
       myOnlyDiffs(false),
       myBamOut(false),
       myMaxAllowedRecs(1000000),
       myAllocatedRecs(0),
       myThreshold(100000),
+      myNumPoolOverflows(0),
       myFile1(),
       myFile2(),
       myDiffFileName("-"),
@@ -90,7 +100,7 @@ void Diff::description()
 void Diff::usage()
 {
     BamExecutable::usage();
-    std::cerr << "\t./bam diff --in1 <inputFile> --in2 <inputFile> [--out <outputFile>] [--baseQual] [--tags <Tag:Type[;Tag:Type]*>] [--noCigar] [--noPos] [--onlyDiffs] [--recPoolSize <int>] [--posDiff <int>] [--noeof] [--params]" << std::endl;
+    std::cerr << "\t./bam diff --in1 <inputFile> --in2 <inputFile> [--out <outputFile>] [--all] [--flag] [--mapQual] [--mate] [--isize] [--seq] [--baseQual] [--tags <Tag:Type[;Tag:Type]*>] [--everyTag] [--noCigar] [--noPos] [--onlyDiffs] [--recPoolSize <int>] [--posDiff <int>] [--noeof] [--params]" << std::endl;
     std::cerr << "\tRequired Parameters:" << std::endl;
     std::cerr << "\t\t--in1         : first coordinate sorted SAM/BAM file to be diffed" << std::endl;
     std::cerr << "\t\t--in2         : second coordinate sorted SAM/BAM file to be diffed" << std::endl;
@@ -100,14 +110,21 @@ void Diff::usage()
     std::cerr << "\t\t                    1) the specified name with record diffs" << std::endl;
     std::cerr << "\t\t                    2) specified name with _only_<in1>.sam/bam with records only in the in1 file" << std::endl;
     std::cerr << "\t\t                    3) specified name with _only_<in2>.sam/bam with records only in the in2 file" << std::endl;
+    std::cerr << "\t\t--all         : diff all the SAM/BAM fields." << std::endl;
+    std::cerr << "\t\t--flag        : diff the flags." << std::endl;
+    std::cerr << "\t\t--mapQual     : diff the mapping qualities." << std::endl;
+    std::cerr << "\t\t--mate        : diff the mate chrom/pos." << std::endl;
+    std::cerr << "\t\t--isize       : diff the insert sizes." << std::endl;
     std::cerr << "\t\t--seq         : diff the sequence bases." << std::endl;
     std::cerr << "\t\t--baseQual    : diff the base qualities." << std::endl;
     std::cerr << "\t\t--tags        : diff the specified Tags formatted as Tag:Type;Tag:Type;Tag:Type..." << std::endl;
+    std::cerr << "\t\t--everyTag    : diff all the Tags" << std::endl;
     std::cerr << "\t\t--noCigar     : do not diff the the cigars." << std::endl;
     std::cerr << "\t\t--noPos       : do not diff the positions." << std::endl;
     std::cerr << "\t\t--onlyDiffs   : only print the fields that are different, otherwise for any diff all the fields that are compared are printed." << std::endl;
     std::cerr << "\t\t--recPoolSize : number of records to allow to be stored at a time, default value: " << myMaxAllowedRecs << std::endl;
-    std::cerr << "\t\t--posDiff     : max base pair difference between possibly matching records" << myThreshold << std::endl;
+    std::cerr << "\t\t                Set to -1 for unlimited number of records" << std::endl;
+    std::cerr << "\t\t--posDiff     : max base pair difference between possibly matching records, default value: " << myThreshold << std::endl;
     std::cerr << "\t\t--noeof       : do not expect an EOF block on a bam file." << std::endl;
     std::cerr << "\t\t--params      : print the parameter settings" << std::endl;
     std::cerr << std::endl;
@@ -123,15 +140,22 @@ int Diff::execute(int argc, char **argv)
     bool noPos = false;
     bool noeof = false;
     bool params = false;
+    myNumPoolOverflows = 0;
 
     ParameterList inputParameters;
     BEGIN_LONG_PARAMETERS(longParameterList)
         LONG_STRINGPARAMETER("in1", &inFile1)
         LONG_STRINGPARAMETER("in2", &inFile2)
         LONG_STRINGPARAMETER("out",&myDiffFileName)
+        LONG_PARAMETER("all", &myCompAll)
+        LONG_PARAMETER("flag", &myCompFlag)
+        LONG_PARAMETER("mapQual", &myCompMapQ)
+        LONG_PARAMETER("mate", &myCompMate)
+        LONG_PARAMETER("isize", &myCompISize)
         LONG_PARAMETER("seq", &myCompSeq)
         LONG_PARAMETER("baseQual", &myCompBaseQual)
         LONG_STRINGPARAMETER("tags", &myTags)
+        LONG_PARAMETER("everyTags", &myEveryTag)
         LONG_PARAMETER("noCigar", &noCigar)
         LONG_PARAMETER("noPos", &noPos)
         LONG_PARAMETER("onlyDiffs", &myOnlyDiffs)
@@ -144,11 +168,25 @@ int Diff::execute(int argc, char **argv)
     inputParameters.Add(new LongParameters ("Input Parameters", 
                                             longParameterList));
     
+    inputParameters.Read(argc-1, &(argv[1]));
+    
     myCompCigar = !noCigar;
     myCompPos = !noPos;
 
-    inputParameters.Read(argc-1, &(argv[1]));
-    
+    // If all is specified, turn all comparisons on.
+    if(myCompAll)
+    {
+        myCompCigar = true;
+        myCompPos = true;
+        myCompBaseQual = true;
+        myCompSeq = true;
+        myCompFlag = true;
+        myCompMapQ = true;
+        myCompMate = true;
+        myCompISize = true;
+        myEveryTag = true;
+    }
+
     // If no eof block is required for a bgzf file, set the bgzf file type to 
     // not look for it.
     if(noeof)
@@ -243,7 +281,7 @@ int Diff::execute(int argc, char **argv)
 
     if((rec1 == NULL) || (rec2 == NULL))
     {
-        fprintf(stderr, "Failed to allocate initial records, exiting!");
+        fprintf(stderr, "Failed to allocate initial records, exiting!\n");
         return(-1);
     }
 
@@ -300,7 +338,8 @@ int Diff::execute(int argc, char **argv)
         // Prune the unmatched lists for any records that are further from
         // the current record than the threshold.
         tempRecord = myFile2Unmatched.getFirst();
-        // Do not need to check for null, because less than returns false if tempRecord is null
+        // Do not need to check for null, because less than returns false if
+        // tempRecord is null
         while(lessThan(tempRecord, rec1, myThreshold))
         {
             // this record is more than the specified distance, so remove it
@@ -390,6 +429,22 @@ int Diff::execute(int argc, char **argv)
         }
     }
 
+    if(myNumPoolOverflows != 0)
+    {
+        std::cerr << "WARNING: Matching records may incorrectly be reported as "
+                  << "mismatches due to running out of available records " 
+                  << myNumPoolOverflows
+                  << " time";
+        if(myNumPoolOverflows != 1)
+        {
+            std::cerr << "s";
+        }
+        std::cerr << ".\nTry increasing --recPoolSize from "
+                  << myMaxAllowedRecs << " or setting it "
+                  << "to -1 (unlimited).\n";
+    }
+
+
     if(myFile1.file.GetStatus() != SamStatus::NO_MORE_RECS)
     {
         // Error.
@@ -471,6 +526,8 @@ bool Diff::lessThan(SamRecord* rec1, SamRecord* rec2, int threshold)
 
 void Diff::writeBamDiffs(SamRecord* rec1, SamRecord* rec2)
 {
+    static String tempString;
+
     if((rec1 == NULL) && (rec2 != NULL))
     {
         // If myBamOnly2 file has not open yet, initialize it.
@@ -506,27 +563,45 @@ void Diff::writeBamDiffs(SamRecord* rec1, SamRecord* rec2)
         }
 
         //  Add the fields from rec2.
-        if(rec1->getFlag() != rec2->getFlag())
+        if(myCompPos && (!myOnlyDiffs || myDiffStruct.posDiff))
         {
-            rec1->addIntTag(FLAG_DIFF_TAG, rec2->getFlag());
+            tempString = rec2->getReferenceName();
+            tempString += ':';
+            tempString += rec2->get1BasedPosition();
+            rec1->addTag(POS_DIFF_TAG, POS_DIFF_TYPE, tempString.c_str());
         }
-        if(!myOnlyDiffs || myDiffStruct.posDiff)
-        {
-            rec1->addIntTag(POS_DIFF_TAG,rec2->get1BasedPosition());
-        }
-        if(!myOnlyDiffs || myDiffStruct.cigarDiff)
+        if(myCompCigar && (!myOnlyDiffs || myDiffStruct.cigarDiff))
         {
             rec1->addTag(CIGAR_DIFF_TAG, CIGAR_DIFF_TYPE, rec2->getCigar());
         }
-        if(!myOnlyDiffs || myDiffStruct.seqDiff)
+        if(myCompFlag && (!myOnlyDiffs || myDiffStruct.flagDiff || (rec1->getFlag() != rec2->getFlag())))
+        {
+            rec1->addIntTag(FLAG_DIFF_TAG, rec2->getFlag());
+        }
+        if(myCompMapQ && (!myOnlyDiffs || myDiffStruct.mapqDiff))
+        {
+            rec1->addIntTag(MAPQ_DIFF_TAG, rec2->getMapQuality());
+        }
+        if(myCompMate && (!myOnlyDiffs || myDiffStruct.mateDiff))
+        {
+            tempString = rec2->getMateReferenceName();
+            tempString += ':';
+            tempString += rec2->get1BasedMatePosition();
+            rec1->addTag(MATE_DIFF_TAG, MATE_DIFF_TYPE, tempString.c_str());
+        }
+        if(myCompISize && (!myOnlyDiffs || myDiffStruct.isizeDiff))
+        {
+            rec1->addIntTag(ISIZE_DIFF_TAG, rec2->getInsertSize());
+        }
+        if(myCompSeq && (!myOnlyDiffs || myDiffStruct.seqDiff))
         {
             rec1->addTag(SEQ_DIFF_TAG, SEQ_DIFF_TYPE, rec2->getSequence());
         }
-        if(!myOnlyDiffs || myDiffStruct.qualDiff)
+        if(myCompBaseQual && (!myOnlyDiffs || myDiffStruct.qualDiff))
         {
             rec1->addTag(QUAL_DIFF_TAG, QUAL_DIFF_TYPE, rec2->getQuality());
         }
-        if(!myOnlyDiffs || myDiffStruct.tagsDiff)
+        if(!myTags2.IsEmpty() && (!myOnlyDiffs || myDiffStruct.tagsDiff))
         {
             rec1->addTag(TAGS_DIFF_TAG, TAGS_DIFF_TYPE, myTags2);
         }
@@ -547,27 +622,45 @@ void Diff::writeDiffDiffs(SamRecord* rec1, SamRecord* rec2)
     // We know there is some diff.
     if(rec1 != NULL)
     {
+        // Flag is always automatically written so don't add it here.
         myDiff1.Clear();
         // If print all values on any diff or if there is a pos diff
-        if(!myOnlyDiffs ||  myDiffStruct.posDiff)
+        if(myCompPos && (!myOnlyDiffs ||  myDiffStruct.posDiff))
         {
             myDiff1 += '\t';
             myDiff1 += rec1->getReferenceName();
             myDiff1 += ':';
             myDiff1 += rec1->get1BasedPosition();
         }
-        if(!myOnlyDiffs ||  myDiffStruct.cigarDiff)
+        if(myCompCigar && (!myOnlyDiffs ||  myDiffStruct.cigarDiff))
         {
             // Get the info for rec1's cigar.
              myDiff1 += "\t";
              myDiff1 += rec1->getCigar();
         }
-        if(!myOnlyDiffs ||  myDiffStruct.seqDiff)
+        if(myCompMapQ && (!myOnlyDiffs ||  myDiffStruct.mapqDiff))
+        {
+            myDiff1 += "\t";
+            myDiff1 += rec1->getMapQuality();
+        }
+        if(myCompMate && (!myOnlyDiffs ||  myDiffStruct.mateDiff))
+        {
+            myDiff1 += "\t";
+            myDiff1 += rec1->getMateReferenceName();
+            myDiff1 += ":";
+            myDiff1 += rec1->get1BasedMatePosition();
+        }
+        if(myCompISize && (!myOnlyDiffs ||  myDiffStruct.isizeDiff))
+        {
+            myDiff1 += "\t";
+            myDiff1 += rec1->getInsertSize();
+        }
+        if(myCompSeq && (!myOnlyDiffs ||  myDiffStruct.seqDiff))
         {
             myDiff1 += "\t";
             myDiff1 += rec1->getSequence();
         }
-        if(!myOnlyDiffs ||  myDiffStruct.qualDiff)
+        if(myCompBaseQual && (!myOnlyDiffs ||  myDiffStruct.qualDiff))
         {
             myDiff1 += "\t";
             myDiff1 += rec1->getQuality();
@@ -580,27 +673,45 @@ void Diff::writeDiffDiffs(SamRecord* rec1, SamRecord* rec2)
     }
     if(rec2 != NULL)
     {
+        // Flag is always automatically written so don't add it here.
         myDiff2.Clear();
         // If print all values on any diff or if there is a pos diff
-        if(!myOnlyDiffs ||  myDiffStruct.posDiff)
+        if(myCompPos && (!myOnlyDiffs ||  myDiffStruct.posDiff))
         {
             myDiff2 += '\t';
             myDiff2 += rec2->getReferenceName();
             myDiff2 += ':';
             myDiff2 += rec2->get1BasedPosition();
         }
-        if(!myOnlyDiffs ||  myDiffStruct.cigarDiff)
+        if(myCompCigar && (!myOnlyDiffs ||  myDiffStruct.cigarDiff))
         {
             // Get the info for rec2's cigar.
              myDiff2 += "\t";
              myDiff2 += rec2->getCigar();
         }
-        if(!myOnlyDiffs ||  myDiffStruct.seqDiff)
+        if(myCompMapQ && (!myOnlyDiffs ||  myDiffStruct.mapqDiff))
+        {
+            myDiff2 += "\t";
+            myDiff2 += rec2->getMapQuality();
+        }
+        if(myCompMate && (!myOnlyDiffs ||  myDiffStruct.mateDiff))
+        {
+            myDiff2 += "\t";
+            myDiff2 += rec2->getMateReferenceName();
+            myDiff2 += ":";
+            myDiff2 += rec2->get1BasedMatePosition();
+        }
+        if(myCompISize && (!myOnlyDiffs ||  myDiffStruct.isizeDiff))
+        {
+            myDiff2 += "\t";
+            myDiff2 += rec2->getInsertSize();
+        }
+        if(myCompSeq && (!myOnlyDiffs ||  myDiffStruct.seqDiff))
         {
             myDiff2 += "\t";
             myDiff2 += rec2->getSequence();
         }
-        if(!myOnlyDiffs ||  myDiffStruct.qualDiff)
+        if(myCompBaseQual && (!myOnlyDiffs ||  myDiffStruct.qualDiff))
         {
             myDiff2 += "\t";
             myDiff2 += rec2->getQuality();
@@ -660,16 +771,37 @@ bool Diff::getDiffs(SamRecord* rec1, SamRecord* rec2)
         // Neither is set, so no diffs.
         return(false);
     }
-    // Read the tags.
-    if(!myTags.IsEmpty())
+    
+    myTags1.Clear();
+    myTags2.Clear();
+    char tagDelim = '\t';
+    if(myBamOut)
     {
-        myTags1.Clear();
-        myTags2.Clear();
-        char tagDelim = '\t';
-        if(myBamOut)
+        tagDelim = ';';
+    }
+
+    // Read the tags.
+    if(myEveryTag)
+    {
+        if(rec1 != NULL)
         {
-            tagDelim = ';';
+            // Get all the tags from the records.
+            if(!SamRecordHelper::genSamTagsString(*rec1, myTags1, tagDelim))
+            {
+                std::cerr << "Failed to read tags\n";
+            }
         }
+        if(rec2 != NULL)
+        {
+            // Get all the tags from the records.
+            if(!SamRecordHelper::genSamTagsString(*rec2, myTags2, tagDelim))
+            {
+                    std::cerr << "Failed to read tags\n";
+            }
+        }
+    }
+    else if(!myTags.IsEmpty())
+    {
         // Compare the tags.
         if(((rec1 != NULL) &&
             (!rec1->getTagsString(myTags.c_str(), myTags1, tagDelim))) ||
@@ -681,15 +813,20 @@ bool Diff::getDiffs(SamRecord* rec1, SamRecord* rec2)
                       << myTags.c_str() << std::endl;
         }
     }
+
     if(((rec1 == NULL) && (rec2 != NULL)) || 
        ((rec1 != NULL) && (rec2 == NULL)))
     {
         // Only one of the records is set.
         myDiffStruct.posDiff = myCompPos;
         myDiffStruct.cigarDiff = myCompCigar;
+        myDiffStruct.flagDiff = myCompFlag;
+        myDiffStruct.mapqDiff = myCompMapQ;
+        myDiffStruct.mateDiff = myCompMate;
+        myDiffStruct.isizeDiff = myCompISize;
         myDiffStruct.seqDiff = myCompSeq;
         myDiffStruct.qualDiff = myCompBaseQual;
-        myDiffStruct.tagsDiff = !myTags.IsEmpty();
+        myDiffStruct.tagsDiff = (!myTags.IsEmpty()) || myEveryTag;
         return(true);
     }
     else
@@ -697,6 +834,10 @@ bool Diff::getDiffs(SamRecord* rec1, SamRecord* rec2)
         // Check to see if there are any diffs:
         myDiffStruct.posDiff = false;
         myDiffStruct.cigarDiff = false;
+        myDiffStruct.flagDiff = false;
+        myDiffStruct.mapqDiff = false;
+        myDiffStruct.mateDiff = false;
+        myDiffStruct.isizeDiff = false;
         myDiffStruct.seqDiff = false;
         myDiffStruct.qualDiff = false;
         myDiffStruct.tagsDiff = false;
@@ -715,6 +856,24 @@ bool Diff::getDiffs(SamRecord* rec1, SamRecord* rec2)
         {
             myDiffStruct.cigarDiff = true;
         }
+        if(myCompFlag && (rec1->getFlag() != rec2->getFlag()))
+        {
+            myDiffStruct.flagDiff = true;
+        }
+        if(myCompMapQ && (rec1->getMapQuality() != rec2->getMapQuality()))
+        {
+            myDiffStruct.mapqDiff = true;
+        }
+        if(myCompMate && 
+           ((rec1->getMateReferenceID() != rec2->getMateReferenceID()) ||
+            (rec1->get1BasedMatePosition() != rec2->get1BasedMatePosition())))
+        {
+            myDiffStruct.mateDiff = true;
+        }
+        if(myCompISize && (rec1->getInsertSize() != rec2->getInsertSize()))
+        {
+            myDiffStruct.isizeDiff = true;
+        }
         if(myCompSeq && (strcmp(rec1->getSequence(), rec2->getSequence()) != 0))
         {
             myDiffStruct.seqDiff = true;
@@ -728,8 +887,10 @@ bool Diff::getDiffs(SamRecord* rec1, SamRecord* rec2)
             myDiffStruct.tagsDiff = true;
         }
     }
-    return(myDiffStruct.posDiff || myDiffStruct.cigarDiff || 
-           myDiffStruct.seqDiff || myDiffStruct.qualDiff || 
+    return(myDiffStruct.posDiff  || myDiffStruct.cigarDiff || 
+           myDiffStruct.flagDiff || myDiffStruct.mapqDiff || 
+           myDiffStruct.mateDiff || myDiffStruct.isizeDiff || 
+           myDiffStruct.seqDiff  || myDiffStruct.qualDiff || 
            myDiffStruct.tagsDiff);
 }
 
@@ -779,7 +940,9 @@ SamRecord* Diff::getSamRecord()
         // There are no more free ones and we have already hit the
         // max number allowed to be allocated, so flush the first record from
         // the larger list.
-        if(myFile1Unmatched.size() <= myFile2Unmatched.size())
+        ++myNumPoolOverflows;
+
+        if(myFile1Unmatched.size() >= myFile2Unmatched.size())
         {
             // remove from file1.
             returnSam = myFile1Unmatched.removeFirst();

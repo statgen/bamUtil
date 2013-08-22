@@ -1,0 +1,5 @@
+GapSize	NumPairs
+-21	3
+-20	4
+30	1
+70	2

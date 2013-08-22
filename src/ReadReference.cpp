@@ -108,6 +108,13 @@ int ReadReference::execute(int argc, char **argv)
     uint32_t refStart = 
         reference.getGenomePosition(refName.c_str());
 
+    if(refStart == INVALID_GENOME_INDEX)
+    {
+        std::cerr << "Reference Name: " << refName.c_str()
+                  << " not found in the reference file\n"; 
+        return(-1);
+    }
+
     std::string refString;
     
     reference.getString(refString, refStart + start, end - start);

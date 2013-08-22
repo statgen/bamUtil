@@ -1,0 +1,7 @@
+
+Summary of Pileup Stats (1st Row is Mean, 2nd Row is Standard Deviation)
+TotalReads	Dups	QCFail	Mapped	Paired	ProperPaired	ZeroMapQual	MapQual<10	MapQual255	PassMapQual	AverageMapQuality	AverageMapQualCount	Depth	Q20Bases
+14.307692	1.846154	1.846154	8.769231	7.846154	0.923077	2.923077	5.846154	0.000000	2.923077	11.000000	8.769231	2.076923	1.153846
+17.670053	2.882307	2.882307	9.038380	7.603137	1.441153	3.012793	6.025586	0.000000	3.012793	0.000000	9.038380	2.841993	1.993579
+
+Number of records read = 87

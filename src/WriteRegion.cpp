@@ -57,11 +57,11 @@ void WriteRegion::usage()
     std::cerr << "\t./bam writeRegion --in <inputFilename>  --out <outputFilename> [--bamIndex <bamIndexFile>] "
               << "[--refName <reference Name> | --refID <reference ID>] [--start <0-based start pos>] "
               << "[--end <0-based end psoition>] [--bed <bed filename>] [--withinRegion] [--readName <readName>] "
-              << "[--params] [--noeof]" << std::endl;
+              << "[--lshift] [--params] [--noeof]" << std::endl;
     std::cerr << "\tRequired Parameters:" << std::endl;
     std::cerr << "\t\t--in        : the BAM file to be read" << std::endl;
     std::cerr << "\t\t--out       : the SAM/BAM file to write to" << std::endl;
-    std::cerr << "\tOptional Parameters:" << std::endl;
+    std::cerr << "\tOptional Parameters for Specifying a Region:" << std::endl;
     std::cerr << "\t\t--bamIndex  : the path/name of the bam index file" << std::endl;
     std::cerr << "\t\t              (if not specified, uses the --in value + \".bai\")" << std::endl;
     std::cerr << "\t\t--refName   : the BAM reference Name to read" << std::endl;
@@ -80,6 +80,8 @@ void WriteRegion::usage()
     std::cerr << "\t\t--bed       : use the specified bed file for regions." << std::endl;
     std::cerr << "\t\t--withinReg : only print reads fully enclosed within the region." << std::endl;
     std::cerr << "\t\t--readName  : only print reads with this read name." << std::endl;
+    std::cerr << "\tOptional Parameters For Other Operations:\n";
+    std::cerr << "\t\t--lshift    : left shift indels when writing records\n";
     std::cerr << "\t\t--params    : print the parameter settings" << std::endl;
     std::cerr << "\t\t--noeof     : do not expect an EOF block on a bam file." << std::endl;
     std::cerr << std::endl;
@@ -102,6 +104,7 @@ int WriteRegion::execute(int argc, char **argv)
     myRefName.Clear();
     myPrevRefName.Clear();
     myBedRefID = SamReferenceInfo::NO_REF_ID;
+    bool lshift = false;
     bool noeof = false;
     bool params = false;
     myWithinReg = false;
@@ -109,8 +112,10 @@ int WriteRegion::execute(int argc, char **argv)
 
     ParameterList inputParameters;
     BEGIN_LONG_PARAMETERS(longParameterList)
+        LONG_PARAMETER_GROUP("Required Parameters")
         LONG_STRINGPARAMETER("in", &inFile)
         LONG_STRINGPARAMETER("out", &outFile)
+        LONG_PARAMETER_GROUP("Optional Region Parameters")        
         LONG_STRINGPARAMETER("bamIndex", &indexFile)
         LONG_STRINGPARAMETER("refName", &myRefName)
         LONG_INTPARAMETER("refID", &myRefID)
@@ -119,6 +124,8 @@ int WriteRegion::execute(int argc, char **argv)
         LONG_STRINGPARAMETER("bed", &bed)
         LONG_PARAMETER("withinReg", &myWithinReg)
         LONG_STRINGPARAMETER("readName", &readName)
+        LONG_PARAMETER_GROUP("Optional Other Parameters")
+        LONG_PARAMETER("lshift", &lshift)
         LONG_PARAMETER("noeof", &noeof)
         LONG_PARAMETER("params", &params)
         END_LONG_PARAMETERS();
@@ -197,8 +204,11 @@ int WriteRegion::execute(int argc, char **argv)
     SamFile samOut;
     samOut.OpenForWrite(outFile);
 
-    // Open the bam index file for reading.
-    mySamIn.ReadBamIndex(indexFile);
+    // Open the bam index file for reading if a region was specified.
+    if((myRefName.Length() != 0) || (myRefID != UNSET_REF) || (myBedFile != NULL))
+    {
+        mySamIn.ReadBamIndex(indexFile);
+    }
 
     // Read & write the sam header.
     mySamIn.ReadHeader(mySamHeader);
@@ -246,6 +256,12 @@ int WriteRegion::execute(int argc, char **argv)
                     // This record was already written.
                     continue;
                 }
+            }
+
+            // Shift left if applicable.
+            if(lshift)
+            {
+                samRecord.shiftIndelsLeft();
             }
 
             // Successfully read a record from the file, so write it.

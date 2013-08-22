@@ -43,6 +43,10 @@ private:
     {
         bool posDiff;
         bool cigarDiff;
+        bool flagDiff;
+        bool mapqDiff;
+        bool mateDiff;
+        bool isizeDiff;
         bool seqDiff;
         bool qualDiff;
         bool tagsDiff;
@@ -119,9 +123,14 @@ private:
     static const char* FLAG_DIFF_TAG;
     static const char* POS_DIFF_TAG;
     static const char* CIGAR_DIFF_TAG;
+    static const char* MAPQ_DIFF_TAG;
+    static const char* MATE_DIFF_TAG;
+    static const char* ISIZE_DIFF_TAG;
     static const char* SEQ_DIFF_TAG;
     static const char* QUAL_DIFF_TAG;
     static const char* TAGS_DIFF_TAG;
+    static const char POS_DIFF_TYPE = 'Z';
+    static const char MATE_DIFF_TYPE = 'Z';
     static const char CIGAR_DIFF_TYPE = 'Z';
     static const char SEQ_DIFF_TYPE = 'Z';
     static const char QUAL_DIFF_TYPE = 'Z';
@@ -132,17 +141,24 @@ private:
     UnmatchedRecords myFile1Unmatched;
     UnmatchedRecords myFile2Unmatched;
 
+    bool myCompAll;
     bool myCompCigar;
     bool myCompPos;
     bool myCompBaseQual;
     bool myCompSeq;
+    bool myCompFlag;
+    bool myCompMapQ;
+    bool myCompMate;
+    bool myCompISize;
     String myTags;
+    bool myEveryTag;
     bool myOnlyDiffs;
     bool myBamOut;
 
     int myMaxAllowedRecs;
     int myAllocatedRecs;
     int myThreshold;
+    int myNumPoolOverflows;
 
     FileInfo myFile1;
     FileInfo myFile2;

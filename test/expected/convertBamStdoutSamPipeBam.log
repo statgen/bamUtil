@@ -3,7 +3,7 @@ The following parameters are available.  Ones with "[]" are in effect:
 
 Input Parameters
  --in [-.sam], --out [results/convertBamStdoutSamPipeBam.bam], --refFile [],
-                        --noeof, --recover, --params [ON]
+                        --lshift, --noeof, --recover, --params [ON]
    SequenceConversion : --useBases, --useEquals, --useOrigSeq [ON]
 
 

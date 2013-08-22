@@ -1,3 +1,4 @@
-Failed to find expected overlapping mates for 2 records.
-Due to hitting the max record poolSize, had to default clip 9 records.
-Completed ClipOverlap.
+WARNING: did not find expected overlapping mates for 2 records.
+WARNING: 9 record pool failures
+Due to hitting the max record poolSize, default handled 9 records.
+Completed ClipOverlap with WARNINGS.

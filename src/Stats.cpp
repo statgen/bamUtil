@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011  Regents of the University of Michigan
+ *  Copyright (C) 2011-2012  Regents of the University of Michigan
  *
  *   This program is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #include "BgzfFileType.h"
 #include "Pileup.h"
 #include "PileupElementBaseQCStats.h"
+#include "SamFlag.h"
 
 void Stats::statsDescription()
 {
@@ -39,30 +40,42 @@ void Stats::description()
 void Stats::usage()
 {
     BamExecutable::usage();
-    std::cerr << "\t./bam stats --in <inputFile> [--basic] [--qual] [--phred] [--baseQC <outputFileName>] [--maxNumReads <maxNum>]"
-              << "[--unmapped] [--bamIndex <bamIndexFile>] [--regionList <regFileName>] [--minMapQual <minMapQ>] [--dbsnp <dbsnpFile>] [--sumStats] [--noeof] [--params]" << std::endl;
+    std::cerr << "\t./bam stats --in <inputFile> [--basic] [--qual] [--phred] [--pBaseQC <outputFileName>] [--cBaseQC <outputFileName>] [--maxNumReads <maxNum>]"
+              << "[--unmapped] [--bamIndex <bamIndexFile>] [--regionList <regFileName>] [--requiredFlags <integerRequiredFlags>] [--excludeFlags <integerExcludeFlags>] [--noeof] [--params] [--withinRegion] [--baseSum] [--bufferSize <buffSize>] [--minMapQual <minMapQ>] [--dbsnp <dbsnpFile>]" << std::endl;
     std::cerr << "\tRequired Parameters:" << std::endl;
     std::cerr << "\t\t--in : the SAM/BAM file to calculate stats for" << std::endl;
     std::cerr << "\tTypes of Statistics that can be generated:" << std::endl;
-    std::cerr << "\t\t--basic       : Turn on basic statistic generation" << std::endl;
-    std::cerr << "\t\t--qual        : Generate a count for each quality (displayed as non-phred quality)" << std::endl;
-    std::cerr << "\t\t--phred       : Generate a count for each quality (displayed as phred quality)" << std::endl;
-    std::cerr << "\t\t--baseQC      : Write per base statistics to the specified file." << std::endl;
+    std::cerr << "\t\t--basic         : Turn on basic statistic generation" << std::endl;
+    std::cerr << "\t\t--qual          : Generate a count for each quality (displayed as non-phred quality)" << std::endl;
+    std::cerr << "\t\t--phred         : Generate a count for each quality (displayed as phred quality)" << std::endl;
+    std::cerr << "\t\t--pBaseQC       : Write per base statistics as Percentages to the specified file." << std::endl;
+    std::cerr << "\t\t                  pBaseQC & cBaseQC cannot both be specified." << std::endl;
+    std::cerr << "\t\t--cBaseQC       : Write per base statistics as Counts to the specified file." << std::endl;
+    std::cerr << "\t\t                  pBaseQC & cBaseQC cannot both be specified." << std::endl;
     std::cerr << "\tOptional Parameters:" << std::endl;
-    std::cerr << "\t\t--maxNumReads : Maximum number of reads to process" << std::endl;
-    std::cerr << "\t\t                Defaults to -1 to indicate all reads." << std::endl;
-    std::cerr << "\t\t--unmapped    : Only process unmapped reads (requires a bamIndex file)" << std::endl;
-    std::cerr << "\t\t--bamIndex    : The path/name of the bam index file" << std::endl;
-    std::cerr << "\t\t                (if required and not specified, uses the --in value + \".bai\")" << std::endl;
-    std::cerr << "\t\t--regionList  : File containing the regions to be processed chr<tab>start_pos<tab>end<pos>." << std::endl;
-    std::cerr << "\t\t                Positions are 0 based and the end_pos is not included in the region." << std::endl;
-    std::cerr << "\t\t                Uses bamIndex." << std::endl;
-    std::cerr << "\t\t--minMapQual  : The minimum mapping quality for filtering reads in the baseQC stats." << std::endl;
-    std::cerr << "\t\t--dbsnp       : The dbSnp file of positions to exclude from baseQC analysis." << std::endl;
-    std::cerr << "\t\t--noeof       : Do not expect an EOF block on a bam file." << std::endl;
-    std::cerr << "\t\t--params      : Print the parameter settings" << std::endl;
-    std::cerr << "\tOptional Base QC Only Parameters:" << std::endl;
-    std::cerr << "\t\t--sumStats    : Alternate summary output." << std::endl;
+    std::cerr << "\t\t--maxNumReads   : Maximum number of reads to process" << std::endl;
+    std::cerr << "\t\t                  Defaults to -1 to indicate all reads." << std::endl;
+    std::cerr << "\t\t--unmapped      : Only process unmapped reads (requires a bamIndex file)" << std::endl;
+    std::cerr << "\t\t--bamIndex      : The path/name of the bam index file" << std::endl;
+    std::cerr << "\t\t                  (if required and not specified, uses the --in value + \".bai\")" << std::endl;
+    std::cerr << "\t\t--regionList    : File containing the regions to be processed chr<tab>start_pos<tab>end<pos>." << std::endl;
+    std::cerr << "\t\t                  Positions are 0 based and the end_pos is not included in the region." << std::endl;
+    std::cerr << "\t\t                  Uses bamIndex." << std::endl;
+    std::cerr << "\t\t--excludeFlags  : Skip any records with any of the specified flags set\n";
+    std::cerr << "\t\t                  (specify an integer representation of the flags)\n";
+    std::cerr << "\t\t--requiredFlags : Only process records with all of the specified flags set\n";
+    std::cerr << "\t\t                  (specify an integer representation of the flags)\n";
+    std::cerr << "\t\t--noeof         : Do not expect an EOF block on a bam file." << std::endl;
+    std::cerr << "\t\t--params        : Print the parameter settings." << std::endl;
+    std::cerr << "\tOptional phred/qual Only Parameters:" << std::endl;
+    std::cerr << "\t\t--withinRegion  : Only count qualities if they fall within regions specified.\n";
+    std::cerr << "\t\t                  Only applicable if regionList is also specified.\n";
+    std::cerr << "\tOptional BaseQC Only Parameters:" << std::endl;
+    std::cerr << "\t\t--baseSum       : Print an overall summary of the baseQC for the file to stderr." << std::endl;
+    std::cerr << "\t\t--bufferSize    : Size of the pileup buffer for calculating the BaseQC parameters." << std::endl;
+    std::cerr << "\t\t                  Default: " << PileupHelper::DEFAULT_WINDOW_SIZE << std::endl;
+    std::cerr << "\t\t--minMapQual    : The minimum mapping quality for filtering reads in the baseQC stats." << std::endl;
+    std::cerr << "\t\t--dbsnp         : The dbSnp file of positions to exclude from baseQC analysis." << std::endl;
     std::cerr << std::endl;
 }
 
@@ -77,15 +90,19 @@ int Stats::execute(int argc, char **argv)
     bool params = false;
     bool qual = false;
     bool phred = false;
-    bool sumStats = false;
     int maxNumReads = -1;
     bool unmapped = false;
-    String baseQC = "";
+    String pBaseQC = "";
+    String cBaseQC = "";
     String regionList = "";
+    int excludeFlags = 0;
+    int requiredFlags = 0;
+    bool withinRegion = false;
     int minMapQual = 0;
     String dbsnp = "";
     PosList *dbsnpListPtr = NULL;
-
+    bool baseSum = false;
+    int bufferSize = PileupHelper::DEFAULT_WINDOW_SIZE;
 
     ParameterList inputParameters;
     BEGIN_LONG_PARAMETERS(longParameterList)
@@ -95,18 +112,24 @@ int Stats::execute(int argc, char **argv)
         LONG_PARAMETER("basic", &basic)
         LONG_PARAMETER("qual", &qual)
         LONG_PARAMETER("phred", &phred)
-        LONG_STRINGPARAMETER("baseQC", &baseQC)
+        LONG_STRINGPARAMETER("pBaseQC", &pBaseQC)
+        LONG_STRINGPARAMETER("cBaseQC", &cBaseQC)
         LONG_PARAMETER_GROUP("Optional Parameters")
         LONG_INTPARAMETER("maxNumReads", &maxNumReads)
         LONG_PARAMETER("unmapped", &unmapped)
         LONG_STRINGPARAMETER("bamIndex", &indexFile)
         LONG_STRINGPARAMETER("regionList", &regionList)
-        LONG_INTPARAMETER("minMapQual", &minMapQual)
-        LONG_STRINGPARAMETER("dbsnp", &dbsnp)
-        LONG_PARAMETER_GROUP("Optional BaseQC Only Parameters")
-        LONG_PARAMETER("sumStats", &sumStats)
+        LONG_INTPARAMETER("excludeFlags", &excludeFlags)
+        LONG_INTPARAMETER("requiredFlags", &requiredFlags)
         LONG_PARAMETER("noeof", &noeof)
         LONG_PARAMETER("params", &params)
+        LONG_PARAMETER_GROUP("Optional phred/qual Only Parameters")
+        LONG_PARAMETER("withinRegion", &withinRegion)
+        LONG_PARAMETER_GROUP("Optional BaseQC Only Parameters")
+        LONG_PARAMETER("baseSum", &baseSum)
+        LONG_INTPARAMETER("bufferSize", &bufferSize)
+        LONG_INTPARAMETER("minMapQual", &minMapQual)
+        LONG_STRINGPARAMETER("dbsnp", &dbsnp)
         END_LONG_PARAMETERS();
    
     inputParameters.Add(new LongParameters ("Input Parameters", 
@@ -145,20 +168,41 @@ int Stats::execute(int argc, char **argv)
     }
     ////////////////////////////////////////
     // Setup in case pileup is used.
-    Pileup<PileupElementBaseQCStats> pileup;
+    Pileup<PileupElementBaseQCStats> pileup(bufferSize);
     // Initialize start/end positions.
     myStartPos = 0;
     myEndPos = -1;
     
     // Open the output qc file if applicable.
     IFILE baseQCPtr = NULL;
-    if(!baseQC.IsEmpty())
+    if(!pBaseQC.IsEmpty() && !cBaseQC.IsEmpty())
     {
-        baseQCPtr = ifopen(baseQC, "w");
+        usage();
+        inputParameters.Status();
+        // Cannot specify both types of baseQC.
+        std::cerr << "Cannot specify both --pBaseQC & --cBaseQC." << std::endl;
+        return(-1);
+    }
+    else if(!pBaseQC.IsEmpty())
+    {
+        baseQCPtr = ifopen(pBaseQC, "w");
+        PileupElementBaseQCStats::setPercentStats(true);
+    }
+    else if(!cBaseQC.IsEmpty())
+    {
+        baseQCPtr = ifopen(cBaseQC, "w");
+        PileupElementBaseQCStats::setPercentStats(false);
+    }
+
+    if(baseQCPtr != NULL)
+    {
         PileupElementBaseQCStats::setOutputFile(baseQCPtr);
-        PileupElementBaseQCStats::setMapQualFilter(minMapQual);
-        PileupElementBaseQCStats::setSumStats(sumStats);
         PileupElementBaseQCStats::printHeader();
+    }
+    if((baseQCPtr != NULL) || baseSum)
+    {
+        PileupElementBaseQCStats::setMapQualFilter(minMapQual);
+        PileupElementBaseQCStats::setBaseSum(baseSum);
     }
 
     if(params)
@@ -173,6 +217,8 @@ int Stats::execute(int argc, char **argv)
         fprintf(stderr, "%s\n", samIn.GetStatusMessage());
         return(samIn.GetStatus());
     }
+
+    samIn.SetReadFlags(requiredFlags, excludeFlags);
 
     // Set whether or not basic statistics should be generated.
     samIn.GenerateStatistics(basic);
@@ -204,27 +250,24 @@ int Stats::execute(int argc, char **argv)
 
     //////////////////////////
     // Read dbsnp if specified and doing baseQC
-    if((baseQCPtr != NULL) && (!dbsnp.IsEmpty()))
+    if(((baseQCPtr != NULL) || baseSum) && (!dbsnp.IsEmpty()))
     {
         // Read the dbsnp file.
         IFILE fdbSnp;
         fdbSnp = ifopen(dbsnp,"r");
         // Determine how many entries.
-        const SamReferenceInfo* refInfo = samHeader.getReferenceInfo();
-        if(refInfo != NULL)
+        const SamReferenceInfo& refInfo = samHeader.getReferenceInfo();
+        int maxRefLen = 0;
+        for(int i = 0; i < refInfo.getNumEntries(); i++)
         {
-            int maxRefLen = 0;
-            for(int i = 0; i < refInfo->getNumEntries(); i++)
+            int refLen = refInfo.getReferenceLength(i);
+            if(refLen >= maxRefLen)
             {
-                int refLen = refInfo->getReferenceLength(i);
-                if(refLen >= maxRefLen)
-                {
-                    maxRefLen = refLen + 1;
-                }
+                maxRefLen = refLen + 1;
             }
-
-            dbsnpListPtr = new PosList(refInfo->getNumEntries(),maxRefLen);
         }
+        
+        dbsnpListPtr = new PosList(refInfo.getNumEntries(),maxRefLen);
 
         if(fdbSnp==NULL)
         {
@@ -233,10 +276,6 @@ int Stats::execute(int argc, char **argv)
         else if(dbsnpListPtr == NULL)
         {
             std::cerr << "Failed to init the memory allocation for the dbsnpList.\n";
-        }
-        else if(refInfo == NULL)
-        {
-            std::cerr << "Failed to get the reference information from the bam file.\n";
         }
         else
         {
@@ -291,22 +330,27 @@ int Stats::execute(int argc, char **argv)
     // Quality histogram.
     const int MAX_QUAL = 126;
     const int START_QUAL = 33;
-    int qualCount[MAX_QUAL+1];
+    uint64_t qualCount[MAX_QUAL+1];
     for(int i = 0; i <= MAX_QUAL; i++)
     {
         qualCount[i] = 0;
     }
     
-    const int MAX_PHRED = 93;
     const int START_PHRED = 0;
     const int PHRED_DIFF = START_QUAL - START_PHRED;
-    int phredCount[MAX_PHRED+1];
+    const int MAX_PHRED = MAX_QUAL - PHRED_DIFF;
+    uint64_t phredCount[MAX_PHRED+1];
     for(int i = 0; i <= MAX_PHRED; i++)
     {
         phredCount[i] = 0;
     }
     
-    
+    int refPos = 0;
+    Cigar* cigarPtr = NULL;
+    char cigarChar = '?';
+    // Exclude clips from the qual/phred counts if unmapped reads are excluded.
+    bool qualExcludeClips = excludeFlags & SamFlag::UNMAPPED;
+
     //////////////////////////////////
     // When not reading by sections, getNextSection returns true
     // the first time, then false the next time.
@@ -332,36 +376,91 @@ int Stats::execute(int argc, char **argv)
                 else
                 {
                     int index = 0;
+                    cigarPtr = samRecord.getCigarInfo();
+                    cigarChar = '?';
+                    refPos = samRecord.get0BasedPosition();
+                    if(!qualExcludeClips && (cigarPtr != NULL))
+                    {
+                        // Offset the reference position by any soft clips
+                        // by subtracting the queryIndex of this start position.
+                        // refPos is now the start position of the clips.
+                        refPos -= cigarPtr->getQueryIndex(0);
+                    }
+
                     while(qual[index] != 0)
                     {
-                        // Check for valid quality.
-                        if(qual && ((qual[index] < START_QUAL) || (qual[index] > MAX_QUAL)))
+                        // Skip this quality if it is clipped and we are skipping clips.
+                        if(cigarPtr != NULL)
                         {
-                            std::cerr << "Invalid Quality found: " << qual[index] 
-                                      << ".  Must be between "
-                                      << START_QUAL << " and " << MAX_QUAL << ".\n";
+                            cigarChar = cigarPtr->getCigarCharOpFromQueryIndex(index);
+                        }
+                        if(qualExcludeClips && Cigar::isClip(cigarChar))
+                        {
+                            // Skip a clipped quality.
                             ++index;
+                            // Increment the position.
                             continue;
                         }
-                        if(phred && ((qual[index] < START_PHRED) || (qual[index] > MAX_PHRED)))
+
+                        if(withinRegion && (myEndPos != -1) && (refPos >= myEndPos))
                         {
-                            std::cerr << "Invalid Quality found: " << qual[index] 
-                                      << ".  Must be between "
-                                      << START_PHRED << " and " << MAX_PHRED << ".\n";
+                            // We have hit the end of the region, stop processing this
+                            // quality string.
+                            break;
+                        }
+
+                        if(withinRegion && (refPos < myStartPos))
+                        {
+                            // This position is not in the target.
                             ++index;
+                            // Update the position if this is found in the reference or a clip.
+                            if(Cigar::foundInReference(cigarChar) || Cigar::isClip(cigarChar))
+                            {
+                                ++refPos;
+                            }
+                            continue;
+                        }
+
+                        // Check for valid quality.
+                        if((qual[index] < START_QUAL) || (qual[index] > MAX_QUAL))
+                        {
+                            if(qual)
+                            {
+                                std::cerr << "Invalid Quality found: " << qual[index] 
+                                          << ".  Must be between "
+                                          << START_QUAL << " and " << MAX_QUAL << ".\n";
+                            }
+                            if(phred)
+                            {
+                                std::cerr << "Invalid Phred Quality found: " << qual[index] - PHRED_DIFF
+                                          << ".  Must be between "
+                                          << START_QUAL << " and " << MAX_QUAL << ".\n";
+                            }
+                            // Skip an invalid quality.
+                            ++index;
+                            // Update the position if this is found in the reference or a clip.
+                            if(Cigar::foundInReference(cigarChar) || Cigar::isClip(cigarChar))
+                            {
+                                ++refPos;
+                            }
                             continue;
                         }
                         
                         // Increment the count for this quality.
                         ++(qualCount[(int)(qual[index])]);
                         ++(phredCount[(int)(qual[index]) - PHRED_DIFF]);
+                        // Update the position if this is found in the reference or a clip.
+                        if(Cigar::foundInReference(cigarChar) || Cigar::isClip(cigarChar))
+                        {
+                            ++refPos;
+                        }
                         ++index;
                     }
                 }
             }
 
             // Check the next thing to do for the read.
-            if(baseQCPtr != NULL)
+            if((baseQCPtr != NULL) || baseSum)
             {
                 // Pileup the bases for this read.
                 pileup.processAlignmentRegion(samRecord, myStartPos, myEndPos, dbsnpListPtr);
@@ -375,10 +474,11 @@ int Stats::execute(int argc, char **argv)
     }
 
     // Flush the rest of the pileup.
-    if(baseQCPtr != NULL)
+    if((baseQCPtr != NULL) || baseSum)
     {
         // Pileup the bases.
         pileup.processAlignmentRegion(samRecord, myStartPos, myEndPos, dbsnpListPtr);
+        PileupElementBaseQCStats::printSummary();
         ifclose(baseQCPtr);
     }
 

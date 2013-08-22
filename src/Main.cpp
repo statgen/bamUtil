@@ -35,30 +35,57 @@
 #include "FindCigars.h"
 #include "Stats.h"
 #include "ClipOverlap.h"
+#include "SplitBam.h"
+#include "TrimBam.h"
+#include "MergeBam.h"
+#include "PolishBam.h"
+#include "GapInfo.h"
+#include "Dedup.h"
+#include "Recab.h"
+#include "Bam2FastQ.h"
 #include "IndelDiscordance.h"
 
 void Usage()
 {
     BamExecutable::bamExecutableDescription();
     std::cerr << std::endl;
-    std::cerr << "Tools: " << std::endl;
-    Validate::validateDescription();
+    std::cerr << "Tools to Rewrite SAM/BAM Files: " << std::endl;
     Convert::convertDescription();
-    DumpHeader::dumpHeaderDescription();
-    SplitChromosome::splitChromosomeDescription();
     WriteRegion::writeRegionDescription();
+    SplitChromosome::splitChromosomeDescription();
+    SplitBam::splitBamDescription();
+    FindCigars::findCigarsDescription();
+
+    std::cerr << "\nTools to Modify & write SAM/BAM Files: " << std::endl;
+    ClipOverlap::clipOverlapDescription();
+    Filter::filterDescription();
+    Revert::revertDescription();
+    Squeeze::squeezeDescription();
+    TrimBam::trimBamDescription();
+    MergeBam::mergeBamDescription();
+    PolishBam::polishBamDescription();
+    Dedup::dedupDescription();
+    Recab::recabDescription();
+
+    std::cerr << "\nInformational Tools\n";
+    Validate::validateDescription();
+    Diff::diffDescription();
+    Stats::statsDescription();
+    IndelDiscordance::indelDiscordanceDescription();
+    GapInfo::gapInfoDescription();
+
+    std::cerr << "\nTools to Print Information In Readable Format\n";
+    DumpHeader::dumpHeaderDescription();
     DumpRefInfo::dumpRefInfoDescription();
     DumpIndex::dumpIndexDescription();
-    ReadIndexedBam::readIndexedBamDescription();
-    Filter::filterDescription();
     ReadReference::readReferenceDescription();
-    Revert::revertDescription();
-    Diff::diffDescription();
-    Squeeze::squeezeDescription();
-    FindCigars::findCigarsDescription();
-    Stats::statsDescription();
-    ClipOverlap::clipOverlapDescription();
-    IndelDiscordance::indelDiscordanceDescription();
+
+    std::cerr << "\nAdditional Tools\n";
+    Bam2FastQ::bam2FastQDescription();
+
+    std::cerr << "\nDummy/Example Tools\n";
+    ReadReference::readReferenceDescription();
+
     std::cerr << std::endl;
     std::cerr << "Usage: " << std::endl;
     std::cerr << "\tbam <tool> [<tool arguments>]" << std::endl;
@@ -137,6 +164,40 @@ int main(int argc, char ** argv)
     else if(strcmp(argv[1], "clipOverlap") == 0)
     {
         bamExe = new ClipOverlap();
+    }
+    else if((strcmp(argv[1], "splitBam") == 0) ||
+            (strcmp(argv[1], "splitBAM") == 0))
+    {
+        bamExe = new SplitBam();
+    }
+    else if(strcmp(argv[1], "trimBam") == 0)
+    {
+        bamExe = new TrimBam();
+    }
+    else if((strcmp(argv[1], "mergeBam") == 0) ||
+            (strcmp(argv[1], "rgMergeBam") == 0))
+    {
+        bamExe = new MergeBam();
+    }
+    else if(strcmp(argv[1], "polishBam") == 0)
+    {
+        bamExe = new PolishBam();
+    }
+    else if(strcmp(argv[1], "gapInfo") == 0)
+    {
+        bamExe = new GapInfo();
+    }
+    else if(strcmp(argv[1], "dedup") == 0)
+    {
+        bamExe = new Dedup();
+    }
+    else if(strcmp(argv[1], "recab") == 0)
+    {
+        bamExe = new Recab();
+    }
+    else if(strcmp(argv[1], "bam2FastQ") == 0)
+    {
+        bamExe = new Bam2FastQ();
     }
     else if(strcmp(argv[1], "indelDiscordance") == 0)
     {

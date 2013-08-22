@@ -1,0 +1,11 @@
+Overlap Statistics:
+Number of overlapping pairs: 6
+Average # Reference Bases Overlapped: 18.6667
+Variance of Reference Bases overlapped: 59.8667
+Number of times orientation causes additional clipping: 1
+Number of times the forward strand was clipped: 2
+Number of times the reverse strand was clipped: 4
+WARNING: did not find expected overlapping mates for 2 records.
+WARNING: 8 record pool failures
+Due to hitting the max record poolSize, skipped handling 8 records.
+Completed ClipOverlap with WARNINGS.

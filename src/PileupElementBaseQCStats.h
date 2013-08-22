@@ -23,6 +23,7 @@
 #define __PILEUP_ELEMENT_BASE_QC_STATS_H__
 
 #include "PileupElement.h"
+#include "SimpleStats.h"
 
 class PileupElementBaseQCStats : public PileupElement
 {
@@ -44,7 +45,14 @@ public:
     // will have the wrong header..
     static void printHeader();
 
-    static void setSumStats(bool sumStats);
+    /// The default setting is to not do percentStats (percentStats = false)
+    static void setPercentStats(bool percentStats);
+
+    /// Set whether or not a summary of all bases should be collected.
+    static void setBaseSum(bool baseSum);
+
+    /// Prints a summary to stderr if setBaseSum was passed true.
+    static void printSummary();
 
     PileupElementBaseQCStats();
 
@@ -68,10 +76,28 @@ private:
     static bool ourFilterQCFail;
     static int ourMinMapQuality;
     static IFILE ourOutputFile;
-    static bool ourSumStats;
+    static bool ourPercentStats;
     static const int Q20_CHAR_VAL = 53;
     static const int E9_CALC = 1000000000;
     static const int E6_CALC = 1000000;
+
+    // These are for summary values.
+    static RunningStat avgTotalReads; 
+    static RunningStat avgDups;
+    static RunningStat avgQCFail;
+    static RunningStat avgMapped;
+    static RunningStat avgPaired;
+    static RunningStat avgProperPaired;
+    static RunningStat avgZeroMapQ;
+    static RunningStat avgLT10MapQ;
+    static RunningStat avgMapQ255;
+    static RunningStat avgMapQPass;
+    static RunningStat avgAvgMapQ;
+    static RunningStat avgAvgMapQCount;
+    static RunningStat avgDepth;
+    static RunningStat avgQ20;
+
+    static bool ourBaseSum;
 
     int numEntries;
     int numQ20;

@@ -34,7 +34,10 @@ ERROR=false
 && diff results/regionRead10.sam expected/regionRead8.sam && diff results/regionRead10.txt expected/regionRead10.txt \
 && \
 ../bin/bam writeRegion --in testFilesLibBam/sortedBam.bam --out results/regionRead11.sam --bed testFiles/bedFile2.bed 2> results/regionRead11.txt \
-&& diff results/regionRead11.sam expected/regionRead9.sam && diff results/regionRead11.txt expected/regionRead11.txt
+&& diff results/regionRead11.sam expected/regionRead9.sam && diff results/regionRead11.txt expected/regionRead11.txt \
+&& \
+../bin/bam writeRegion --in testFilesLibBam/testShift.sam --out results/regionShift.sam --lshift 2> results/regionShift.txt \
+&& diff results/regionShift.sam expected/regionShift.sam && diff results/regionShift.txt expected/regionShift.txt
 
 
 if [ $? -ne 0 ]

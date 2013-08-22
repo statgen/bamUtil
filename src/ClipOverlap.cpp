@@ -1,5 +1,6 @@
 /*
- *  Copyright (C) 2011  Regents of the University of Michigan
+ *  Copyright (C) 2011-2012  Regents of the University of Michigan,
+ *                           Yancy Lo
  *
  *   This program is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -24,14 +25,20 @@
 #include "CigarHelper.h"
 #include "SamFlag.h"
 #include "SamHelper.h"
+#include "OverlapClipLowerBaseQual.h"
 
 
 ClipOverlap::ClipOverlap()
     : BamExecutable(),
-      myStoreOrig(""),
+      myOverlapHandler(NULL),
+      myPool(),
+      myOverlapsOnly(false),
       myNumMateFailures(0),
       myNumPoolFail(0),
-      myPoolSkipClip(false)
+      myNumPoolFailNoHandle(0),
+      myNumPoolFailHandled(0),
+      myNumOutOfOrder(0),
+      myPoolSkipOverlap(false)
 {
 }
 
@@ -51,18 +58,20 @@ void ClipOverlap::description()
 void ClipOverlap::usage()
 {
     BamExecutable::usage();
-    std::cerr << "\t./bam clipOverlap --in <inputFile> --out <outputFile> [--storeOrig <tag>] [--readName] [--poolSize <numRecords allowed to allocate>] [--poolSkipClip] [--noeof] [--params]" << std::endl;
+    std::cerr << "\t./bam clipOverlap --in <inputFile> --out <outputFile> [--storeOrig <tag>] [--readName] [--stats] [--overlapsOnly] [--poolSize <numRecords allowed to allocate>] [--poolSkipOverlap] [--noeof] [--params]" << std::endl;
     std::cerr << "\tRequired Parameters:" << std::endl;
-    std::cerr << "\t\t--in : the SAM/BAM file to clip overlaping read pairs for" << std::endl;
-    std::cerr << "\t\t--out        : the SAM/BAM file to be written" << std::endl;
+    std::cerr << "\t\t--in           : the SAM/BAM file to clip overlaping read pairs for" << std::endl;
+    std::cerr << "\t\t--out          : the SAM/BAM file to be written" << std::endl;
     std::cerr << "\tOptional Parameters:" << std::endl;
-    std::cerr << "\t\t--storeOrig   : Store the original cigar in the specified tag." << std::endl;
-    std::cerr << "\t\t--readName    : Original file is sorted by Read Name instead of coordinate." << std::endl;
-    std::cerr << "\t\t--noeof       : Do not expect an EOF block on a bam file." << std::endl;
-    std::cerr << "\t\t--params      : Print the parameter settings" << std::endl;
+    std::cerr << "\t\t--storeOrig    : Store the original cigar in the specified tag." << std::endl;
+    std::cerr << "\t\t--readName     : Original file is sorted by Read Name instead of coordinate." << std::endl;
+    std::cerr << "\t\t--stats        : Print some statistics on the overlaps." << std::endl;
+    std::cerr << "\t\t--overlapsOnly : Only output the clipped reads" << std::endl;
+    std::cerr << "\t\t--noeof        : Do not expect an EOF block on a bam file." << std::endl;
+    std::cerr << "\t\t--params       : Print the parameter settings to stderr" << std::endl;
     std::cerr << "\tClipping By Coordinate Optional Parameters:" << std::endl;
-    std::cerr << "\t\t--poolSize    : Maximum number of records the program is allowed to allocate" << std::endl;
-    std::cerr << "\t\t                for clipping on Coordinate sorted files. (Default: " << DEFAULT_POOL_SIZE << ")" << std::endl;
+    std::cerr << "\t\t--poolSize     : Maximum number of records the program is allowed to allocate" << std::endl;
+    std::cerr << "\t\t                 for clipping on Coordinate sorted files. (Default: " << DEFAULT_POOL_SIZE << ")" << std::endl;
     std::cerr << "\t\t--poolSkipClip : Skip clipping reads to free of usable records when the" << std::endl;
     std::cerr << "\t\t                 poolSize is hit. The default action is to just clip the" << std::endl;
     std::cerr << "\t\t                 first read in a pair to free up the record." << std::endl;
@@ -75,12 +84,14 @@ int ClipOverlap::execute(int argc, char **argv)
     // Extract command line arguments.
     String inFile = "";
     String outFile = "";
-    myStoreOrig = "";
-
+    String storeOrig = "";
     bool readName = false;
+    bool stats = false;
     int poolSize = DEFAULT_POOL_SIZE;
     bool noeof = false;
     bool params = false;
+
+    // TODO, cleanup legacy parameters
 
     ParameterList inputParameters;
     BEGIN_LONG_PARAMETERS(longParameterList)
@@ -88,13 +99,18 @@ int ClipOverlap::execute(int argc, char **argv)
         LONG_STRINGPARAMETER("in", &inFile)
         LONG_STRINGPARAMETER("out", &outFile)
         LONG_PARAMETER_GROUP("Optional Parameters")
-        LONG_STRINGPARAMETER("storeOrig", &myStoreOrig)
+        LONG_STRINGPARAMETER("storeOrig", &storeOrig)
         LONG_PARAMETER("readName", &readName)
+        LONG_PARAMETER ("stats", &stats)
+        LONG_PARAMETER ("overlapsOnly", &myOverlapsOnly)
         LONG_PARAMETER("noeof", &noeof)
         LONG_PARAMETER("params", &params)
-        LONG_PARAMETER_GROUP("Coordinate Clipping Optional Parameters")
+        LONG_PARAMETER_GROUP("Coordinate Processing Optional Parameters")
         LONG_INTPARAMETER("poolSize", &poolSize)
-        LONG_PARAMETER("poolSkipClip", &myPoolSkipClip)
+        LONG_PARAMETER("poolSkipOverlap", &myPoolSkipOverlap)
+        BEGIN_LEGACY_PARAMETERS()
+        LONG_PARAMETER ("clipsOnly", &myOverlapsOnly)
+        LONG_PARAMETER("poolSkipClip", &myPoolSkipOverlap)
         END_LONG_PARAMETERS();
    
     inputParameters.Add(new LongParameters ("Input Parameters", 
@@ -132,7 +148,7 @@ int ClipOverlap::execute(int argc, char **argv)
         return(-1);
     }
 
-    if((myStoreOrig.Length() != 0) && (myStoreOrig.Length() != 2))
+    if((storeOrig.Length() != 0) && (storeOrig.Length() != 2))
     {
         usage();
         inputParameters.Status();
@@ -140,32 +156,150 @@ int ClipOverlap::execute(int argc, char **argv)
         return(-1);
     }
 
+    myOverlapHandler = new OverlapClipLowerBaseQual();
+    if(myOverlapHandler == NULL)
+    {
+        usage();
+        inputParameters.Status();
+        std::cerr << "Failed to allocate the overlap handler\n";
+        return(-1);
+    }
+
+    // Setup the overlap handler.
+    myOverlapHandler->keepStats(stats);
+    if(storeOrig.Length() != 0)
+    {
+        myOverlapHandler->storeOrigCigar(storeOrig);
+    }
+
+
     if(params)
     {
         inputParameters.Status();
     }
 
-    // Open the files for reading/writing.
-    SamFile samIn;
-    samIn.OpenForRead(inFile);
-    SamFile samOut;
-    samOut.OpenForWrite(outFile);
-
-    if(readName)
+    // For each step process the file.
+    // Open the files & read/write the sam header.
+    SamStatus::Status runStatus = SamStatus::SUCCESS;
+    for(int i = 1; i <= myOverlapHandler->numSteps(); i++)
     {
-        return(clipSortedByReadName(samIn, samOut));
+        // Open the file for reading.
+        mySamHeader.resetHeader();
+        SamFile samIn(inFile, SamFile::READ, &mySamHeader);
+        SamFile* samOutPtr = NULL;
+        // Check if writing, if so, open the output file.
+        if(i == myOverlapHandler->numSteps())
+        {
+            samOutPtr = new SamFile(outFile, SamFile::WRITE, &mySamHeader);
+        }
+
+        if(readName)
+        {
+            runStatus = handleSortedByReadName(samIn, samOutPtr);
+        }
+        else
+        {
+            // Coordinate sorted, so work with the pools.
+            myPool.setMaxAllocatedRecs(poolSize);
+
+            // Reset the number of failures
+            myNumMateFailures = 0;
+            myNumPoolFail = 0;
+            myNumPoolFailNoHandle = 0;
+            myNumPoolFailHandled = 0;
+            myNumOutOfOrder = 0;
+
+            // Run by coordinate
+            if(samOutPtr != NULL)
+            {
+                // Setup the output buffer for writing.
+                SamCoordOutput outputBuffer(myPool);
+                outputBuffer.setOutputFile(samOutPtr, &mySamHeader);
+                runStatus = handleSortedByCoord(samIn, &outputBuffer);
+
+                // Cleanup the output buffer.
+                if(!outputBuffer.flushAll())
+                {
+                    std::cerr << "ERROR: Failed to flush the output buffer\n";
+                    runStatus = SamStatus::FAIL_IO;
+                }
+            }
+            else
+            {
+                runStatus = handleSortedByCoord(samIn, NULL);
+            }
+        }
+
+        if(runStatus != SamStatus::SUCCESS)
+        {
+            break;
+        }
+        // Close the input file, it will be reopened if there are 
+        // multiple steps.
+        samIn.Close();
+        if(samOutPtr != NULL)
+        {
+            samOutPtr->Close();
+            delete samOutPtr;
+            samOutPtr = NULL;
+        }
     }
-    return(clipSortedByCoord(samIn, samOut, poolSize));
+
+    // Done processing.
+    // Print Stats
+    myOverlapHandler->printStats();
+
+    if(myNumMateFailures != 0)
+    {
+        std::cerr << "WARNING: did not find expected overlapping mates for "
+                  << myNumMateFailures << " records." << std::endl;
+    }
+    if(myNumPoolFail != 0)
+    {
+        // Had to skip clipping some records due to running out of
+        // memory and not being able to wait for the mate.
+        std::cerr << "WARNING: " << myNumPoolFail 
+                  << " record pool failures\n";
+        if(myNumPoolFailNoHandle != 0)
+        {
+            std::cerr << "Due to hitting the max record poolSize, skipped handling " 
+                      << myNumPoolFailNoHandle << " records." << std::endl;
+        }
+        if(myNumPoolFailHandled != 0)
+        {
+            std::cerr << "Due to hitting the max record poolSize, default handled " 
+                      << myNumPoolFailHandled << " records." << std::endl;
+        }
+        if(myNumOutOfOrder != 0)
+        {
+            std::cerr << "WARNING: Resulting File out of Order by " 
+                      << myNumOutOfOrder << " records.\n";
+        }
+    }
+
+    if(runStatus == SamStatus::SUCCESS)
+    {
+        if(myNumPoolFail == 0)
+        {
+            std::cerr << "Completed ClipOverlap Successfully.\n";
+        }
+        else
+        {
+            runStatus = SamStatus::NO_MORE_RECS;
+            std::cerr << "Completed ClipOverlap with WARNINGS.\n";
+        }
+    }
+    else
+    {
+        std::cerr << "Failed to complete ClipOverlap.\n";
+    }
+    return(runStatus);
 }
 
 
-int ClipOverlap::clipSortedByReadName(SamFile& samIn, SamFile& samOut)
+SamStatus::Status ClipOverlap::handleSortedByReadName(SamFile& samIn, 
+                                                      SamFile* samOutPtr)
 {
-    // Read/write the sam header.
-    SamFileHeader samHeader;
-    samIn.ReadHeader(samHeader);
-    samOut.WriteHeader(samHeader);
-
     // Set returnStatus to success.  It will be changed
     // to the failure reason if any of the writes fail.
     SamStatus::Status returnStatus = SamStatus::SUCCESS;
@@ -174,8 +308,6 @@ int ClipOverlap::clipSortedByReadName(SamFile& samIn, SamFile& samOut)
     SamRecord* prevSamRecord = NULL;
     SamRecord* samRecord = new SamRecord;
     SamRecord* tmpRecord = new SamRecord;
-    uint16_t flag = 0;
-    uint16_t prevFlag = 0;
     if((samRecord == NULL) || (tmpRecord == NULL))
     {
         std::cerr << "Failed to allocate a SamRecord, so exit.\n";
@@ -183,12 +315,12 @@ int ClipOverlap::clipSortedByReadName(SamFile& samIn, SamFile& samOut)
     }
 
     // Keep reading records until ReadRecord returns false.
-    while(samIn.ReadRecord(samHeader, *samRecord))
+    while(samIn.ReadRecord(mySamHeader, *samRecord))
     {
         if(prevSamRecord == NULL)
         {
-            // Nothing to compare this record to, so set this record to the
-            // previous, and the next record.
+            // Nothing to compare this record to, so set this
+            // record to the previous, and the next record.
             prevSamRecord = samRecord;
             samRecord = tmpRecord;
             tmpRecord = NULL;
@@ -196,45 +328,62 @@ int ClipOverlap::clipSortedByReadName(SamFile& samIn, SamFile& samOut)
         }
 
         // Check if the read name matches the previous read name.
-        if(strcmp(samRecord->getReadName(), prevSamRecord->getReadName()) == 0)
+        if(strcmp(samRecord->getReadName(), 
+                  prevSamRecord->getReadName()) == 0)
         {
-            // Determine if the reads are mapped.
-            flag = samRecord->getFlag();
-            prevFlag = prevSamRecord->getFlag();
+            bool overlap = false;
+            // Same Read Name, so check clipping.
+            OverlapHandler::OverlapInfo prevClipInfo = 
+                myOverlapHandler->getOverlapInfo(*prevSamRecord);
+            OverlapHandler::OverlapInfo curClipInfo = 
+                myOverlapHandler->getOverlapInfo(*samRecord);
             
-            // Read name match, so check if both reads are mapped and there
-            // is an overlap, this one starts between the previous record's
-            // start & end.
-            if((SamFlag::isMapped(flag) && SamFlag::isMapped(prevFlag)) && 
-               (prevSamRecord->getReferenceID() == samRecord->getReferenceID()) && 
-               (prevSamRecord->get0BasedPosition() != -1) && (samRecord->get0BasedPosition() != -1))
+            // If either indicate a complete clipping, clip both.
+            if((prevClipInfo == OverlapHandler::NO_OVERLAP_WRONG_ORIENT) ||
+               (curClipInfo == OverlapHandler::NO_OVERLAP_WRONG_ORIENT))
             {
-                // Determine which read starts first.
-                if(prevSamRecord->get0BasedPosition() <= 
-                   samRecord->get0BasedPosition())
-                {
-                    // The previous read starts at or before the current one.
-                    clip(*prevSamRecord, *samRecord);
-                }
-                else
-                {
-                    // The current read starts before the previous one.
-                    clip(*samRecord, *prevSamRecord);
-                }
+                overlap = true;
+                myOverlapHandler->handleNoOverlapWrongOrientation(*prevSamRecord);
+                // Don't update stats since this is the 2nd in the pair
+                myOverlapHandler->handleNoOverlapWrongOrientation(*samRecord, 
+                                                                  false);
             }
-
-            // Found a read pair, so write both records.
-            if(!samOut.WriteRecord(samHeader, *prevSamRecord))
+            else if((prevClipInfo == OverlapHandler::OVERLAP) ||
+                    (prevClipInfo == OverlapHandler::SAME_START))
             {
-                // Failed to write a record.
-                fprintf(stderr, "%s\n", samOut.GetStatusMessage());
-                returnStatus = samOut.GetStatus();
+                // The previous read starts at or before the current one.
+                overlap = true;
+                myOverlapHandler->handleOverlapPair(*prevSamRecord,
+                                                    *samRecord);
             }
-            if(!samOut.WriteRecord(samHeader, *samRecord))
+            else if(curClipInfo == OverlapHandler::OVERLAP)
             {
-                // Failed to write a record.
-                fprintf(stderr, "%s\n", samOut.GetStatusMessage());
-                returnStatus = samOut.GetStatus();
+                // The current read starts before the previous one.
+                overlap = true;
+                myOverlapHandler->handleOverlapPair(*samRecord,
+                                                    *prevSamRecord);
+            }
+            
+            // Found a read pair, so write both records if: 
+            //   1) output file is specified
+            //   AND
+            //     2a) all records should be written
+            //     OR
+            //     2b) the pair overlaps
+            if((samOutPtr != NULL) && (!myOverlapsOnly || overlap))
+            {
+                if(!samOutPtr->WriteRecord(mySamHeader, *prevSamRecord))
+                {
+                    // Failed to write a record.
+                    fprintf(stderr, "%s\n", samOutPtr->GetStatusMessage());
+                    returnStatus = samOutPtr->GetStatus();
+                }
+                if(!samOutPtr->WriteRecord(mySamHeader, *samRecord))
+                {
+                    // Failed to write a record.
+                    fprintf(stderr, "%s\n", samOutPtr->GetStatusMessage());
+                    returnStatus = samOutPtr->GetStatus();
+                }
             }
             // Setup for the next read with no previous.
             tmpRecord = prevSamRecord;
@@ -243,12 +392,16 @@ int ClipOverlap::clipSortedByReadName(SamFile& samIn, SamFile& samOut)
         }
         else
         {
-            // Read name does not match, so write the previous record.
-            if(!samOut.WriteRecord(samHeader, *prevSamRecord))
+            // Read name does not match, so write the previous record
+            // if we are writing all records.
+            if((samOutPtr != NULL) && !myOverlapsOnly)
             {
-                // Failed to write a record.
-                fprintf(stderr, "%s\n", samOut.GetStatusMessage());
-                returnStatus = samOut.GetStatus();
+                if(!samOutPtr->WriteRecord(mySamHeader, *prevSamRecord))
+                {
+                    // Failed to write a record.
+                    fprintf(stderr, "%s\n", samOutPtr->GetStatusMessage());
+                    returnStatus = samOutPtr->GetStatus();
+                }
             }
             // Store this record as the previous.
             tmpRecord = prevSamRecord;
@@ -259,13 +412,13 @@ int ClipOverlap::clipSortedByReadName(SamFile& samIn, SamFile& samOut)
     }
 
     // Write the previous record if there is one.
-    if(prevSamRecord != NULL)
+    if((samOutPtr != NULL) && (prevSamRecord != NULL) && !myOverlapsOnly)
     {
-        if(!samOut.WriteRecord(samHeader, *prevSamRecord))
+        if(!samOutPtr->WriteRecord(mySamHeader, *prevSamRecord))
         {
             // Failed to write a record.
-            fprintf(stderr, "%s\n", samOut.GetStatusMessage());
-            returnStatus = samOut.GetStatus();
+            fprintf(stderr, "%s\n", samOutPtr->GetStatusMessage());
+            returnStatus = samOutPtr->GetStatus();
         }
         delete prevSamRecord;
     }
@@ -279,264 +432,326 @@ int ClipOverlap::clipSortedByReadName(SamFile& samIn, SamFile& samOut)
         delete tmpRecord;
     }
 
-    if(returnStatus == SamStatus::SUCCESS)
+    if(samIn.GetStatus() != SamStatus::NO_MORE_RECS)
     {
-        std::cerr << "Completed ClipOverlap Successfully.\n";
-    }
-    else
-    {
-        std::cerr << "Failed to complete ClipOverlap.\n";
+        return(samIn.GetStatus());
     }
     return(returnStatus);
 }
 
 
-int ClipOverlap::clipSortedByCoord(SamFile& samIn, SamFile& samOut, int poolSize)
+SamStatus::Status ClipOverlap::handleSortedByCoord(SamFile& samIn, 
+                                                   SamCoordOutput* outputBufferPtr)
 {
-    SamRecordPool pool(poolSize);
-    SamCoordOutput outputBuffer(pool);
-    SamFileHeader samHeader;
-    SamRecord* recordPtr;
     MateMapByCoord mateMap;
-    int32_t pos = 0;
 
-    myNumMateFailures = 0;
-    myNumPoolFail = 0;
-
-    // Read/write the sam header.
-    samIn.ReadHeader(samHeader);
-    samOut.WriteHeader(samHeader);
-
-    // Set the output file in the output buffer.
-    outputBuffer.setOutputFile(&samOut, &samHeader);
-
-    // Set returnStatus to success.  It will be changed
-    // to the failure reason if any of the writes fail.
+    // Get record & track success/fail
     SamStatus::Status returnStatus = SamStatus::SUCCESS;
+    
+    OverlapHandler::OverlapInfo overlapInfo = OverlapHandler::UNKNOWN_OVERLAP;
+    SamRecord* matePtr = NULL;
 
-    // Read the sam records.
+    // Get the first read.
+    SamRecord* recordPtr = myPool.getRecord();
+    if(recordPtr == NULL)
+    {
+        // No records in the pool, can't process.
+        std::cerr <<
+            "ERROR: No records in the pool, can't process by coordinate.\n";
+        return(SamStatus::FAIL_MEM);
+    }
+
+    // Track the original chrom/position of the record being processed
+    // for flushing.
+    int32_t chrom = -1;
+    int32_t position = -1;
+
+    bool overlap = false;
     while(returnStatus == SamStatus::SUCCESS)
     {
-        recordPtr = pool.getRecord();
-        if(recordPtr == NULL)
+        // Get the next Record.
+        returnStatus = readCoordRecord(samIn, &recordPtr, 
+                                       mateMap, outputBufferPtr);
+        if(returnStatus != SamStatus::SUCCESS)
         {
-            // Failed to allocate a new record, so try to free up records.
-            if(!forceRecordFlush(mateMap, outputBuffer))
-            {
-                std::cerr << "Failed to flush the output buffer.\n";
-                returnStatus = SamStatus::FAIL_IO;
-                continue;
-            }
-            // Try to get a new record, one should have been cleared.
-            recordPtr = pool.getRecord();
-            if(recordPtr == NULL)
-            {
-                std::cerr << "Failed to allocate any records.\n";
-                returnStatus = SamStatus::FAIL_MEM;
-                continue;
-            }
+            break;
         }
 
-        if(!samIn.ReadRecord(samHeader, *recordPtr))
+        chrom = recordPtr->getReferenceID();
+        position = recordPtr->get0BasedPosition();
+
+        // Cleanup the mate map based on the newly read record.
+        cleanupMateMap(mateMap, outputBufferPtr, chrom, position);
+
+        // Check the read for overlaps.
+        overlapInfo = myOverlapHandler->getOverlapInfo(*recordPtr);
+        // Handle the types of overlaps.
+        switch(overlapInfo)
         {
-            // Nothing to process, so continue.
-            returnStatus = samIn.GetStatus();
-            continue;
-        }
-
-        // Process this record, get the position before any potential clipping.
-        // Chromosome ID will not be affected by clipping.
-        pos = recordPtr->get0BasedPosition();
-        handleCoordRead(*recordPtr, mateMap, outputBuffer);
-
-        // Read a new record, cleanup/flush based on this read.
-        if(!coordFlush(recordPtr->getReferenceID(),
-                       pos,
-                       mateMap, outputBuffer))
-        {
-            returnStatus = SamStatus::FAIL_IO;
-        }
-    }
-
-
-    // Flush the rest of the unpaired reads and the output buffer.
-    if(!coordFlush(-1, -1, mateMap, outputBuffer))
-    {
-        returnStatus = SamStatus::FAIL_IO;
-    }
-
-    // Output any mate errors.
-    if(myNumMateFailures != 0)
-    {
-        std::cerr << "Failed to find expected overlapping mates for " 
-                  << myNumMateFailures << " records." << std::endl;
-    }
-    if(returnStatus == SamStatus::NO_MORE_RECS)
-    {
-        returnStatus = SamStatus::SUCCESS;
-    }
-    
-    if(myNumPoolFail != 0)
-    {
-        // Had to skip clipping some records due to running out of
-        // memory and not being able to wait for the mate.
-        if(myPoolSkipClip)
-        {
-            std::cerr << "Due to hitting the max record poolSize, had to skip clipping " 
-                      << myNumPoolFail << " records." << std::endl;
-        }
-        else
-        {
-            std::cerr << "Due to hitting the max record poolSize, had to default clip " 
-                      << myNumPoolFail << " records." << std::endl;
-        }
-        returnStatus = SamStatus::NO_MORE_RECS;
-    }
-
-    if(returnStatus == SamStatus::SUCCESS)
-    {
-        std::cerr << "Completed ClipOverlap Successfully.\n";
-    }
-    else if(returnStatus == SamStatus::NO_MORE_RECS)
-    {
-        std::cerr << "Completed ClipOverlap.\n";
-    }
-    else
-    {
-        std::cerr << "Failed to complete ClipOverlap.\n";
-    }
-    return(returnStatus);
-}
-
-
-
-void ClipOverlap::handleCoordRead(SamRecord& record,
-                                  MateMapByCoord& mateMap,
-                                  SamCoordOutput& outputBuffer)
-{
-    // Determine whether or not the reads overlap.
-    int16_t flag = record.getFlag();
-    // Do not clip if:
-    //  1) the read is not paired.
-    //  2) read and its mate are on different chromosome ids
-    //  3) read is unmapped
-    //  4) mate is unmapped.
-    if(!SamFlag::isPaired(flag) || 
-       (record.getMateReferenceID() != record.getReferenceID()) ||
-       !SamFlag::isMapped(flag) || !SamFlag::isMateMapped(flag))
-    {
-        // No clipping is necessary, so just write it to the output buffer.
-        outputBuffer.add(&record);
-    }
-    else
-    {
-        // Same chromosome and both reads are mapped
-        // Check which read starts first.
-        int32_t readStart = record.get0BasedPosition();
-        int32_t mateStart = record.get0BasedMatePosition();
-
-        // If either position is unknown (-1), then just add
-        // the record to the output buffer because no clipping
-        // needs to be done.
-        if((readStart == -1) || (mateStart == -1))
-        {
-            outputBuffer.add(&record);
-            return;
-        }
-
-        if(readStart < mateStart)
-        {
-            // This is the first read in the pair.
-            // Check to see if there is an overlap.
-            int32_t readEnd = record.get0BasedAlignmentEnd();
-            if(readEnd < mateStart)
-            {
-                // This read finishes before the mate starts so there is no overlap.
-                // If this read is the reverse and the other read is the forward
-                // strand, then they completely passed each other and both should
-                // be clipped.
-                if(SamFlag::isReverse(flag) && !SamFlag::isMateReverse(flag))
+            case OverlapHandler::OVERLAP:
+                overlap = true;
+                // 1st read, so store it in the mate map.
+                mateMap.add(*recordPtr);
+                // Clear the pointer so a new one is used next time.
+                recordPtr = NULL;
+                break;
+            case OverlapHandler::NO_OVERLAP_WRONG_ORIENT:
+                overlap = true;
+                myOverlapHandler->handleNoOverlapWrongOrientation(*recordPtr);
+                break;
+            case OverlapHandler::SAME_START:
+                overlap = true;
+                // First check the mate map for the mate.
+                matePtr = mateMap.getMate(*recordPtr);
+                if(matePtr != NULL)
                 {
-                    // Clip both.
-                    clipEntire(record);
-                }
-                // No clipping is necessary (or the whole read was clipped),
-                // so just write it to the output buffer.
-                outputBuffer.add(&record);
-            }
-            else
-            {
-                // The reads overlap, so store this read so the overlap can be
-                // clipped when the mate is found.
-                mateMap.add(record);
-            }
-        }
-        else
-        {
-            // This is the 2nd read in the pair or the reads have the
-            // same start position.
-            // Check the map for the mate.
-            SamRecord* mate = mateMap.getMate(record);
-            if(mate == NULL)
-            {
-                // Did not find the mate. 
-                // If the start positions are the same, then just insert this
-                // read to the mate map.
-                if(readStart == mateStart)
-                {
-                    // Same start position, but the mate has not yet been read,
-                    // so store this read.
-                    mateMap.add(record);
+                    // Mate was found, so handle the overlap.
+                    myOverlapHandler->handleOverlapPair(*matePtr, *recordPtr);
                 }
                 else
                 {
-                    // The mate for this read has already been written to the
-                    // output buffer, so write this read.
-                    // Before writing, check to see if this entire read needs to be 
-                    // clipped (this read is forward and the mate is reverse).
-                    if(!SamFlag::isReverse(flag) && SamFlag::isMateReverse(flag))
-                    {
-                        // Clip both.
-                        clipEntire(record);
-                    }
-                
-                    // Did not find the mate so no clipping is necessary or the whole
-                    // read was already clipped, so just write it to the output buffer.
-                    outputBuffer.add(&record);
+                    // Mate not found, so store this one.
+                    mateMap.add(*recordPtr);
+                    // Clear the pointer so a new one is used next time.
+                    recordPtr = NULL;
                 }
-            }
-            else
+                break;
+            case OverlapHandler::UNKNOWN_OVERLAP:
+                matePtr = mateMap.getMate(*recordPtr);
+                if(matePtr != NULL)
+                {
+                    // Mate was found, there is an overlap.
+                    overlap = true;
+                    myOverlapHandler->handleOverlapPair(*matePtr, *recordPtr);
+                }
+                else
+                {
+                    // No overlap if mate not found.
+                    overlap = false;
+                }
+                break;
+            case OverlapHandler::UNKNOWN_OVERLAP_WRONG_ORIENT:
+                overlap = true;
+                matePtr = mateMap.getMate(*recordPtr);
+                if(matePtr != NULL)
+                {
+                    // Mate was found, there is an overlap..
+                    myOverlapHandler->handleOverlapPair(*matePtr, *recordPtr);
+                }
+                else
+                {
+                    // Mate not found, so handle wrong orientation.
+                    // Don't update stats since this is the 2nd in the pair
+                    myOverlapHandler->handleNoOverlapWrongOrientation(*recordPtr,
+                                                                      false);
+                }
+                break;
+            case OverlapHandler::NO_OVERLAP:
+            default:
+                // No overlap
+                overlap = false;
+                break;
+        }
+
+        // Handle writing the record if necessary.
+        if(outputBufferPtr != NULL)
+        {
+            // Writing step.
+            if((matePtr != NULL) && (!myOverlapsOnly || overlap))
             {
-                // Found the mate, so clip the 2 reads and write then to the buffer.
-                clip(*mate, record);
-            
-                // Write both reads to the output buffer.
-                outputBuffer.add(mate);
-                outputBuffer.add(&record);
+                // Add the mate to the output buffer.
+                outputBufferPtr->add(matePtr);
+                matePtr = NULL;
+            }
+            if((recordPtr != NULL) && (!myOverlapsOnly || overlap))
+            {
+                // Add this record to the output buffer.
+                outputBufferPtr->add(recordPtr);
+                recordPtr = NULL;
+            }
+
+            // Flush the output buffer
+            if(!flushOutputBuffer(mateMap, *outputBufferPtr,
+                                  chrom, position))
+            {
+                std::cerr << "ERROR: Failed to flush the output buffer\n";
+                returnStatus = SamStatus::FAIL_IO;
+            }
+        }
+        else
+        {
+            // Not writing.
+            // Release the mate if it is set.
+            if(matePtr != NULL)
+            {
+                myPool.releaseRecord(matePtr);
             }
         }
     }
+
+    // Done with the file, cleanup the mate map.
+    // The calling method will cleanup the output buffer.
+    cleanupMateMap(mateMap, outputBufferPtr);
+
+    if(returnStatus != SamStatus::NO_MORE_RECS)
+    {
+        // Failure.
+        std::cerr << "ERROR reading file, exiting.\n";
+        return(returnStatus);
+    }
+    return(SamStatus::SUCCESS);
 }
 
 
-bool ClipOverlap::coordFlush(int32_t chromID, int32_t position,
-                             MateMapByCoord& mateMap,
-                             SamCoordOutput& outputBuffer)
+///////////////////////////////////////////////////////////////////
+// Methods to handle Coordinate Specific Clipping Operations.
+
+SamStatus::Status ClipOverlap::readCoordRecord(SamFile& samIn,
+                                               SamRecord** recordPtr, 
+                                               MateMapByCoord& mateMap,
+                                               SamCoordOutput* outputBufferPtr)
+{
+    // Null pointer, so get a new pointer.
+    if(*recordPtr == NULL)
+    {
+        *recordPtr = myPool.getRecord();
+        if(*recordPtr == NULL)
+        {
+            // Failed to allocate a new record.
+            // Try to free up records from the mate map
+            if(!forceRecordFlush(mateMap, outputBufferPtr))
+            {
+                std::cerr << "Failed to flush the output buffer.\n";
+                return(SamStatus::FAIL_IO);
+            }
+            // Try to get a new record, one should have been cleared.
+            *recordPtr = myPool.getRecord();
+            if(*recordPtr == NULL)
+            {
+                std::cerr << "Failed to allocate any records.\n";
+                return(SamStatus::FAIL_MEM);
+            }
+        }
+    }
+
+    // RecordPtr is set.
+    if(!samIn.ReadRecord(mySamHeader, **recordPtr))
+    {
+        // Nothing to process, so return.
+        return(samIn.GetStatus());
+    }
+    return(SamStatus::SUCCESS);
+}
+
+
+///////////////////////////////////////////////////////////////////
+// Methods to handle flushing records from the mate map and/or
+// the output buffer.
+
+///////////////////////////////////////////////////////////////////
+// Methods to handle flushing records from the mate map and/or
+// the output buffer.
+bool ClipOverlap::forceRecordFlush(MateMapByCoord& mateMap,
+                                   SamCoordOutput* outputBufferPtr)
+{
+    // The previous standard flush did not free up any records, so pop
+    // the first record off of the mate map if there is one and process
+    // it without waiting for its mate.
+    SamRecord* firstRec = mateMap.first();
+    int32_t flushChrom = -1;
+    int32_t flushPos = -1;
+    bool updated = false;
+
+    // Increment number of pool failures.
+    ++myNumPoolFail;
+
+    if(firstRec != NULL)
+    {
+        // Flush up to & including this record's position.
+        flushChrom = firstRec->getReferenceID();
+        flushPos = firstRec->get0BasedPosition();
+
+        // Remove this record.
+        mateMap.popFirst();
+
+        // Ran out of records, so can't wait until the mate's position.
+        if(!myPoolSkipOverlap)
+        {
+            // Handle the single entry of the pair.
+            updated = 
+                myOverlapHandler->handleOverlapWithoutMate(*firstRec);
+        }
+
+        if(!updated)
+        {
+            ++myNumPoolFailNoHandle;
+        }
+        else
+        {
+            ++myNumPoolFailHandled;
+        }
+
+        // Add the record to the output buffer.
+        if((outputBufferPtr != NULL) && (updated || !myOverlapsOnly))
+        {
+            outputBufferPtr->add(firstRec);
+        }
+        else
+        {
+            myPool.releaseRecord(firstRec);
+        }
+    }
+    else
+    {
+        ++myNumOutOfOrder;
+    }
+
+    if(outputBufferPtr != NULL)
+    {
+        return(outputBufferPtr->flush(flushChrom, flushPos));
+    }
+    // No output buffer, return true.
+    return(true);
+}
+
+
+bool ClipOverlap::flushOutputBuffer(MateMapByCoord& mateMap,
+                                    SamCoordOutput& outputBuffer,
+                                    int32_t prevChrom,
+                                    int32_t prevPos)
 {
     // We will flush the output buffer up to the first record left in the
     // mateMap.  If there are no records left in the mate map, then we
-    // flush up to this record's position.
+    // flush everything up to the previous chrom/pos that was processed since
+    // any new records will have a higher coordinate.
+    SamRecord* firstRec = mateMap.first();
+    if(firstRec != NULL)
+    {
+        return(outputBuffer.flush(firstRec->getReferenceID(), 
+                                  firstRec->get0BasedPosition()));
+    }
+    // Otherwise, flush based on the previous 
+    return(outputBuffer.flush(prevChrom, prevPos));
+}
 
-    // Track position to flush up to.
-    int32_t flushChrom = chromID;
-    int32_t flushPosition = position;
+void ClipOverlap::cleanupMateMap(MateMapByCoord& mateMap,
+                                 SamCoordOutput* outputBufferPtr,
+                                 int32_t chrom, int32_t position)
+{
+    // Cleanup any reads in the mateMap whose mates are prior to the position
+    // currently being processed in the file.  It means the mate was not found 
+    // as expected.  Stop cleaning up once one is found that is not passed.
+    uint64_t chromPos = 0;
+    if((chrom != -1) && (position != -1))
 
-    // The current record's chromosome/position.  Used to determine
-    // which records to cleanup from the mateMap.
-    uint64_t chromPos = SamHelper::combineChromPos(chromID, position);
-
-    // Cleanup any strangling reads at the beginning of the mate map
-    // whose mate was not found at the position specified.
+    {
+        chromPos = SamHelper::combineChromPos(chrom, position);
+    }
+    else
+    {
+        chrom = -1;
+    }
+    
     // Stop after the first read is found whose mate has not yet been reached.
     SamRecord* firstRec = mateMap.first();
     while(firstRec != NULL)
@@ -544,295 +759,29 @@ bool ClipOverlap::coordFlush(int32_t chromID, int32_t position,
         uint64_t firstMateChromPos = 
             SamHelper::combineChromPos(firstRec->getMateReferenceID(),
                                        firstRec->get0BasedMatePosition());
-        if((firstMateChromPos < chromPos) || (chromID == -1))
+        if((firstMateChromPos < chromPos) || (chrom == -1))
         {
             // Already past the mate's position, so note this read and
             // write it.
             ++myNumMateFailures;
-            outputBuffer.add(firstRec);
+            if((outputBufferPtr != NULL) && !myOverlapsOnly)
+            {
+                outputBufferPtr->add(firstRec);
+            }
+            else
+            {
+                myPool.releaseRecord(firstRec);
+            }
             // Remove this record.
             mateMap.popFirst();
+            // Get the next record to check.
             firstRec = mateMap.first();
         }
         else
         {
             // The first record's mate position has not yet been passed, so
             // stop cleaning up the buffer.
-            // We will flush up to the start of this record.
-            flushChrom = firstRec->getReferenceID();
-            flushPosition = firstRec->get0BasedPosition();
             break;
         }
     }
-
-    ////////////////////////////
-    // Flush the output buffer prior to this position.
-    return(outputBuffer.flush(flushChrom, flushPosition));
 }
-
-
-bool ClipOverlap::forceRecordFlush(MateMapByCoord& mateMap,
-                                   SamCoordOutput& outputBuffer)
-{
-    // Out of records, so ensure records get flushed.
-    static CigarRoller newFirstCigar; // holds updated cigar.
-
-    // The previous standard flush did not free up any records, so pop
-    // the first record off of the mate map if there is one and flush.
-    SamRecord* firstRec = mateMap.first();
-    if(firstRec != NULL)
-    {
-        // Increment the number of records specially handled due to a pool failure.
-        ++myNumPoolFail;
-
-        // Ran out of records, so can't wait until the mate's position.
-        if(!myPoolSkipClip)
-        {
-            // Rather than skipping this pair, just clip this read so it 
-            // can be written and the pair will be clipped.
-            
-            // If this read is the reverse and the other read is the forward
-            // strand, then the entire read should be clipped.
-            int16_t flag = firstRec->getFlag();
-            if(SamFlag::isReverse(flag) && !SamFlag::isMateReverse(flag))
-            {
-                clipEntire(*firstRec);
-            }
-            else
-            {
-                if(CigarHelper::softClipEndByRefPos(*firstRec, 
-                                                    firstRec->get0BasedMatePosition(), 
-                                                    newFirstCigar) != CigarHelper::NO_CLIP)
-                {
-                    // Write the original cigar into the specified tag.
-                    if(!myStoreOrig.IsEmpty())
-                    {
-                        // Write original cigar.
-                        firstRec->addTag(myStoreOrig, 'Z', firstRec->getCigar());
-                    }
-                    firstRec->setCigar(newFirstCigar);
-                }
-            }
-        }
-
-        // Add the record to the output buffer.
-        outputBuffer.add(firstRec);
-        // Remove this record.
-        mateMap.popFirst();
-        
-        // Flush up to & including this record's position.
-        return(outputBuffer.flush(firstRec->getReferenceID(), 
-                                  firstRec->get0BasedPosition()));
-   }
-    else
-    {
-        // There was nothing in the mateMap, so flush everything from the output buffer.
-        return(outputBuffer.flush(-1, -1));
-    }
-}
-
-
-void ClipOverlap::clip(SamRecord& firstRecord, SamRecord& secondRecord)
-{
-    static CigarRoller newFirstCigar; // holds updated cigar.
-    static CigarRoller newSecondCigar; // holds updated cigar.
-
-    // Used for checking forward/reverse logic.
-    uint16_t firstFlag = firstRecord.getFlag();
-    uint16_t secondFlag = secondRecord.getFlag();
-
-    // Check for overlap.
-    // We already know that the first record starts at or before the 2nd,
-    // so there is overlap if the first record ends at or after the 2nd
-    // one starts.
-    int32_t firstEnd = firstRecord.get0BasedAlignmentEnd();
-    int32_t secondStart = secondRecord.get0BasedPosition();
-
-    if(firstEnd >= secondStart)
-    {
-        // overlap, determine which record will get clipped by determining
-        // which record has a lower base quality in the overlapping region.
-        // First check clipping the first region.
-
-        // Determine the clipping on the 1st record at the start of the 2nd.
-        int32_t firstClipPos = 
-            CigarHelper::softClipEndByRefPos(firstRecord, secondStart, 
-                                             newFirstCigar);
-        // Loop through counting the quality of the clipped bases.
-        // They run from the firstClip to the length of the read.
-        double firstQualAvg = getAvgQual(firstRecord, firstClipPos, 
-                                         firstRecord.getReadLength()-1);
-
-        int32_t newPos = 0;
-        int32_t secondClipPos =
-            CigarHelper::softClipBeginByRefPos(secondRecord, firstEnd,
-                                               newSecondCigar, newPos);
-        // Loop through counting the quality of the clipped bases.
-        // They run from the beginning until the secondClip(included).
-        double secondQualAvg = getAvgQual(secondRecord, 0, secondClipPos);
-        
-        // Check to see whether the 1st record or the 2nd one should be clipped
-        // based on which has the lower quality.
-        if(firstQualAvg <= secondQualAvg)
-        {
-            // First clip has lower or equal quality, so clip that.
-            // Check to see if the entire read should be clipped by
-            // checking forward/reverse.
-            if(SamFlag::isReverse(firstFlag) && !SamFlag::isReverse(secondFlag))
-            {
-                // first record is reverse and 2nd is forward, so clip
-                // those extending ends which means clipping all of the
-                // reverse(first) strand since it's overlap has lower quality.
-                clipEntire(firstRecord);
-
-                // Soft clip the end of the forward(second) strand that
-                // extends past the reverse strand (firstEnd + 1).
-                if(CigarHelper::softClipEndByRefPos(secondRecord, firstEnd+1,
-                                                    newSecondCigar)
-                   != CigarHelper::NO_CLIP)
-                {
-                    // Write the original cigar into the specified tag.
-                    if(!myStoreOrig.IsEmpty())
-                    {
-                        // Write original cigar.
-                        secondRecord.addTag(myStoreOrig, 'Z', 
-                                            secondRecord.getCigar());
-                    }
-                    secondRecord.setCigar(newSecondCigar);
-                }
-            }
-            else
-            {
-                // No strand specific extended ends clipping is required,
-                // so just clip the overlap.
-                // Write the original cigar into the specified tag.
-                if(!myStoreOrig.IsEmpty())
-                {
-                    // Write original cigar.
-                    firstRecord.addTag(myStoreOrig, 'Z', 
-                                        firstRecord.getCigar());
-                }
-                firstRecord.setCigar(newFirstCigar);
-            }
-        }
-        else
-        {
-            // The 2nd clip has lower quality, so clip that.
-            // Check to see if the entire read should be clipped by
-            // checking forward/reverse.
-            if(SamFlag::isReverse(firstFlag) && !SamFlag::isReverse(secondFlag))
-            {
-                // first record is reverse and 2nd is forward, so clip
-                // those extending ends which means clipping all of the
-                // forward(second) strand since it's overlap has lower quality.
-                clipEntire(secondRecord);
-
-                // Soft clip the front of the reverse(first) strand that
-                // extends past the forward strand (secondStart - 1).
-                if(CigarHelper::softClipBeginByRefPos(firstRecord, 
-                                                      secondStart-1,
-                                                      newFirstCigar,
-                                                      newPos)
-                   != CigarHelper::NO_CLIP)
-                {
-                    // Write the original cigar into the specified tag.
-                    if(!myStoreOrig.IsEmpty())
-                    {
-                        // Write original cigar.
-                        firstRecord.addTag(myStoreOrig, 'Z', 
-                                            firstRecord.getCigar());
-                    }
-                    firstRecord.setCigar(newFirstCigar);
-                    secondRecord.set0BasedMatePosition(newPos);
-                    firstRecord.set0BasedPosition(newPos);
-                    secondRecord.set0BasedMatePosition(newPos);
-                 }
-            }
-            else
-            {
-                // No strand specific extended ends clipping is required,
-                // so just clip the overlap.
-                // Write the original cigar into the specified tag.
-                if(!myStoreOrig.IsEmpty())
-                {
-                    // Write original cigar.
-                    secondRecord.addTag(myStoreOrig, 'Z', 
-                                         secondRecord.getCigar());
-                }
-                secondRecord.set0BasedPosition(newPos);
-                firstRecord.set0BasedMatePosition(newPos);
-                secondRecord.setCigar(newSecondCigar);
-            }
-        }
-    }
-    else
-    {
-        // No overlap, but check to verify that the strands are not in
-        // the wrong order, because in that case, they should both be clipped.
-        if(SamFlag::isReverse(firstFlag) && !SamFlag::isReverse(secondFlag))
-        {
-            // first record is reverse and 2nd is forward, which means
-            // the entire reverse record is before the forward one, so
-            // clip them both.
-            clipEntire(firstRecord);
-            clipEntire(secondRecord);
-        }
-    }
-}
-
-
-void ClipOverlap::clipEntire(SamRecord& record)
-{
-    static CigarRoller newCigar; // holds updated cigar.
-
-    // Clip the entire record.
-    if(CigarHelper::softClipEndByRefPos(record, record.get0BasedPosition(),
-                                        newCigar) != CigarHelper::NO_CLIP)
-    { 
-        // Write the original cigar into the specified tag.
-        if(!myStoreOrig.IsEmpty())
-        {
-            // Write original cigar.
-            record.addTag(myStoreOrig, 'Z', record.getCigar());
-        }
-        // Update the cigar.
-        record.setCigar(newCigar);
-    }
-}
-
-
-double ClipOverlap::getAvgQual(SamRecord& record, 
-                               int32_t startPos, int32_t endPos)
-{
-    int32_t qualSum = 0;
-    const char* quality = record.getQuality();
-    int numVals = 0;
-
-    // Check for invalid start position.
-    if((startPos < 0) || ((uint32_t)startPos > strlen(quality)))
-    {
-        // Invalid start position, just return 0.
-        return(0);
-    }
-
-    for(int i = startPos; i <= endPos; i++)
-    {
-        // Check for the null terminator at the end of the quality string.
-        if(quality[i] == 0)
-        {
-            // Qual is shorter than the read, so break.
-            break;
-        }
-        qualSum += quality[i];
-        // increment the number of values.
-        ++numVals;
-    }
-    if(numVals != 0)
-    {
-        return(qualSum/(double)numVals);
-    }
-    else
-    {
-        return(0);
-    }
-}    

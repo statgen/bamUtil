@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011  Regents of the University of Michigan
+ *  Copyright (C) 2011-2012  Regents of the University of Michigan
  *
  *   This program is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@
 #include "SamFile.h"
 #include "MateMapByCoord.h"
 #include "SamCoordOutput.h"
+#include "OverlapHandler.h"
 
 class ClipOverlap : public BamExecutable
 {
@@ -40,39 +41,54 @@ public:
 private:
     static const int DEFAULT_POOL_SIZE = 1000000;
 
-    int clipSortedByReadName(SamFile& samIn, SamFile& outFile);
+    SamStatus::Status handleSortedByReadName(SamFile& samIn,
+                                             SamFile* outFile);
 
-    int clipSortedByCoord(SamFile& samIn, SamFile& outFile, int poolSize);
+    SamStatus::Status handleSortedByCoord(SamFile& samIn,
+                                          SamCoordOutput* outputBufferPtr);
     
-    void handleCoordRead(SamRecord& record, 
-                         MateMapByCoord& mateMap,
-                         SamCoordOutput& outputBuffer);
-
-    // Flush up to the specified chromID/position, or if chromID is -1, flush
-    // everything.
-    bool coordFlush(int32_t chromID, int32_t position,
-                    MateMapByCoord& mateMap, SamCoordOutput& outputBuffer);
+    ///////////////////////////////////////////////////////////////////
+    // Methods to handle Coordinate Specific Processing.
+    
+    // Helper method to get a record ptr if needed and read the record.
+    // returns success or the failure reason.
+    SamStatus::Status readCoordRecord(SamFile& samIn,
+                                      SamRecord** recordPtr,
+                                      MateMapByCoord& mateMap, 
+                                      SamCoordOutput* outputBufferPtr);
 
     // Flush the first record from the mate map if there is one and flush the output buffer
     // up to and including that position (if there was nothing in the mateMap, flush everything).
-    bool forceRecordFlush(MateMapByCoord& mateMap, SamCoordOutput& outputBuffer);
+    bool forceRecordFlush(MateMapByCoord& mateMap, 
+                          SamCoordOutput* outputBufferPtr);
 
-    // Clip overlapping reads and strands that extend past the other strand.
-    void clip(SamRecord& firstRecord, SamRecord& secondRecord);
+    // Flush up to the first record in the mate map, or if it is empty,
+    // flush up to and including the specified position.
+    bool flushOutputBuffer(MateMapByCoord& mateMap,
+                           SamCoordOutput& outputBuffer,
+                           int32_t prevChrom,
+                           int32_t prevPos);
 
-    // Clip an entire read.
-    void clipEntire(SamRecord& record);
+    // Cleanup the mate map up to the specified record. 
+    // If chrom is -1, empty the entire mateMap.
+    void cleanupMateMap(MateMapByCoord& mateMap,
+                        SamCoordOutput* outputBufferPtr,
+                        int32_t chrom = -1, int32_t position = -1);
 
-    // Calculate the average of the qualities at read positions starting at 
-    // startPos and ending with endPos (included).  Stops reading if a 0 is
-    // found, indicating the end of the string.
-    double getAvgQual(SamRecord& record, int32_t startPos, int32_t endPos);
+    ///////////////////////////////////////////////////////////////////
+    // Private Member Data
 
-    String myStoreOrig;
+    SamFileHeader mySamHeader;
+    OverlapHandler* myOverlapHandler;
+    SamRecordPool myPool; // used just for coord reads.
+    bool myOverlapsOnly;
 
-    int myNumMateFailures;
-    int myNumPoolFail;
-    bool myPoolSkipClip;
+    uint32_t myNumMateFailures;
+    uint32_t myNumPoolFail;
+    uint32_t myNumPoolFailNoHandle;
+    uint32_t myNumPoolFailHandled;
+    uint32_t myNumOutOfOrder;
+    bool myPoolSkipOverlap;
 };
 
 #endif

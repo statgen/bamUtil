@@ -216,7 +216,7 @@ int Revert::execute(int argc, char **argv)
 bool Revert::updateCigar(SamRecord& samRecord)
 {
     // Get the OC tag, which is a string.
-    String* oldCigar = samRecord.getStringTag(SamTags::ORIG_CIGAR_TAG);
+    const String* oldCigar = samRecord.getStringTag(SamTags::ORIG_CIGAR_TAG);
     // Get the OP tag, which is an integer.
     int* oldPos = samRecord.getIntegerTag(SamTags::ORIG_POS_TAG);
 
@@ -251,7 +251,7 @@ bool Revert::updateCigar(SamRecord& samRecord)
 bool Revert::updateQual(SamRecord& samRecord)
 {
         // Get the OQ tag, which is a string.
-    String* oldQual = samRecord.getStringTag(SamTags::ORIG_QUAL_TAG);
+    const String* oldQual = samRecord.getStringTag(SamTags::ORIG_QUAL_TAG);
 
     bool status = true;
     if(oldQual != NULL)

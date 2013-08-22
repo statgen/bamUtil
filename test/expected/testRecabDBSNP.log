@@ -1,0 +1,2 @@
+Load dbSNP file 'testFiles/dbsnp1.txt': (as text file) GenomeSequence::populateDBSNP: ignored 1 SNP positions due to invalid format of line.
+DONE!

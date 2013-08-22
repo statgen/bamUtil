@@ -18,8 +18,9 @@
 #include "MateMapByCoord.h"
 #include "SamHelper.h"
 
-MateMapByCoord::MateMapByCoord()
-    : myMateBuffer()
+MateMapByCoord::MateMapByCoord(bool mateCoord)
+    : myMateBuffer(),
+      myMateCoord(mateCoord)
 {
 }
 
@@ -36,9 +37,21 @@ SamRecord* MateMapByCoord::getMate(SamRecord& record)
     const char* readName = record.getReadName();
 
     // Get the key for finding this mate (its chrom/pos).
-    uint64_t mateKey =
-        SamHelper::combineChromPos(record.getMateReferenceID(), 
-                                   record.get0BasedMatePosition());
+    uint64_t mateKey;
+    if(myMateCoord)
+    {
+        // Since the record's are stored by the mate coordinate, 
+        // search the map using the passed in record's coordinate.
+        mateKey = SamHelper::combineChromPos(record.getReferenceID(), 
+                                             record.get0BasedPosition());
+    }
+    else
+    {
+        // Since the record's are stored by the record's coordinate, 
+        // search the map using the passed in record's mate coordinate.
+        mateKey = SamHelper::combineChromPos(record.getMateReferenceID(), 
+                                         record.get0BasedMatePosition());
+    }
 
     std::pair<MATE_MAP::iterator,MATE_MAP::iterator> matches;
 
@@ -58,15 +71,24 @@ SamRecord* MateMapByCoord::getMate(SamRecord& record)
             break;
         }
     }
-
     return(mate);
 }
 
 
 void MateMapByCoord::add(SamRecord& record)
 {
-    uint64_t chromPos = SamHelper::combineChromPos(record.getReferenceID(),
-                                                   record.get0BasedPosition());
+    uint64_t chromPos;
+
+    if(myMateCoord)
+    {
+        chromPos = SamHelper::combineChromPos(record.getMateReferenceID(),
+                                              record.get0BasedMatePosition());
+    }
+    else
+    {
+        chromPos = SamHelper::combineChromPos(record.getReferenceID(),
+                                              record.get0BasedPosition());
+    }
 
     myMateBuffer.insert(MATE_MAP_PAIR(chromPos, &record));
 }
