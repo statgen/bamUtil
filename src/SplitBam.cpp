@@ -86,7 +86,7 @@ void SplitBam::usage()
   std::cerr << "Optional arguments:" << std::endl;
   std::cerr << "-L/--log [logFile]  : log file name. default is listFile.log" << std::endl;
   std::cerr << "-v/--verbose : turn on verbose mode" << std::endl;
-  std::cerr << "-n/--noeof : turn on verbose mode" << std::endl;
+  std::cerr << "-n/--noeof : turn off the check fo an EOF block at the end of a bam file" << std::endl;
 }
 
 // main function
