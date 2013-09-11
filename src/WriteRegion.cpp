@@ -81,9 +81,13 @@ void WriteRegion::usage()
     std::cerr << "\t\t--withinReg : only print reads fully enclosed within the region." << std::endl;
     std::cerr << "\t\t--readName  : only print reads with this read name." << std::endl;
     std::cerr << "\tOptional Parameters For Other Operations:\n";
-    std::cerr << "\t\t--lshift    : left shift indels when writing records\n";
-    std::cerr << "\t\t--params    : print the parameter settings" << std::endl;
-    std::cerr << "\t\t--noeof     : do not expect an EOF block on a bam file." << std::endl;
+    std::cerr << "\t\t--lshift        : left shift indels when writing records\n";
+    std::cerr << "\t\t--excludeFlags  : Skip any records with any of the specified flags set\n";
+    std::cerr << "\t\t                  (specify an integer representation of the flags)\n";
+    std::cerr << "\t\t--requiredFlags : Only process records with all of the specified flags set\n";
+    std::cerr << "\t\t                  (specify an integer representation of the flags)\n";
+    std::cerr << "\t\t--params        : print the parameter settings" << std::endl;
+    std::cerr << "\t\t--noeof         : do not expect an EOF block on a bam file." << std::endl;
     std::cerr << std::endl;
 }
 
@@ -107,6 +111,8 @@ int WriteRegion::execute(int argc, char **argv)
     bool lshift = false;
     bool noeof = false;
     bool params = false;
+    String excludeFlags = "";
+    String requiredFlags = "";
     myWithinReg = false;
     myWroteReg = false;
 
@@ -126,6 +132,8 @@ int WriteRegion::execute(int argc, char **argv)
         LONG_STRINGPARAMETER("readName", &readName)
         LONG_PARAMETER_GROUP("Optional Other Parameters")
         LONG_PARAMETER("lshift", &lshift)
+        LONG_STRINGPARAMETER("excludeFlags", &excludeFlags)
+        LONG_STRINGPARAMETER("requiredFlags", &requiredFlags)
         LONG_PARAMETER("noeof", &noeof)
         LONG_PARAMETER("params", &params)
         END_LONG_PARAMETERS();
@@ -199,6 +207,8 @@ int WriteRegion::execute(int argc, char **argv)
 
     // Open the file for reading.   
     mySamIn.OpenForRead(inFile);
+
+    mySamIn.SetReadFlags(requiredFlags.AsInteger(), excludeFlags.AsInteger());
 
     // Open the output file for writing.
     SamFile samOut;
