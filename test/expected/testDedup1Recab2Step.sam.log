@@ -1,5 +1,5 @@
 Initialize errormodel structure...
-Start iterating SAM/BAM file results/testDedup.sam
+Start iterating SAM/BAM file results/testDedup1.sam
 Start: TIME
 
 Open reference
@@ -15,14 +15,14 @@ WARNING: INVALID_GENOME_INDEX (chrom:pos MT:178) and record skipped... Reference
 WARNING: INVALID_GENOME_INDEX (chrom:pos MT:178) and record skipped... Reference in BAM is different from the ref used here!
 End: TIME
 
-# mapped Reads observed: 21; Q>0: 10
+# mapped Reads observed: 24; Q>0: 11
 # unmapped Reads observed: 0
-# Secondary Reads skipped: 0
-# Duplicate Reads skipped: 16
-# Mapping Quality 0 Reads skipped: 11
+# Secondary Reads skipped: 3
+# Duplicate Reads skipped: 10
+# Mapping Quality 0 Reads skipped: 13
 # Mapping Quality 255 Reads skipped: 0
-# Bases observed: 12 - #match: 5; #mismatch: 7
-# Bases Skipped for DBSNP: 0, for Map Qual = 0: 11, for MapQual = 255: 0, for BaseQual < 5: 0
-Writing recalibration table results/testDedupRecab2Step.sam.qemp
-Writing recalibrated file results/testDedupRecab2Step.sam
+# Bases observed: 18 - #match: 7; #mismatch: 11
+# Bases Skipped for DBSNP: 0, for Map Qual = 0: 13, for MapQual = 255: 0, for BaseQual < 5: 0
+Writing recalibration table results/testDedup1Recab2Step.sam.qemp
+Writing recalibrated file results/testDedup1Recab2Step.sam
 Recalibration successfully finished

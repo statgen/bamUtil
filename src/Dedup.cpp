@@ -196,6 +196,7 @@ int Dedup::execute(int argc, char** argv)
     uint32_t unmappedCount = 0;
     uint32_t reverseCount = 0;
     uint32_t qualCheckFailCount = 0;
+    uint32_t secondaryCount = 0;
 
     // Now we start reading records
     SamRecord* recordPtr;
@@ -242,6 +243,13 @@ int Dedup::execute(int argc, char** argv)
             ++unmappedCount;
             // Unmapped, nothing more to do with this record, so
             // release the pointer.
+            mySamPool.releaseRecord(recordPtr);
+        }
+        else if(SamFlag::isSecondary(flag))
+        {
+            // Do not process secondary records, so 
+            // release the pointer.
+            ++secondaryCount;
             mySamPool.releaseRecord(recordPtr);
         }
         else

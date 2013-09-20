@@ -9,6 +9,7 @@ End: TIME
 
 # mapped Reads observed: 115; Q>0: 115
 # unmapped Reads observed: 0
+# Secondary Reads skipped: 0
 # Duplicate Reads skipped: 0
 # Mapping Quality 0 Reads skipped: 0
 # Mapping Quality 255 Reads skipped: 0

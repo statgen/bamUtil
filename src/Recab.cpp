@@ -56,6 +56,7 @@ Recab::Recab()
     myBMatchCount = 0;
     mySubMinQual = 0;
     myNumDBSnpSkips = 0;
+    mySecondaryCount = 0;
     myDupCount = 0;
     myMapQual0Count = 0;
     myMapQual255Count = 0;
@@ -327,6 +328,12 @@ bool Recab::processReadBuildTable(SamRecord& samRecord)
     uint16_t  flag = samRecord.getFlag();
 
     // Skip Duplicates.
+    if(SamFlag::isSecondary(flag))
+    {
+        // Secondary read, skip processing
+        mySecondaryCount++;
+        return(false);
+    }
     if(SamFlag::isDuplicate(flag))
     {
         myDupCount++;
@@ -700,6 +707,7 @@ void Recab::modelFitPrediction(const char* outputBase)
 {
     Logger::gLogger->writeLog("# mapped Reads observed: %ld; Q>0: %ld", myMappedCount, myMappedCountQ);
     Logger::gLogger->writeLog("# unmapped Reads observed: %ld", myUnMappedCount);
+    Logger::gLogger->writeLog("# Secondary Reads skipped: %ld", mySecondaryCount);
     Logger::gLogger->writeLog("# Duplicate Reads skipped: %ld", myDupCount);
     Logger::gLogger->writeLog("# Mapping Quality 0 Reads skipped: %ld", myMapQual0Count);
     Logger::gLogger->writeLog("# Mapping Quality 255 Reads skipped: %ld", myMapQual255Count);

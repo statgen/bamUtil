@@ -27,6 +27,7 @@
 #include "DumpIndex.h"
 #include "ReadIndexedBam.h"
 #include "DumpRefInfo.h"
+#include "ExplainFlags.h"
 #include "Filter.h"
 #include "ReadReference.h"
 #include "Revert.h"
@@ -77,6 +78,7 @@ void Usage()
     DumpRefInfo::dumpRefInfoDescription();
     DumpIndex::dumpIndexDescription();
     ReadReference::readReferenceDescription();
+    ExplainFlags::explainFlagsDescription();
 
     std::cerr << "\nAdditional Tools\n";
     Bam2FastQ::bam2FastQDescription();
@@ -131,6 +133,10 @@ int main(int argc, char ** argv)
     else if(strcmp(argv[1], "dumpRefInfo") == 0)
     {
         bamExe = new DumpRefInfo();
+    }
+    else if(strcmp(argv[1], "explainFlags") == 0)
+    {
+        bamExe = new ExplainFlags();
     }
     else if(strcmp(argv[1], "filter") == 0)
     {

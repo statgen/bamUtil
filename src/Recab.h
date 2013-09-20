@@ -96,6 +96,7 @@ private:
     uint64_t myZeroMapQualCount;
     uint64_t mySubMinQual;
     uint64_t myNumDBSnpSkips;
+    uint64_t mySecondaryCount;
     uint64_t myDupCount;
     uint64_t myMapQual0Count;
     uint64_t myMapQual255Count;
