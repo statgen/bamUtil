@@ -1,5 +1,5 @@
 Initialize errormodel structure...
-Start iterating SAM/BAM file results/testDedup1.sam
+Start iterating SAM/BAM file results/testDedup2Force.sam
 Start: TIME
 
 Open reference
@@ -26,8 +26,8 @@ Total # Reads skipped for building recab table: 34
 Total # Reads used for building recab table: 3
 # Bases observed: 18 - #match: 7; #mismatch: 11
 # Bases Skipped for DBSNP: 0, for BaseQual < 5: 0
-Writing recalibration table results/testDedup1Recab2Step.sam.qemp
-Writing recalibrated file results/testDedup1Recab2Step.sam
+Writing recalibration table results/testDedup2ForceRecab2Step.sam.qemp
+Writing recalibrated file results/testDedup2ForceRecab2Step.sam
 Total # Reads recab table not applied to: 0
 Total # Reads recab table applied to: 37
 Recalibration successfully finished

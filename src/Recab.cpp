@@ -46,22 +46,31 @@ Recab::Recab()
       myRefFile(""),
       myDbsnpFile(""),
       myQField(""),
-      myStoreQualTag("")
+      myStoreQualTag(""),
+      myBuildExcludeFlags("0x0704"),
+      myApplyExcludeFlags("0x0000"),
+      myIntBuildExcludeFlags(0),
+      myIntApplyExcludeFlags(0)
 {
-    myBasecounts = 0;
     myMappedCount = 0;
     myUnMappedCount = 0;
-    myMappedCountQ = 0;
-    myBMismatchCount = 0;
-    myBMatchCount = 0;
-    mySubMinQual = 0;
-    myNumDBSnpSkips = 0;
     mySecondaryCount = 0;
     myDupCount = 0;
+    myQCFailCount = 0;
     myMapQual0Count = 0;
     myMapQual255Count = 0;
-    myBlendedWeight = 0;
+    myNumBuildSkipped = 0;
+    myNumBuildReads = 0;
+    myNumApplySkipped = 0;
+    myNumApplyReads = 0;
     myNumQualTagErrors = 0;
+    myNumDBSnpSkips = 0;
+    mySubMinQual = 0;
+    myBMatchCount = 0;
+    myBMismatchCount = 0;
+    myBasecounts = 0;
+
+    myBlendedWeight = 0;
     myFitModel = false;
     myFast = false;
     myKeepPrevDbsnp = false;
@@ -110,7 +119,7 @@ void Recab::usage()
 
 void Recab::recabSpecificUsageLine()
 {
-    std::cerr << "--refFile <ReferenceFile> [--dbsnp <dbsnpFile>] [--minBaseQual <minBaseQual>] [--maxBaseQual <maxBaseQual>] [--blended <weight>] [--fitModel] [--fast] [--keepPrevDbsnp] [--keepPrevNonAdjacent] [--useLogReg]";
+    std::cerr << "--refFile <ReferenceFile> [--dbsnp <dbsnpFile>] [--minBaseQual <minBaseQual>] [--maxBaseQual <maxBaseQual>] [--blended <weight>] [--fitModel] [--fast] [--keepPrevDbsnp] [--keepPrevNonAdjacent] [--useLogReg] [--qualField <tag>] [--storeQualTag <tag>] [--buildExcludeFlags <flag>] [--applyExcludeFlags <flag>]";
 }
 
 void Recab::recabSpecificUsage()
@@ -141,7 +150,9 @@ void Recab::recabSpecificUsage()
     std::cerr << "\t--qualField <quality tag>     : tag to get the starting base quality\n";
     std::cerr << "\t                                (default is to get it from the Quality field)" << std::endl;
     std::cerr << "\t--storeQualTag <quality tag>  : tag to store the previous quality into" << std::endl;
-
+    std::cerr << "\t--buildExcludeFlags <flag>    : exclude reads with any of these flags set when building the" << std::endl;
+    std::cerr << "\t                                recalibration table" << std::endl;
+    std::cerr << "\t--applyExcludeFlags <flag>    : do not apply the recalibration table to any reads with any of these flags set" << std::endl;
 }
 
 
@@ -284,6 +295,8 @@ int Recab::execute(int argc, char *argv[])
         samOut.WriteRecord(samHeader, samRecord);
     }
 
+    Logger::gLogger->writeLog("Total # Reads recab table not applied to: %ld", myNumApplySkipped);
+    Logger::gLogger->writeLog("Total # Reads recab table applied to: %ld", myNumApplyReads);
     Logger::gLogger->writeLog("Recalibration successfully finished");
     return EXIT_SUCCESS;
 }
@@ -305,6 +318,8 @@ void Recab::addRecabSpecificParameters(LongParamContainer& params)
     params.addBool("useLogReg", &myLogReg);
     params.addString("qualField", &myQField);
     params.addString("storeQualTag", &myStoreQualTag);
+    params.addString("buildExcludeFlags", &myBuildExcludeFlags);
+    params.addString("applyExcludeFlags", &myApplyExcludeFlags);
     myParamsSetup = false;
 }
 
@@ -327,41 +342,53 @@ bool Recab::processReadBuildTable(SamRecord& samRecord)
 
     uint16_t  flag = samRecord.getFlag();
 
-    // Skip Duplicates.
-    if(SamFlag::isSecondary(flag))
-    {
-        // Secondary read, skip processing
-        mySecondaryCount++;
-        return(false);
-    }
-    if(SamFlag::isDuplicate(flag))
-    {
-        myDupCount++;
-        return(false);
-    }
     if(!SamFlag::isMapped(flag))
     {
         // Unmapped, skip processing
-        myUnMappedCount++;
+        ++myUnMappedCount;
+    }
+    else
+    {
+        // This read is mapped.
+        ++myMappedCount;
+    }
+
+    if(SamFlag::isSecondary(flag))
+    {
+        // Secondary read
+        ++mySecondaryCount;
+    }
+    if(SamFlag::isDuplicate(flag))
+    {
+        ++myDupCount;
+    }
+    if(SamFlag::isQCFailure(flag))
+    {
+        ++myQCFailCount;
+    }
+
+    // Check if the flag contains an exclude.
+    if((flag & myIntBuildExcludeFlags) != 0)
+    {
+        // Do not use this read for building the recalibration table.
+        ++myNumBuildSkipped;
         return(false);
     }
-    // This read is not a duplicate and is mapped.
-    myMappedCount++;
 
     if(samRecord.getMapQuality() == 0)
     {
         // 0 mapping quality, so skip processing.
-        myMapQual0Count++;
+        ++myMapQual0Count;
+        ++myNumBuildSkipped;
         return(false);
     }
     if(samRecord.getMapQuality() == 255)
     {
         // 255 mapping quality, so skip processing.
-        myMapQual255Count++;
+        ++myMapQual255Count;
+        ++myNumBuildSkipped;
         return(false);
     }
-    // quality>0 & mapped.
-    myMappedCountQ++;
     
     chromosomeName = samRecord.getReferenceName();
     readGroup = samRecord.getString("RG").c_str();
@@ -399,6 +426,8 @@ bool Recab::processReadBuildTable(SamRecord& samRecord)
     if(mapPos==INVALID_GENOME_INDEX)
     {
     	Logger::gLogger->warning("INVALID_GENOME_INDEX (chrom:pos %s:%ld) and record skipped... Reference in BAM is different from the ref used here!", chromosomeName.c_str(), samRecord.get1BasedPosition());
+
+        ++myNumBuildSkipped;
         return false;
     }
 
@@ -433,6 +462,7 @@ bool Recab::processReadBuildTable(SamRecord& samRecord)
     if(myQualityStrings.oldq.length() != (unsigned int)seqLen)
     {
         Logger::gLogger->warning("Quality is not the correct length, so skipping recalibration on that record.");
+        ++myNumBuildSkipped;
         return(false);
     }
 
@@ -442,8 +472,12 @@ bool Recab::processReadBuildTable(SamRecord& samRecord)
     if(cigarPtr == NULL)
     {
         Logger::gLogger->warning("Failed to get the cigar");
+        ++myNumBuildSkipped;
         return(false);
     }
+
+    // This read will be used for building the recab table.
+    ++myNumBuildReads;
 
     ////////////////
     ////// iterate sequence
@@ -584,6 +618,15 @@ bool Recab::processReadApplyTable(SamRecord& samRecord)
     int seqLen = samRecord.getReadLength();
 
     uint16_t  flag = samRecord.getFlag();
+
+    // Check if the flag contains an exclude.
+    if((flag & myIntApplyExcludeFlags) != 0)
+    {
+        // Do not apply the recalibration table to this read.
+        ++myNumApplySkipped;
+        return(false);
+    }
+    ++myNumApplyReads;
    
     readGroup = samRecord.getString("RG").c_str();
 
@@ -705,16 +748,20 @@ bool Recab::processReadApplyTable(SamRecord& samRecord)
 
 void Recab::modelFitPrediction(const char* outputBase)
 {
-    Logger::gLogger->writeLog("# mapped Reads observed: %ld; Q>0: %ld", myMappedCount, myMappedCountQ);
+    Logger::gLogger->writeLog("# mapped Reads observed: %ld", myMappedCount);
     Logger::gLogger->writeLog("# unmapped Reads observed: %ld", myUnMappedCount);
-    Logger::gLogger->writeLog("# Secondary Reads skipped: %ld", mySecondaryCount);
-    Logger::gLogger->writeLog("# Duplicate Reads skipped: %ld", myDupCount);
+    Logger::gLogger->writeLog("# Secondary Reads observed: %ld", mySecondaryCount);
+    Logger::gLogger->writeLog("# Duplicate Reads observed: %ld", myDupCount);
+    Logger::gLogger->writeLog("# QC Failure Reads observed: %ld", myQCFailCount);
     Logger::gLogger->writeLog("# Mapping Quality 0 Reads skipped: %ld", myMapQual0Count);
     Logger::gLogger->writeLog("# Mapping Quality 255 Reads skipped: %ld", myMapQual255Count);
+    Logger::gLogger->writeLog("Total # Reads skipped for building recab table: %ld", myNumBuildSkipped);
+    Logger::gLogger->writeLog("Total # Reads used for building recab table: %ld", myNumBuildReads);
+
     Logger::gLogger->writeLog("# Bases observed: %ld - #match: %ld; #mismatch: %ld",
                               myBasecounts, myBMatchCount, myBMismatchCount);
-    Logger::gLogger->writeLog("# Bases Skipped for DBSNP: %ld, for Map Qual = 0: %ld, for MapQual = 255: %ld, for BaseQual < %ld: %ld", 
-                              myNumDBSnpSkips, myMapQual0Count, myMapQual255Count, myMinBaseQual, mySubMinQual);
+    Logger::gLogger->writeLog("# Bases Skipped for DBSNP: %ld, for BaseQual < %ld: %ld", 
+                              myNumDBSnpSkips, myMinBaseQual, mySubMinQual);
     if(myNumQualTagErrors != 0)
     {
         Logger::gLogger->warning("%ld records did not have tag %s or it was invalid, so the quality field was used for those records.", myNumQualTagErrors, myQField.c_str());
@@ -797,6 +844,9 @@ void Recab::processParams()
 
     HashErrorModel::setUseLogReg(myLogReg);
     HashErrorModel::setUseFast(myFast);
+
+    myIntBuildExcludeFlags = myBuildExcludeFlags.AsInteger();
+    myIntApplyExcludeFlags = myApplyExcludeFlags.AsInteger();
 
     myParamsSetup = true;
 }

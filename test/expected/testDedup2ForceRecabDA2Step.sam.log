@@ -1,13 +1,17 @@
 Initialize errormodel structure...
-Start iterating SAM/BAM file results/testDedup1.sam
+Start iterating SAM/BAM file results/testDedup2Force.sam
 Start: TIME
 
 Open reference
 Done! Sequence length 15240
 No dbSNP File
 WARNING: INVALID_GENOME_INDEX (chrom:pos 4:162) and record skipped... Reference in BAM is different from the ref used here!
+WARNING: INVALID_GENOME_INDEX (chrom:pos 4:162) and record skipped... Reference in BAM is different from the ref used here!
+WARNING: INVALID_GENOME_INDEX (chrom:pos 5:62) and record skipped... Reference in BAM is different from the ref used here!
 WARNING: INVALID_GENOME_INDEX (chrom:pos 5:62) and record skipped... Reference in BAM is different from the ref used here!
 WARNING: INVALID_GENOME_INDEX (chrom:pos 5:64) and record skipped... Reference in BAM is different from the ref used here!
+WARNING: INVALID_GENOME_INDEX (chrom:pos 5:65) and record skipped... Reference in BAM is different from the ref used here!
+WARNING: INVALID_GENOME_INDEX (chrom:pos 6:64) and record skipped... Reference in BAM is different from the ref used here!
 WARNING: INVALID_GENOME_INDEX (chrom:pos 6:65) and record skipped... Reference in BAM is different from the ref used here!
 WARNING: INVALID_GENOME_INDEX (chrom:pos MT:1) and record skipped... Reference in BAM is different from the ref used here!
 WARNING: INVALID_GENOME_INDEX (chrom:pos MT:1) and record skipped... Reference in BAM is different from the ref used here!
@@ -20,14 +24,14 @@ End: TIME
 # Secondary Reads observed: 3
 # Duplicate Reads observed: 10
 # QC Failure Reads observed: 0
-# Mapping Quality 0 Reads skipped: 13
+# Mapping Quality 0 Reads skipped: 21
 # Mapping Quality 255 Reads skipped: 0
-Total # Reads skipped for building recab table: 34
-Total # Reads used for building recab table: 3
-# Bases observed: 18 - #match: 7; #mismatch: 11
+Total # Reads skipped for building recab table: 33
+Total # Reads used for building recab table: 4
+# Bases observed: 23 - #match: 10; #mismatch: 13
 # Bases Skipped for DBSNP: 0, for BaseQual < 5: 0
-Writing recalibration table results/testDedup1Recab2Step.sam.qemp
-Writing recalibrated file results/testDedup1Recab2Step.sam
-Total # Reads recab table not applied to: 0
-Total # Reads recab table applied to: 37
+Writing recalibration table results/testDedup2ForceRecabDA2Step.sam.qemp
+Writing recalibrated file results/testDedup2ForceRecabDA2Step.sam
+Total # Reads recab table not applied to: 3
+Total # Reads recab table applied to: 34
 Recalibration successfully finished

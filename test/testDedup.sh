@@ -63,6 +63,93 @@ let "status |= $?"
 sort results/testDedup1Recab2Step.sam.qemp | diff - expected/testDedup1Recab.sam.qemp
 let "status |= $?"
 
+../bin/bam dedup --in testFiles/testDedup2.sam --out results/testDedup2Force.sam --force 2> results/testDedup2Force.txt
+let "status |= $?"
+diff results/testDedup2Force.txt expected/testDedup.txt
+let "status |= $?"
+diff results/testDedup2Force.sam expected/testDedup1.sam
+let "status |= $?"
+diff results/testDedup2Force.sam.log expected/testDedup2Force.sam.log
+let "status |= $?"
+
+../bin/bam dedup --in testFiles/testDedup2.sam --out results/testDedup2Exclude.sam --excludeFlags 0x704 2> results/testDedup2Exclude.txt
+let "status |= $?"
+diff results/testDedup2Exclude.txt expected/testDedup.txt
+let "status |= $?"
+diff results/testDedup2Exclude.sam expected/testDedup2Exclude.sam
+let "status |= $?"
+diff results/testDedup2Exclude.sam.log expected/testDedup2Exclude.sam.log
+let "status |= $?"
+
+../bin/bam recab --in results/testDedup2Force.sam --out results/testDedup2ForceRecab2Step.sam --refFile testFiles/ref_partial.fa 2> results/testDedup2ForceRecab2Step.txt
+let "status |= $?"
+diff results/testDedup2ForceRecab2Step.txt expected/empty.txt
+let "status |= $?"
+diff results/testDedup2ForceRecab2Step.sam expected/testDedup1Recab.sam
+let "status |= $?"
+diff -I "Start: .*" -I "End: .*" results/testDedup2ForceRecab2Step.sam.log expected/testDedup2ForceRecab2Step.sam.log
+let "status |= $?"
+sort results/testDedup2ForceRecab2Step.sam.qemp | diff - expected/testDedup1Recab.sam.qemp
+let "status |= $?"
+
+../bin/bam dedup --recab --in testFiles/testDedup2.sam --force --out results/testDedup2ForceRecab.sam --refFile testFiles/ref_partial.fa 2> results/testDedup2ForceRecab.txt
+let "status |= $?"
+diff results/testDedup2ForceRecab.txt expected/testDedup.txt
+let "status |= $?"
+diff results/testDedup2ForceRecab.sam expected/testDedup1Recab.sam
+let "status |= $?"
+diff -I "Start: .*" -I "End: .*" results/testDedup2ForceRecab.sam.log expected/testDedup2ForceRecab.sam.log
+let "status |= $?"
+sort results/testDedup2ForceRecab.sam.qemp | diff - expected/testDedup1Recab.sam.qemp
+let "status |= $?"
+
+../bin/bam recab --in results/testDedup2Force.sam --out results/testDedup2ForceRecabD2Step.sam --refFile testFiles/ref_partial.fa --buildExclude 0x204 2> results/testDedup2ForceRecabD2Step.txt
+let "status |= $?"
+diff results/testDedup2ForceRecabD2Step.txt expected/empty.txt
+let "status |= $?"
+diff results/testDedup2ForceRecabD2Step.sam expected/testDedup2ForceRecabD.sam
+let "status |= $?"
+diff -I "Start: .*" -I "End: .*" results/testDedup2ForceRecabD2Step.sam.log expected/testDedup2ForceRecabD2Step.sam.log
+let "status |= $?"
+sort results/testDedup2ForceRecabD2Step.sam.qemp | diff - expected/testDedup2ForceRecabD.sam.qemp
+let "status |= $?"
+
+../bin/bam dedup --recab --force --in testFiles/testDedup2.sam --out results/testDedup2ForceRecabD.sam --refFile testFiles/ref_partial.fa --buildExclude 0x204 2> results/testDedup2ForceRecabD.txt
+let "status |= $?"
+diff results/testDedup2ForceRecabD.txt expected/testDedup.txt
+let "status |= $?"
+diff results/testDedup2ForceRecabD.sam expected/testDedup2ForceRecabD.sam
+let "status |= $?"
+diff -I "Start: .*" -I "End: .*" results/testDedup2ForceRecabD.sam.log expected/testDedup2ForceRecabD.sam.log
+let "status |= $?"
+sort results/testDedup2ForceRecabD.sam.qemp | diff - expected/testDedup2ForceRecabD.sam.qemp
+let "status |= $?"
+
+../bin/bam dedup --recab --force --in testFiles/testDedup2.sam --out results/testDedup2ForceRecabDA.sam --refFile testFiles/ref_partial.fa --excludeFlags 0x304 --buildExclude 0x204 --applyExclude 0x304 2> results/testDedup2ForceRecabDA.txt
+let "status |= $?"
+diff results/testDedup2ForceRecabDA.txt expected/testDedup.txt
+let "status |= $?"
+diff results/testDedup2ForceRecabDA.sam expected/testDedup2ForceRecabDA.sam
+let "status |= $?"
+diff -I "Start: .*" -I "End: .*" results/testDedup2ForceRecabDA.sam.log expected/testDedup2ForceRecabDA.sam.log
+let "status |= $?"
+sort results/testDedup2ForceRecabDA.sam.qemp | diff - expected/testDedup2ForceRecabD.sam.qemp
+let "status |= $?"
+
+../bin/bam recab --in results/testDedup2Force.sam --out results/testDedup2ForceRecabDA2Step.sam --refFile testFiles/ref_partial.fa --buildExclude 0x204 --applyExclude 0x304 2> results/testDedup2ForceRecabDA2Step.txt
+let "status |= $?"
+diff results/testDedup2ForceRecabDA2Step.txt expected/empty.txt
+let "status |= $?"
+diff results/testDedup2ForceRecabDA2Step.sam expected/testDedup2ForceRecabDA.sam
+let "status |= $?"
+diff -I "Start: .*" -I "End: .*" results/testDedup2ForceRecabDA2Step.sam.log expected/testDedup2ForceRecabDA2Step.sam.log
+let "status |= $?"
+sort results/testDedup2ForceRecabDA2Step.sam.qemp | diff - expected/testDedup2ForceRecabD.sam.qemp
+let "status |= $?"
+
+
+
+
 if [ $status != 0 ]
 then
   echo failed testDedup.sh

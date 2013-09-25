@@ -75,7 +75,7 @@ void Dedup::description()
 
 void Dedup::usage()
 {
-    std::cerr << "Usage: ./bam dedup --in <InputBamFile> --out <OutputBamFile> [--minQual <minPhred>] [--log <logFile>] [--oneChrom] [--rmDups] [--force] [--verbose] [--noeof] [--params] [--recab] ";
+    std::cerr << "Usage: ./bam dedup --in <InputBamFile> --out <OutputBamFile> [--minQual <minPhred>] [--log <logFile>] [--oneChrom] [--rmDups] [--force] [--excludeFlags <flag>] [--verbose] [--noeof] [--params] [--recab] ";
     myRecab.recabSpecificUsageLine();
     std::cerr << std::endl << std::endl;
     std::cerr << "Required parameters :" << std::endl;
@@ -90,6 +90,8 @@ void Dedup::usage()
     std::cerr << "\t--force         : Allow an already mark-duplicated BAM file, unmarking any previously marked " << std::endl;
     std::cerr << "\t                  duplicates and apply this duplicate marking logic.  Default is to throw errors" << std::endl;
     std::cerr << "\t                  and exit when trying to run on an already mark-duplicated BAM" << std::endl;
+    std::cerr << "\t--excludeFlags <flag>    : exclude reads with any of these flags set when determining or marking duplicates" << std::endl;
+    std::cerr << "\t                           by default (0x304): exclude unmapped, secondary reads, and QC failures" << std::endl;
     std::cerr << "\t--verbose       : Turn on verbose mode" << std::endl;
     std::cerr << "\t--noeof         : Do not expect an EOF block on a bam file." << std::endl;
     std::cerr << "\t--params        : Print the parameter settings" << std::endl;
@@ -110,6 +112,8 @@ int Dedup::execute(int argc, char** argv)
     myForceFlag = false;
     myNumMissingMate = 0;
     myMinQual = DEFAULT_MIN_QUAL;
+    String excludeFlags = "0x304";
+    uint16_t intExcludeFlags = 0;
     bool noeof = false;
     bool params = false;
     LongParamContainer parameters;
@@ -123,6 +127,7 @@ int Dedup::execute(int argc, char** argv)
     parameters.addBool("recab", &myDoRecab);
     parameters.addBool("rmDups", &removeFlag);
     parameters.addBool("force", &myForceFlag);
+    parameters.addString("excludeFlags", &excludeFlags);
     parameters.addBool("verbose", &verboseFlag);
     parameters.addBool("noeof", &noeof);
     parameters.addBool("params", &params);
@@ -155,6 +160,17 @@ int Dedup::execute(int argc, char** argv)
         usage();
         inputParameters.Status();
         std::cerr << "Specify an output file" << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    intExcludeFlags = excludeFlags.AsInteger();
+
+    if(myForceFlag && SamFlag::isDuplicate(intExcludeFlags))
+    {
+        usage();
+        inputParameters.Status();
+        std::cerr << "Cannot specify --force and Duplicate in the excludeFlags.  Since --force indicates to override"
+                  << " previous duplicate setting and the excludeFlags says to skip those, you can't do both.\n";
         return EXIT_FAILURE;
     }
 
@@ -197,6 +213,7 @@ int Dedup::execute(int argc, char** argv)
     uint32_t reverseCount = 0;
     uint32_t qualCheckFailCount = 0;
     uint32_t secondaryCount = 0;
+    uint32_t excludedCount = 0;
 
     // Now we start reading records
     SamRecord* recordPtr;
@@ -220,11 +237,8 @@ int Dedup::execute(int argc, char** argv)
         if(SamFlag::isProperPair(flag)) ++properPairCount;
         if(SamFlag::isReverse(flag))    ++reverseCount;
         if(SamFlag::isQCFailure(flag))  ++qualCheckFailCount;
-        if(SamFlag::isDuplicate(flag) && !myForceFlag)
-        {
-            Logger::gLogger->error("There are records already duplicate marked.");
-            Logger::gLogger->error("Use -f to clear the duplicate flag and start the deduping procedure over");
-        }
+        if(SamFlag::isSecondary(flag))  ++secondaryCount;
+        if(!SamFlag::isMapped(flag))    ++unmappedCount;
 
         // put the record in the appropriate maps:
         //   single reads go in myFragmentMap
@@ -237,23 +251,29 @@ int Dedup::execute(int argc, char** argv)
             cleanupPriorReads(recordPtr);
         }
 
-        // Deduping is only for mapped reads.
-        if(!SamFlag::isMapped(flag))
+        // Determine if this read should be checked for duplicates.
+        if((!SamFlag::isMapped(flag)) || ((flag & intExcludeFlags) != 0))
         {
-            ++unmappedCount;
-            // Unmapped, nothing more to do with this record, so
+            ++excludedCount;
+
+            // No deduping done on this record, but still build the recab table.
+            if(myDoRecab)
+            {
+                myRecab.processReadBuildTable(*recordPtr);
+            }
+            // Nothing more to do with this record, so
             // release the pointer.
-            mySamPool.releaseRecord(recordPtr);
-        }
-        else if(SamFlag::isSecondary(flag))
-        {
-            // Do not process secondary records, so 
-            // release the pointer.
-            ++secondaryCount;
             mySamPool.releaseRecord(recordPtr);
         }
         else
         {
+            if(SamFlag::isDuplicate(flag) && !myForceFlag)
+            {
+                // Error: Marked duplicates, and duplicates aren't excluded.
+                Logger::gLogger->error("There are records already duplicate marked.");
+                Logger::gLogger->error("Use -f to clear the duplicate flag and start the deduping procedure over");
+            }
+
             checkDups(*recordPtr, recordCount);
         }
         // let the user know we're not napping
@@ -279,18 +299,22 @@ int Dedup::execute(int argc, char** argv)
                               pairedCount);
     Logger::gLogger->writeLog("Total number of properly paired reads: %u",
                               properPairCount);
-    Logger::gLogger->writeLog("Total number of unmapped reads : %u",
+    Logger::gLogger->writeLog("Total number of unmapped reads: %u",
                               unmappedCount);
     Logger::gLogger->writeLog("Total number of reverse strand mapped reads: %u",
                               reverseCount);
-    Logger::gLogger->writeLog("Total number of QC-failed reads : %u",
+    Logger::gLogger->writeLog("Total number of QC-failed reads: %u",
                               qualCheckFailCount);
-    Logger::gLogger->writeLog("Size of singleKeyMap (must be zero) : %u",
+    Logger::gLogger->writeLog("Total number of secondary reads: %u",
+                              secondaryCount);
+    Logger::gLogger->writeLog("Size of singleKeyMap (must be zero): %u",
                               myFragmentMap.size());
-    Logger::gLogger->writeLog("Size of pairedKeyMap (must be zero) : %u",
+    Logger::gLogger->writeLog("Size of pairedKeyMap (must be zero): %u",
                               myPairedMap.size());
     Logger::gLogger->writeLog("Total number of missing mates: %u",
                               myNumMissingMate);
+    Logger::gLogger->writeLog("Total number of reads excluded from duplicate checking: %u",
+                              excludedCount);
     Logger::gLogger->writeLog("--------------------------------------------------------------------------");
     Logger::gLogger->writeLog("Sorting the indices of %d duplicated records",
                               myDupList.size());
@@ -539,8 +563,7 @@ void Dedup::checkDups(SamRecord& record, uint32_t recordCount)
         if(ireturn.second == false)
         {
             // Mark the old record as a DUPLICATE!
-            myDupList.push_back(readData->recordIndex);
-            mySamPool.releaseRecord(readData->recordPtr);
+            handleDuplicate(readData->recordIndex, readData->recordPtr);
         }
         // Store this record for later duplicate checking.
         readData->sumBaseQual = sumBaseQual;
@@ -562,8 +585,7 @@ void Dedup::checkDups(SamRecord& record, uint32_t recordCount)
         if(recordPaired == false)
         {
             // This record is a duplicate, so mark it and release it.
-            myDupList.push_back(recordCount);
-            mySamPool.releaseRecord(&record);
+            handleDuplicate(recordCount, &record);
         }
     }
 
@@ -669,19 +691,15 @@ void Dedup::checkDups(SamRecord& record, uint32_t recordCount)
         {
             // The old pair had higher quality so mark the new pair as a
             // duplicate and release them.
-            myDupList.push_back(mateIndex);
-            myDupList.push_back(recordCount);
-            mySamPool.releaseRecord(&record);
-            mySamPool.releaseRecord(mateRecord);
+            handleDuplicate(mateIndex, mateRecord);
+            handleDuplicate(recordCount, &record);
         }
         else
         {
             // The new pair has higher quality, so keep that.
             // First mark the previous one as duplicates and release them.
-            myDupList.push_back(storedPair->record1Index);
-            myDupList.push_back(storedPair->record2Index);
-            mySamPool.releaseRecord(storedPair->record1Ptr);
-            mySamPool.releaseRecord(storedPair->record2Ptr);
+            handleDuplicate(storedPair->record1Index, storedPair->record1Ptr);
+            handleDuplicate(storedPair->record2Index, storedPair->record2Ptr);
             // Store this pair's information.
             if(record1Index == mateIndex)
             {
@@ -896,4 +914,28 @@ void Dedup::handleMissingMate(SamRecord* recordPtr)
     // Release this record since there is nothing more to do with it.
     ++myNumMissingMate;
     handleNonDuplicate(recordPtr);
+}
+
+
+void Dedup::handleDuplicate(uint32_t index, SamRecord* recordPtr)
+{
+    if(recordPtr == NULL)
+    {
+        return;
+    }
+    if(myDoRecab)
+    {
+        // Mark the record as a duplicate
+        uint16_t flag = recordPtr->getFlag();
+        SamFlag::setDuplicate(flag);
+        recordPtr->setFlag(flag);
+
+        // Add to recalibration matrix.
+        myRecab.processReadBuildTable(*recordPtr);
+    }
+
+    // Add the index to the duplicate list.
+    myDupList.push_back(index);
+    // Release the record.
+    mySamPool.releaseRecord(recordPtr);
 }

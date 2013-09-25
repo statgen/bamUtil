@@ -239,6 +239,8 @@ private:
     // including calling handleNonDuplicate. 
     void handleMissingMate(SamRecord* recordPtr);
 
+    void handleDuplicate(uint32_t index, SamRecord* recordPtr);
+
     inline int getFirstIndex(const DupKey& key1, 
                              int key1Index,
                              const DupKey& key2,

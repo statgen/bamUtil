@@ -7,14 +7,19 @@ Done! Sequence length 11520
 No dbSNP File
 End: TIME
 
-# mapped Reads observed: 130000; Q>0: 130000
+# mapped Reads observed: 130000
 # unmapped Reads observed: 0
-# Secondary Reads skipped: 0
-# Duplicate Reads skipped: 0
+# Secondary Reads observed: 0
+# Duplicate Reads observed: 0
+# QC Failure Reads observed: 0
 # Mapping Quality 0 Reads skipped: 0
 # Mapping Quality 255 Reads skipped: 0
+Total # Reads skipped for building recab table: 0
+Total # Reads used for building recab table: 130000
 # Bases observed: 650000 - #match: 649997; #mismatch: 3
-# Bases Skipped for DBSNP: 0, for Map Qual = 0: 0, for MapQual = 255: 0, for BaseQual < 5: 0
+# Bases Skipped for DBSNP: 0, for BaseQual < 5: 0
 Writing recalibration table results/testRecabMaxQual49.sam.qemp
 Writing recalibrated file results/testRecabMaxQual49.sam
+Total # Reads recab table not applied to: 0
+Total # Reads recab table applied to: 130000
 Recalibration successfully finished

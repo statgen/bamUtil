@@ -47,9 +47,9 @@ Total # Reads skipped for building recab table: 34
 Total # Reads used for building recab table: 3
 # Bases observed: 18 - #match: 7; #mismatch: 11
 # Bases Skipped for DBSNP: 0, for BaseQual < 5: 0
-Writing recalibration table results/testDedup1Recab.sam.qemp
+Writing recalibration table results/testDedup2ForceRecab.sam.qemp
 
-Writing results/testDedup1Recab.sam
+Writing results/testDedup2ForceRecab.sam
 Successfully marked 0 unpaired and 5 paired duplicate reads
 
 Dedup complete!

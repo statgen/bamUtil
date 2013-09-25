@@ -77,6 +77,10 @@ private:
     String myDbsnpFile;
     String myQField;  // Quality TAG
     String myStoreQualTag;  // Store old quality into this TAG
+    String myBuildExcludeFlags;
+    String myApplyExcludeFlags;
+    uint16_t myIntBuildExcludeFlags;
+    uint16_t myIntApplyExcludeFlags;
     int myMinBaseQual;
     int myMaxBaseQual;
     int myBlendedWeight;
@@ -86,21 +90,30 @@ private:
     bool myKeepPrevNonAdjacent;
     bool myLogReg;
 
-    //stats
-    uint64_t myBasecounts;
+    // Per read counts
     uint64_t myMappedCount;
     uint64_t myUnMappedCount;
-    uint64_t myMappedCountQ;
-    uint64_t myBMismatchCount;
-    uint64_t myBMatchCount;
-    uint64_t myZeroMapQualCount;
-    uint64_t mySubMinQual;
-    uint64_t myNumDBSnpSkips;
     uint64_t mySecondaryCount;
     uint64_t myDupCount;
+    uint64_t myQCFailCount;
     uint64_t myMapQual0Count;
     uint64_t myMapQual255Count;
+    uint64_t myNumBuildSkipped;
+    uint64_t myNumBuildReads;
+    uint64_t myNumApplySkipped;
+    uint64_t myNumApplyReads;
+
+    // Couldn't find quality tag, so using current quality.
     uint64_t myNumQualTagErrors;
+
+    // Per base counts.
+    uint64_t myNumDBSnpSkips;
+    uint64_t mySubMinQual;
+    uint64_t myBMatchCount;
+    uint64_t myBMismatchCount;
+
+    // should be sum of myBMatchCount & myBMismatchCount
+    uint64_t myBasecounts;
 
     GenomeSequence* myReferenceGenome;
     mmapArrayBool_t myDbSNP;

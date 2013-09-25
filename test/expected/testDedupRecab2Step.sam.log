@@ -15,14 +15,19 @@ WARNING: INVALID_GENOME_INDEX (chrom:pos MT:178) and record skipped... Reference
 WARNING: INVALID_GENOME_INDEX (chrom:pos MT:178) and record skipped... Reference in BAM is different from the ref used here!
 End: TIME
 
-# mapped Reads observed: 21; Q>0: 10
+# mapped Reads observed: 37
 # unmapped Reads observed: 0
-# Secondary Reads skipped: 0
-# Duplicate Reads skipped: 16
+# Secondary Reads observed: 0
+# Duplicate Reads observed: 16
+# QC Failure Reads observed: 0
 # Mapping Quality 0 Reads skipped: 11
 # Mapping Quality 255 Reads skipped: 0
+Total # Reads skipped for building recab table: 35
+Total # Reads used for building recab table: 2
 # Bases observed: 12 - #match: 5; #mismatch: 7
-# Bases Skipped for DBSNP: 0, for Map Qual = 0: 11, for MapQual = 255: 0, for BaseQual < 5: 0
+# Bases Skipped for DBSNP: 0, for BaseQual < 5: 0
 Writing recalibration table results/testDedupRecab2Step.sam.qemp
 Writing recalibrated file results/testDedupRecab2Step.sam
+Total # Reads recab table not applied to: 0
+Total # Reads recab table applied to: 37
 Recalibration successfully finished

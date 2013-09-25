@@ -9,10 +9,14 @@ Reading ReferenceID 3
 
 Reading ReferenceID 4
 
+WARNING: INVALID_GENOME_INDEX (chrom:pos 5:62) and record skipped... Reference in BAM is different from the ref used here!
+WARNING: INVALID_GENOME_INDEX (chrom:pos 5:65) and record skipped... Reference in BAM is different from the ref used here!
 Reading ReferenceID 5
 
 WARNING: INVALID_GENOME_INDEX (chrom:pos 5:64) and record skipped... Reference in BAM is different from the ref used here!
 WARNING: INVALID_GENOME_INDEX (chrom:pos 5:62) and record skipped... Reference in BAM is different from the ref used here!
+WARNING: INVALID_GENOME_INDEX (chrom:pos 4:162) and record skipped... Reference in BAM is different from the ref used here!
+WARNING: INVALID_GENOME_INDEX (chrom:pos 6:64) and record skipped... Reference in BAM is different from the ref used here!
 Reading ReferenceID 23
 
 WARNING: INVALID_GENOME_INDEX (chrom:pos 4:162) and record skipped... Reference in BAM is different from the ref used here!
@@ -41,15 +45,15 @@ Sorting the indices of 10 duplicated records
 # Secondary Reads observed: 3
 # Duplicate Reads observed: 10
 # QC Failure Reads observed: 0
-# Mapping Quality 0 Reads skipped: 13
+# Mapping Quality 0 Reads skipped: 21
 # Mapping Quality 255 Reads skipped: 0
-Total # Reads skipped for building recab table: 34
-Total # Reads used for building recab table: 3
-# Bases observed: 18 - #match: 7; #mismatch: 11
+Total # Reads skipped for building recab table: 33
+Total # Reads used for building recab table: 4
+# Bases observed: 23 - #match: 10; #mismatch: 13
 # Bases Skipped for DBSNP: 0, for BaseQual < 5: 0
-Writing recalibration table results/testDedup1Recab.sam.qemp
+Writing recalibration table results/testDedup2ForceRecabD.sam.qemp
 
-Writing results/testDedup1Recab.sam
+Writing results/testDedup2ForceRecabD.sam
 Successfully marked 0 unpaired and 5 paired duplicate reads
 
 Dedup complete!

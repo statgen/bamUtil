@@ -8,17 +8,22 @@ No dbSNP File
 WARNING: Recab: OQ tag was not found/invalid, so using the quality field in records without the tag
 End: TIME
 
-# mapped Reads observed: 201; Q>0: 201
+# mapped Reads observed: 201
 # unmapped Reads observed: 0
-# Secondary Reads skipped: 0
-# Duplicate Reads skipped: 0
+# Secondary Reads observed: 0
+# Duplicate Reads observed: 0
+# QC Failure Reads observed: 0
 # Mapping Quality 0 Reads skipped: 0
 # Mapping Quality 255 Reads skipped: 0
+Total # Reads skipped for building recab table: 0
+Total # Reads used for building recab table: 201
 # Bases observed: 806 - #match: 799; #mismatch: 7
-# Bases Skipped for DBSNP: 0, for Map Qual = 0: 0, for MapQual = 255: 0, for BaseQual < 5: 199
+# Bases Skipped for DBSNP: 0, for BaseQual < 5: 199
 WARNING: 1 records did not have tag OQ or it was invalid, so the quality field was used for those records.
 Start model fitting!
 Writing recalibration table results/testRecabUseBadOQ.sam.recab
 Writing recalibration table results/testRecabUseBadOQ.sam.qemp
 Writing recalibrated file results/testRecabUseBadOQ.sam
+Total # Reads recab table not applied to: 0
+Total # Reads recab table applied to: 201
 Recalibration successfully finished

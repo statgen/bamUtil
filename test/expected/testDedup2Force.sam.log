@@ -18,15 +18,15 @@ Total number of properly paired reads: 16
 Total number of unmapped reads: 0
 Total number of reverse strand mapped reads: 18
 Total number of QC-failed reads: 0
-Total number of secondary reads: 0
+Total number of secondary reads: 3
 Size of singleKeyMap (must be zero): 0
 Size of pairedKeyMap (must be zero): 0
-Total number of missing mates: 1
-Total number of reads excluded from duplicate checking: 0
+Total number of missing mates: 4
+Total number of reads excluded from duplicate checking: 3
 --------------------------------------------------------------------------
-Sorting the indices of 16 duplicated records
+Sorting the indices of 10 duplicated records
 
-Writing results/testDedup.sam
-Successfully marked 0 unpaired and 8 paired duplicate reads
+Writing results/testDedup2Force.sam
+Successfully marked 0 unpaired and 5 paired duplicate reads
 
 Dedup complete!
