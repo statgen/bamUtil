@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011-2012  Regents of the University of Michigan,
+ *  Copyright (C) 2011-2013  Regents of the University of Michigan,
  *                           Yancy Lo
  *
  *   This program is free software: you can redistribute it and/or modify
@@ -33,6 +33,7 @@ ClipOverlap::ClipOverlap()
       myOverlapHandler(NULL),
       myPool(),
       myOverlapsOnly(false),
+      myIntExcludeFlags(0),
       myNumMateFailures(0),
       myNumPoolFail(0),
       myNumPoolFailNoHandle(0),
@@ -90,6 +91,7 @@ int ClipOverlap::execute(int argc, char **argv)
     int poolSize = DEFAULT_POOL_SIZE;
     bool noeof = false;
     bool params = false;
+    String excludeFlags = "0x70C";
 
     // TODO, cleanup legacy parameters
 
@@ -103,6 +105,7 @@ int ClipOverlap::execute(int argc, char **argv)
         LONG_PARAMETER("readName", &readName)
         LONG_PARAMETER ("stats", &stats)
         LONG_PARAMETER ("overlapsOnly", &myOverlapsOnly)
+        LONG_STRINGPARAMETER ("excludeFlags", &excludeFlags)
         LONG_PARAMETER("noeof", &noeof)
         LONG_PARAMETER("params", &params)
         LONG_PARAMETER_GROUP("Coordinate Processing Optional Parameters")
@@ -172,6 +175,7 @@ int ClipOverlap::execute(int argc, char **argv)
         myOverlapHandler->storeOrigCigar(storeOrig);
     }
 
+    myIntExcludeFlags = excludeFlags.AsInteger();
 
     if(params)
     {
@@ -317,6 +321,47 @@ SamStatus::Status ClipOverlap::handleSortedByReadName(SamFile& samIn,
     // Keep reading records until ReadRecord returns false.
     while(samIn.ReadRecord(mySamHeader, *samRecord))
     {
+        int16_t flag = samRecord->getFlag();
+        if((flag & myIntExcludeFlags) != 0)
+        {
+            // This read should not be checked for overlaps.
+
+            // Check if there is a previous SamRecord.
+            if(prevSamRecord != NULL)
+            {
+                // There is a previous record.
+                // If it has a different read name, write it.
+                if(strcmp(samRecord->getReadName(), 
+                          prevSamRecord->getReadName()) != 0)
+                {
+                    // Different read name, so write the previous record.
+                    if((samOutPtr != NULL) && !myOverlapsOnly)
+                    {
+                        if(!samOutPtr->WriteRecord(mySamHeader, *prevSamRecord))
+                        {
+                            // Failed to write a record.
+                            fprintf(stderr, "%s\n", samOutPtr->GetStatusMessage());
+                            returnStatus = samOutPtr->GetStatus();
+                        }
+                    }
+                    // Clear the previous record info.
+                    prevSamRecord = NULL;
+                } 
+                // If it has the same read name, leave it in case there is another read with that name
+            }
+            // This record is not being checked for overlaps, so just write it and continue
+            if((samOutPtr != NULL) && !myOverlapsOnly)
+            {
+                if(!samOutPtr->WriteRecord(mySamHeader, *samRecord))
+                {
+                    // Failed to write a record.
+                    fprintf(stderr, "%s\n", samOutPtr->GetStatusMessage());
+                    returnStatus = samOutPtr->GetStatus();
+                }
+            }
+            continue;
+        }
+
         if(prevSamRecord == NULL)
         {
             // Nothing to compare this record to, so set this
@@ -484,7 +529,7 @@ SamStatus::Status ClipOverlap::handleSortedByCoord(SamFile& samIn,
         cleanupMateMap(mateMap, outputBufferPtr, chrom, position);
 
         // Check the read for overlaps.
-        overlapInfo = myOverlapHandler->getOverlapInfo(*recordPtr);
+        overlapInfo = myOverlapHandler->getOverlapInfo(*recordPtr, myIntExcludeFlags);
         // Handle the types of overlaps.
         switch(overlapInfo)
         {

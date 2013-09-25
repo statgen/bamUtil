@@ -37,7 +37,7 @@ void OverlapHandler::printStats()
 }
 
 
-OverlapHandler::OverlapInfo OverlapHandler::getOverlapInfo(SamRecord& record)
+OverlapHandler::OverlapInfo OverlapHandler::getOverlapInfo(SamRecord& record, uint16_t intExcludeFlags)
 {
     // Determine whether or not the reads overlap.
     int16_t flag = record.getFlag();
@@ -45,10 +45,12 @@ OverlapHandler::OverlapInfo OverlapHandler::getOverlapInfo(SamRecord& record)
     //  1) the read is not paired.
     //  2) read and its mate are on different chromosome ids
     //  3) read is unmapped
-    //  4) mate is unmapped.
+    //  4) mate is unmapped
+    //  5) read contains specified exclusion flags.
     if(!SamFlag::isPaired(flag) || 
        (record.getMateReferenceID() != record.getReferenceID()) ||
-       !SamFlag::isMapped(flag) || !SamFlag::isMateMapped(flag))
+       !SamFlag::isMapped(flag) || !SamFlag::isMateMapped(flag) ||
+       ((flag & intExcludeFlags) != 0) )
     {
         return(NO_OVERLAP);
     }

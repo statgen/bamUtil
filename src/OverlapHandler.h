@@ -52,7 +52,7 @@ public:
     /// Get information on whether or not this record has an overlap
     /// with its mate (if it has one) (may be unknown if this is
     /// the 2nd read in the pair).
-    OverlapInfo getOverlapInfo(SamRecord& record);
+    OverlapInfo getOverlapInfo(SamRecord& record, uint16_t intExcludeFlags = 0);
 
     virtual void handleOverlapPair(SamRecord& firstRecord,
                                    SamRecord& secondRecord) = 0;

@@ -82,6 +82,7 @@ private:
     OverlapHandler* myOverlapHandler;
     SamRecordPool myPool; // used just for coord reads.
     bool myOverlapsOnly;
+    uint16_t myIntExcludeFlags;
 
     uint32_t myNumMateFailures;
     uint32_t myNumPoolFail;

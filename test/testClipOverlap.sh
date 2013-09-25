@@ -213,6 +213,37 @@ let "status |= $?"
 diff results/testClipOverlapCoordPool0ClipStatsClipsOnly.log expected/testClipOverlapCoordPool0ClipStats.log
 let "status |= $?"
 
+# Test clipping files sorted by read name.
+../bin/bam clipOverlap --stats --readName --in testFiles/testClipOverlapReadName1.sam --out results/testClipOverlapReadNameStats1.sam --storeOrig XC 2> results/testClipOverlapReadNameStats1.log
+let "status |= $?"
+diff results/testClipOverlapReadNameStats1.sam expected/testClipOverlapReadName1.sam
+let "status |= $?"
+diff results/testClipOverlapReadNameStats1.log expected/testClipOverlapReadNameStats.log
+let "status |= $?"
+
+# Test clipping files sorted by read name.
+../bin/bam clipOverlap --stats --readName --in testFiles/testClipOverlapReadName1.sam --out results/testClipOverlapReadNameStats1Ex0.sam --storeOrig XC --excludeFlag 0 2> results/testClipOverlapReadNameStats1Ex0.log
+let "status |= $?"
+diff results/testClipOverlapReadNameStats1Ex0.sam expected/testClipOverlapReadName1Ex0.sam
+let "status |= $?"
+diff results/testClipOverlapReadNameStats1Ex0.log expected/testClipOverlapReadNameStatsEx0.log
+let "status |= $?"
+
+# Test clipping files sorted by coordinate
+../bin/bam clipOverlap --stats --in testFiles/testClipOverlapCoord1.sam --out results/testClipOverlapCoordStats1.sam --storeOrig XC 2> results/testClipOverlapCoordStats1.log
+let "status |= $?"
+diff results/testClipOverlapCoordStats1.sam expected/testClipOverlapCoord1.sam
+let "status |= $?"
+diff results/testClipOverlapCoordStats1.log expected/testClipOverlapCoordStats.log
+let "status |= $?"
+
+../bin/bam clipOverlap --stats --in testFiles/testClipOverlapCoord1.sam --out results/testClipOverlapCoordStats1Ex0.sam --storeOrig XC --excludeFlag 0x0000 2> results/testClipOverlapCoordStats1Ex0.log
+let "status |= $?"
+diff results/testClipOverlapCoordStats1Ex0.sam expected/testClipOverlapCoord1Ex0.sam
+let "status |= $?"
+diff results/testClipOverlapCoordStats1Ex0.log expected/testClipOverlapCoordStatsEx0.log
+let "status |= $?"
+
 if [ $status != 0 ]
 then
   echo failed testClipOverlap.sh
