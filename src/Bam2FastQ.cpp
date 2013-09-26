@@ -48,21 +48,7 @@ Bam2FastQ::Bam2FastQ()
 
 Bam2FastQ::~Bam2FastQ()
 {
-    if(myUnpairedFile != NULL)
-    {
-        ifclose(myUnpairedFile);
-        myUnpairedFile = NULL;
-    }
-    if(myFirstFile != NULL)
-    {
-        ifclose(myFirstFile);
-        myFirstFile = NULL;
-    }
-    if(mySecondFile != NULL)
-    {
-        ifclose(mySecondFile);
-        mySecondFile = NULL;
-    }
+    closeFiles();
 }
 
 
@@ -87,15 +73,10 @@ void Bam2FastQ::usage()
     std::cerr << "\tOptional Parameters:" << std::endl;
     std::cerr << "\t\t--readname      : Process the BAM as readName sorted instead\n"
               << "\t\t                  of coordinate if the header does not indicate a sort order." << std::endl;
+    std::cerr << "\t\t--merge         : Generate 1 interleaved (merged) FASTQ for paired-ends (unpaired in a separate file)\n"
+              << "\t\t                  use firstOut to override the filename of the interleaved file." << std::endl;
     std::cerr << "\t\t--refFile       : Reference file for converting '=' in the sequence to the actual base" << std::endl;
     std::cerr << "\t\t                  if '=' are found and the refFile is not specified, 'N' is written to the FASTQ" << std::endl;
-    std::cerr << "\t\t--outBase       : Base output name for generated output files" << std::endl;
-    std::cerr << "\t\t--firstOut      : Output name for the first in pair file" << std::endl;
-    std::cerr << "\t\t                  over-rides setting of outBase" << std::endl;
-    std::cerr << "\t\t--secondOut     : Output name for the second in pair file" << std::endl;
-    std::cerr << "\t\t                  over-rides setting of outBase" << std::endl;
-    std::cerr << "\t\t--unpairedOut   : Output name for unpaired reads" << std::endl;
-    std::cerr << "\t\t                  over-rides setting of outBase" << std::endl;
     std::cerr << "\t\t--firstRNExt    : read name extension to use for first read in a pair\n" 
               << "\t\t                  default is \"" << DEFAULT_FIRST_EXT << "\"\n";
     std::cerr << "\t\t--secondRNExt   : read name extension to use for second read in a pair\n" 
@@ -104,6 +85,14 @@ void Bam2FastQ::usage()
     std::cerr << "\t\t--noReverseComp : Do not reverse complement reads marked as reverse\n";
     std::cerr << "\t\t--noeof         : Do not expect an EOF block on a bam file." << std::endl;
     std::cerr << "\t\t--params        : Print the parameter settings to stderr" << std::endl;
+    std::cerr << "\tOptional OutputFile Names:" << std::endl;
+    std::cerr << "\t\t--outBase       : Base output name for generated output files" << std::endl;
+    std::cerr << "\t\t--firstOut      : Output name for the first in pair file" << std::endl;
+    std::cerr << "\t\t                  over-rides setting of outBase" << std::endl;
+    std::cerr << "\t\t--secondOut     : Output name for the second in pair file" << std::endl;
+    std::cerr << "\t\t                  over-rides setting of outBase" << std::endl;
+    std::cerr << "\t\t--unpairedOut   : Output name for unpaired reads" << std::endl;
+    std::cerr << "\t\t                  over-rides setting of outBase" << std::endl;
     std::cerr << std::endl;
 }
 
@@ -119,6 +108,7 @@ int Bam2FastQ::execute(int argc, char **argv)
     String secondOut = "";
     String unpairedOut = "";
 
+    bool interleave = false;
     bool noeof = false;
     bool params = false;
 
@@ -136,17 +126,19 @@ int Bam2FastQ::execute(int argc, char **argv)
         LONG_STRINGPARAMETER("in", &inFile)
         LONG_PARAMETER_GROUP("Optional Parameters")
         LONG_PARAMETER("readName", &readName)
+        LONG_PARAMETER("merge", &interleave)
         LONG_STRINGPARAMETER("refFile", &refFile)
-        LONG_STRINGPARAMETER("outBase", &outBase)
-        LONG_STRINGPARAMETER("firstOut", &firstOut)
-        LONG_STRINGPARAMETER("secondOut", &secondOut)
-        LONG_STRINGPARAMETER("unpairedOut", &unpairedOut)
         LONG_STRINGPARAMETER("firstRNExt", &myFirstRNExt)
         LONG_STRINGPARAMETER("secondRNExt", &mySecondRNExt)
         LONG_PARAMETER("rnPlus", &myRNPlus)
         LONG_PARAMETER("noReverseComp", &myReverseComp)
         LONG_PARAMETER("noeof", &noeof)
         LONG_PARAMETER("params", &params)
+        LONG_PARAMETER_GROUP("Optional OutputFile Names")
+        LONG_STRINGPARAMETER("outBase", &outBase)
+        LONG_STRINGPARAMETER("firstOut", &firstOut)
+        LONG_STRINGPARAMETER("secondOut", &secondOut)
+        LONG_STRINGPARAMETER("unpairedOut", &unpairedOut)
         END_LONG_PARAMETERS();
    
     inputParameters.Add(new LongParameters ("Input Parameters", 
@@ -173,6 +165,16 @@ int Bam2FastQ::execute(int argc, char **argv)
         return(-1);
     }
 
+    // Cannot specify both interleaved & secondOut since secondOut would be N/A.
+    if(interleave && !secondOut.IsEmpty())
+    {
+        usage();
+        inputParameters.Status();
+        std::cerr << "ERROR: Cannot specify --merge & --secondOut.\n";
+        return(-1);
+    }
+
+
     // Check to see if the out file was specified, if not, generate it from
     // the input filename.
     if(outBase == "")
@@ -191,18 +193,14 @@ int Bam2FastQ::execute(int argc, char **argv)
 
     // Check to see if the first/second/single-ended were specified and
     // if not, set them.
-    if(firstOut.IsEmpty())
+    std::string firstExt = "_1.fastq";
+    if(interleave)
     {
-        firstOut = outBase + "_1.fastq";
+        firstExt = "_interleaved.fastq";
     }
-    if(secondOut.IsEmpty())
-    {
-        secondOut = outBase + "_2.fastq";
-    }
-    if(unpairedOut.IsEmpty())
-    {
-        unpairedOut = outBase + ".fastq";
-    }
+    getFileName(firstOut, outBase, firstExt.c_str());
+    getFileName(secondOut, outBase, "_2.fastq");
+    getFileName(unpairedOut, outBase, ".fastq");
 
     if(params)
     {
@@ -211,8 +209,30 @@ int Bam2FastQ::execute(int argc, char **argv)
 
     // Open the output files.
     myUnpairedFile = ifopen(unpairedOut, "w");
-    myFirstFile = ifopen(firstOut, "w");
-    mySecondFile = ifopen(secondOut, "w");
+
+    // Only open the first file if it is different than an already opened file.
+    if(firstOut != unpairedOut)
+    {
+        myFirstFile = ifopen(firstOut, "w");
+    }
+    else
+    {
+        myFirstFile = myUnpairedFile;
+    }
+
+    // If it is interleaved or the 2nd file is not a new name, set it appropriately.
+    if(interleave || secondOut == firstOut)
+    {
+        mySecondFile = myFirstFile;
+    }
+    else if(secondOut == unpairedOut)
+    {
+        mySecondFile = myUnpairedFile;
+    }
+    else
+    {
+        mySecondFile = ifopen(secondOut, "w");
+    }
     
     if(myUnpairedFile == NULL)
     {
@@ -304,12 +324,7 @@ int Bam2FastQ::execute(int argc, char **argv)
     }
 
     samIn.Close();
-    ifclose(myUnpairedFile);
-    myUnpairedFile = NULL;
-    ifclose(myFirstFile);
-    myFirstFile = NULL;
-    ifclose(mySecondFile);
-    mySecondFile = NULL;
+    closeFiles();
     
     // Output the results
     std::cerr << "\nFound " << myNumPairs << " read pairs.\n";
@@ -542,3 +557,57 @@ void Bam2FastQ::cleanUpMateMap(uint64_t readPos, bool flushAll)
         }
     }
 }
+
+
+void Bam2FastQ::closeFiles()
+{
+    // NULL out any duplicate file pointers
+    // so files are only closed once.
+    if(myFirstFile == myUnpairedFile)
+    {
+        myFirstFile = NULL;
+    }
+    if(mySecondFile == myUnpairedFile)
+    {
+        mySecondFile = NULL;
+    }
+    if(mySecondFile == myFirstFile)
+    {
+        mySecondFile = NULL;
+    }
+
+    if(myUnpairedFile != NULL)
+    {
+        ifclose(myUnpairedFile);
+        myUnpairedFile = NULL;
+    }
+    if(myFirstFile != NULL)
+    {
+        ifclose(myFirstFile);
+        myFirstFile = NULL;
+    }
+    if(mySecondFile != NULL)
+    {
+        ifclose(mySecondFile);
+        mySecondFile = NULL;
+    }
+}
+
+
+void Bam2FastQ::getFileName(String& fn, const String& outBase, const char* ext)
+{
+    if(fn.IsEmpty())
+    {
+        if(outBase[0] != '-')
+        {
+            fn = outBase + ext;
+        }
+        else
+        {
+            // starts with a '-', so writing to stdout, don't change the name.
+            fn = outBase;
+        }
+    }
+}
+
+

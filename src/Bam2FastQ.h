@@ -50,6 +50,9 @@ private:
                     const char* readNameExt = "");
     void cleanUpMateMap(uint64_t readPos, bool flushAll = false);
 
+    void closeFiles();
+    void getFileName(String& fn, const String& outBase, const char* ext);
+
     SamRecordPool myPool;
     MateMapByCoord myMateMap;
 
