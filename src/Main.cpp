@@ -106,105 +106,105 @@ int main(int argc, char ** argv)
         exit(-1);
     }
 
-    if(strcmp(argv[1], "readIndexedBam") == 0)
+    String cmd = argv[1];
+    if(cmd.SlowCompare("readIndexedBam") == 0)
     {
         bamExe = new ReadIndexedBam();
     }
-    else if(strcmp(argv[1], "dumpHeader") == 0)
+    else if(cmd.SlowCompare("dumpHeader") == 0)
     {
         bamExe = new DumpHeader();
     }
-    else if(strcmp(argv[1], "dumpIndex") == 0)
+    else if(cmd.SlowCompare("dumpIndex") == 0)
     {
         bamExe = new DumpIndex();
     }
-    else if(strcmp(argv[1], "writeRegion") == 0)
+    else if(cmd.SlowCompare("writeRegion") == 0)
     {
         bamExe = new WriteRegion();
     }
-    else if(strcmp(argv[1], "validate") == 0)
+    else if(cmd.SlowCompare("validate") == 0)
     {
         bamExe = new Validate();
     }
-    else if(strcmp(argv[1], "splitChromosome") == 0)
+    else if(cmd.SlowCompare("splitChromosome") == 0)
     {
         bamExe = new SplitChromosome();
     }
-    else if(strcmp(argv[1], "dumpRefInfo") == 0)
+    else if(cmd.SlowCompare("dumpRefInfo") == 0)
     {
         bamExe = new DumpRefInfo();
     }
-    else if(strcmp(argv[1], "explainFlags") == 0)
+    else if(cmd.SlowCompare("explainFlags") == 0)
     {
         bamExe = new ExplainFlags();
     }
-    else if(strcmp(argv[1], "filter") == 0)
+    else if(cmd.SlowCompare("filter") == 0)
     {
         bamExe = new Filter();
     }
-    else if(strcmp(argv[1], "readReference") == 0)
+    else if(cmd.SlowCompare("readReference") == 0)
     {
         bamExe = new ReadReference();
     }
-    else if(strcmp(argv[1], "revert") == 0)
+    else if(cmd.SlowCompare("revert") == 0)
     {
         bamExe = new Revert();
     }
-    else if(strcmp(argv[1], "diff") == 0)
+    else if(cmd.SlowCompare("diff") == 0)
     {
         bamExe = new Diff();
     }
-    else if(strcmp(argv[1], "squeeze") == 0)
+    else if(cmd.SlowCompare("squeeze") == 0)
     {
         bamExe = new Squeeze();
     }
-    else if(strcmp(argv[1], "findCigars") == 0)
+    else if(cmd.SlowCompare("findCigars") == 0)
     {
         bamExe = new FindCigars();
     }
-    else if(strcmp(argv[1], "stats") == 0)
+    else if(cmd.SlowCompare("stats") == 0)
     {
         bamExe = new Stats();
     }
-    else if(strcmp(argv[1], "clipOverlap") == 0)
+    else if(cmd.SlowCompare("clipOverlap") == 0)
     {
         bamExe = new ClipOverlap();
     }
-    else if((strcmp(argv[1], "splitBam") == 0) ||
-            (strcmp(argv[1], "splitBAM") == 0))
+    else if(cmd.SlowCompare("splitBam") == 0)
     {
         bamExe = new SplitBam();
     }
-    else if(strcmp(argv[1], "trimBam") == 0)
+    else if(cmd.SlowCompare("trimBam") == 0)
     {
         bamExe = new TrimBam();
     }
-    else if((strcmp(argv[1], "mergeBam") == 0) ||
-            (strcmp(argv[1], "rgMergeBam") == 0))
+    else if((cmd.SlowCompare("mergeBam") == 0) ||
+            (cmd.SlowCompare("rgMergeBam") == 0))
     {
         bamExe = new MergeBam();
     }
-    else if(strcmp(argv[1], "polishBam") == 0)
+    else if(cmd.SlowCompare("polishBam") == 0)
     {
         bamExe = new PolishBam();
     }
-    else if(strcmp(argv[1], "gapInfo") == 0)
+    else if(cmd.SlowCompare("gapInfo") == 0)
     {
         bamExe = new GapInfo();
     }
-    else if(strcmp(argv[1], "dedup") == 0)
+    else if(cmd.SlowCompare("dedup") == 0)
     {
         bamExe = new Dedup();
     }
-    else if(strcmp(argv[1], "recab") == 0)
+    else if(cmd.SlowCompare("recab") == 0)
     {
         bamExe = new Recab();
     }
-    else if(strcmp(argv[1], "bam2FastQ") == 0)
+    else if(cmd.SlowCompare("bam2FastQ") == 0)
     {
         bamExe = new Bam2FastQ();
     }
-    else if(strcmp(argv[1], "convert") == 0)
+    else if(cmd.SlowCompare("convert") == 0)
     {
         bamExe = new Convert();
     }
