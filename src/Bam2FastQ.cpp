@@ -207,6 +207,13 @@ int Bam2FastQ::execute(int argc, char **argv)
         inputParameters.Status();
     }
 
+    // Open the files for reading/writing.
+    // Open prior to opening the output files,
+    // so if there is an error, the outputs don't get created.
+    SamFile samIn;
+    SamFileHeader samHeader;
+    samIn.OpenForRead(inFile, &samHeader);
+
     // Open the output files.
     myUnpairedFile = ifopen(unpairedOut, "w");
 
@@ -252,11 +259,6 @@ int Bam2FastQ::execute(int argc, char **argv)
                   << " so can't convert bam2FastQ.\n";
         return(-1);
     }
-
-    // Open the files for reading/writing.
-    SamFile samIn;
-    SamFileHeader samHeader;
-    samIn.OpenForRead(inFile, &samHeader);
 
     if((readName) || (strcmp(samHeader.getSortOrder(), "queryname") == 0))
     {
