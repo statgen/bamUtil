@@ -1,6 +1,4 @@
 
-The following parameters are available.  Ones with "[]" are in effect:
-
 Input Parameters
  --in [testFiles/nonExistentFile.sam], --noeof,
                --refFile [testFilesLibBam/chr1_partial.fa], --maxErrors [-1],

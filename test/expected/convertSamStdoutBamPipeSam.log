@@ -1,6 +1,4 @@
 
-The following parameters are available.  Ones with "[]" are in effect:
-
 Input Parameters
  --in [-.bam], --out [results/convertSamStdoutBamPipeSam.sam], --refFile [],
                         --lshift, --noeof, --recover, --params [ON]

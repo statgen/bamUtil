@@ -1,6 +1,4 @@
 
-The following parameters are available.  Ones with "[]" are in effect:
-
 Input Parameters
  --in [testFilesLibBam/testBam.bam], --out [results/convertBam.sam],
                         --refFile [], --lshift, --noeof, --recover,

@@ -1,6 +1,4 @@
 
-The following parameters are available.  Ones with "[]" are in effect:
-
 Input Parameters
  --in [testFiles/testInvalid1.sam], --noeof, --refFile [], --maxErrors [-1],
                --verbose [ON], --printableErrors [100], --disableStatistics,
