@@ -116,6 +116,7 @@ int Dedup::execute(int argc, char** argv)
     uint16_t intExcludeFlags = 0;
     bool noeof = false;
     bool params = false;
+    bool noph = false;
     LongParamContainer parameters;
     parameters.addGroup("Required Parameters");
     parameters.addString("in", &inFile);
@@ -132,12 +133,15 @@ int Dedup::execute(int argc, char** argv)
     parameters.addBool("noeof", &noeof);
     parameters.addBool("params", &params);
     myRecab.addRecabSpecificParameters(parameters);
+    parameters.startLegacyParams();
+    parameters.addBool("noph", &noph);
 
     ParameterList inputParameters;
     inputParameters.Add(new LongParameters ("Input Parameters", 
                                             parameters.getLongParameterList()));
     
-    inputParameters.Read(argc-1, &(argv[1]));
+    // parameters start at index 2 rather than 1.
+    inputParameters.Read(argc, argv, 2);
     
     // If no eof block is required for a bgzf file, set the bgzf file type to 
     // not look for it.

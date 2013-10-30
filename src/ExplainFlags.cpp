@@ -57,6 +57,7 @@ int ExplainFlags::execute(int argc, char **argv)
     String hexFlag = "";
     int decFlag = -1;
     bool params = false;
+    bool noph = false;
 
     ParameterList inputParameters;
     BEGIN_LONG_PARAMETERS(longParameterList)
@@ -64,12 +65,15 @@ int ExplainFlags::execute(int argc, char **argv)
         LONG_STRINGPARAMETER("hex", &hexFlag)
         LONG_INTPARAMETER("dec", &decFlag)
         LONG_PARAMETER("params", &params)
+        BEGIN_LEGACY_PARAMETERS()
+        LONG_PARAMETER("noph", &noph)
         END_LONG_PARAMETERS();
    
     inputParameters.Add(new LongParameters ("Input Parameters", 
                                             longParameterList));
 
-    inputParameters.Read(argc-1, &(argv[1]));
+    // parameters start at index 2 rather than 1.
+    inputParameters.Read(argc, argv, 2);
 
     if(params)
     {

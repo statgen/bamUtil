@@ -44,6 +44,7 @@
 #include "Dedup.h"
 #include "Recab.h"
 #include "Bam2FastQ.h"
+#include "PhoneHome.h"
 
 void Usage()
 {
@@ -250,8 +251,31 @@ int main(int argc, char ** argv)
             args[6] = arg6;
             ++numArgs;
         }
-        bamExe = new Convert();
-        int returnVal = bamExe->execute(numArgs, args);
+        int returnVal = 0;
+        String compStatus;
+        std::string tool = args[0];
+        tool += ':';
+        tool += args[1];
+        try
+        {
+            PhoneHome::checkVersion(tool.c_str(), VERSION);
+            bamExe = new Convert();
+            returnVal = bamExe->execute(numArgs, args);
+        }
+        catch (std::runtime_error e)
+        {
+            compStatus = "Exception:";
+            compStatus += e.what();
+            compStatus.SetLength(18);
+            PhoneHome::completionStatus(tool.c_str(), compStatus.c_str());
+
+            std::string errorMsg = "Exiting due to ERROR:\n\t";
+            errorMsg += e.what();
+            std::cerr << errorMsg << std::endl;
+            return(-1);
+        }
+        compStatus = returnVal;
+        PhoneHome::completionStatus(tool.c_str(), compStatus.c_str());
         delete bamExe;
         bamExe = NULL;
         return(returnVal);
@@ -259,7 +283,52 @@ int main(int argc, char ** argv)
     
     if(bamExe != NULL)
     {
-        int returnVal = bamExe->execute(argc, argv);
+        std::string tool = argv[0];
+        tool += ':';
+        tool += argv[1];
+
+        bool ph = true;
+
+        // Loop through args and see if phonehome is disabled.
+        String disableph = "--NOPH";
+        for(int i = 2; i < argc; i++)
+        {
+            if(disableph.SlowCompare(argv[i]) == 0)
+            {
+                ph = false;
+                break;
+            }
+        }
+
+        if(ph)
+        {
+            PhoneHome::checkVersion(tool.c_str(), VERSION);
+        }
+        int returnVal = 0;
+        String compStatus;
+        try
+        {
+            returnVal = bamExe->execute(argc, argv);
+        }
+        catch (std::runtime_error e)
+        {
+            if(ph)
+            {
+                compStatus = "Exception:";
+                compStatus += e.what();
+                compStatus.SetLength(18);
+                PhoneHome::completionStatus(tool.c_str(), compStatus.c_str());
+            }
+            std::string errorMsg = "Exiting due to ERROR:\n\t";
+            errorMsg += e.what();
+            std::cerr << errorMsg << std::endl;
+            return(-1);
+        }
+        compStatus = returnVal;
+        if(ph)
+        {
+            PhoneHome::completionStatus(tool.c_str(), compStatus.c_str());
+        }
         delete bamExe;
         bamExe = NULL;
         return(returnVal);

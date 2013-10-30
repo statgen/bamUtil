@@ -2,7 +2,7 @@
 # the Makefile it should include from libStatGen/Makefiles/$(PARENT_MAKE)
 
 #Update version as necessary
-VERSION=1.0.9
+VERSION=1.0.9ph1
 
 CXX11_AVAIL ?= 1
 

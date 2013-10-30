@@ -6,6 +6,9 @@ Input Parameters
                --params [ON]
    SortOrder : --so_flag, --so_coord, --so_query
 
+Additional Options:
+               --noph [ON]
+
 Record 1
 INVALID_QNAME (ERROR) : Invalid Query Name - the string length (256) does not match the specified query name length (0).
 INVALID_QNAME (WARNING) : Invalid Query Name (QNAME) length: 256.  Length with the terminating null must be between 2 & 255.

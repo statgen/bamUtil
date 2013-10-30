@@ -5,6 +5,9 @@ Input Parameters
                --params [ON]
    SortOrder : --so_flag, --so_coord, --so_query
 
+Additional Options:
+               --noph [ON]
+
 Record 6
 INVALID_CIGAR (WARNING) : CIGAR does not evaluate to the same length as SEQ, (9 != 8).
 

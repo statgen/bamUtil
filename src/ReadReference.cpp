@@ -60,6 +60,7 @@ int ReadReference::execute(int argc, char **argv)
     int numBases = UNSPECIFIED_INT;
     int end = UNSPECIFIED_INT;
     bool params = false;
+    bool noph = false;
     
     // Read in the parameters.    
     ParameterList inputParameters;
@@ -70,12 +71,15 @@ int ReadReference::execute(int argc, char **argv)
         LONG_INTPARAMETER("end", &end)
         LONG_INTPARAMETER("numBases", &numBases)
         LONG_PARAMETER("params", &params)
+        BEGIN_LEGACY_PARAMETERS()
+        LONG_PARAMETER("noph", &noph)
         END_LONG_PARAMETERS();
    
     inputParameters.Add(new LongParameters ("Input Parameters", 
                                             longParameterList));
     
-    inputParameters.Read(argc-1, &(argv[1]));
+    // parameters start at index 2 rather than 1.
+    inputParameters.Read(argc, argv, 2);
     
     if((refName == "") || (start == UNSPECIFIED_INT) || 
        ((end == UNSPECIFIED_INT) && (numBases == UNSPECIFIED_INT)))

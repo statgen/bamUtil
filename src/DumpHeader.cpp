@@ -47,8 +47,11 @@ int DumpHeader::execute(int argc, char **argv)
 {
     if(argc != 3)
     {
-        usage();
-        exit(-1);
+        if((argc != 4) && (strcmp(argv[3], "--noph") != 0))
+        {
+            usage();
+            exit(-1);
+        }
     }
     // Dump the bam index.
     return(dumpHeader(argv[2]));

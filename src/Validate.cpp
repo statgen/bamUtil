@@ -78,6 +78,7 @@ int Validate::execute(int argc, char **argv)
     bool disableStatistics = false;
     bool verbose = false;
     bool params = false;
+    bool noph = false;
 
     ParameterList inputParameters;
     BEGIN_LONG_PARAMETERS(longParameterList)
@@ -93,12 +94,15 @@ int Validate::execute(int argc, char **argv)
         EXCLUSIVE_PARAMETER("so_flag", &so_flag)
         EXCLUSIVE_PARAMETER("so_coord", &so_coord)
         EXCLUSIVE_PARAMETER("so_query", &so_query)
+        BEGIN_LEGACY_PARAMETERS()
+        LONG_PARAMETER("noph", &noph)
         END_LONG_PARAMETERS();
    
     inputParameters.Add(new LongParameters ("Input Parameters", 
                                             longParameterList));
 
-    inputParameters.Read(argc-1, &(argv[1]));
+    // parameters start at index 2 rather than 1.
+    inputParameters.Read(argc, argv, 2);
 
     // Determine the sort type for validation based on the parameters.
     SamFile::SortedType sortType = SamFile::UNSORTED;

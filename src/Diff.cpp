@@ -140,6 +140,7 @@ int Diff::execute(int argc, char **argv)
     bool noPos = false;
     bool noeof = false;
     bool params = false;
+    bool noph = false;
     myNumPoolOverflows = 0;
 
     ParameterList inputParameters;
@@ -163,12 +164,15 @@ int Diff::execute(int argc, char **argv)
         LONG_INTPARAMETER("posDiff", &myThreshold)
         LONG_PARAMETER("noeof", &noeof)
         LONG_PARAMETER("params", &params)
+        BEGIN_LEGACY_PARAMETERS()
+        LONG_PARAMETER("noph", &noph)
         END_LONG_PARAMETERS();
    
     inputParameters.Add(new LongParameters ("Input Parameters", 
                                             longParameterList));
     
-    inputParameters.Read(argc-1, &(argv[1]));
+    // parameters start at index 2 rather than 1.
+    inputParameters.Read(argc, argv, 2);
     
     myCompCigar = !noCigar;
     myCompPos = !noPos;

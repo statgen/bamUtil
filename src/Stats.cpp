@@ -103,6 +103,7 @@ int Stats::execute(int argc, char **argv)
     PosList *dbsnpListPtr = NULL;
     bool baseSum = false;
     int bufferSize = PileupHelper::DEFAULT_WINDOW_SIZE;
+    bool noph = false;
 
     ParameterList inputParameters;
     BEGIN_LONG_PARAMETERS(longParameterList)
@@ -130,12 +131,15 @@ int Stats::execute(int argc, char **argv)
         LONG_INTPARAMETER("bufferSize", &bufferSize)
         LONG_INTPARAMETER("minMapQual", &minMapQual)
         LONG_STRINGPARAMETER("dbsnp", &dbsnp)
+        BEGIN_LEGACY_PARAMETERS()
+        LONG_PARAMETER("noph", &noph)
         END_LONG_PARAMETERS();
    
     inputParameters.Add(new LongParameters ("Input Parameters", 
                                             longParameterList));
 
-    inputParameters.Read(argc-1, &(argv[1]));
+    // parameters start at index 2 rather than 1.
+    inputParameters.Read(argc, argv, 2);
 
     // If no eof block is required for a bgzf file, set the bgzf file type to 
     // not look for it.

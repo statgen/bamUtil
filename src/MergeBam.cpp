@@ -109,6 +109,7 @@ int MergeBam::execute(int argc, char ** argv)
       { "out", required_argument, NULL, 'o'},
       { "verbose", no_argument, NULL, 'v'},
       { "log", required_argument, NULL, 'L'},
+      { "noph", no_argument, NULL, 'p'},
       { NULL, 0, NULL, 0 },
     };
 
@@ -141,9 +142,12 @@ int MergeBam::execute(int argc, char ** argv)
     case 'L':
       s_logger = optarg;
       break;
+    case 'p':
+      // no phonehome option handled in Main.
+      break;
     default:
-      fprintf(stderr,"Unrecognized option %s",getopt_long_options[n_option_index].name);
-      abort();
+      fprintf(stderr,"Unrecognized option %s\n",getopt_long_options[n_option_index].name);
+      return(-1);
     }
   }
 

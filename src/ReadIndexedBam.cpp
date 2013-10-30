@@ -48,8 +48,11 @@ int ReadIndexedBam::execute(int argc, char ** argv)
 {
     if(argc != 5)
     {
-        usage();
-        exit(-1);
+        if((argc != 6) && (strcmp(argv[5], "--noph") != 0))
+        {
+            usage();
+            exit(-1);
+        }
     }
     return(readIndexedBam(argv[2], argv[3], argv[4]));
 }

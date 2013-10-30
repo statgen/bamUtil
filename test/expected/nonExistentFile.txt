@@ -6,5 +6,8 @@ Input Parameters
                --params [ON]
    SortOrder : --so_flag, --so_coord, --so_query
 
+Additional Options:
+               --noph [ON]
+
 Failed opening the SAM/BAM file, returning: 3 (FAIL_IO)
 FAIL_IO: Failed to Open testFiles/nonExistentFile.sam for reading

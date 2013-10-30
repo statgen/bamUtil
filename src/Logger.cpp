@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <stdexcept>
 #include "Logger.h"
 
 Logger* Logger::gLogger = NULL;
@@ -36,8 +37,11 @@ Logger::Logger(const char* filename, bool verbose)
       fp_log = fopen(filename, "w");
   }
   if ( fp_log == NULL ) {
-    fprintf(stderr,"ERROR: Cannot open the log file %s. Check if the directory exists and you have the permission to create a file", filename);
-    abort();
+      std::string errorMsg = "ERROR: Cannot open the log file ";
+      errorMsg += filename;
+      errorMsg += ". Check if the directory exists and you have the permission to create a file";
+      fprintf(stderr,errorMsg.c_str());
+      throw(std::runtime_error(errorMsg.c_str()));
   }
   fp_err = stderr;
 }
@@ -59,7 +63,7 @@ void Logger::writeLog(const char* format, ... ) {
   }
 }
 
-// Write error messages and abort
+// Write error messages and throw an exception.
 void Logger::error(const char* format, ... ) {
   va_list args;
   va_start (args, format);
@@ -75,7 +79,14 @@ void Logger::error(const char* format, ... ) {
   va_end (args);
   fprintf(fp_err, "\n");
 
-  abort();
+  char buffer[256];
+  va_start (args, format);
+  vsnprintf (buffer,256,format, args);
+  va_end (args);
+
+  std::string errorMsg = "ERROR: ";
+  errorMsg += buffer;
+  throw(std::runtime_error(errorMsg.c_str()));
 }
 
 // Write warning messages

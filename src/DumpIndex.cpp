@@ -59,6 +59,7 @@ int DumpIndex::execute(int argc, char **argv)
     int refID = UNSPECIFIED_INT;
     bool summary = false;
     bool params = false;
+    bool noph = false;
 
     ParameterList inputParameters;
     BEGIN_LONG_PARAMETERS(longParameterList)
@@ -66,12 +67,15 @@ int DumpIndex::execute(int argc, char **argv)
         LONG_INTPARAMETER("refID", &refID)
         LONG_PARAMETER("summary", &summary)
         LONG_PARAMETER("params", &params)
+        BEGIN_LEGACY_PARAMETERS()
+        LONG_PARAMETER("noph", &noph)
         END_LONG_PARAMETERS();
    
     inputParameters.Add(new LongParameters ("Input Parameters", 
                                             longParameterList));
 
-    inputParameters.Read(argc-1, &(argv[1]));
+    // parameters start at index 2 rather than 1.
+    inputParameters.Read(argc, argv, 2);
 
     // Check to see if the index file was specified, if not, report an error.
     if(indexFile == "")

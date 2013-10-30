@@ -5,6 +5,9 @@ Input Parameters
                         --params [ON]
    SequenceConversion : --useBases, --useEquals, --useOrigSeq [ON]
 
+Additional Options:
+                        --noph [ON]
+
 
 Number of records read = 10
 Number of records written = 10

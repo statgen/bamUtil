@@ -1,4 +1,4 @@
-../bin/bam  splitChromosome --in testFilesLibBam/sortedBam.bam --out results/splitSortedBam 2> results/splitChromosome.txt \
+../bin/bam  splitChromosome --in testFilesLibBam/sortedBam.bam --out results/splitSortedBam --noph 2> results/splitChromosome.txt \
 && diff results/splitChromosome.txt expected/splitChromosome.txt \
 && diff results/splitSortedBam1.bam expected/splitSortedBam1.bam \
 && diff results/splitSortedBam2.bam expected/splitSortedBam2.bam \

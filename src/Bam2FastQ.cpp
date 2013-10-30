@@ -111,6 +111,7 @@ int Bam2FastQ::execute(int argc, char **argv)
     bool interleave = false;
     bool noeof = false;
     bool params = false;
+    bool noph = false;
 
     myNumMateFailures = 0;
     myNumPairs = 0;
@@ -139,12 +140,15 @@ int Bam2FastQ::execute(int argc, char **argv)
         LONG_STRINGPARAMETER("firstOut", &firstOut)
         LONG_STRINGPARAMETER("secondOut", &secondOut)
         LONG_STRINGPARAMETER("unpairedOut", &unpairedOut)
+        BEGIN_LEGACY_PARAMETERS()
+        LONG_PARAMETER("noph", &noph)
         END_LONG_PARAMETERS();
    
     inputParameters.Add(new LongParameters ("Input Parameters", 
                                             longParameterList));
 
-    inputParameters.Read(argc-1, &(argv[1]));
+    // parameters start at index 2 rather than 1.
+    inputParameters.Read(argc, argv, 2);
 
     // If no eof block is required for a bgzf file, set the bgzf file type to 
     // not look for it.
