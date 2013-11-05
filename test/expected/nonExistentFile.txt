@@ -1,13 +1,2 @@
-
-Input Parameters
- --in [testFiles/nonExistentFile.sam], --noeof,
-               --refFile [testFilesLibBam/chr1_partial.fa], --maxErrors [-1],
-               --verbose [ON], --printableErrors [100], --disableStatistics,
-               --params [ON]
-   SortOrder : --so_flag, --so_coord, --so_query
-
-Additional Options:
-               --noph [ON]
-
 Failed opening the SAM/BAM file, returning: 3 (FAIL_IO)
 FAIL_IO: Failed to Open testFiles/nonExistentFile.sam for reading

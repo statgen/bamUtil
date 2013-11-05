@@ -27,6 +27,7 @@
 #include "SamTags.h"
 #include "SamFlag.h"
 #include "SamRecordHelper.h"
+#include "PhoneHome.h"
 
 const char* Diff::FLAG_DIFF_TAG = "ZF";
 const char* Diff::POS_DIFF_TAG = "ZP";
@@ -140,7 +141,6 @@ int Diff::execute(int argc, char **argv)
     bool noPos = false;
     bool noeof = false;
     bool params = false;
-    bool noph = false;
     myNumPoolOverflows = 0;
 
     ParameterList inputParameters;
@@ -164,8 +164,7 @@ int Diff::execute(int argc, char **argv)
         LONG_INTPARAMETER("posDiff", &myThreshold)
         LONG_PARAMETER("noeof", &noeof)
         LONG_PARAMETER("params", &params)
-        BEGIN_LEGACY_PARAMETERS()
-        LONG_PARAMETER("noph", &noph)
+        LONG_PARAMETER("noPhoneHome", &mynoph)
         END_LONG_PARAMETERS();
    
     inputParameters.Add(new LongParameters ("Input Parameters", 
@@ -174,6 +173,11 @@ int Diff::execute(int argc, char **argv)
     // parameters start at index 2 rather than 1.
     inputParameters.Read(argc, argv, 2);
     
+    if(BamExecutable::phoneHome())
+    {
+        PhoneHome::checkVersion(getProgramName(), VERSION);
+    }
+
     myCompCigar = !noCigar;
     myCompPos = !noPos;
 

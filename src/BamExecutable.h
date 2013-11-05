@@ -34,8 +34,13 @@ public:
     virtual void description();
     virtual void usage();
     virtual int execute(int argc, char**argv) = 0;
+    
+    inline bool phoneHome() { return(!mynoph); }
+    virtual const char* getProgramName() {return("bam");}
+
 
 protected:
+    bool mynoph;
 
 private:
 };

@@ -24,6 +24,7 @@
 #include "Pileup.h"
 #include "PileupElementBaseQCStats.h"
 #include "SamFlag.h"
+#include "PhoneHome.h"
 
 void Stats::statsDescription()
 {
@@ -103,7 +104,6 @@ int Stats::execute(int argc, char **argv)
     PosList *dbsnpListPtr = NULL;
     bool baseSum = false;
     int bufferSize = PileupHelper::DEFAULT_WINDOW_SIZE;
-    bool noph = false;
 
     ParameterList inputParameters;
     BEGIN_LONG_PARAMETERS(longParameterList)
@@ -124,6 +124,7 @@ int Stats::execute(int argc, char **argv)
         LONG_INTPARAMETER("requiredFlags", &requiredFlags)
         LONG_PARAMETER("noeof", &noeof)
         LONG_PARAMETER("params", &params)
+        LONG_PARAMETER("noPhoneHome", &mynoph)
         LONG_PARAMETER_GROUP("Optional phred/qual Only Parameters")
         LONG_PARAMETER("withinRegion", &withinRegion)
         LONG_PARAMETER_GROUP("Optional BaseQC Only Parameters")
@@ -131,8 +132,6 @@ int Stats::execute(int argc, char **argv)
         LONG_INTPARAMETER("bufferSize", &bufferSize)
         LONG_INTPARAMETER("minMapQual", &minMapQual)
         LONG_STRINGPARAMETER("dbsnp", &dbsnp)
-        BEGIN_LEGACY_PARAMETERS()
-        LONG_PARAMETER("noph", &noph)
         END_LONG_PARAMETERS();
    
     inputParameters.Add(new LongParameters ("Input Parameters", 
@@ -140,6 +139,11 @@ int Stats::execute(int argc, char **argv)
 
     // parameters start at index 2 rather than 1.
     inputParameters.Read(argc, argv, 2);
+
+    if(BamExecutable::phoneHome())
+    {
+        PhoneHome::checkVersion(getProgramName(), VERSION);
+    }
 
     // If no eof block is required for a bgzf file, set the bgzf file type to 
     // not look for it.

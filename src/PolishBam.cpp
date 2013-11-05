@@ -25,6 +25,7 @@
 #include "SamFile.h"
 #include "PolishBam.h"
 #include "Logger.h"
+#include "PhoneHome.h"
 
 ///////////////////////////////////////////////////////////////////////
 //
@@ -242,7 +243,8 @@ int PolishBam::execute(int argc, char ** argv)
       { "RG", required_argument, NULL, 0},
       { "PG", required_argument, NULL, 0},
       { "checkSQ", no_argument, NULL, 0},
-      { "noph", no_argument, NULL, 'p'},
+      { "noPhoneHome", no_argument, NULL, 'p'},
+      { "nophonehome", no_argument, NULL, 'P'},
       { NULL, 0, NULL, 0 },
     };
 
@@ -276,6 +278,9 @@ int PolishBam::execute(int argc, char ** argv)
     else if ( c == 'l' ) {
 	sLogFile = optarg;
     }
+    else if (( c == 'p' )||( c == 'P' )) {
+        mynoph = true;
+    }
     else if ( strcmp(getopt_long_options[n_option_index].name,"AS") == 0 ) {
       sAS = optarg;
     }
@@ -297,9 +302,6 @@ int PolishBam::execute(int argc, char ** argv)
     else if ( strcmp(getopt_long_options[n_option_index].name,"checkSQ") == 0 ) {
       bCheckSQ = true;
     }
-    else if ( strcmp(getopt_long_options[n_option_index].name,"noph") == 0 ) {
-        // nothing to do.
-    }
     else {
       std::cerr << "Error: Unrecognized option " << getopt_long_options[n_option_index].name << std::endl;
       return(-1);
@@ -308,6 +310,11 @@ int PolishBam::execute(int argc, char ** argv)
 
   if ( sLogFile.compare("__NONE__") == 0 ) {
     sLogFile = (sOutFile + ".log");
+  }
+
+  if(BamExecutable::phoneHome())
+  {
+      PhoneHome::checkVersion(getProgramName(), VERSION);
   }
 
   Logger::gLogger = new Logger(sLogFile.c_str(), bVerbose);

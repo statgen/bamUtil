@@ -1,13 +1,3 @@
-
-Input Parameters
- --in [testFiles/testInvalid2.bam], --noeof, --refFile [], --maxErrors [-1],
-               --verbose [ON], --printableErrors [100], --disableStatistics,
-               --params [ON]
-   SortOrder : --so_flag, --so_coord, --so_query
-
-Additional Options:
-               --noph [ON]
-
 1 invalid SAM/BAM Header lines were skipped due to:
 SAM/BAM Header line failure: Skipping PG line that has a repeated ID field.
 

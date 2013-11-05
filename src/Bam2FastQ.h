@@ -37,6 +37,7 @@ public:
     void description();
     void usage();
     int execute(int argc, char **argv);
+    virtual const char* getProgramName() {return("bam:bam2FastQ");}
 
 private:
     static const char* DEFAULT_FIRST_EXT;

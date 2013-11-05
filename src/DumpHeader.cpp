@@ -22,6 +22,7 @@
 #include "DumpHeader.h"
 #include "SamFile.h"
 #include "Parameters.h"
+#include "PhoneHome.h"
 
 void DumpHeader::dumpHeaderDescription()
 {
@@ -47,12 +48,20 @@ int DumpHeader::execute(int argc, char **argv)
 {
     if(argc != 3)
     {
-        if((argc != 4) && (strcmp(argv[3], "--noph") != 0))
+        String noPhArg = "--noPhoneHome";
+        if((argc != 4) || (noPhArg.SlowCompareToStem(argv[3]) != 0))
         {
             usage();
             exit(-1);
         }
+        mynoph = true;
     }
+
+    if(BamExecutable::phoneHome())
+    {
+        PhoneHome::checkVersion(getProgramName(), VERSION);
+    }
+
     // Dump the bam index.
     return(dumpHeader(argv[2]));
 }

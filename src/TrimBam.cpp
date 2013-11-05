@@ -25,6 +25,7 @@
 #include "SamFlag.h"
 #include "BgzfFileType.h"
 #include "TrimBam.h"
+#include "PhoneHome.h"
 
 void TrimBam::trimBamDescription()
 {
@@ -76,7 +77,8 @@ int TrimBam::execute(int argc, char ** argv)
       { "right", required_argument, NULL, 'R'},
       { "ignoreStrand", no_argument, NULL, 'i'},
       { "noeof", no_argument, NULL, 'n'},
-      { "noph", no_argument, NULL, 'p'},
+      { "noPhoneHome", no_argument, NULL, 'p'},
+      { "nophonehome", no_argument, NULL, 'P'},
       { NULL, 0, NULL, 0 },
   };
   
@@ -112,13 +114,19 @@ int TrimBam::execute(int argc, char ** argv)
               noeof = true;
               break;
           case 'p':
-              // no phonehome option handled in Main.
+          case 'P':
+              mynoph = true;
               break;
           default:
               fprintf(stderr,"ERROR: Unrecognized option %s\n",
                       getopt_long_options[n_option_index].name);
               return(-1);
       }
+  }
+
+  if(BamExecutable::phoneHome())
+  {
+      PhoneHome::checkVersion(getProgramName(), VERSION);
   }
 
   if(noeof)

@@ -25,7 +25,7 @@
 #include "SamFile.h"
 #include "Parameters.h"
 #include "BgzfFileType.h"
-
+#include "PhoneHome.h"
 
 FindCigars::FindCigars()
 {
@@ -78,7 +78,6 @@ int FindCigars::execute(int argc, char **argv)
     bool nonM = false;
     bool noeof = false;
     bool params = false;
-    bool noph = false;
 
     std::bitset<Cigar::MAX_OP_VALUE+1> desiredOps;
 
@@ -95,8 +94,7 @@ int FindCigars::execute(int argc, char **argv)
         LONG_PARAMETER("nonM", &nonM)
         LONG_PARAMETER("noeof", &noeof)
         LONG_PARAMETER("params", &params)
-        BEGIN_LEGACY_PARAMETERS()
-        LONG_PARAMETER("noph", &noph)
+        LONG_PARAMETER("noPhoneHome", &mynoph)
         END_LONG_PARAMETERS();
    
     inputParameters.Add(new LongParameters ("Input Parameters", 
@@ -104,6 +102,11 @@ int FindCigars::execute(int argc, char **argv)
     
     // parameters start at index 2 rather than 1.
     inputParameters.Read(argc, argv, 2);
+
+    if(BamExecutable::phoneHome())
+    {
+        PhoneHome::checkVersion(getProgramName(), VERSION);
+    }
 
     // If no eof block is required for a bgzf file, set the bgzf file type to 
     // not look for it.

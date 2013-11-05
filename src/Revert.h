@@ -34,6 +34,7 @@ public:
     void description();
     void usage();
     int execute(int argc, char **argv);
+    virtual const char* getProgramName() {return("bam:revert");}
 private:
     bool updateCigar(SamRecord& samRecord);
     bool updateQual(SamRecord& samRecord);

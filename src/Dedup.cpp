@@ -27,6 +27,7 @@
 #include "SamHelper.h"
 #include "SamStatus.h"
 #include "BgzfFileType.h"
+#include "PhoneHome.h"
 
 const int Dedup::DEFAULT_MIN_QUAL = 15;
 const uint32_t Dedup::CLIP_OFFSET = 1000;
@@ -116,7 +117,6 @@ int Dedup::execute(int argc, char** argv)
     uint16_t intExcludeFlags = 0;
     bool noeof = false;
     bool params = false;
-    bool noph = false;
     LongParamContainer parameters;
     parameters.addGroup("Required Parameters");
     parameters.addString("in", &inFile);
@@ -132,9 +132,8 @@ int Dedup::execute(int argc, char** argv)
     parameters.addBool("verbose", &verboseFlag);
     parameters.addBool("noeof", &noeof);
     parameters.addBool("params", &params);
+    parameters.addBool("noPhoneHome", &mynoph);
     myRecab.addRecabSpecificParameters(parameters);
-    parameters.startLegacyParams();
-    parameters.addBool("noph", &noph);
 
     ParameterList inputParameters;
     inputParameters.Add(new LongParameters ("Input Parameters", 
@@ -143,6 +142,11 @@ int Dedup::execute(int argc, char** argv)
     // parameters start at index 2 rather than 1.
     inputParameters.Read(argc, argv, 2);
     
+    if(BamExecutable::phoneHome())
+    {
+        PhoneHome::checkVersion(getProgramName(), VERSION);
+    }
+
     // If no eof block is required for a bgzf file, set the bgzf file type to 
     // not look for it.
     if(noeof)

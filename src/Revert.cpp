@@ -25,7 +25,7 @@
 #include "Parameters.h"
 #include "BgzfFileType.h"
 #include "SamTags.h"
-
+#include "PhoneHome.h"
 
 Revert::Revert()
     : myKeepTags(false)
@@ -75,7 +75,6 @@ int Revert::execute(int argc, char **argv)
     bool rmBQ = false;
     String rmTags = "";
     myKeepTags = false;
-    bool noph = false;
 
     ParameterList inputParameters;
     BEGIN_LONG_PARAMETERS(longParameterList)
@@ -88,8 +87,7 @@ int Revert::execute(int argc, char **argv)
         LONG_STRINGPARAMETER("rmTags", &rmTags)
         LONG_PARAMETER("noeof", &noeof)
         LONG_PARAMETER("params", &params)
-        BEGIN_LEGACY_PARAMETERS()
-        LONG_PARAMETER("noph", &noph)
+        LONG_PARAMETER("noPhoneHome", &mynoph)
         END_LONG_PARAMETERS();
    
     inputParameters.Add(new LongParameters ("Input Parameters", 
@@ -97,6 +95,11 @@ int Revert::execute(int argc, char **argv)
     
     // parameters start at index 2 rather than 1.
     inputParameters.Read(argc, argv, 2);
+
+    if(BamExecutable::phoneHome())
+    {
+        PhoneHome::checkVersion(getProgramName(), VERSION);
+    }
 
     // If no eof block is required for a bgzf file, set the bgzf file type to 
     // not look for it.

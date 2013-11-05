@@ -28,6 +28,7 @@
 #include "SamFile.h"
 #include "Logger.h"
 #include "BgzfFileType.h"
+#include "PhoneHome.h"
 
 ////////////////////////////////////////////////////////////////////////
 // SplitBam : 
@@ -100,7 +101,8 @@ int SplitBam::execute(int argc, char ** argv)
       { "verbose", no_argument, NULL, 'v'},
       { "noeof", no_argument, NULL, 'n'},
       { "log", required_argument, NULL, 'L'},
-      { "noph", no_argument, NULL, 'p'},
+      { "noPhoneHome", no_argument, NULL, 'p'},
+      { "nophonehome", no_argument, NULL, 'P'},
       { NULL, 0, NULL, 0 },
     };
 
@@ -129,7 +131,8 @@ int SplitBam::execute(int argc, char ** argv)
       s_logger = optarg;
       break;
     case 'p':
-      // no phonehome option handled in Main.
+    case 'P':
+      mynoph = true;
       break;
     default:
       fprintf(stderr,"ERROR: Unrecognized option %s\n",getopt_long_options[n_option_index].name);
@@ -139,6 +142,11 @@ int SplitBam::execute(int argc, char ** argv)
 
   if ( s_logger.empty() ) {
     s_logger = s_out + ".log";
+  }
+  
+  if(BamExecutable::phoneHome())
+  {
+      PhoneHome::checkVersion(getProgramName(), VERSION);
   }
 
   if(noeof)

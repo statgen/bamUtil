@@ -52,6 +52,7 @@ public:
     void recabSpecificUsageLine();
     void recabSpecificUsage();
     int execute(int argc, char **argv);
+    virtual const char* getProgramName() {return("bam:recab");}
 
     bool processReadBuildTable(SamRecord& record);
     bool processReadApplyTable(SamRecord& record);
