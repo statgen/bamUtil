@@ -55,7 +55,7 @@ uint64_t UNMAPPED_GENOMIC_COORDINATE = 0xfffffffffffffffeULL;
 
 // function declarations
 bool parseListFile(std::string& listFile, vector<std::string>& bamFiles, vector<ReadGroup>& readGroups, vector<ReadGroup>& uniqReadGroups);
-void parseOutRG(SamFileHeader& header, std::string& noRgPgString, SamFileHeader* newHeader);
+void parseOutRG(SamFileHeader& header, std::string& noRgPgString, SamFileHeader* newHeader, bool ignorePI);
 uint64_t getGenomicCoordinate(SamRecord& r);
 void addReadGroupToHeader(SamFileHeader& header, ReadGroup& rg);
 void addReadGroupTag(SamRecord& record, ReadGroup& rg);
@@ -94,6 +94,7 @@ void MergeBam::usage()
      std::cerr << "\tPL : Platform/technology used to produce the read" << std::endl;
      std::cerr << "\t* (Required fields)" << std::endl;
      std::cerr << "Optional parameters : " << std::endl;
+     std::cerr << "--ignorePI/-I : Ignore the RG PI field when comparing headers\n";
      std::cerr << "--log/-L : Log file" << std::endl;
      std::cerr << "--verbose/-v : Turn on verbose mode" << std::endl;
 }
@@ -109,6 +110,7 @@ int MergeBam::execute(int argc, char ** argv)
       { "out", required_argument, NULL, 'o'},
       { "verbose", no_argument, NULL, 'v'},
       { "log", required_argument, NULL, 'L'},
+      { "ignorePI", no_argument, NULL, 'I'},
       { NULL, 0, NULL, 0 },
     };
 
@@ -120,11 +122,12 @@ int MergeBam::execute(int argc, char ** argv)
   int n_option_index = 0;
   char c;
   bool b_verbose = false;
+  bool ignorePI = false;
   vector<std::string> vs_in_bam_files; // input BAM files
 
   std::string s_list, s_out, s_logger;
 
-  while ( ( c = getopt_long(argc, argv, "l:i:o:vL:", getopt_long_options, &n_option_index) ) != -1 ) {
+  while ( ( c = getopt_long(argc, argv, "l:i:o:vIL:", getopt_long_options, &n_option_index) ) != -1 ) {
     switch(c) {
     case 'i':
       vs_in_bam_files.push_back(optarg);
@@ -140,6 +143,9 @@ int MergeBam::execute(int argc, char ** argv)
       break;
     case 'L':
       s_logger = optarg;
+      break;
+    case 'I':
+      ignorePI = true;
       break;
     default:
       fprintf(stderr,"Unrecognized option %s",getopt_long_options[n_option_index].name);
@@ -251,11 +257,11 @@ int MergeBam::execute(int argc, char ** argv)
           // First header, so store it as the first header
           newHeader = p_headers[i];
           // Determine the header without RG.
-          parseOutRG(p_headers[i], firstHeaderNoRGPG, NULL);
+          parseOutRG(p_headers[i], firstHeaderNoRGPG, NULL, ignorePI);
       }
       else
       {
-          parseOutRG(p_headers[i], headerNoRGPG, &newHeader);
+          parseOutRG(p_headers[i], headerNoRGPG, &newHeader, ignorePI);
           if(firstHeaderNoRGPG != headerNoRGPG)
           {
               Logger::gLogger->error("The headers are not identical at index %d",i);
@@ -473,7 +479,7 @@ bool parseListFile(std::string& listFile, vector<std::string>& bamFiles, vector<
 }
 
 
-void parseOutRG(SamFileHeader& header, std::string& noRgPgString, SamFileHeader* newHeader)
+void parseOutRG(SamFileHeader& header, std::string& noRgPgString, SamFileHeader* newHeader, bool ignorePI)
 {
     noRgPgString.clear();
     // strings for comparing if two RGs with same ID are the same.
@@ -500,12 +506,77 @@ void parseOutRG(SamFileHeader& header, std::string& noRgPgString, SamFileHeader*
                     newString.clear();
                     status &= prevRG->appendString(prevString);
                     status &= rec->appendString(newString);
+
                     if(prevString != newString)
                     {
-                        // They are not identical, so report an error.
-                        Logger::gLogger->error("Failed to add readgroup to header, "
-                                               "duplicate, but non-identical RG ID, %s",
-                                               rec->getTagValue("ID"));
+                        if(!ignorePI)
+                        {
+                            Logger::gLogger->error("Failed to add readgroup to "
+                                                   "header, duplicate, but "
+                                                   "non-identical RG ID, %s",
+                                                   rec->getTagValue("ID"));
+                        }
+                        else
+                        {
+                            // Check for a PI string.
+                            size_t prevPIStart = prevString.find("PI:");
+                            size_t newPIStart = newString.find("PI:");
+
+                            // If they are both npos, then PI was not found
+                            // so fail.
+                            if((prevPIStart == std::string::npos) &&
+                               (newPIStart == std::string::npos))
+                            {
+                                // They are not identical, so report an error.
+                                Logger::gLogger->error("Failed to add readgroup"
+                                                       " to header, duplicate,"
+                                                       " but non-identical RG"
+                                                       " ID, %s",
+                                                       rec->getTagValue("ID"));
+                            }
+                            else
+                            {
+                                // PI found in one or both strings.
+                                size_t prevPIEnd;
+                                size_t newPIEnd;
+                                if(prevPIStart == std::string::npos)
+                                {
+                                    // new string has PI, so compare to the start of that.
+                                    prevPIStart = newPIStart;
+                                    prevPIEnd = newPIStart;
+                                }
+                                else
+                                {
+                                    prevPIEnd = prevString.find('\t', prevPIStart) + 1;
+                                }
+                                if(newPIStart == std::string::npos)
+                                {
+                                    // new string has PI, so compare to the start of that.
+                                    newPIStart = prevPIStart;
+                                    newPIEnd = newPIStart;
+                                }
+                                else
+                                {
+                                    newPIEnd = newString.find('\t', newPIStart) + 1;
+                                }
+                                // Compare before PI.
+                                if((newString.compare(0, newPIStart, prevString, 0, prevPIStart) != 0) ||
+                                   (newString.compare(newPIEnd, std::string::npos, prevString,
+                                                      prevPIEnd, std::string::npos) != 0))
+                                {
+                                    // They are not identical, so report an error.
+                                    Logger::gLogger->error("Failed to add readgroup to header, "
+                                                           "duplicate, but non-identical RG ID, %s",
+                                                           rec->getTagValue("ID"));
+                                }
+                                else
+                                {
+                                    Logger::gLogger->warning("Warning: ignoring non-identical PI field "
+                                                             "for RG ID, %s",
+                                                             rec->getTagValue("ID"));
+                                }
+                            }
+                        }
                     }
                 }
                 else
