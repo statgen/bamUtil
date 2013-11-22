@@ -79,7 +79,113 @@ then
     ERROR=true
 fi
 
-diff results/mergeSam4.log expected/mergeSam3.log
+diff results/mergeSam4.log expected/mergeSam4.log
+if [ $? -ne 0 ]
+then
+    ERROR=true
+fi
+
+# Files with same headers, and same RG ids, but one has PI
+../bin/bam mergeBam -o results/mergeSamPI.sam -i testFiles/sortedSam.sam -i testFiles/sortedSamPI.sam --ignorePI
+if [ $? -ne 0 ]
+then
+    ERROR=true
+fi
+
+diff results/mergeSamPI.sam expected/mergeSam3.sam
+if [ $? -ne 0 ]
+then
+    ERROR=true
+fi
+
+# Files with same headers, and same RG ids, but different values and one has PI.
+../bin/bam mergeBam -o results/mergeSamPI4.sam -i testFiles/sortedSamPI.sam -i testFiles/sortedSam2.sam -I 2> results/mergeSamPI4.log
+if [ $? -eq 0 ]
+then
+    echo "Merge passed when expected to fail."
+    ERROR=true
+fi
+
+if [ -e results/mergeSamPI4.sam ]
+then
+    echo "Unexpected results/mergeSam4.sam file."
+    ERROR=true
+fi
+
+diff results/mergeSamPI4.log expected/mergeSam4.log
+if [ $? -ne 0 ]
+then
+    ERROR=true
+fi
+
+# Files with same headers, and same RG ids, but different PIs
+../bin/bam mergeBam -o results/mergeSamPI1.sam -i testFiles/sortedSamPI1.sam -i testFiles/sortedSamPI.sam -I
+if [ $? -ne 0 ]
+then
+    ERROR=true
+fi
+
+diff results/mergeSamPI1.sam expected/mergeSamPI1.sam
+if [ $? -ne 0 ]
+then
+    ERROR=true
+fi
+
+# Files with same headers, and same RG ids, but different values before PI.
+../bin/bam mergeBam -o results/mergeSamBeforePIfail.sam -i testFiles/sortedSamPI.sam -i testFiles/sortedSamPI2.sam -I 2> results/mergeSamBeforePIfail.log
+if [ $? -eq 0 ]
+then
+    echo "Merge passed when expected to fail."
+    ERROR=true
+fi
+
+if [ -e results/mergeSamBeforePIfail.sam ]
+then
+    echo "Unexpected results/mergeSamBeforePIfail.sam file."
+    ERROR=true
+fi
+
+diff results/mergeSamBeforePIfail.log expected/mergeSam4.log
+if [ $? -ne 0 ]
+then
+    ERROR=true
+fi
+
+# Files with same headers, and same RG ids, but different values after PI.
+../bin/bam mergeBam -o results/mergeSamAfterPIfail.sam -i testFiles/sortedSamPI.sam -i testFiles/sortedSamPI3.sam -I 2> results/mergeSamAfterPIfail.log
+if [ $? -eq 0 ]
+then
+    echo "Merge passed when expected to fail."
+    ERROR=true
+fi
+
+if [ -e results/mergeSamAfterPIfail.sam ]
+then
+    echo "Unexpected results/mergeSamAfterPIfail.sam file."
+    ERROR=true
+fi
+
+diff results/mergeSamAfterPIfail.log expected/mergeSam4.log
+if [ $? -ne 0 ]
+then
+    ERROR=true
+fi
+
+# Files with same headers, and same RG ids, but different values before PI.
+../bin/bam mergeBam -o results/mergeSamPIfail.sam -i testFiles/sortedSamPI.sam -i testFiles/sortedSamPI1.sam 2> results/mergeSamPIfail.log
+if [ $? -eq 0 ]
+then
+    echo "Merge passed when expected to fail."
+    ERROR=true
+fi
+
+if [ -e results/mergeSamPIfail.sam ]
+then
+    echo "Unexpected results/mergeSamPIfail.sam file."
+    ERROR=true
+fi
+
+diff results/mergeSamPIfail.log expected/mergeSam4.log
 if [ $? -ne 0 ]
 then
     ERROR=true
