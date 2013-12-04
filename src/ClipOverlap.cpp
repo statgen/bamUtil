@@ -26,7 +26,7 @@
 #include "SamFlag.h"
 #include "SamHelper.h"
 #include "OverlapClipLowerBaseQual.h"
-
+#include "PhoneHome.h"
 
 ClipOverlap::ClipOverlap()
     : BamExecutable(),
@@ -94,7 +94,6 @@ int ClipOverlap::execute(int argc, char **argv)
     String excludeFlags = "0x70C";
 
     // TODO, cleanup legacy parameters
-
     ParameterList inputParameters;
     BEGIN_LONG_PARAMETERS(longParameterList)
         LONG_PARAMETER_GROUP("Required Parameters")
@@ -108,6 +107,7 @@ int ClipOverlap::execute(int argc, char **argv)
         LONG_STRINGPARAMETER ("excludeFlags", &excludeFlags)
         LONG_PARAMETER("noeof", &noeof)
         LONG_PARAMETER("params", &params)
+        LONG_PARAMETER("noPhoneHome", &mynoph)
         LONG_PARAMETER_GROUP("Coordinate Processing Optional Parameters")
         LONG_INTPARAMETER("poolSize", &poolSize)
         LONG_PARAMETER("poolSkipOverlap", &myPoolSkipOverlap)
@@ -119,7 +119,13 @@ int ClipOverlap::execute(int argc, char **argv)
     inputParameters.Add(new LongParameters ("Input Parameters", 
                                             longParameterList));
 
-    inputParameters.Read(argc-1, &(argv[1]));
+    // parameters start at index 2 rather than 1.
+    inputParameters.Read(argc, argv, 2);
+
+    if(BamExecutable::phoneHome())
+    {
+        PhoneHome::checkVersion(getProgramName(), VERSION);
+    }
 
     // If no eof block is required for a bgzf file, set the bgzf file type to 
     // not look for it.

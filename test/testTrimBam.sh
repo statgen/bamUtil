@@ -1,6 +1,6 @@
 ERROR=false
 
-../bin/bam trimBam testFiles/testTrim.sam results/trimSam.sam 2 2> results/testTrim.log
+../bin/bam trimBam testFiles/testTrim.sam results/trimSam.sam 2 --noph 2> results/testTrim.log
 if [ $? -ne 0 ]
 then
     ERROR=true
@@ -12,7 +12,7 @@ then
     ERROR=true
 fi
 
-../bin/bam trimBam testFiles/testTrim.sam results/trimSam3.sam 3 2> results/testTrim3.log
+../bin/bam trimBam testFiles/testTrim.sam results/trimSam3.sam 3 --noph 2> results/testTrim3.log
 if [ $? -ne 0 ]
 then
     ERROR=true
@@ -25,7 +25,7 @@ then
 fi
 
 
-../bin/bam trimBam testFiles/testTrim.sam results/trimSamL1R2.sam -L 1 -R 2 2> results/testTrimL1R2.log
+../bin/bam trimBam testFiles/testTrim.sam results/trimSamL1R2.sam -L 1 -R 2 --noph 2> results/testTrimL1R2.log
 if [ $? -ne 0 ]
 then
     ERROR=true
@@ -38,7 +38,7 @@ then
 fi
 
 
-../bin/bam trimBam testFiles/testTrim.sam results/trimSamL1R2is.sam -L 1 -i -R 2 2> results/testTrimL1R2is.log
+../bin/bam trimBam testFiles/testTrim.sam results/trimSamL1R2is.sam -L 1 -i -R 2 --noph 2> results/testTrimL1R2is.log
 if [ $? -ne 0 ]
 then
     ERROR=true
@@ -50,7 +50,7 @@ then
     ERROR=true
 fi
 
-../bin/bam trimBam testFiles/testTrim.sam results/trimSamL1R2ignoreStrand.sam --ignoreStrand --left 1 --right 2 2> results/testTrimL1R2ignoreStrand.log
+../bin/bam trimBam testFiles/testTrim.sam results/trimSamL1R2ignoreStrand.sam --ignoreStrand --left 1 --right 2 --noph 2> results/testTrimL1R2ignoreStrand.log
 if [ $? -ne 0 ]
 then
     ERROright=true

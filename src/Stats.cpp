@@ -24,6 +24,7 @@
 #include "Pileup.h"
 #include "PileupElementBaseQCStats.h"
 #include "SamFlag.h"
+#include "PhoneHome.h"
 
 void Stats::statsDescription()
 {
@@ -123,6 +124,7 @@ int Stats::execute(int argc, char **argv)
         LONG_INTPARAMETER("requiredFlags", &requiredFlags)
         LONG_PARAMETER("noeof", &noeof)
         LONG_PARAMETER("params", &params)
+        LONG_PARAMETER("noPhoneHome", &mynoph)
         LONG_PARAMETER_GROUP("Optional phred/qual Only Parameters")
         LONG_PARAMETER("withinRegion", &withinRegion)
         LONG_PARAMETER_GROUP("Optional BaseQC Only Parameters")
@@ -135,7 +137,13 @@ int Stats::execute(int argc, char **argv)
     inputParameters.Add(new LongParameters ("Input Parameters", 
                                             longParameterList));
 
-    inputParameters.Read(argc-1, &(argv[1]));
+    // parameters start at index 2 rather than 1.
+    inputParameters.Read(argc, argv, 2);
+
+    if(BamExecutable::phoneHome())
+    {
+        PhoneHome::checkVersion(getProgramName(), VERSION);
+    }
 
     // If no eof block is required for a bgzf file, set the bgzf file type to 
     // not look for it.

@@ -24,6 +24,7 @@
 #include "SamFile.h"
 #include "Parameters.h"
 #include "SamValidation.h"
+#include "PhoneHome.h"
 
 void ReadIndexedBam::readIndexedBamDescription()
 {
@@ -48,8 +49,17 @@ int ReadIndexedBam::execute(int argc, char ** argv)
 {
     if(argc != 5)
     {
-        usage();
-        exit(-1);
+        String noPhArg = "--noPhoneHome";
+        if((argc != 6) || (noPhArg.SlowCompareToStem(argv[5]) != 0))
+        {
+            usage();
+            exit(-1);
+        }
+        mynoph = true;
+    }
+    if(BamExecutable::phoneHome())
+    {
+        PhoneHome::checkVersion(getProgramName(), VERSION);
     }
     return(readIndexedBam(argv[2], argv[3], argv[4]));
 }

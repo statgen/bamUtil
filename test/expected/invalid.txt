@@ -3,7 +3,7 @@ Input Parameters
  --in [testFiles/testInvalid.sam], --noeof,
                --refFile [testFilesLibBam/chr1_partial.fa], --maxErrors [-1],
                --verbose [ON], --printableErrors [100], --disableStatistics,
-               --params [ON]
+               --params [ON], --noPhoneHome [ON]
    SortOrder : --so_flag, --so_coord, --so_query
 
 Record 1

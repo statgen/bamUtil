@@ -1,6 +1,6 @@
 ERROR=false
 
-../bin/bam mergeBam --out results/mergeBam.bam --list testFiles/mergeBam.list
+../bin/bam mergeBam --out results/mergeBam.bam --list testFiles/mergeBam.list --noph
 if [ $? -ne 0 ]
 then
     ERROR=true
@@ -12,7 +12,7 @@ then
     ERROR=true
 fi
 
-../bin/bam mergeBam -o results/mergeSam.sam -l testFiles/mergeSam.list
+../bin/bam mergeBam -o results/mergeSam.sam -l testFiles/mergeSam.list --noph
 if [ $? -ne 0 ]
 then
     ERROR=true
@@ -25,7 +25,7 @@ then
 fi
 
 # Files with same headers, but differ RGs
-../bin/bam mergeBam -o results/mergeSam1.sam -i testFiles/sortedSam.sam -i testFiles/sortedSam1.sam
+../bin/bam mergeBam -o results/mergeSam1.sam -i testFiles/sortedSam.sam -i testFiles/sortedSam1.sam --noph
 if [ $? -ne 0 ]
 then
     ERROR=true
@@ -39,7 +39,7 @@ fi
 
 
 # Files with same headers, but differ RGs, swap the order
-../bin/bam mergeBam -o results/mergeSam2.sam -i testFiles/sortedSam1.sam -i testFiles/sortedSam.sam
+../bin/bam mergeBam -o results/mergeSam2.sam -i testFiles/sortedSam1.sam -i testFiles/sortedSam.sam --noph
 if [ $? -ne 0 ]
 then
     ERROR=true
@@ -53,7 +53,7 @@ fi
 
 
 # Files with same headers, and same RGs (same files)
-../bin/bam mergeBam -o results/mergeSam3.sam -i testFiles/sortedSam.sam -i testFiles/sortedSam.sam
+../bin/bam mergeBam -o results/mergeSam3.sam -i testFiles/sortedSam.sam -i testFiles/sortedSam.sam --noph
 if [ $? -ne 0 ]
 then
     ERROR=true
@@ -66,7 +66,7 @@ then
 fi
 
 # Files with same headers, and same RG ids, but different values.
-../bin/bam mergeBam -o results/mergeSam4.sam -i testFiles/sortedSam.sam -i testFiles/sortedSam2.sam 2> results/mergeSam4.log
+../bin/bam mergeBam -o results/mergeSam4.sam -i testFiles/sortedSam.sam -i testFiles/sortedSam2.sam --noph 2> results/mergeSam4.log
 if [ $? -eq 0 ]
 then
     echo "Merge passed when expected to fail."
@@ -86,7 +86,7 @@ then
 fi
 
 # Files with same headers, and same RG ids, but one has PI
-../bin/bam mergeBam -o results/mergeSamPI.sam -i testFiles/sortedSam.sam -i testFiles/sortedSamPI.sam --ignorePI
+../bin/bam mergeBam -o results/mergeSamPI.sam -i testFiles/sortedSam.sam -i testFiles/sortedSamPI.sam --ignorePI --noph
 if [ $? -ne 0 ]
 then
     ERROR=true
@@ -99,7 +99,7 @@ then
 fi
 
 # Files with same headers, and same RG ids, but different values and one has PI.
-../bin/bam mergeBam -o results/mergeSamPI4.sam -i testFiles/sortedSamPI.sam -i testFiles/sortedSam2.sam -I 2> results/mergeSamPI4.log
+../bin/bam mergeBam -o results/mergeSamPI4.sam -i testFiles/sortedSamPI.sam -i testFiles/sortedSam2.sam -I --noph 2> results/mergeSamPI4.log
 if [ $? -eq 0 ]
 then
     echo "Merge passed when expected to fail."
@@ -119,7 +119,7 @@ then
 fi
 
 # Files with same headers, and same RG ids, but different PIs
-../bin/bam mergeBam -o results/mergeSamPI1.sam -i testFiles/sortedSamPI1.sam -i testFiles/sortedSamPI.sam -I
+../bin/bam mergeBam -o results/mergeSamPI1.sam -i testFiles/sortedSamPI1.sam -i testFiles/sortedSamPI.sam -I --noph
 if [ $? -ne 0 ]
 then
     ERROR=true
@@ -132,7 +132,7 @@ then
 fi
 
 # Files with same headers, and same RG ids, but different values before PI.
-../bin/bam mergeBam -o results/mergeSamBeforePIfail.sam -i testFiles/sortedSamPI.sam -i testFiles/sortedSamPI2.sam -I 2> results/mergeSamBeforePIfail.log
+../bin/bam mergeBam -o results/mergeSamBeforePIfail.sam -i testFiles/sortedSamPI.sam -i testFiles/sortedSamPI2.sam -I --noph 2> results/mergeSamBeforePIfail.log
 if [ $? -eq 0 ]
 then
     echo "Merge passed when expected to fail."
@@ -152,7 +152,7 @@ then
 fi
 
 # Files with same headers, and same RG ids, but different values after PI.
-../bin/bam mergeBam -o results/mergeSamAfterPIfail.sam -i testFiles/sortedSamPI.sam -i testFiles/sortedSamPI3.sam -I 2> results/mergeSamAfterPIfail.log
+../bin/bam mergeBam -o results/mergeSamAfterPIfail.sam -i testFiles/sortedSamPI.sam -i testFiles/sortedSamPI3.sam -I --noph 2> results/mergeSamAfterPIfail.log
 if [ $? -eq 0 ]
 then
     echo "Merge passed when expected to fail."
@@ -172,7 +172,7 @@ then
 fi
 
 # Files with same headers, and same RG ids, but different values before PI.
-../bin/bam mergeBam -o results/mergeSamPIfail.sam -i testFiles/sortedSamPI.sam -i testFiles/sortedSamPI1.sam 2> results/mergeSamPIfail.log
+../bin/bam mergeBam -o results/mergeSamPIfail.sam -i testFiles/sortedSamPI.sam -i testFiles/sortedSamPI1.sam --noph 2> results/mergeSamPIfail.log
 if [ $? -eq 0 ]
 then
     echo "Merge passed when expected to fail."

@@ -37,6 +37,7 @@ public:
     void description();
     void usage();
     int execute(int argc, char **argv);
+    virtual const char* getProgramName() {return("bam:clipOverlap");}
 
 private:
     static const int DEFAULT_POOL_SIZE = 1000000;

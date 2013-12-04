@@ -21,6 +21,7 @@
 // #include <string.h>
 // #include "SamFile.h"
 #include "SamFlag.h"
+#include "PhoneHome.h"
 
 Squeeze::Squeeze()
     : myBinMid(false),
@@ -114,6 +115,7 @@ int Squeeze::execute(int argc, char ** argv)
         LONG_STRINGPARAMETER("rmTags", &rmTags)
         LONG_PARAMETER("noeof", &noeof)
         LONG_PARAMETER("params", &params)
+        LONG_PARAMETER("noPhoneHome", &mynoph)
         LONG_PARAMETER_GROUP("Quality Bin Parameters")        
         LONG_STRINGPARAMETER("binQualS", &binQualS)
         LONG_STRINGPARAMETER("binQualF", &binQualF)
@@ -125,8 +127,13 @@ int Squeeze::execute(int argc, char ** argv)
     inputParameters.Add(new LongParameters ("Input Parameters", 
                                             longParameterList));
     
-    inputParameters.Read(argc-1, &(argv[1]));
+    // parameters start at index 2 rather than 1.
+    inputParameters.Read(argc, argv, 2);
     
+    if(BamExecutable::phoneHome())
+    {
+        PhoneHome::checkVersion(getProgramName(), VERSION);
+    }
 
     // If no eof block is required for a bgzf file, set the bgzf file type to 
     // not look for it.

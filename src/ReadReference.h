@@ -29,6 +29,7 @@ public:
     void description();
     void usage();
     int execute(int argc, char **argv);
+    virtual const char* getProgramName() {return("bam:readReference");}
 };
 
 #endif

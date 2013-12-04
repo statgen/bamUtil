@@ -21,6 +21,7 @@
 #include "Parameters.h"
 #include "BgzfFileType.h"
 #include "GenomeSequence.h"
+#include "PhoneHome.h"
 
 void ReadReference::readReferenceDescription()
 {
@@ -70,13 +71,20 @@ int ReadReference::execute(int argc, char **argv)
         LONG_INTPARAMETER("end", &end)
         LONG_INTPARAMETER("numBases", &numBases)
         LONG_PARAMETER("params", &params)
+        LONG_PARAMETER("noPhoneHome", &mynoph)
         END_LONG_PARAMETERS();
    
     inputParameters.Add(new LongParameters ("Input Parameters", 
                                             longParameterList));
     
-    inputParameters.Read(argc-1, &(argv[1]));
+    // parameters start at index 2 rather than 1.
+    inputParameters.Read(argc, argv, 2);
     
+    if(BamExecutable::phoneHome())
+    {
+        PhoneHome::checkVersion(getProgramName(), VERSION);
+    }
+
     if((refName == "") || (start == UNSPECIFIED_INT) || 
        ((end == UNSPECIFIED_INT) && (numBases == UNSPECIFIED_INT)))
     {
