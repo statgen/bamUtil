@@ -205,11 +205,13 @@ int ClipOverlap::execute(int argc, char **argv)
 
         if(readName)
         {
+            samIn.setSortedValidation(SamFile::QUERY_NAME);
             runStatus = handleSortedByReadName(samIn, samOutPtr);
         }
         else
         {
             // Coordinate sorted, so work with the pools.
+            samIn.setSortedValidation(SamFile::COORDINATE);
             myPool.setMaxAllocatedRecs(poolSize);
 
             // Reset the number of failures
@@ -351,6 +353,7 @@ SamStatus::Status ClipOverlap::handleSortedByReadName(SamFile& samIn,
                         }
                     }
                     // Clear the previous record info.
+                    tmpRecord = prevSamRecord;
                     prevSamRecord = NULL;
                 } 
                 // If it has the same read name, leave it in case there is another read with that name
