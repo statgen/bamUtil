@@ -525,8 +525,11 @@ void parseOutRG(SamFileHeader& header, std::string& noRgPgString, SamFileHeader*
                         {
                             Logger::gLogger->error("Failed to add readgroup to "
                                                    "header, duplicate, but "
-                                                   "non-identical RG ID, %s",
-                                                   rec->getTagValue("ID"));
+                                                   "non-identical RG ID, %s\n"
+                                                   "prev:\t(%s)\nnew:\t(%s)",
+                                                   rec->getTagValue("ID"),
+                                                   prevString.c_str(),
+                                                   newString.c_str());
                         }
                         else
                         {
@@ -543,8 +546,11 @@ void parseOutRG(SamFileHeader& header, std::string& noRgPgString, SamFileHeader*
                                 Logger::gLogger->error("Failed to add readgroup"
                                                        " to header, duplicate,"
                                                        " but non-identical RG"
-                                                       " ID, %s",
-                                                       rec->getTagValue("ID"));
+                                                       " ID, %s\n"
+                                                       "prev:\t(%s)\nnew:\t(%s)",
+                                                       rec->getTagValue("ID"),
+                                                       prevString.c_str(),
+                                                       newString.c_str());
                             }
                             else
                             {
@@ -578,8 +584,12 @@ void parseOutRG(SamFileHeader& header, std::string& noRgPgString, SamFileHeader*
                                 {
                                     // They are not identical, so report an error.
                                     Logger::gLogger->error("Failed to add readgroup to header, "
-                                                           "duplicate, but non-identical RG ID, %s",
-                                                           rec->getTagValue("ID"));
+                                                           "duplicate, but non-identical RG ID, %s, "
+                                                           "even when ignoring PI\n"
+                                                           "prev:\t(%s)\nnew:\t(%s)",
+                                                           rec->getTagValue("ID"),
+                                                           prevString.c_str(),
+                                                           newString.c_str());
                                 }
                                 else
                                 {

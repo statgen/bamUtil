@@ -112,7 +112,7 @@ then
     ERROR=true
 fi
 
-diff results/mergeSamPI4.log expected/mergeSam4.log
+diff results/mergeSamPI4.log expected/mergeSam4PI.log
 if [ $? -ne 0 ]
 then
     ERROR=true
@@ -145,7 +145,7 @@ then
     ERROR=true
 fi
 
-diff results/mergeSamBeforePIfail.log expected/mergeSam4.log
+diff results/mergeSamBeforePIfail.log expected/mergeSamPI_2.log
 if [ $? -ne 0 ]
 then
     ERROR=true
@@ -165,7 +165,7 @@ then
     ERROR=true
 fi
 
-diff results/mergeSamAfterPIfail.log expected/mergeSam4.log
+diff results/mergeSamAfterPIfail.log expected/mergeSamPI_3.log
 if [ $? -ne 0 ]
 then
     ERROR=true
@@ -185,7 +185,7 @@ then
     ERROR=true
 fi
 
-diff results/mergeSamPIfail.log expected/mergeSam4.log
+diff results/mergeSamPIfail.log expected/mergeSamPIfail.log
 if [ $? -ne 0 ]
 then
     ERROR=true

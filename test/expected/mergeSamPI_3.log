@@ -1,0 +1,11 @@
+ERROR : Failed to add readgroup to header, duplicate, but non-identical RG ID, myID2, even when ignoring PI
+prev:	(@RG	ID:myID2	SM:sample2	PI:500	LB:library2
+)
+new:	(@RG	ID:myID2	SM:sample2	PI:500	LB:library22
+)
+Exiting due to ERROR:
+	ERROR: Failed to add readgroup to header, duplicate, but non-identical RG ID, myID2, even when ignoring PI
+prev:	(@RG	ID:myID2	SM:sample2	PI:500	LB:library2
+)
+new:	(@RG	ID:myID2	SM:sample2	PI:500	LB:library22
+)
