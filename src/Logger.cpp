@@ -40,7 +40,7 @@ Logger::Logger(const char* filename, bool verbose)
       std::string errorMsg = "ERROR: Cannot open the log file ";
       errorMsg += filename;
       errorMsg += ". Check if the directory exists and you have the permission to create a file";
-      fprintf(stderr,errorMsg.c_str());
+      fprintf(stderr,"%s",errorMsg.c_str());
       throw(std::runtime_error(errorMsg.c_str()));
   }
   fp_err = stderr;
