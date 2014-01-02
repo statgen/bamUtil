@@ -260,26 +260,16 @@ int main(int argc, char ** argv)
         }
         catch (std::runtime_error e)
         {
-            if(bamExe->phoneHome())
-            {
-                compStatus = "Exception:";
-                compStatus += e.what();
-                compStatus.SetLength(18);
-                PhoneHome::completionStatus(bamExe->getProgramName(),
-                                            compStatus.c_str());
-            }
-
+            compStatus = "Exception";
+            PhoneHome::completionStatus(compStatus.c_str());
+            
             std::string errorMsg = "Exiting due to ERROR:\n\t";
             errorMsg += e.what();
             std::cerr << errorMsg << std::endl;
             return(-1);
         }
         compStatus = returnVal;
-        if(bamExe->phoneHome())
-        {
-            PhoneHome::completionStatus(bamExe->getProgramName(), 
-                                        compStatus.c_str());
-        }
+        PhoneHome::completionStatus(compStatus.c_str());
         delete bamExe;
         bamExe = NULL;
         return(returnVal);
@@ -295,25 +285,15 @@ int main(int argc, char ** argv)
         }
         catch (std::runtime_error e)
         {
-            if(bamExe->phoneHome())
-            {
-                compStatus = "Exception:";
-                compStatus += e.what();
-                compStatus.SetLength(18);
-                PhoneHome::completionStatus(bamExe->getProgramName(), 
-                                            compStatus.c_str());
-            }
+            compStatus = "Exception";
+            PhoneHome::completionStatus(compStatus.c_str());
             std::string errorMsg = "Exiting due to ERROR:\n\t";
             errorMsg += e.what();
             std::cerr << errorMsg << std::endl;
             return(-1);
         }
         compStatus = returnVal;
-        if(bamExe->phoneHome())
-        {
-            PhoneHome::completionStatus(bamExe->getProgramName(), 
-                                        compStatus.c_str());
-        }
+        PhoneHome::completionStatus(compStatus.c_str());
         delete bamExe;
         bamExe = NULL;
         return(returnVal);

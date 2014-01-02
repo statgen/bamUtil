@@ -114,6 +114,8 @@ int MergeBam::execute(int argc, char ** argv)
       { "ignorePI", no_argument, NULL, 'I'},
       { "noPhoneHome", no_argument, NULL, 'p'},
       { "nophonehome", no_argument, NULL, 'P'},
+      { "phoneHomeThinning", required_argument, NULL, 't'},
+      { "phonehomethinning", required_argument, NULL, 'T'},
       { NULL, 0, NULL, 0 },
     };
 
@@ -126,6 +128,7 @@ int MergeBam::execute(int argc, char ** argv)
   char c;
   bool b_verbose = false;
   bool ignorePI = false;
+  bool noPhoneHome = false;
   vector<std::string> vs_in_bam_files; // input BAM files
 
   std::string s_list, s_out, s_logger;
@@ -152,7 +155,11 @@ int MergeBam::execute(int argc, char ** argv)
       break;
     case 'p':
     case 'P':
-      mynoph = true;
+      noPhoneHome = true;
+      break;
+    case 't':
+    case 'T':
+        PhoneHome::allThinning = atoi(optarg);
       break;
     default:
       fprintf(stderr,"Unrecognized option %s\n",getopt_long_options[n_option_index].name);
@@ -160,11 +167,11 @@ int MergeBam::execute(int argc, char ** argv)
     }
   }
 
-  if(BamExecutable::phoneHome())
+  if(!noPhoneHome)
   {
       PhoneHome::checkVersion(getProgramName(), VERSION);
   }
-
+  
   if ( s_logger.empty() ) {
       if(s_out.empty())
       {

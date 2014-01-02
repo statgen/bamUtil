@@ -245,6 +245,8 @@ int PolishBam::execute(int argc, char ** argv)
       { "checkSQ", no_argument, NULL, 0},
       { "noPhoneHome", no_argument, NULL, 'p'},
       { "nophonehome", no_argument, NULL, 'P'},
+      { "phoneHomeThinning", required_argument, NULL, 't'},
+      { "phonehomethinning", required_argument, NULL, 'T'},
       { NULL, 0, NULL, 0 },
     };
 
@@ -257,6 +259,7 @@ int PolishBam::execute(int argc, char ** argv)
   std::string sAS, sUR, sSP, sFasta, sInFile, sOutFile, sLogFile;
   bool bClear, bCheckSQ, bVerbose;
   std::vector<std::string> vsHDHeaders, vsRGHeaders, vsPGHeaders;
+  bool noPhoneHome = false;
 
   bCheckSQ = bVerbose = false;
   bClear = true;
@@ -279,7 +282,10 @@ int PolishBam::execute(int argc, char ** argv)
 	sLogFile = optarg;
     }
     else if (( c == 'p' )||( c == 'P' )) {
-        mynoph = true;
+        noPhoneHome = true;
+    }
+    else if (( c == 't' )||( c == 'T' )) {
+        PhoneHome::allThinning = atoi(optarg);
     }
     else if ( strcmp(getopt_long_options[n_option_index].name,"AS") == 0 ) {
       sAS = optarg;
@@ -312,7 +318,7 @@ int PolishBam::execute(int argc, char ** argv)
     sLogFile = (sOutFile + ".log");
   }
 
-  if(BamExecutable::phoneHome())
+  if(!noPhoneHome)
   {
       PhoneHome::checkVersion(getProgramName(), VERSION);
   }

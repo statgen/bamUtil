@@ -20,7 +20,6 @@
 #include "SamFile.h"
 #include "BgzfFileType.h"
 #include "SamFlag.h"
-#include "PhoneHome.h"
 
 GapInfo::GapInfo()
     : BamExecutable()
@@ -83,7 +82,7 @@ int GapInfo::execute(int argc, char **argv)
         LONG_PARAMETER("checkStrand", &checkStrand)
         LONG_PARAMETER("noeof", &noeof)
         LONG_PARAMETER("params", &params)
-        LONG_PARAMETER("noPhoneHome", &mynoph)
+        LONG_PHONEHOME(VERSION)
         END_LONG_PARAMETERS();
    
     inputParameters.Add(new LongParameters ("Input Parameters", 
@@ -91,11 +90,6 @@ int GapInfo::execute(int argc, char **argv)
 
     // parameters start at index 2 rather than 1.
     inputParameters.Read(argc, argv, 2);
-
-    if(BamExecutable::phoneHome())
-    {
-        PhoneHome::checkVersion(getProgramName(), VERSION);
-    }
 
     // If no eof block is required for a bgzf file, set the bgzf file type to 
     // not look for it.

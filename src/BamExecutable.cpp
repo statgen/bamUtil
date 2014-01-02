@@ -26,7 +26,6 @@
 #include "BamExecutable.h"
 
 BamExecutable::BamExecutable()
-    : mynoph(false)
 {
 }
 

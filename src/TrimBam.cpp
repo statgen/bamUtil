@@ -60,6 +60,7 @@ int TrimBam::execute(int argc, char ** argv)
   int numTrimBaseR = 0;
   bool noeof = false;
   bool ignoreStrand = false;
+  bool noPhoneHome = false;
   std::string inName = "";
   std::string outName = "";
 
@@ -79,6 +80,8 @@ int TrimBam::execute(int argc, char ** argv)
       { "noeof", no_argument, NULL, 'n'},
       { "noPhoneHome", no_argument, NULL, 'p'},
       { "nophonehome", no_argument, NULL, 'P'},
+      { "phoneHomeThinning", required_argument, NULL, 't'},
+      { "phonehomethinning", required_argument, NULL, 'T'},
       { NULL, 0, NULL, 0 },
   };
   
@@ -93,7 +96,7 @@ int TrimBam::execute(int argc, char ** argv)
   }
 
   int c = 0;
- int n_option_index = 0;
+  int n_option_index = 0;
   // Process any additional parameters
   while ( ( c = getopt_long(argc, argv,
                             "L:R:in", getopt_long_options, &n_option_index) )
@@ -115,7 +118,11 @@ int TrimBam::execute(int argc, char ** argv)
               break;
           case 'p':
           case 'P':
-              mynoph = true;
+              noPhoneHome = true;
+              break;
+          case 't':
+          case 'T':
+              PhoneHome::allThinning = atoi(optarg);
               break;
           default:
               fprintf(stderr,"ERROR: Unrecognized option %s\n",
@@ -124,11 +131,11 @@ int TrimBam::execute(int argc, char ** argv)
       }
   }
 
-  if(BamExecutable::phoneHome())
+  if(!noPhoneHome)
   {
       PhoneHome::checkVersion(getProgramName(), VERSION);
   }
-
+  
   if(noeof)
   {
       // Set that the eof block is not required.

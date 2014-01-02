@@ -54,14 +54,12 @@ int DumpHeader::execute(int argc, char **argv)
             usage();
             exit(-1);
         }
-        mynoph = true;
     }
-
-    if(BamExecutable::phoneHome())
+    else
     {
         PhoneHome::checkVersion(getProgramName(), VERSION);
     }
-
+    
     // Dump the bam index.
     return(dumpHeader(argv[2]));
 }

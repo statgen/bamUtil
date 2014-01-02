@@ -24,7 +24,6 @@
 #include "Parameters.h"
 #include "BgzfFileType.h"
 #include "SamValidation.h"
-#include "PhoneHome.h"
 
 void Validate::validateDescription()
 {
@@ -89,11 +88,11 @@ int Validate::execute(int argc, char **argv)
         LONG_INTPARAMETER("printableErrors", &printableErrors)
         LONG_PARAMETER("disableStatistics", &disableStatistics)
         LONG_PARAMETER("params", &params)
-        LONG_PARAMETER("noPhoneHome", &mynoph)
         LONG_PARAMETER_GROUP("SortOrder")
         EXCLUSIVE_PARAMETER("so_flag", &so_flag)
         EXCLUSIVE_PARAMETER("so_coord", &so_coord)
         EXCLUSIVE_PARAMETER("so_query", &so_query)
+        LONG_PHONEHOME(VERSION)
         END_LONG_PARAMETERS();
    
     inputParameters.Add(new LongParameters ("Input Parameters", 
@@ -101,11 +100,6 @@ int Validate::execute(int argc, char **argv)
 
     // parameters start at index 2 rather than 1.
     inputParameters.Read(argc, argv, 2);
-
-    if(BamExecutable::phoneHome())
-    {
-        PhoneHome::checkVersion(getProgramName(), VERSION);
-    }
 
     // Determine the sort type for validation based on the parameters.
     SamFile::SortedType sortType = SamFile::UNSORTED;

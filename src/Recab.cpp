@@ -32,7 +32,6 @@
 #include "BaseUtilities.h"
 #include "SamFlag.h"
 #include "BgzfFileType.h"
-#include "PhoneHome.h"
 
 // STL headers
 #include <map>
@@ -180,7 +179,7 @@ int Recab::execute(int argc, char *argv[])
     parameters.addBool("verbose", &verboseFlag);
     parameters.addBool("noeof", &noeof);
     parameters.addBool("params", &params);
-    parameters.addBool("noPhoneHome", &mynoph);
+    parameters.addPhoneHome(VERSION);
     addRecabSpecificParameters(parameters);
     inputParameters.Add(new LongParameters ("Input Parameters", 
                                             parameters.getLongParameterList()));
@@ -188,11 +187,6 @@ int Recab::execute(int argc, char *argv[])
     // parameters start at index 2 rather than 1.
     inputParameters.Read(argc, argv, 2);
     
-    if(BamExecutable::phoneHome())
-    {
-        PhoneHome::checkVersion(getProgramName(), VERSION);
-    }
-
     // If no eof block is required for a bgzf file, set the bgzf file type to 
     // not look for it.
     if(noeof)

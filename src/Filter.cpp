@@ -23,7 +23,6 @@
 #include "GenomeSequence.h"
 #include "SamFile.h"
 #include "SamFilter.h"
-#include "PhoneHome.h"
 
 void Filter::filterDescription()
 {
@@ -65,7 +64,7 @@ int Filter::execute(int argc, char **argv)
     String outFile = "-";
     bool noeof = false;
     bool params = false;
-   
+
     uint32_t qualityThreshold = 60;
     uint32_t defaultQualityInt = 20;
     double mismatchThreshold = .10;
@@ -81,7 +80,7 @@ int Filter::execute(int argc, char **argv)
         LONG_INTPARAMETER("defaultQualityInt", &defaultQualityInt)
         LONG_DOUBLEPARAMETER("mismatchThreshold", &mismatchThreshold)
         LONG_PARAMETER("params", &params)
-        LONG_PARAMETER("noPhoneHome", &mynoph)
+        LONG_PHONEHOME(VERSION)
         END_LONG_PARAMETERS();
    
     inputParameters.Add(new LongParameters ("Input Parameters", 
@@ -90,11 +89,6 @@ int Filter::execute(int argc, char **argv)
     // parameters start at index 2 rather than 1.
     inputParameters.Read(argc, argv, 2);
     
-    if(BamExecutable::phoneHome())
-    {
-        PhoneHome::checkVersion(getProgramName(), VERSION);
-    }
-
     // If no eof block is required for a bgzf file, set the bgzf file type to 
     // not look for it.
     if(noeof)

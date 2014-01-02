@@ -22,7 +22,6 @@
 #include "SamFile.h"
 #include "Parameters.h"
 #include "BgzfFileType.h"
-#include "PhoneHome.h"
 
 void SplitChromosome::splitChromosomeDescription()
 {
@@ -71,10 +70,10 @@ int SplitChromosome::execute(int argc, char **argv)
         LONG_STRINGPARAMETER("out", &outFileBase)
         LONG_PARAMETER("noeof", &noeof)
         LONG_PARAMETER("params", &params)
-        LONG_PARAMETER("noPhoneHome", &mynoph)
         LONG_PARAMETER_GROUP("Output Type")
            EXCLUSIVE_PARAMETER("bamout", &bamOut)
            EXCLUSIVE_PARAMETER("samout", &samOut)
+        LONG_PHONEHOME(VERSION)
         END_LONG_PARAMETERS();
    
     inputParameters.Add(new LongParameters ("Input Parameters", 
@@ -82,11 +81,6 @@ int SplitChromosome::execute(int argc, char **argv)
 
     // parameters start at index 2 rather than 1.
     inputParameters.Read(argc, argv, 2);
-
-    if(BamExecutable::phoneHome())
-    {
-        PhoneHome::checkVersion(getProgramName(), VERSION);
-    }
 
     if(!samOut && !bamOut)
     {

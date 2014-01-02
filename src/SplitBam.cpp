@@ -103,6 +103,8 @@ int SplitBam::execute(int argc, char ** argv)
       { "log", required_argument, NULL, 'L'},
       { "noPhoneHome", no_argument, NULL, 'p'},
       { "nophonehome", no_argument, NULL, 'P'},
+      { "phoneHomeThinning", required_argument, NULL, 't'},
+      { "phonehomethinning", required_argument, NULL, 'T'},
       { NULL, 0, NULL, 0 },
     };
 
@@ -110,6 +112,7 @@ int SplitBam::execute(int argc, char ** argv)
   char c;
   bool b_verbose = false;
   bool noeof = false;
+  bool noPhoneHome = false;
 
   std::string s_in, s_out, s_logger;
 
@@ -132,7 +135,11 @@ int SplitBam::execute(int argc, char ** argv)
       break;
     case 'p':
     case 'P':
-      mynoph = true;
+      noPhoneHome = true;
+      break;
+    case 't':
+    case 'T':
+      PhoneHome::allThinning = atoi(optarg);
       break;
     default:
       fprintf(stderr,"ERROR: Unrecognized option %s\n",getopt_long_options[n_option_index].name);
@@ -144,11 +151,11 @@ int SplitBam::execute(int argc, char ** argv)
     s_logger = s_out + ".log";
   }
   
-  if(BamExecutable::phoneHome())
+  if(!noPhoneHome)
   {
       PhoneHome::checkVersion(getProgramName(), VERSION);
   }
-
+  
   if(noeof)
   {
       // Set that the eof block is not required.

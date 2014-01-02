@@ -22,7 +22,6 @@
 #include "DumpIndex.h"
 #include "SamFile.h"
 #include "Parameters.h"
-#include "PhoneHome.h"
 #include <iomanip>
 
 void DumpIndex::dumpIndexDescription()
@@ -67,7 +66,7 @@ int DumpIndex::execute(int argc, char **argv)
         LONG_INTPARAMETER("refID", &refID)
         LONG_PARAMETER("summary", &summary)
         LONG_PARAMETER("params", &params)
-        LONG_PARAMETER("noPhoneHome", &mynoph)
+        LONG_PHONEHOME(VERSION)
         END_LONG_PARAMETERS();
    
     inputParameters.Add(new LongParameters ("Input Parameters", 
@@ -75,11 +74,6 @@ int DumpIndex::execute(int argc, char **argv)
 
     // parameters start at index 2 rather than 1.
     inputParameters.Read(argc, argv, 2);
-
-    if(BamExecutable::phoneHome())
-    {
-        PhoneHome::checkVersion(getProgramName(), VERSION);
-    }
 
     // Check to see if the index file was specified, if not, report an error.
     if(indexFile == "")

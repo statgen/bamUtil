@@ -23,7 +23,6 @@
 #include "SamFile.h"
 #include "Parameters.h"
 #include "BgzfFileType.h"
-#include "PhoneHome.h"
 
 WriteRegion::WriteRegion()
     : BamExecutable(),
@@ -137,7 +136,7 @@ int WriteRegion::execute(int argc, char **argv)
         LONG_STRINGPARAMETER("requiredFlags", &requiredFlags)
         LONG_PARAMETER("noeof", &noeof)
         LONG_PARAMETER("params", &params)
-        LONG_PARAMETER("noPhoneHome", &mynoph)
+        LONG_PHONEHOME(VERSION)
         END_LONG_PARAMETERS();
    
     inputParameters.Add(new LongParameters ("Input Parameters", 
@@ -145,11 +144,6 @@ int WriteRegion::execute(int argc, char **argv)
 
     // bam writeRegion, parameters start at index 2 rather than 1.
     inputParameters.Read(argc, argv, 2);
-
-    if(BamExecutable::phoneHome())
-    {
-        PhoneHome::checkVersion(getProgramName(), VERSION);
-    }
 
     // If no eof block is required for a bgzf file, set the bgzf file type to 
     // not look for it.
