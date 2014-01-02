@@ -3,8 +3,9 @@ Input Parameters
  --in [testFiles/testInvalid.sam], --noeof,
                --refFile [testFilesLibBam/chr1_partial.fa], --maxErrors [-1],
                --verbose [ON], --printableErrors [100], --disableStatistics,
-               --params [ON], --noPhoneHome [ON]
+               --params [ON]
    SortOrder : --so_flag, --so_coord, --so_query
+   PhoneHome : --noPhoneHome [ON], --phoneHomeThinning [50]
 
 Record 1
 INVALID_QNAME (ERROR) : Invalid Query Name - the string length (256) does not match the specified query name length (0).
