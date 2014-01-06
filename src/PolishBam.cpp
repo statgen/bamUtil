@@ -314,13 +314,21 @@ int PolishBam::execute(int argc, char ** argv)
     }
   }
 
-  if ( sLogFile.compare("__NONE__") == 0 ) {
-    sLogFile = (sOutFile + ".log");
-  }
-
   if(!noPhoneHome)
   {
       PhoneHome::checkVersion(getProgramName(), VERSION);
+  }
+
+  if ((sLogFile.compare("__NONE__") == 0) ||  sLogFile.empty())
+  {
+      if(sOutFile.empty())
+      {
+          sLogFile = "-";
+      }
+      else
+      {
+          sLogFile = (sOutFile + ".log");
+      }
   }
 
   Logger::gLogger = new Logger(sLogFile.c_str(), bVerbose);
