@@ -58,7 +58,7 @@ void ClipOverlap::description()
 void ClipOverlap::usage()
 {
     BamExecutable::usage();
-    std::cerr << "\t./bam clipOverlap --in <inputFile> --out <outputFile> [--storeOrig <tag>] [--readName] [--stats] [--overlapsOnly] [--poolSize <numRecords allowed to allocate>] [--poolSkipOverlap] [--noeof] [--params]" << std::endl;
+    std::cerr << "\t./bam clipOverlap --in <inputFile> --out <outputFile> [--storeOrig <tag>] [--readName] [--stats] [--overlapsOnly] [--excludeFlags <flag>] [--poolSize <numRecords allowed to allocate>] [--poolSkipOverlap] [--noeof] [--params]" << std::endl;
     std::cerr << "\tRequired Parameters:" << std::endl;
     std::cerr << "\t\t--in           : the SAM/BAM file to clip overlaping read pairs for" << std::endl;
     std::cerr << "\t\t--out          : the SAM/BAM file to be written" << std::endl;
@@ -66,7 +66,8 @@ void ClipOverlap::usage()
     std::cerr << "\t\t--storeOrig    : Store the original cigar in the specified tag." << std::endl;
     std::cerr << "\t\t--readName     : Original file is sorted by Read Name instead of coordinate." << std::endl;
     std::cerr << "\t\t--stats        : Print some statistics on the overlaps." << std::endl;
-    std::cerr << "\t\t--overlapsOnly : Only output the clipped reads" << std::endl;
+    std::cerr << "\t\t--overlapsOnly : Only output overlapping read pairs" << std::endl;
+    std::cerr << "\t\t--excludeFlags : Skip records with any of the specified flags set, default 0x70C" << std::endl;
     std::cerr << "\t\t--noeof        : Do not expect an EOF block on a bam file." << std::endl;
     std::cerr << "\t\t--params       : Print the parameter settings to stderr" << std::endl;
     std::cerr << "\tClipping By Coordinate Optional Parameters:" << std::endl;

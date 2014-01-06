@@ -77,7 +77,7 @@ void MergeBam::description()
 void MergeBam::usage()
 {
     BamExecutable::usage();
-     std::cerr << "Usage: mergeBam [-v] [--log logFile] --list <listFile> --out <outFile>\n" << std::endl;
+     std::cerr << "Usage: mergeBam [-v] [--log logFile] [--ignorePI] --list <listFile> --out <outFile>\n" << std::endl;
      std::cerr << "Required parameters :" << std::endl;
      std::cerr << "--out/-o : Output BAM file (sorted)" << std::endl;
      std::cerr << "--in/-i  : BAM file to be input, must be more than one of these options." << std::endl;

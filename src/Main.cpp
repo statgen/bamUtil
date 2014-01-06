@@ -85,7 +85,7 @@ void Usage()
     Bam2FastQ::bam2FastQDescription();
 
     std::cerr << "\nDummy/Example Tools\n";
-    ReadReference::readReferenceDescription();
+    ReadIndexedBam::readIndexedBamDescription();
 
 
     std::cerr << std::endl;

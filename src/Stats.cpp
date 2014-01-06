@@ -58,7 +58,7 @@ void Stats::usage()
     std::cerr << "\t\t--unmapped      : Only process unmapped reads (requires a bamIndex file)" << std::endl;
     std::cerr << "\t\t--bamIndex      : The path/name of the bam index file" << std::endl;
     std::cerr << "\t\t                  (if required and not specified, uses the --in value + \".bai\")" << std::endl;
-    std::cerr << "\t\t--regionList    : File containing the regions to be processed chr<tab>start_pos<tab>end<pos>." << std::endl;
+    std::cerr << "\t\t--regionList    : File containing the regions to be processed chr<tab>start_pos<tab>end_pos." << std::endl;
     std::cerr << "\t\t                  Positions are 0 based and the end_pos is not included in the region." << std::endl;
     std::cerr << "\t\t                  Uses bamIndex." << std::endl;
     std::cerr << "\t\t--excludeFlags  : Skip any records with any of the specified flags set\n";

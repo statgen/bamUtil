@@ -68,6 +68,8 @@ void Squeeze::usage()
     std::cerr << "                   This version does not require the input file to have been presorted by readname," << std::endl;
     std::cerr << "                   but uses a lot of memory since it stores all the read names." << std::endl;
     std::cerr << "\t\t--rmTags     : Remove the specified Tags formatted as Tag:Type;Tag:Type;Tag:Type..." << std::endl;
+    std::cerr << "\t\t--noeof      : do not expect an EOF block on a bam file." << std::endl;
+    std::cerr << "\t\t--params     : print the parameter settings" << std::endl;
     std::cerr << "\tQuality Binning Parameters (optional):" << std::endl;
     std::cerr << "\t  Bin qualities by phred score, into the ranges specified by binQualS or binQualF (both cannot be used)" << std::endl;
     std::cerr << "\t  Ranges are specified by comma separated minimum phred score for the bin, example: 1,17,20,30,40,50,70" << std::endl;
@@ -77,8 +79,6 @@ void Squeeze::usage()
     std::cerr << "\t\t--binQualF   : Bin the Qualities based on the specified file" << std::endl;
     std::cerr << "\t\t--binMid     : Use the mid point of the quality bin range for the quality value of the bin." << std::endl;
     std::cerr << "\t\t--binHigh    : Use the high end of the quality bin range for the quality value of the bin." << std::endl;
-    std::cerr << "\t\t--noeof      : do not expect an EOF block on a bam file." << std::endl;
-    std::cerr << "\t\t--params     : print the parameter settings" << std::endl;
     std::cerr << std::endl;
 }
 

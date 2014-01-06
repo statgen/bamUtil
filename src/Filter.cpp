@@ -49,7 +49,7 @@ void Filter::usage()
               << "\t\t                      a read unmapped. (Defaults to 60)" << std::endl;
     std::cerr << "\t\t--defaultQualityInt : quality value to use for mismatches that do not have a quality\n" 
               << "\t\t                      (Defaults to 20)" << std::endl;
-    std::cerr << "\t\t--mismatchThreshold : decimal value indicating the maximum ration of mismatches to\n"
+    std::cerr << "\t\t--mismatchThreshold : decimal value indicating the maximum ratio of mismatches to\n"
               << "\t\t                      matches and mismatches allowed before clipping from the ends\n"
               << "\t\t                      (Defaults to .10)" << std::endl;
     std::cerr << "\t\t--params            : print the parameter settings" << std::endl;
