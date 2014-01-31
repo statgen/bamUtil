@@ -218,7 +218,6 @@ bool Revert::updateCigar(SamRecord& samRecord)
     // Get the OC tag, which is a string.
     const String* oldCigar = samRecord.getStringTag(SamTags::ORIG_CIGAR_TAG);
     // Get the OP tag, which is an integer.
-    int* oldPos = samRecord.getIntegerTag(SamTags::ORIG_POS_TAG);
 
     bool status = true;
     if(oldCigar != NULL)
@@ -232,10 +231,12 @@ bool Revert::updateCigar(SamRecord& samRecord)
             status &= samRecord.rmTag(SamTags::ORIG_CIGAR_TAG, SamTags::ORIG_CIGAR_TAG_TYPE);
         }
     }
-    if(oldPos != NULL)
+
+    int oldPos = 0;
+    if(samRecord.getIntegerTag(SamTags::ORIG_POS_TAG, oldPos))
     {
         // The old position was found, so set it in the record.
-        status &= samRecord.set1BasedPosition(*oldPos);
+        status &= samRecord.set1BasedPosition(oldPos);
 
         if(!myKeepTags)
         {
