@@ -42,7 +42,7 @@ diff results/testRecabStoreQ.sam expected/testRecabStoreQ.sam
 let "status |= $?"
 diff results/testRecabStoreQ.txt expected/testRecab.txt
 let "status |= $?"
-diff results/testRecabStoreQ.log expected/empty.log
+diff results/testRecabStoreQ.log expected/testRecabStoreQ.log
 let "status |= $?"
 diff <(sort results/testRecabStoreQ.sam.qemp) <(sort expected/testRecab.sam.qemp)
 let "status |= $?"
@@ -84,7 +84,7 @@ diff results/testRecabUseBadOQ.sam expected/testRecabUseBadOQ.sam
 let "status |= $?"
 diff results/testRecabUseBadOQ.txt expected/testRecabUseBadOQ.txt
 let "status |= $?"
-diff results/testRecabUseBadOQ.log expected/empty.log
+diff results/testRecabUseBadOQ.log expected/testRecabUseBadOQ.log
 let "status |= $?"
 diff <(sort results/testRecabUseBadOQ.sam.qemp) <(sort expected/testRecabUseBadOQ.sam.qemp)
 let "status |= $?"

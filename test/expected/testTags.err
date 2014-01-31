@@ -1,0 +1,9 @@
+WARNING: Duplicate Tags, overwritting MD:Z:30A0C5 with MD:Z:2
+WARNING: Duplicate Tags, overwritting XZ:Z:2 with XZ:Z:30A0C5
+WARNING: Duplicate Tags, overwritting BF:f:0.123 with BF:f:0.000123
+WARNING: Duplicate Tags, overwritting XF:f:0.000123 with XF:f:0.123
+WARNING: Duplicate Tags, overwritting AA:A:1 with AA:A:2
+Suppressing rest of Duplicate Tag warnings.
+
+Number of records read = 23
+Number of records written = 23
