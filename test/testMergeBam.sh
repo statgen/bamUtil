@@ -191,6 +191,135 @@ then
     ERROR=true
 fi
 
+###############
+# TEST REGIONS
+
+### Chr 1
+../bin/bam mergeBam -o results/mergeBamReg1List.sam -l testFiles/mergeBam.list --noph -r 1
+if [ $? -ne 0 ]
+then
+    ERROR=true
+fi
+
+diff results/mergeBamReg1List.sam expected/mergeBamReg1.sam
+if [ $? -ne 0 ]
+then
+    ERROR=true
+fi
+
+../bin/bam mergeBam -o results/mergeBamReg1File.sam -l testFiles/mergeBam.list --noph -R testFiles/region1.txt
+if [ $? -ne 0 ]
+then
+    ERROR=true
+fi
+
+diff results/mergeBamReg1File.sam expected/mergeBamReg1.sam
+if [ $? -ne 0 ]
+then
+    ERROR=true
+fi
+
+### Chr 1,3
+../bin/bam mergeBam -o results/mergeBamReg13List.sam -l testFiles/mergeBam.list --noph -r 1,3
+if [ $? -ne 0 ]
+then
+    ERROR=true
+fi
+
+diff results/mergeBamReg13List.sam expected/mergeBamReg13.sam
+if [ $? -ne 0 ]
+then
+    ERROR=true
+fi
+
+../bin/bam mergeBam -o results/mergeBamReg13File.sam -l testFiles/mergeBam.list --noph -R testFiles/region13.txt
+if [ $? -ne 0 ]
+then
+    ERROR=true
+fi
+
+diff results/mergeBamReg13File.sam expected/mergeBamReg13.sam
+if [ $? -ne 0 ]
+then
+    ERROR=true
+fi
+
+### Chr 1,3 with only parts of chr1
+../bin/bam mergeBam -o results/mergeBamReg1P3List.sam -l testFiles/mergeBam.list --noph -r 1:75-1011,1:1750-1750,3
+if [ $? -ne 0 ]
+then
+    ERROR=true
+fi
+
+diff results/mergeBamReg1P3List.sam expected/mergeBamReg1P3.sam
+if [ $? -ne 0 ]
+then
+    ERROR=true
+fi
+
+../bin/bam mergeBam -o results/mergeBamReg1P3File.sam -l testFiles/mergeBam.list --noph -R testFiles/region1P3.txt
+if [ $? -ne 0 ]
+then
+    ERROR=true
+fi
+
+diff results/mergeBamReg1P3File.sam expected/mergeBamReg1P3.sam
+if [ $? -ne 0 ]
+then
+    ERROR=true
+fi
+
+### Only part of Chr 1
+../bin/bam mergeBam -o results/mergeBamReg1PList.sam -l testFiles/mergeBam.list --noph -r 1:1014
+if [ $? -ne 0 ]
+then
+    ERROR=true
+fi
+
+diff results/mergeBamReg1PList.sam expected/mergeBamReg1P.sam
+if [ $? -ne 0 ]
+then
+    ERROR=true
+fi
+
+../bin/bam mergeBam -o results/mergeBamReg1PFile.sam -l testFiles/mergeBam.list --noph -R testFiles/region1P.txt
+if [ $? -ne 0 ]
+then
+    ERROR=true
+fi
+
+diff results/mergeBamReg1PFile.sam expected/mergeBamReg1P.sam
+if [ $? -ne 0 ]
+then
+    ERROR=true
+fi
+
+###############
+# TEST REGIONS ERRORS
+
+../bin/bam mergeBam -o results/mergeErr.sam -l testFiles/mergeBam.list --noph -r 1:1r-5 > results/mergeErr1.err
+if [ $? -eq 0 ]
+then
+    ERROR=true
+fi
+diff results/mergeErr1.err expected/mergeErr1.err
+if [ $? -ne 0 ]
+then
+    ERROR=true
+fi
+
+../bin/bam mergeBam -o results/mergeBamReg1File.sam -l testFiles/mergeBam.list --noph -R testFiles/region1err.txt > results/mergeErr2.err
+if [ $? -eq 0 ]
+then
+    ERROR=true
+fi
+diff results/mergeErr2.err expected/mergeErr2.err
+if [ $? -ne 0 ]
+then
+    ERROR=true
+fi
+
+
 if($ERROR == true)
 then
   echo "Failed testMergeBam.sh"

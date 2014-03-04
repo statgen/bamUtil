@@ -1,0 +1,4 @@
+
+FATAL ERROR - 
+Error: Invalid region string, '1:4-5k', the end position, '5k', is not an integer >= 1.
+

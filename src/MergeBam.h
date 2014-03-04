@@ -27,11 +27,18 @@
 class MergeBam : public BamExecutable
 {
 public:
+    MergeBam();
     static void mergeBamDescription();
     void description();
     void usage();
     int execute(int argc, char **argv);
     virtual const char* getProgramName() {return("bam:mergeBam");}
+private:
+    bool getNextSection(SamFile *in_bams, uint32_t numBams);
+
+    StringArray myRegionArray;
+    int32_t myRegionArrayIndex;
+    IFILE myRegionFile;
 };
 
 #endif

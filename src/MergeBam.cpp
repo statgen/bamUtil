@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2010-2012  Hyun Min Kang,
+ *  Copyright (C) 2010-2014  Hyun Min Kang,
  *                           Regents of the University of Michigan
  *
  *   This program is free software: you can redistribute it and/or modify
@@ -62,6 +62,14 @@ void addReadGroupToHeader(SamFileHeader& header, ReadGroup& rg);
 void addReadGroupTag(SamRecord& record, ReadGroup& rg);
 uint32_t addTokenizedStrings(const std::string& str, const std::string& delimiters, vector<std::string>& tokens);
 
+MergeBam::MergeBam()
+    : BamExecutable(),
+      myRegionArray(),
+      myRegionArrayIndex(-1),
+      myRegionFile(NULL)
+{
+}
+
 void MergeBam::mergeBamDescription()
 {
     std::cerr << " mergeBam - merge multiple BAMs and headers appending ReadGroupIDs if necessary" << std::endl;
@@ -95,6 +103,8 @@ void MergeBam::usage()
      std::cerr << "\tPL : Platform/technology used to produce the read" << std::endl;
      std::cerr << "\t* (Required fields)" << std::endl;
      std::cerr << "Optional parameters : " << std::endl;
+     std::cerr << "--regions/-r : list of intervals, '<chr>:<start>-<end>', to merge separated by commas, ','\n";
+     std::cerr << "--regionFile/-R : file containing list of intervals, '<chr>:<start>-<end>', to merge, one per line\n";
      std::cerr << "--ignorePI/-I : Ignore the RG PI field when comparing headers\n";
      std::cerr << "--log/-L : Log file" << std::endl;
      std::cerr << "--verbose/-v : Turn on verbose mode" << std::endl;
@@ -112,6 +122,8 @@ int MergeBam::execute(int argc, char ** argv)
       { "verbose", no_argument, NULL, 'v'},
       { "log", required_argument, NULL, 'L'},
       { "ignorePI", no_argument, NULL, 'I'},
+      { "regions", required_argument, NULL, 'r'},
+      { "regionFile", required_argument, NULL, 'R'},
       { "noPhoneHome", no_argument, NULL, 'p'},
       { "nophonehome", no_argument, NULL, 'P'},
       { "phoneHomeThinning", required_argument, NULL, 't'},
@@ -129,11 +141,13 @@ int MergeBam::execute(int argc, char ** argv)
   bool b_verbose = false;
   bool ignorePI = false;
   bool noPhoneHome = false;
+  String regions = "";
+  std::string regionFile = "";
   vector<std::string> vs_in_bam_files; // input BAM files
 
   std::string s_list, s_out, s_logger;
 
-  while ( ( c = getopt_long(argc, argv, "l:i:o:vIL:", getopt_long_options, &n_option_index) ) != -1 ) {
+  while ( ( c = getopt_long(argc, argv, "l:i:o:vIL:r:R:", getopt_long_options, &n_option_index) ) != -1 ) {
     switch(c) {
     case 'i':
       vs_in_bam_files.push_back(optarg);
@@ -152,6 +166,12 @@ int MergeBam::execute(int argc, char ** argv)
       break;
     case 'I':
       ignorePI = true;
+      break;
+    case 'r':
+      regions = optarg;
+      break;
+    case 'R':
+      regionFile = optarg;
       break;
     case 'p':
     case 'P':
@@ -201,6 +221,27 @@ int MergeBam::execute(int argc, char ** argv)
   if(!vs_in_bam_files.empty() && !s_list.empty())
   {
       Logger::gLogger->error("Cannot specify both --in/-i and --list/-l");
+  }
+
+  // Check that both region and regionfile are not specified.
+  if(!regions.IsEmpty() && !regionFile.empty())
+  {
+      Logger::gLogger->error("Cannot specify both --regions/-r and --regionFile/-R");
+  }
+
+  if(!regions.IsEmpty())
+  {
+      // Setup the region array
+      myRegionArray.ReplaceColumns(regions, ',');
+      myRegionArrayIndex = 0;
+  }
+  else if(!regionFile.empty())
+  {
+      myRegionFile = ifopen(regionFile.c_str(), "r");
+      if(myRegionFile == NULL)
+      {
+          Logger::gLogger->error("Failed to open region file, %s", regionFile.c_str());
+      }
   }
 
   if(!s_list.empty())
@@ -270,6 +311,12 @@ int MergeBam::execute(int argc, char ** argv)
       
       p_in_bams[i].ReadHeader(p_headers[i]);
 
+      if((myRegionFile != NULL) || (myRegionArrayIndex != -1))
+      {
+          // Reading just specific regions, so read each index file.
+          p_in_bams[i].ReadBamIndex();
+      }
+
       // Extract the RGs from this header.
       if(i == 0)
       {
@@ -312,74 +359,78 @@ int MergeBam::execute(int argc, char ** argv)
   SamRecord* p_records = new SamRecord[n_bams];
   uint64_t* p_gcoordinates = new uint64_t[n_bams];
 
-  // read the first record for every input BAM file
-  for(uint32_t i=0; i < n_bams; ++i) {
-    if ( p_in_bams[i].ReadRecord(p_headers[i],p_records[i]) ) {
-      if ( p_records[i].isValid(p_headers[i]) ) {
-	p_gcoordinates[i] = getGenomicCoordinate(p_records[i]);
+  // Loop through, processing each section.
+  while(getNextSection(p_in_bams, n_bams))
+  {
+      // read the first record for every input BAM file
+      for(uint32_t i=0; i < n_bams; ++i) {
+          if ( p_in_bams[i].ReadRecord(p_headers[i],p_records[i]) ) {
+              if ( p_records[i].isValid(p_headers[i]) ) {
+                  p_gcoordinates[i] = getGenomicCoordinate(p_records[i]);
+              }
+              else {
+                  Logger::gLogger->error("Invalid record found at the first line of file %u. Failure code is %d", i, static_cast<int>(p_in_bams[i].GetFailure()));
+              }
+          }
+          else {
+              if ( p_in_bams[i].GetFailure() == SamStatus::NO_MORE_RECS ) {
+                  // the BAM file has no record
+                  p_gcoordinates[i] = MAX_GENOMIC_COORDINATE;
+              }
+              else {
+                  Logger::gLogger->error("Invalid record found at the first line of file %u. Failure code is %d", i, static_cast<int>(p_in_bams[i].GetFailure()));
+              }
+          }
       }
-      else {
-	Logger::gLogger->error("Invalid record found at the first line of file %u. Failure code is %d", i, static_cast<int>(p_in_bams[i].GetFailure()));
+      
+      // Routine for writing output BAM file
+      uint32_t nWrittenRecords = 0; // number of written BAM records
+      while(true) {
+          // scan the minimum index of genomic coordinate
+          int min_idx = -1;
+          uint64_t min_gcoordinate = MAX_GENOMIC_COORDINATE;
+          for(uint32_t i=0; i < n_bams; ++i) {
+              if ( min_gcoordinate > p_gcoordinates[i] ) {
+                  min_gcoordinate = p_gcoordinates[i];
+                  min_idx = static_cast<int>(i);
+              }
+          }
+          
+          // If every file reached EOF, exit the loop
+          if ( min_idx < 0 ) break;
+          
+          
+          // If adding read groups, add the tag.
+          if(!v_readgroups.empty())
+          {
+              // add readGroup tag to the record to write and write to output BAM file
+              //Logger::gLogger->writeLog("%d",min_idx);
+              addReadGroupTag(p_records[min_idx], v_readgroups[min_idx]);
+          }
+          bam_out.WriteRecord(newHeader, p_records[min_idx]);
+          ++nWrittenRecords;
+          if ( nWrittenRecords % 1000000 == 0 ) {
+              Logger::gLogger->writeLog("Writing %u records to the output file",nWrittenRecords);
+          }
+          
+          // Read a record from the input BAM file 
+          if ( p_in_bams[min_idx].ReadRecord(p_headers[min_idx], p_records[min_idx]) ) {
+              if ( p_records[min_idx].isValid(p_headers[min_idx]) ) {
+                  p_gcoordinates[min_idx] = getGenomicCoordinate(p_records[min_idx]);
+              }
+              else { // if invalid record found
+                  Logger::gLogger->error("Invalid record found at recordCount %d of file %d. Failure code is %d", p_in_bams[min_idx].GetCurrentRecordCount(), min_idx, static_cast<int>(p_in_bams[min_idx].GetFailure()));
+              }
+          }
+          else {
+              if ( p_in_bams[min_idx].GetFailure() == SamStatus::NO_MORE_RECS ) {
+                  p_gcoordinates[min_idx] = MAX_GENOMIC_COORDINATE; // Mark that all record has been read
+              }
+              else {
+                  Logger::gLogger->error("Cannot read record at recordCount %d of file %d. Failure code is %d", p_in_bams[min_idx].GetCurrentRecordCount(), min_idx, static_cast<int>(p_in_bams[min_idx].GetFailure()));
+              }
+          }
       }
-    }
-    else {
-      if ( p_in_bams[i].GetFailure() == SamStatus::NO_MORE_RECS ) {
-	// the BAM file has no record
-	p_gcoordinates[i] = MAX_GENOMIC_COORDINATE;
-      }
-      else {
-	Logger::gLogger->error("Invalid record found at the first line of file %u. Failure code is %d", i, static_cast<int>(p_in_bams[i].GetFailure()));
-      }
-    }
-  }
-
-  // Routine for writing output BAM file
-  uint32_t nWrittenRecords = 0; // number of written BAM records
-  while(true) {
-    // scan the minimum index of genomic coordinate
-    int min_idx = -1;
-    uint64_t min_gcoordinate = MAX_GENOMIC_COORDINATE;
-    for(uint32_t i=0; i < n_bams; ++i) {
-      if ( min_gcoordinate > p_gcoordinates[i] ) {
-	min_gcoordinate = p_gcoordinates[i];
-	min_idx = static_cast<int>(i);
-      }
-    }
-
-    // If every file reached EOF, exit the loop
-    if ( min_idx < 0 ) break;
-
-
-    // If adding read groups, add the tag.
-    if(!v_readgroups.empty())
-    {
-        // add readGroup tag to the record to write and write to output BAM file
-        //Logger::gLogger->writeLog("%d",min_idx);
-        addReadGroupTag(p_records[min_idx], v_readgroups[min_idx]);
-    }
-    bam_out.WriteRecord(newHeader, p_records[min_idx]);
-    ++nWrittenRecords;
-    if ( nWrittenRecords % 1000000 == 0 ) {
-      Logger::gLogger->writeLog("Writing %u records to the output file",nWrittenRecords);
-    }
-
-    // Read a record from the input BAM file 
-    if ( p_in_bams[min_idx].ReadRecord(p_headers[min_idx], p_records[min_idx]) ) {
-      if ( p_records[min_idx].isValid(p_headers[min_idx]) ) {
-	p_gcoordinates[min_idx] = getGenomicCoordinate(p_records[min_idx]);
-      }
-      else { // if invalid record found
-	Logger::gLogger->error("Invalid record found at recordCount %d of file %d. Failure code is %d", p_in_bams[min_idx].GetCurrentRecordCount(), min_idx, static_cast<int>(p_in_bams[min_idx].GetFailure()));
-      }
-    }
-    else {
-      if ( p_in_bams[min_idx].GetFailure() == SamStatus::NO_MORE_RECS ) {
-	p_gcoordinates[min_idx] = MAX_GENOMIC_COORDINATE; // Mark that all record has been read
-      }
-      else {
-	Logger::gLogger->error("Cannot read record at recordCount %d of file %d. Failure code is %d", p_in_bams[min_idx].GetCurrentRecordCount(), min_idx, static_cast<int>(p_in_bams[min_idx].GetFailure()));
-      }
-    }
   }
 
   // close files and free allocated memory
@@ -737,4 +788,126 @@ uint32_t addTokenizedStrings(const std::string& str, const std::string& delimite
     }
   }
   return numAddedTokens;
+}
+
+
+bool MergeBam::getNextSection(SamFile *in_bams, uint32_t numBams)
+{
+    static bool done = false;
+
+    if(done == true)
+    {
+        return(false);
+    }
+
+    if((myRegionFile == NULL) && (myRegionArrayIndex == -1))
+    {
+        // Not reading by section, so don't set a section, just return true.
+        // Set the done flag so on the next call it will return false -
+        //  done = false means nothing more to process.
+        done = true;
+        return(true);
+    }
+
+    // Get the next region from the specified file/string
+    String regionStr;
+
+    if(myRegionArrayIndex != -1)
+    {
+        if(myRegionArrayIndex >= myRegionArray.Length())
+        {
+            // Done processing, so set done and return false - no more regions.
+            done = true;
+            return(false);
+        }
+        // Get the next region string, then increment the index
+        // for the next loop.
+        regionStr = myRegionArray[myRegionArrayIndex++];
+    }
+    else
+    {
+        // Read the string from the file.
+        if(regionStr.ReadLine(myRegionFile) < 0)
+        {
+            // error/EOF.
+            if(myRegionFile->ifeof())
+            {
+                // done processing, so set done and return false
+                // no more regions.
+                done = true;
+                return(false);
+            }
+            else
+            {
+                // TODO - other error.
+                Logger::gLogger->error("Failed while reading %s",
+                                       myRegionFile->getFileName());
+            }
+        }
+    }
+
+    // Parse the region string
+    String chr;
+    int start = -1;
+    int end = -1;
+    int chrStrEnd = regionStr.FastFindChar(':',1);
+    if(chrStrEnd < 1)
+    {
+        // This region is just a chromosome.
+        chr = regionStr;
+    }
+    else
+    {
+        chr = regionStr.Left(chrStrEnd);
+        // get the start position.
+        int startStrEnd = regionStr.FastFindChar('-',chrStrEnd);
+        String startStr;
+        if(startStrEnd < chrStrEnd)
+        {
+            // No end region
+            startStr = regionStr.SubStr(chrStrEnd+1);
+        }
+        else
+        {
+            startStr = regionStr.Mid(chrStrEnd+1, startStrEnd-1);
+            String endStr = regionStr.SubStr(startStrEnd+1);
+            // Convert to integer.
+            if(!endStr.AsInteger(end) || end < 1)
+            {
+                String errorStr = "Error: Invalid region string, '";
+                errorStr += regionStr;
+                errorStr += "', the end position, '";
+                errorStr += endStr;
+                errorStr += "', is not an integer >= 1.";
+                error(errorStr.c_str());
+            }
+        }
+        // Convert the start string to an integer
+        if(!startStr.AsInteger(start) || start < 1)
+        {
+            String errorStr = "Error: Invalid region string, '";
+            errorStr += regionStr;
+            errorStr += "', the start position, '";
+            errorStr += startStr;
+            errorStr += "', is not an integer >= 1.";
+            error(errorStr.c_str());
+        }
+        // Subtract 1 from start since it is 1-based inclusive, but
+        // SetReadSection expects 0-based inclusive
+        --start;
+        // Do not need to subtract from end since it is 1-based 
+        // exclusive which is the same as 0-based exclusive that
+        // SetReadSection expects.
+    }
+  
+    // Set the next section in every bam.
+    for(uint32_t i = 0; i < numBams; ++i)
+    {
+        // SetReadSection start parameter is 0-based inclusive, 
+        // start is 1-based inclusive, so subtract 1 from start
+        // SetReadSection end parameter is 0-based exclusive,
+        // end is 1-based inclusive, which is the same as 0-based exclusive
+        in_bams[i].SetReadSection(chr.c_str(), start, end);
+    }
+    return(true);
 }
