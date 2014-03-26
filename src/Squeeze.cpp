@@ -52,7 +52,7 @@ void Squeeze::description()
 void Squeeze::usage()
 {
     BamExecutable::usage();
-    std::cerr << "\t./bam squeeze --in <inputFile> --out <outputFile.sam/bam/ubam (ubam is uncompressed bam)> [--refFile <refFilePath/Name>] [--keepOQ] [--keepDups] [--readName <readNameMapFile.txt>] [--sReadName <readNameMapFile.txt>] [--binQualS <minQualBin2>,<minQualBin3><...>] [--binQualF <filename>] [--rmTags <Tag:Type[;Tag:Type]*>] [--noeof] [--params]" << std::endl;
+    std::cerr << "\t./bam squeeze --in <inputFile> --out <outputFile.sam/bam/ubam (ubam is uncompressed bam)> [--refFile <refFilePath/Name>] [--keepOQ] [--keepDups] [--readName <readNameMapFile.txt>] [--sReadName <readNameMapFile.txt>] [--binQualS <minQualBin2>,<minQualBin3><...>] [--binQualF <filename>] [--rmTags <Tag:Type[,Tag:Type]*>] [--noeof] [--params]" << std::endl;
     std::cerr << "\tRequired Parameters:" << std::endl;
     std::cerr << "\t\t--in         : the SAM/BAM file to be read" << std::endl;
     std::cerr << "\t\t--out        : the SAM/BAM file to be written" << std::endl;
@@ -67,7 +67,7 @@ void Squeeze::usage()
     std::cerr << "\t\t--readName   : Replace read names with unique integers and write the mapping to the specified file." << std::endl; 
     std::cerr << "                   This version does not require the input file to have been presorted by readname," << std::endl;
     std::cerr << "                   but uses a lot of memory since it stores all the read names." << std::endl;
-    std::cerr << "\t\t--rmTags     : Remove the specified Tags formatted as Tag:Type;Tag:Type;Tag:Type..." << std::endl;
+    std::cerr << "\t\t--rmTags     : Remove the specified Tags formatted as Tag:Type,Tag:Type,Tag:Type..." << std::endl;
     std::cerr << "\t\t--noeof      : do not expect an EOF block on a bam file." << std::endl;
     std::cerr << "\t\t--params     : print the parameter settings" << std::endl;
     std::cerr << "\tQuality Binning Parameters (optional):" << std::endl;

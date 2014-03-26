@@ -100,7 +100,7 @@ void Diff::description()
 void Diff::usage()
 {
     BamExecutable::usage();
-    std::cerr << "\t./bam diff --in1 <inputFile> --in2 <inputFile> [--out <outputFile>] [--all] [--flag] [--mapQual] [--mate] [--isize] [--seq] [--baseQual] [--tags <Tag:Type[;Tag:Type]*>] [--everyTag] [--noCigar] [--noPos] [--onlyDiffs] [--recPoolSize <int>] [--posDiff <int>] [--noeof] [--params]" << std::endl;
+    std::cerr << "\t./bam diff --in1 <inputFile> --in2 <inputFile> [--out <outputFile>] [--all] [--flag] [--mapQual] [--mate] [--isize] [--seq] [--baseQual] [--tags <Tag:Type[,Tag:Type]*>] [--everyTag] [--noCigar] [--noPos] [--onlyDiffs] [--recPoolSize <int>] [--posDiff <int>] [--noeof] [--params]" << std::endl;
     std::cerr << "\tRequired Parameters:" << std::endl;
     std::cerr << "\t\t--in1         : first coordinate sorted SAM/BAM file to be diffed" << std::endl;
     std::cerr << "\t\t--in2         : second coordinate sorted SAM/BAM file to be diffed" << std::endl;
@@ -117,7 +117,7 @@ void Diff::usage()
     std::cerr << "\t\t--isize       : diff the insert sizes." << std::endl;
     std::cerr << "\t\t--seq         : diff the sequence bases." << std::endl;
     std::cerr << "\t\t--baseQual    : diff the base qualities." << std::endl;
-    std::cerr << "\t\t--tags        : diff the specified Tags formatted as Tag:Type;Tag:Type;Tag:Type..." << std::endl;
+    std::cerr << "\t\t--tags        : diff the specified Tags formatted as Tag:Type,Tag:Type,Tag:Type..." << std::endl;
     std::cerr << "\t\t--everyTag    : diff all the Tags" << std::endl;
     std::cerr << "\t\t--noCigar     : do not diff the the cigars." << std::endl;
     std::cerr << "\t\t--noPos       : do not diff the positions." << std::endl;

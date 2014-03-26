@@ -8,16 +8,16 @@
 ../bin/bam diff --in1 testFiles/testDiff1.sam --in2 testFiles/testDiff2.sam --recPoolSize 4 --seq --baseQual --tags "OP:i;MD:Z" --onlyDiffs --out results/diffOrderSamPool4.txt --noph 2> results/diffOrderSamPool4.log && diff results/diffOrderSamPool4.txt expected/diffOrderSamPool4.txt && diff results/diffOrderSamPool4.log expected/diffOrderSamPool4.log \
 && \
 # Different order/pos on one of the records, but only 3 records in the pool.
-../bin/bam diff --in1 testFiles/testDiff1.sam --in2 testFiles/testDiff2.sam --recPoolSize 3 --seq --baseQual --tags "OP:i;MD:Z" --onlyDiffs --out results/diffOrderSamPool3.txt --noph 2> results/diffOrderSamPool3.log && diff results/diffOrderSamPool3.txt expected/diffOrderSamPool3.txt && diff results/diffOrderSamPool3.log expected/diffOrderSamPool3.log \
+../bin/bam diff --in1 testFiles/testDiff1.sam --in2 testFiles/testDiff2.sam --recPoolSize 3 --seq --baseQual --tags "OP:i,MD:Z" --onlyDiffs --out results/diffOrderSamPool3.txt --noph 2> results/diffOrderSamPool3.log && diff results/diffOrderSamPool3.txt expected/diffOrderSamPool3.txt && diff results/diffOrderSamPool3.log expected/diffOrderSamPool3.log \
 && \
 # Different order/pos on one of the records, but only 2 records in the pool.
-../bin/bam diff --in1 testFiles/testDiff1.sam --in2 testFiles/testDiff2.sam --recPoolSize 2 --seq --baseQual --tags "OP:i;MD:Z" --onlyDiffs --out results/diffOrderSamPool2.txt --noph 2> results/diffOrderSamPool2.log && diff results/diffOrderSamPool2.txt expected/diffOrderSamPool2.txt && diff results/diffOrderSamPool2.log expected/diffOrderSamPool2.log \
+../bin/bam diff --in1 testFiles/testDiff1.sam --in2 testFiles/testDiff2.sam --recPoolSize 2 --seq --baseQual --tags "OP:i,MD:Z" --onlyDiffs --out results/diffOrderSamPool2.txt --noph 2> results/diffOrderSamPool2.log && diff results/diffOrderSamPool2.txt expected/diffOrderSamPool2.txt && diff results/diffOrderSamPool2.log expected/diffOrderSamPool2.log \
 && \
 # Diff order/pos but no threshold for pos.
 ../bin/bam diff --in1 testFiles/testDiff1.sam --in2 testFiles/testDiff2.sam --seq --baseQual --tags "OP:i;MD:Z" --posDiff 1 --out results/diffNoThresh.log --noph 2> results/empty.log && diff results/diffNoThresh.log expected/diffNoThresh.log && diff results/empty.log expected/empty.txt \
 && \
 # Diff all but no threshold for pos.
-../bin/bam diff --all --in1 testFiles/testDiff1.sam --in2 testFiles/testDiff2.sam --seq --baseQual --tags "OP:i;MD:Z" --posDiff 1 --out results/diffNoThreshAll.log --noph 2> results/empty.log && diff results/diffNoThreshAll.log expected/diffNoThreshAll.log && diff results/empty.log expected/empty.txt \
+../bin/bam diff --all --in1 testFiles/testDiff1.sam --in2 testFiles/testDiff2.sam --seq --baseQual --tags "OP:i,MD:Z" --posDiff 1 --out results/diffNoThreshAll.log --noph 2> results/empty.log && diff results/diffNoThreshAll.log expected/diffNoThreshAll.log && diff results/empty.log expected/empty.txt \
 && \
 # Diff all but no threshold for pos, diffs only.
 ../bin/bam diff --all --in1 testFiles/testDiff1.sam --in2 testFiles/testDiff2.sam --posDiff 1 --onlyDiffs --out results/diffNoThreshAllDiffOnly.log --noph 2> results/empty.log && diff results/diffNoThreshAllDiffOnly.log expected/diffNoThreshAllDiffOnly.log && diff results/empty.log expected/empty.txt \
@@ -59,7 +59,7 @@
 && diff results/diffOrderSamPool2_only1_testDiff1.sam expected/diffOrderSamPool2_only1_testDiff1.sam && diff results/diffOrderSamPool2_only2_testDiff2.sam expected/diffOrderSamPool2_only2_testDiff2.sam && diff results/diffOrderSamPool2.log expected/diffOrderSamPool2.log \
 && \
 # Different order/pos on one of the records but with poolsize of 1.
-../bin/bam diff --in1 testFiles/testDiff1.sam --in2 testFiles/testDiff2.sam --recPoolSize 1 --seq --baseQual --tags "OP:i;MD:Z" --onlyDiffs --out results/diffOrderSamPool1.sam --noph 2> results/diffOrderSamPool1.log \
+../bin/bam diff --in1 testFiles/testDiff1.sam --in2 testFiles/testDiff2.sam --recPoolSize 1 --seq --baseQual --tags "OP:i,MD:Z" --onlyDiffs --out results/diffOrderSamPool1.sam --noph 2> results/diffOrderSamPool1.log \
 && diff results/diffOrderSamPool1.sam expected/diffOrderSamPool1.sam && diff results/diffOrderSamPool1_only1_testDiff1.sam expected/diffOrderSamPool1_only1_testDiff1.sam && diff results/diffOrderSamPool1_only2_testDiff2.sam expected/diffOrderSamPool1_only2_testDiff2.sam && diff results/diffOrderSamPool1.log expected/diffOrderSamPool1.log \
 && \
 # Diff order/pos but no threshold for pos.

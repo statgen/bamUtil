@@ -122,6 +122,25 @@ then
     ERROR=true
 fi
 
+
+# squeeze sam to sam, keep dups, remove some tags.
+../bin/bam squeeze --in testFilesLibBam/testSam.sam --out results/squeezeTags.sam --keepDups --rmTags "XT:A;MD:Z;NM:i" --noph 2> results/squeezeTags.log && \
+diff results/squeezeTags.sam expected/squeezeTags.sam && diff results/squeezeTags.log expected/squeezeTags.log
+if [ $? -ne 0 ]
+then
+    ERROR=true
+fi
+
+
+# squeeze sam to sam, keep dups, remove some tags.
+../bin/bam squeeze --in testFilesLibBam/testSam.sam --out results/squeezeTags1.sam --keepDups --rmTags "XT:A,MD:Z,NM:i" --noph 2> results/squeezeTags1.log && \
+diff results/squeezeTags1.sam expected/squeezeTags.sam && diff results/squeezeTags1.log expected/squeezeTags.log
+if [ $? -ne 0 ]
+then
+    ERROR=true
+fi
+
+
 if($ERROR == true)
 then
   exit 1

@@ -66,8 +66,8 @@
 # Bam To Sam, Reverting cigar & Qual, and deleting MD:Z;AM:i;
 ../bin/bam revert --in testFiles/testRevert.bam --out results/revertRmTagsBam.sam --qual --cigar --rmTags "MD:Z;AM:i" --noph 2> results/revertRmTagsBam.sam.log && diff results/revertRmTagsBam.sam expected/revertRmTagsBam.sam && diff results/revertRmTagsBam.sam.log expected/revert.log \
 && \
-# Sam To Bam, Reverting cigar & Qual, and deleting MD:Z;AM:i;
-../bin/bam revert --in testFiles/testRevert.sam --out results/revertRmTagsSam.bam --qual --cigar --rmTags "MD:Z;AM:i" --noph 2> results/revertRmTagsSam.bam.log && diff results/revertRmTagsSam.bam expected/revertRmTagsSam.bam && diff results/revertRmTagsSam.bam.log expected/revert.log \
+# Sam To Bam, Reverting cigar & Qual, and deleting MD:Z,AM:i;
+../bin/bam revert --in testFiles/testRevert.sam --out results/revertRmTagsSam.bam --qual --cigar --rmTags "MD:Z,AM:i" --noph 2> results/revertRmTagsSam.bam.log && diff results/revertRmTagsSam.bam expected/revertRmTagsSam.bam && diff results/revertRmTagsSam.bam.log expected/revert.log \
 && \
 # Bam To Bam, Reverting cigar & Qual, and deleting MD:Z;AM:i
 ../bin/bam revert --in testFiles/testRevert.bam --out results/revertRmTagsBam.bam --qual --cigar --rmTags "MD:Z;AM:i" --noph 2> results/revertRmTagsBam.bam.log && diff results/revertRmTagsBam.bam expected/revertRmTagsBam.bam && diff results/revertRmTagsBam.bam.log expected/revert.log \
