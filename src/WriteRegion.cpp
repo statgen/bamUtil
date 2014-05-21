@@ -24,6 +24,14 @@
 #include "Parameters.h"
 #include "BgzfFileType.h"
 
+#ifdef __GXX_EXPERIMENTAL_CXX0X__
+#include <unordered_set>
+typedef std::unordered_set<std::string> ReadNameSet;
+#else
+#include <set>
+typedef std::set<std::string> ReadNameSet;
+#endif
+
 WriteRegion::WriteRegion()
     : BamExecutable(),
       myWithinReg(false),
@@ -80,6 +88,7 @@ void WriteRegion::usage()
     std::cerr << "\t\t--bed       : use the specified bed file for regions." << std::endl;
     std::cerr << "\t\t--withinReg : only print reads fully enclosed within the region." << std::endl;
     std::cerr << "\t\t--readName  : only print reads with this read name." << std::endl;
+    std::cerr << "\t\t--rnFile    : only print reads with read names found in the specified file (delimited by ',', '\t', or '\n')." << std::endl;
     std::cerr << "\tOptional Parameters For Other Operations:\n";
     std::cerr << "\t\t--lshift        : left shift indels when writing records\n";
     std::cerr << "\t\t--excludeFlags  : Skip any records with any of the specified flags set\n";
@@ -99,7 +108,9 @@ int WriteRegion::execute(int argc, char **argv)
     String outFile = "";
     String indexFile = "";
     String readName = "";
+    String rnFile = "";
     String bed = "";
+    ReadNameSet rnSet;
     myStart = UNSPECIFIED_INT;
     myEnd = UNSPECIFIED_INT;
     myPrevStart = UNSPECIFIED_INT;
@@ -130,6 +141,7 @@ int WriteRegion::execute(int argc, char **argv)
         LONG_STRINGPARAMETER("bed", &bed)
         LONG_PARAMETER("withinReg", &myWithinReg)
         LONG_STRINGPARAMETER("readName", &readName)
+        LONG_STRINGPARAMETER("rnFile", &rnFile)
         LONG_PARAMETER_GROUP("Optional Other Parameters")
         LONG_PARAMETER("lshift", &lshift)
         LONG_STRINGPARAMETER("excludeFlags", &excludeFlags)
@@ -202,6 +214,32 @@ int WriteRegion::execute(int argc, char **argv)
         myBedFile = ifopen(bed, "r");
     }
 
+    if(!rnFile.IsEmpty())
+    {
+        // Open the read name file.
+        IFILE rnFileRdr = ifopen(rnFile, "r");
+        if(rnFileRdr == NULL)
+        {
+            std::cerr << "ERROR: Could not open read name file: " 
+                      << rnFile << std::endl;
+            inputParameters.Status();
+            return(-1);
+        }
+        // Read the read names into a map.
+        std::string rn;
+        while(rnFileRdr->readTilChar(",\n\t", rn) != -1)
+        {
+            rnSet.insert(rn);
+            rn.clear();
+        }
+        // Check if rn has a value so it works if there is no final new line.
+        if(!rn.empty())
+        {
+            rnSet.insert(rn);
+            rn.clear();
+        }
+    }
+
     if(params)
     {
         inputParameters.Status();
@@ -249,7 +287,15 @@ int WriteRegion::execute(int argc, char **argv)
                     continue;
                 }
             }
-            
+            if(!rnSet.empty())
+            {
+                if(rnSet.count(samRecord.getReadName()) == 0)
+                {
+                    // Not in the read name set, so continue to the next record.
+                    continue;
+                }
+            }
+
             // Check to see if the read has already been processed.
             if(myPrevEnd != UNSPECIFIED_INT)
             {

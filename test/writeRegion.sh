@@ -37,8 +37,19 @@ ERROR=false
 && diff results/regionRead11.sam expected/regionRead9.sam && diff results/regionRead11.txt expected/regionRead11.txt \
 && \
 ../bin/bam writeRegion --noph --in testFilesLibBam/testShift.sam --out results/regionShift.sam --lshift 2> results/regionShift.txt \
-&& diff results/regionShift.sam expected/regionShift.sam && diff results/regionShift.txt expected/regionShift.txt
-
+&& diff results/regionShift.sam expected/regionShift.sam && diff results/regionShift.txt expected/regionShift.txt\
+&& \
+../bin/bam writeRegion --noph --in testFilesLibBam/sortedBam.bam --out results/regionReadRnFile.sam --rnFile testFiles/rn.txt 2> results/regionReadRnFile.txt \
+&& diff results/regionReadRnFile.sam expected/regionRead.sam && diff results/regionReadRnFile.txt expected/regionReadRnFile.txt \
+&& \
+../bin/bam writeRegion --noph --in testFilesLibBam/sortedBam.bam --out results/regionReadRnFile1.sam --rnFile testFiles/rn1.txt 2> results/regionReadRnFile1.txt \
+&& diff results/regionReadRnFile1.sam expected/regionRead.sam && diff results/regionReadRnFile1.txt expected/regionReadRnFile1.txt \
+&& \
+../bin/bam writeRegion --noph --in testFilesLibBam/sortedBam.bam --out results/regionReadRnFile2.sam --rnFile testFiles/rn2.txt 2> results/regionReadRnFile2.txt \
+&& diff results/regionReadRnFile2.sam expected/regionReadRnFile2.sam && diff results/regionReadRnFile2.txt expected/regionReadRnFile2.txt \
+&& \
+../bin/bam writeRegion --noph --in testFilesLibBam/sortedBam.bam --out results/regionReadRnFile3.sam --rnFile testFiles/rn3.txt 2> results/regionReadRnFile3.txt \
+&& diff results/regionReadRnFile3.sam expected/regionReadRnFile2.sam && diff results/regionReadRnFile3.txt expected/regionReadRnFile3.txt \
 
 if [ $? -ne 0 ]
 then
