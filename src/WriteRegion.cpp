@@ -64,7 +64,7 @@ void WriteRegion::usage()
     BamExecutable::usage();
     std::cerr << "\t./bam writeRegion --in <inputFilename>  --out <outputFilename> [--bamIndex <bamIndexFile>] "
               << "[--refName <reference Name> | --refID <reference ID>] [--start <0-based start pos>] "
-              << "[--end <0-based end psoition>] [--bed <bed filename>] [--withinRegion] [--readName <readName>] "
+              << "[--end <0-based end psoition>] [--bed <bed filename>] [--withinRegion] [--readName <readName>] [--rnFile <readNameFileName>] "
               << "[--lshift] [--params] [--noeof]" << std::endl;
     std::cerr << "\tRequired Parameters:" << std::endl;
     std::cerr << "\t\t--in        : the BAM file to be read" << std::endl;
@@ -88,7 +88,8 @@ void WriteRegion::usage()
     std::cerr << "\t\t--bed       : use the specified bed file for regions." << std::endl;
     std::cerr << "\t\t--withinReg : only print reads fully enclosed within the region." << std::endl;
     std::cerr << "\t\t--readName  : only print reads with this read name." << std::endl;
-    std::cerr << "\t\t--rnFile    : only print reads with read names found in the specified file (delimited by ',', '\t', or '\n')." << std::endl;
+    std::cerr << "\t\t--rnFile    : only print reads with read names found in the specified file,\n";
+    std::cerr << "\t\t              delimited by comma, space, tab, or new line (',', ' ', '\\t', or '\\n')." << std::endl;
     std::cerr << "\tOptional Parameters For Other Operations:\n";
     std::cerr << "\t\t--lshift        : left shift indels when writing records\n";
     std::cerr << "\t\t--excludeFlags  : Skip any records with any of the specified flags set\n";
