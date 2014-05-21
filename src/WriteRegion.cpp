@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2010  Regents of the University of Michigan
+ *  Copyright (C) 2010-2014  Regents of the University of Michigan
  *
  *   This program is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -227,7 +227,7 @@ int WriteRegion::execute(int argc, char **argv)
         }
         // Read the read names into a map.
         std::string rn;
-        while(rnFileRdr->readTilChar(",\n\t", rn) != -1)
+        while(rnFileRdr->readTilChar(",\n\t ", rn) != -1)
         {
             rnSet.insert(rn);
             rn.clear();
