@@ -303,14 +303,14 @@ int WriteRegion::execute(int argc, char **argv)
                 // Because we already know that the bed was sorted, 
                 // we know that the previous section started before
                 // this one, so if the previous end is greater than
-                // this record's end position we know that it
+                // this record's start position we know that it
                 // was already written in the previous section.
                 // Note: can't be equal to the previous end since
                 // the end range was exclusive, while
-                // get0BasedAlignmentEnd is inclusive.
+                // get0BasedPosition is inclusive.
                 // myPrevEnd is reset by getNextSection when a new
                 // chromosome is hit.
-                if(samRecord.get0BasedAlignmentEnd() < myPrevEnd)
+                if(samRecord.get0BasedPosition() < myPrevEnd)
                 {
                     // This record was already written.
                     continue;
