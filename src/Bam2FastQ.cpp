@@ -214,6 +214,8 @@ int Bam2FastQ::execute(int argc, char **argv)
     SamFile samIn;
     SamFileHeader samHeader;
     samIn.OpenForRead(inFile, &samHeader);
+    // Skip non-primary reads.
+    samIn.SetReadFlags(0, 0x0100);
 
     // Open the output files.
     myUnpairedFile = ifopen(unpairedOut, "w");
