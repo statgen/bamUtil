@@ -218,11 +218,20 @@ void PolishBam::usage()
 }
 
 void checkHeaderStarts(std::vector<std::string>& headerLines, const char* type) {
-  for(uint32_t i=0; i < headerLines.size(); ++i) {
-    if ( headerLines[i].find(type) != 0 ) {
-        Logger::gLogger->error("The following header line does not start with '%s'\n%s",type,headerLines[i].c_str());
+    for(uint32_t i=0; i < headerLines.size(); ++i)
+    {
+        // Convert "\t" to '\t'
+        size_t tabPos = headerLines[i].find("\\t", 0);
+        while(tabPos != std::string::npos)
+        {
+            headerLines[i].replace(tabPos, 2, "\t");
+            tabPos = headerLines[i].find("\\t", tabPos);
+        }
+
+        if ( headerLines[i].find(type) != 0 ) {
+            Logger::gLogger->error("The following header line does not start with '%s'\n%s",type,headerLines[i].c_str());
+        }
     }
-  }
 }
 
 int PolishBam::execute(int argc, char ** argv)
