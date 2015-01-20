@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2010-2012  Regents of the University of Michigan
+ *  Copyright (C) 2010-2015  Regents of the University of Michigan
  *
  *   This program is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -209,6 +209,7 @@ void PolishBam::usage()
      std::cerr << "--HD : add @HD header line" << std::endl;
      std::cerr << "--RG : add @RG header line" << std::endl;
      std::cerr << "--PG : add @PG header line" << std::endl;
+     std::cerr << "--CO : add @CO header line" << std::endl;
      std::cerr << "-f/--fasta : fasta reference file to compute MD5sums and update SQ tags" << std:: endl;
      std::cerr << "--AS : AS tag for genome assembly identifier" << std::endl;
      std::cerr << "--UR : UR tag for @SQ tag (if different from --fasta)" << std::endl;
@@ -217,22 +218,45 @@ void PolishBam::usage()
      std::cerr << "\n" << std::endl;
 }
 
+void replaceTabChar(std::string& headerLine)
+{
+    // Convert "\t" to '\t'
+    size_t tabPos = headerLine.find("\\t", 0);
+        while(tabPos != std::string::npos)
+        {
+            headerLine.replace(tabPos, 2, "\t");
+            tabPos = headerLine.find("\\t", tabPos);
+        }
+
+}
+
 void checkHeaderStarts(std::vector<std::string>& headerLines, const char* type) {
     for(uint32_t i=0; i < headerLines.size(); ++i)
     {
-        // Convert "\t" to '\t'
-        size_t tabPos = headerLines[i].find("\\t", 0);
-        while(tabPos != std::string::npos)
-        {
-            headerLines[i].replace(tabPos, 2, "\t");
-            tabPos = headerLines[i].find("\\t", tabPos);
-        }
+        replaceTabChar(headerLines[i]);
 
         if ( headerLines[i].find(type) != 0 ) {
             Logger::gLogger->error("The following header line does not start with '%s'\n%s",type,headerLines[i].c_str());
         }
     }
 }
+
+
+void checkOrAddStarts(std::vector<std::string>& headerLines, const char* type) {
+    for(uint32_t i=0; i < headerLines.size(); ++i)
+    {
+        replaceTabChar(headerLines[i]);
+
+        size_t pos = headerLines[i].find(type);
+        if(pos == std::string::npos) {
+            // Does not start with prepend header;
+            headerLines[i].insert(0, type);
+        }else if(pos != 0 ) {
+            Logger::gLogger->error("The following header line does not start with '%s'\n%s",type,headerLines[i].c_str());
+        }
+    }
+}
+
 
 int PolishBam::execute(int argc, char ** argv)
 {
@@ -251,6 +275,7 @@ int PolishBam::execute(int argc, char ** argv)
       { "HD", required_argument, NULL, 0},
       { "RG", required_argument, NULL, 0},
       { "PG", required_argument, NULL, 0},
+      { "CO", required_argument, NULL, 0},
       { "checkSQ", no_argument, NULL, 0},
       { "noPhoneHome", no_argument, NULL, 'p'},
       { "nophonehome", no_argument, NULL, 'P'},
@@ -267,7 +292,7 @@ int PolishBam::execute(int argc, char ** argv)
   
   std::string sAS, sUR, sSP, sFasta, sInFile, sOutFile, sLogFile;
   bool bClear, bCheckSQ, bVerbose;
-  std::vector<std::string> vsHDHeaders, vsRGHeaders, vsPGHeaders;
+  std::vector<std::string> vsHDHeaders, vsRGHeaders, vsPGHeaders, vsCOHeaders;
   bool noPhoneHome = false;
 
   bCheckSQ = bVerbose = false;
@@ -313,6 +338,9 @@ int PolishBam::execute(int argc, char ** argv)
     }
     else if ( strcmp(getopt_long_options[n_option_index].name,"PG") == 0 ) {
       vsPGHeaders.push_back(optarg);
+    }
+    else if ( strcmp(getopt_long_options[n_option_index].name,"CO") == 0 ) {
+      vsCOHeaders.push_back(optarg);
     }
     else if ( strcmp(getopt_long_options[n_option_index].name,"checkSQ") == 0 ) {
       bCheckSQ = true;
@@ -361,6 +389,7 @@ int PolishBam::execute(int argc, char ** argv)
   checkHeaderStarts(vsHDHeaders, "@HD\t");
   checkHeaderStarts(vsRGHeaders, "@RG\t");
   checkHeaderStarts(vsPGHeaders, "@PG\t");
+  checkOrAddStarts(vsCOHeaders, "@CO\t");
 
   Logger::gLogger->writeLog("Arguments in effect:");
   Logger::gLogger->writeLog("\t--in [%s]",sInFile.c_str());
@@ -391,8 +420,16 @@ int PolishBam::execute(int argc, char ** argv)
       Logger::gLogger->writeLog("\t--PG [%s]",vsPGHeaders[i].c_str());
     }
   }
+  if ( vsCOHeaders.empty() ) {
+    Logger::gLogger->writeLog("\t--CO []");
+  }
+  else {
+    for(uint32_t i=0; i < vsCOHeaders.size(); ++i) {
+      Logger::gLogger->writeLog("\t--CO [%s]",vsCOHeaders[i].c_str());
+    }
+  }
 
-  if ( (vsHDHeaders.empty() ) && ( vsRGHeaders.empty() ) && ( vsPGHeaders.empty() ) && ( !bClear ) && ( sFasta.empty() ) ) {
+  if ( (vsHDHeaders.empty() ) && ( vsRGHeaders.empty() ) && ( vsPGHeaders.empty() ) && ( vsCOHeaders.empty() ) && ( !bClear ) && ( sFasta.empty() ) ) {
     Logger::gLogger->warning("No option is in effect for modifying BAM files. The input and output files will be identical");
   }
 
@@ -467,13 +504,13 @@ int PolishBam::execute(int argc, char ** argv)
   }
 
   // go over the headers again, 
-  // assuming order of HD, SQ, RG, PG, and put proper tags at the end of the original tags
+  // assuming order of HD, SQ, RG, PG, CO, and put proper tags at the end of the original tags
 
   Logger::gLogger->writeLog("Creating the header of new output file");
   //SamFileHeader outHeader;
   samHeader.resetHeaderRecordIter();
 
-  Logger::gLogger->writeLog("Adding %d HD, %d RG, and %d PG headers",vsHDHeaders.size(), vsRGHeaders.size(), vsPGHeaders.size());
+  Logger::gLogger->writeLog("Adding %d HD, %d RG, %d PG, and %d CO headers",vsHDHeaders.size(), vsRGHeaders.size(), vsPGHeaders.size(), vsCOHeaders.size());
   int numHdSuccess = 0;
   for(unsigned int i=0; i < vsHDHeaders.size(); ++i) {
       if(samHeader.addHeaderLine(vsHDHeaders[i].c_str()))
@@ -522,8 +559,16 @@ int PolishBam::execute(int argc, char ** argv)
       }
   }
 
+  int numCoSuccess = 0;
+  for(unsigned int i=0; i < vsCOHeaders.size(); ++i) {
+      if(samHeader.addHeaderLine(vsCOHeaders[i].c_str()))
+      {
+          ++numCoSuccess;
+      }
+  }
+
   samOut.WriteHeader(samHeader);
-  Logger::gLogger->writeLog("Successfully added %d HD, %d RG, and %d PG headers",numHdSuccess, numRgSuccess, numPgSuccess);
+  Logger::gLogger->writeLog("Successfully added %d HD, %d RG, %d PG, and %d CO headers",numHdSuccess, numRgSuccess, numPgSuccess, numCoSuccess);
   Logger::gLogger->writeLog("Finished writing output headers");
 
   // parse RG tag and get RG ID to append

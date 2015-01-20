@@ -10,12 +10,13 @@ Arguments in effect:
 	--HD [@HD	VN:1.0	SO:coordinate	GO:none]
 	--RG [@RG	ID:UM0037:1	SM:Sample2	LB:lb2	PU:mypu	CN:UMCORE	DT:2010-11-01	PL:ILLUMINA]
 	--PG [@PG	ID:polish	VN:0.0.1]
+	--CO []
 Reading the reference file testFiles/testFasta.fa
 Finished reading the reference file testFiles/testFasta.fa
 Finished checking the consistency of SQ tags
 Creating the header of new output file
-Adding 1 HD, 1 RG, and 1 PG headers
-Successfully added 1 HD, 1 RG, and 1 PG headers
+Adding 1 HD, 1 RG, 1 PG, and 0 CO headers
+Successfully added 1 HD, 1 RG, 1 PG, and 0 CO headers
 Finished writing output headers
 Writing output BAM file
 Successfully written 10 records
