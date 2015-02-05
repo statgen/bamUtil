@@ -112,6 +112,11 @@ bool FastaFile::readLine() {
   }
   else {
     n = strlen(pcLine);
+    // convert to upper-case for calculating FASTA MD5
+    for(int i = 0; i < n; ++i)
+    {
+        pcLine[i] = toupper(pcLine[i]);
+    }
     MD5Update(&curMD5Ctx, (unsigned char*)pcLine, n);
     curSeqLength += n;
   }
