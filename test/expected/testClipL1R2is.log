@@ -1,0 +1,10 @@
+Arguments in effect: 
+	Input file : testFiles/testTrim.sam
+	Output file : results/clipSamL1R2is.sam
+	#Bases to clip from the left of forward strands : 1
+	#Bases to clip from the right of forward strands: 2
+	#Bases to clip from the left of reverse strands : 1
+	#Bases to clip from the right of reverse strands : 2
+
+Number of records read = 10
+Number of records written = 10

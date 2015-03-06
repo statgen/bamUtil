@@ -1,0 +1,7 @@
+Arguments in effect: 
+	Input file : testFiles/testTrim.sam
+	Output file : results/clipSam.sam
+	#Bases to clip from each side : 2
+
+Number of records read = 10
+Number of records written = 10

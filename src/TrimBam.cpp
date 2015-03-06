@@ -26,10 +26,11 @@
 #include "BgzfFileType.h"
 #include "TrimBam.h"
 #include "PhoneHome.h"
+#include "SamFilter.h"
 
 void TrimBam::trimBamDescription()
 {
-    std::cerr << " trimBam - Trim the ends of reads in a SAM/BAM file changing read ends to 'N' and quality to '!'" << std::endl;
+    std::cerr << " trimBam - Trim the ends of reads in a SAM/BAM file changing read ends to 'N' and quality to '!' or softclipping the ends (resulting file will not be sorted)" << std::endl;
 }
 
 
@@ -48,7 +49,14 @@ void TrimBam::usage()
     std::cerr << "By default reverse strands are reversed and then the left & right are trimmed .\n";
     std::cerr << "This means that --left actually trims from the right of the read in the SAM/BAM for reverse reads.\n";
     std::cerr << "Optionally --ignoreStrand/-i can be specified to ignore the strand information and treat forward/reverse the same.\n";
-    std::cerr << "trimBam will modify the sequences to 'N', and the quality string to '!'\n";
+    std::cerr << "trimBam will modify the sequences to 'N', and the quality string to '!', unless --clip/-c is specified.\n";
+    std::cerr << "--clip/-c indicates to soft clip instead of modifying the sequence or quality\n";
+    std::cerr << "\tWhen clipping:\n";
+    std::cerr << "\t  * output is not sorted (start positions may change after soft clipping)\n";
+    std::cerr << "\t  * soft clips already in the read are maintained or added to\n";
+    std::cerr << "\t        * if 3 bases were clipped and 2 are specified to be clipped, no change is made to that end\n";
+    std::cerr << "\t        * if 3 bases were clipped and 5 are specified to be clipped, 2 additional bases are clipped from that end\n";
+    std::cerr << "\t  * if the entire read would be soft clipped, no clipping is done, and instead the read is marked as unmapped\n";
 }
 
 // main function
@@ -60,6 +68,7 @@ int TrimBam::execute(int argc, char ** argv)
   int numTrimBaseR = 0;
   bool noeof = false;
   bool ignoreStrand = false;
+  bool clip = false;
   bool noPhoneHome = false;
   std::string inName = "";
   std::string outName = "";
@@ -77,6 +86,7 @@ int TrimBam::execute(int argc, char ** argv)
       { "left", required_argument, NULL, 'L'},
       { "right", required_argument, NULL, 'R'},
       { "ignoreStrand", no_argument, NULL, 'i'},
+      { "clip", no_argument, NULL, 'c'},
       { "noeof", no_argument, NULL, 'n'},
       { "noPhoneHome", no_argument, NULL, 'p'},
       { "nophonehome", no_argument, NULL, 'P'},
@@ -99,7 +109,7 @@ int TrimBam::execute(int argc, char ** argv)
   int n_option_index = 0;
   // Process any additional parameters
   while ( ( c = getopt_long(argc, argv,
-                            "L:R:in", getopt_long_options, &n_option_index) )
+                            "L:R:icn", getopt_long_options, &n_option_index) )
           != -1 )
   {
       switch(c) 
@@ -112,6 +122,9 @@ int TrimBam::execute(int argc, char ** argv)
               break;
           case 'i':
               ignoreStrand = true;
+              break;
+          case 'c':
+              clip = true;
               break;
           case 'n':
               noeof = true;
@@ -155,31 +168,34 @@ int TrimBam::execute(int argc, char ** argv)
   fprintf(stderr,"Arguments in effect: \n");
   fprintf(stderr,"\tInput file : %s\n",inName.c_str());
   fprintf(stderr,"\tOutput file : %s\n",outName.c_str());
+  std::string trimType = "trim";
+  if(clip) { trimType = "clip"; }
   if(numTrimBaseL == numTrimBaseR)
   {
-      fprintf(stderr,"\t#Bases to trim from each side : %d\n", numTrimBaseL);
+      fprintf(stderr,"\t#Bases to %s from each side : %d\n", 
+              trimType.c_str(), numTrimBaseL);
   }
   else
   {
-      fprintf(stderr,"\t#Bases to trim from the left of forward strands : %d\n",
-              numTrimBaseL);
-      fprintf(stderr,"\t#Bases to trim from the right of forward strands: %d\n",
-              numTrimBaseR);
+      fprintf(stderr,"\t#Bases to %s from the left of forward strands : %d\n",
+              trimType.c_str(), numTrimBaseL);
+      fprintf(stderr,"\t#Bases to %s from the right of forward strands: %d\n",
+              trimType.c_str(), numTrimBaseR);
       if(!ignoreStrand)
       {
           // By default, reverse strands are treated the opposite.
-          fprintf(stderr,"\t#Bases to trim from the left of reverse strands : %d\n",
-                  numTrimBaseR);
-          fprintf(stderr,"\t#Bases to trim from the right of reverse strands : %d\n",
-                  numTrimBaseL);
+          fprintf(stderr,"\t#Bases to %s from the left of reverse strands : %d\n",
+                  trimType.c_str(), numTrimBaseR);
+          fprintf(stderr,"\t#Bases to %s from the right of reverse strands : %d\n",
+                  trimType.c_str(), numTrimBaseL);
       }
       else
       {
           // ignore strand, treating forward & reverse strands the same
-          fprintf(stderr,"\t#Bases to trim from the left of reverse strands : %d\n",
-                  numTrimBaseL);
-          fprintf(stderr,"\t#Bases to trim from the right of reverse strands : %d\n",
-                  numTrimBaseR);
+          fprintf(stderr,"\t#Bases to %s from the left of reverse strands : %d\n",
+                  trimType.c_str(), numTrimBaseL);
+          fprintf(stderr,"\t#Bases to %s from the right of reverse strands : %d\n",
+                  trimType.c_str(), numTrimBaseR);
       }
   }
  
@@ -237,40 +253,48 @@ int TrimBam::execute(int argc, char ** argv)
          fprintf(stderr,"ERROR: Sequence and Quality have different length\n");
          return(-1);
        }
-       if ( len < (trimLeft + trimRight) ) {
-         // Read Length is less than the total number of bases to trim,
-         // so trim the entire read.
-         for(i=0; i < len; ++i) {
-           seq[i] = 'N';
-           if ( qualValue ) {
-             qual[i] = '!';
-           }
-         }
+
+       if(clip)
+       {
+           SamFilter::softClip(samRecord, trimLeft, trimRight);
        }
        else
        {
-           // Read Length is larger than the total number of bases to trim,
-           // so trim from the left, then from the right.
-           for(i=0; i < trimLeft; ++i)
-           {
-               // Trim the bases from the left.
-               seq[i] = 'N';
-               if ( qualValue )
-               {
-                   qual[i] = '!';
+           if ( len < (trimLeft + trimRight) ) {
+               // Read Length is less than the total number of bases to trim,
+               // so trim the entire read.
+               for(i=0; i < len; ++i) {
+                   seq[i] = 'N';
+                   if ( qualValue ) {
+                       qual[i] = '!';
+                   }
                }
            }
-           for(i = 0; i < trimRight; i++)
+           else
            {
-               seq[len-i-1] = 'N';
-               if(qualValue)
+               // Read Length is larger than the total number of bases to trim,
+               // so trim from the left, then from the right.
+               for(i=0; i < trimLeft; ++i)
                {
-                   qual[len-i-1] = '!';
+                   // Trim the bases from the left.
+                   seq[i] = 'N';
+                   if ( qualValue )
+                   {
+                       qual[i] = '!';
+                   }
+               }
+               for(i = 0; i < trimRight; i++)
+               {
+                   seq[len-i-1] = 'N';
+                   if(qualValue)
+                   {
+                       qual[len-i-1] = '!';
+                   }
                }
            }
+           samRecord.setSequence(seq);
+           samRecord.setQuality(qual);
        }
-       samRecord.setSequence(seq);
-       samRecord.setQuality(qual);
      }
 
      if(!samOut.WriteRecord(samHeader, samRecord)) {
