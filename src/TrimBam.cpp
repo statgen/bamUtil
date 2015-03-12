@@ -52,11 +52,14 @@ void TrimBam::usage()
     std::cerr << "trimBam will modify the sequences to 'N', and the quality string to '!', unless --clip/-c is specified.\n";
     std::cerr << "--clip/-c indicates to soft clip instead of modifying the sequence or quality\n";
     std::cerr << "\tWhen clipping:\n";
-    std::cerr << "\t  * output is not sorted (start positions may change after soft clipping)\n";
+    std::cerr << "\t  * if the entire read would be soft clipped, no clipping is done, and instead the read is marked as unmapped\n";
+    std::cerr << "\t  * mate information is not updated (start positions/mapping may change after soft clipping)\n";
+    std::cerr << "\t        * run samtools fixmate to fix mate information (will first need to sort by read name)\n";
+    std::cerr << "\t  * output is not sorted (start positions/mapping may change after soft clipping)\n";
+    std::cerr << "\t        * run samtools sort to resort by coordinate (after fixmate)\n";
     std::cerr << "\t  * soft clips already in the read are maintained or added to\n";
     std::cerr << "\t        * if 3 bases were clipped and 2 are specified to be clipped, no change is made to that end\n";
     std::cerr << "\t        * if 3 bases were clipped and 5 are specified to be clipped, 2 additional bases are clipped from that end\n";
-    std::cerr << "\t  * if the entire read would be soft clipped, no clipping is done, and instead the read is marked as unmapped\n";
 }
 
 // main function
