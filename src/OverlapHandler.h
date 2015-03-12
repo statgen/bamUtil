@@ -44,6 +44,11 @@ public:
     void keepStats(bool keepStats) {myStats = keepStats;}
     virtual void printStats();
 
+    // Enable marking as unmapped if an entire read would be clipped
+    // instead of the default option of marking the whole thing as clipped.
+    void markAsUnmapped()
+    { myUnmap = true; }
+
     // Specify storeOrigTag to be non-blank to store the original cigar
     // in the record under the specified tag.
     void storeOrigCigar(const String& storeOrigTag)
@@ -61,8 +66,11 @@ public:
     /// reverse strand is completely prior to the forward strand.
     /// updateStats specifies whether or not stats should be updated.
     /// They should only be updated once per pair.
+    /// mateUnmapped indicates whether or not the mate unmapped flag
+    /// should also be set.
     virtual void handleNoOverlapWrongOrientation(SamRecord& record,
-                                                 bool updateStats = true);
+                                                 bool updateStats = true,
+                                                 bool mateUnmapped = true);
 
     /// Handle the case where the mate was not found (maybe due to
     /// hitting a buffer limit).  updateStats specifies whether or not
@@ -78,11 +86,16 @@ public:
     void incrementStep() { ++myStepNum; }
 
 protected:
+    // Will mark the mate as unmapped if myUnmap is set to true.
+    void markMateUnmapped(SamRecord& record);
+
     int myStepNum;
     String myStoreOrigCigar;
     bool myStats;
     RunningStat myOverlaps;
     int myNumOrientationClips;
+    // If set to true, mark entirely clipped records as unmapped.
+    bool myUnmap;
 
 private:
     void init()
@@ -91,6 +104,7 @@ private:
         myStoreOrigCigar = "";
         myStats = false;
         myNumOrientationClips = 0;
+        myUnmap = false;
     }
 };
 

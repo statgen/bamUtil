@@ -20,7 +20,7 @@
 #include "OverlapClipLowerBaseQual.h"
 #include "CigarHelper.h"
 #include "SamFlag.h"
-
+#include "SamFilter.h"
 
 OverlapClipLowerBaseQual::OverlapClipLowerBaseQual()
     : OverlapHandler(),
@@ -126,6 +126,7 @@ void OverlapClipLowerBaseQual::handleOverlapPair(SamRecord& firstRecord,
 
             // This will clip the entire read, do not update the stats.
             handleOverlapWithoutMate(firstRecord, false);
+            markMateUnmapped(secondRecord);
 
             // Soft clip the end of the forward(second) strand that
             // extends past the reverse strand (overlapEnd + 1).
@@ -154,7 +155,19 @@ void OverlapClipLowerBaseQual::handleOverlapPair(SamRecord& firstRecord,
                 firstRecord.addTag(myStoreOrigCigar, 'Z', 
                                    firstRecord.getCigar());
             }
-            firstRecord.setCigar(newFirstCigar);
+            // Check if the entire first record will be clipped and should
+            // instead be marked as unmapped.
+            if(myUnmap && (firstClipPos == 0))
+            {
+                // Completely clipped, mark as unmapped
+                SamFilter::filterRead(firstRecord);
+                // Update the mate to indicate this record is unmapped
+                markMateUnmapped(secondRecord);
+            }
+            else
+            {
+                firstRecord.setCigar(newFirstCigar);
+            }
         }
     }
     else
@@ -186,7 +199,8 @@ void OverlapClipLowerBaseQual::handleOverlapPair(SamRecord& firstRecord,
 
             // This will clip the entire read
             handleOverlapWithoutMate(secondRecord, false);
-            
+            markMateUnmapped(firstRecord);
+
             // Soft clip the front of the reverse(first) strand that
             // extends past the forward strand (overlapStart - 1).
             if(CigarHelper::softClipBeginByRefPos(firstRecord, 
@@ -219,9 +233,22 @@ void OverlapClipLowerBaseQual::handleOverlapPair(SamRecord& firstRecord,
                 secondRecord.addTag(myStoreOrigCigar, 'Z', 
                                     secondRecord.getCigar());
             }
-            secondRecord.set0BasedPosition(newPos);
-            firstRecord.set0BasedMatePosition(newPos);
-            secondRecord.setCigar(newSecondCigar);
+
+            // Check if the entire second record will be clipped and should
+            // instead be marked as unmapped.
+            if(myUnmap && (secondClipPos >= (secondRecord.getReadLength()-1)))
+            {
+                // Completely clipped, mark as unmapped
+                SamFilter::filterRead(secondRecord);
+                // Update the mate to indicate this record is unmapped
+                markMateUnmapped(firstRecord);
+            }
+            else
+            {
+                secondRecord.set0BasedPosition(newPos);
+                firstRecord.set0BasedMatePosition(newPos);
+                secondRecord.setCigar(newSecondCigar);
+            }
         }
     }
 }
@@ -242,14 +269,15 @@ bool OverlapClipLowerBaseQual::handleOverlapWithoutMate(SamRecord& record,
             myOverlaps.Push(record.get0BasedAlignmentEnd() - 
                             record.get0BasedMatePosition() + 1);
         }
-        handleNoOverlapWrongOrientation(record, updateStats);
+        handleNoOverlapWrongOrientation(record, updateStats, false);
     }
     else
     {
         // Just clip this one based on the overlap.
-        if(CigarHelper::softClipEndByRefPos(record, 
-                                            record.get0BasedMatePosition(), 
-                                            newCigar) != CigarHelper::NO_CLIP)
+        int32_t clipPos = CigarHelper::softClipEndByRefPos(record, 
+                                                           record.get0BasedMatePosition(), 
+                                                           newCigar);
+        if(clipPos != CigarHelper::NO_CLIP)
         {
             // Update the number of clips.
             if(myStats && updateStats)
@@ -274,7 +302,16 @@ bool OverlapClipLowerBaseQual::handleOverlapWithoutMate(SamRecord& record,
                 // Write original cigar.
                 record.addTag(myStoreOrigCigar, 'Z', record.getCigar());
             }
-            record.setCigar(newCigar);
+
+            if(myUnmap && (clipPos == 0))
+            {
+                // whole read got clipped
+                SamFilter::filterRead(record);
+            }
+            else
+            {
+                record.setCigar(newCigar);
+            }
         }
     }
     return(true);

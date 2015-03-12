@@ -68,6 +68,7 @@ void ClipOverlap::usage()
     std::cerr << "\t\t--stats        : Print some statistics on the overlaps." << std::endl;
     std::cerr << "\t\t--overlapsOnly : Only output overlapping read pairs" << std::endl;
     std::cerr << "\t\t--excludeFlags : Skip records with any of the specified flags set, default 0x70C" << std::endl;
+    std::cerr << "\t\t--unmapped     : Mark records that would be completely clipped as unmapped" << std::endl;
     std::cerr << "\t\t--noeof        : Do not expect an EOF block on a bam file." << std::endl;
     std::cerr << "\t\t--params       : Print the parameter settings to stderr" << std::endl;
     std::cerr << "\tClipping By Coordinate Optional Parameters:" << std::endl;
@@ -89,6 +90,7 @@ int ClipOverlap::execute(int argc, char **argv)
     bool readName = false;
     bool stats = false;
     int poolSize = DEFAULT_POOL_SIZE;
+    bool unmapped = false;
     bool noeof = false;
     bool params = false;
     String excludeFlags = "0x70C";
@@ -105,6 +107,7 @@ int ClipOverlap::execute(int argc, char **argv)
         LONG_PARAMETER ("stats", &stats)
         LONG_PARAMETER ("overlapsOnly", &myOverlapsOnly)
         LONG_STRINGPARAMETER ("excludeFlags", &excludeFlags)
+        LONG_PARAMETER("unmapped", &unmapped)
         LONG_PARAMETER("noeof", &noeof)
         LONG_PARAMETER("params", &params)
         LONG_PARAMETER_GROUP("Coordinate Processing Optional Parameters")
@@ -167,6 +170,11 @@ int ClipOverlap::execute(int argc, char **argv)
         inputParameters.Status();
         std::cerr << "Failed to allocate the overlap handler\n";
         return(-1);
+    }
+
+    if(unmapped)
+    {
+        myOverlapHandler->markAsUnmapped();
     }
 
     // Setup the overlap handler.

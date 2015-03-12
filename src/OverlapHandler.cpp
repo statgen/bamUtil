@@ -19,6 +19,7 @@
 #include "OverlapHandler.h"
 #include "SamFlag.h"
 #include "CigarHelper.h"
+#include "SamFilter.h"
 
 void OverlapHandler::printStats()
 {
@@ -107,7 +108,8 @@ OverlapHandler::OverlapInfo OverlapHandler::getOverlapInfo(SamRecord& record, ui
 
 
 void OverlapHandler::handleNoOverlapWrongOrientation(SamRecord& record,
-                                                     bool updateStats)
+                                                     bool updateStats,
+                                                     bool mateUnmapped)
 {
     static CigarRoller newCigar; // holds updated cigar.
 
@@ -116,18 +118,37 @@ void OverlapHandler::handleNoOverlapWrongOrientation(SamRecord& record,
         ++myNumOrientationClips;
     }
 
-    // Clip the entire record.
-    if(CigarHelper::softClipEndByRefPos(record, record.get0BasedPosition(),
-                                        newCigar) != CigarHelper::NO_CLIP)
-    { 
+    if(!myUnmap)
+    {
+        // Clip the entire record.
+        if(CigarHelper::softClipEndByRefPos(record, record.get0BasedPosition(),
+                                            newCigar) != CigarHelper::NO_CLIP)
+        { 
+            // Write the original cigar into the specified tag.
+            if(!myStoreOrigCigar.IsEmpty())
+            {
+                // Write original cigar.
+                record.addTag(myStoreOrigCigar, 'Z', record.getCigar());
+            }
+            // Update the cigar.
+            record.setCigar(newCigar);
+        }
+    }
+    else
+    {
         // Write the original cigar into the specified tag.
         if(!myStoreOrigCigar.IsEmpty())
         {
             // Write original cigar.
             record.addTag(myStoreOrigCigar, 'Z', record.getCigar());
         }
-        // Update the cigar.
-        record.setCigar(newCigar);
+        // Filter read - mark it unmapped.
+        SamFilter::filterRead(record);
+        // If the mate will be unmapped, update the mate information.
+        if(mateUnmapped)
+        {
+            markMateUnmapped(record);
+        }
     }
 }
 
@@ -136,4 +157,18 @@ bool OverlapHandler::handleOverlapWithoutMate(SamRecord& record,
                                               bool updateStats)
 {
     return(false);
+}
+
+
+void OverlapHandler::markMateUnmapped(SamRecord& record)
+{
+    // Mark the mate as unmapped if we are doing unmapping
+    if(myUnmap)
+    {
+        uint16_t flag = record.getFlag(); 
+        flag |= SamFlag::MATE_UNMAPPED;
+        // Also ensure proper pair is not set.
+        flag &= ~SamFlag::PROPER_PAIR;
+        record.setFlag(flag);
+    }
 }
