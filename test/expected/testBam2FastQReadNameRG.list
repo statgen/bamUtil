@@ -1,0 +1,5 @@
+SAMPLE	FASTQ1	FASTQ2	RGID	LIBRARY	CENTER	PLATFORM
+sm1	results/testBam2FastQReadNameRG.rg1_1.fastq	results/testBam2FastQReadNameRG.rg1_2.fastq	rg1	sm1	unknown	ILLUMINA
+sm1	results/testBam2FastQReadNameRG.rg1.fastq	.	rg1	sm1	unknown	ILLUMINA
+sm2	results/testBam2FastQReadNameRG.rg2_1.fastq	results/testBam2FastQReadNameRG.rg2_2.fastq	rg2	lib2	cn2	ILLUMINA
+results/testBam2FastQReadNameRG	results/testBam2FastQReadNameRG_1.fastq	results/testBam2FastQReadNameRG_2.fastq	.	results/testBam2FastQReadNameRG	unknown	ILLUMINA

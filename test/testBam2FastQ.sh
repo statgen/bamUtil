@@ -278,6 +278,131 @@ then
 fi
 
 
+##########################################
+# Test invalid splitRG command
+# 
+../bin/bam bam2FastQ --in testFiles/testBam2FastQCoord.sam --unpair results/testBam2FastQCoordUnpairRGFail.fastq --noph --splitRG 2> results/testBam2FastQCoordUnpairRGFail.log
+if [ $? -eq 0 ]
+then
+    echo "bam2FastQ passed when expected to fail."
+    let "status = 1"
+fi
+diff -I "^Version: .*" results/testBam2FastQCoordUnpairRGFail.log expected/testBam2FastQCoordUnpairRGFail.log
+let "status |= $?"
+if [ -e results/testBam2FastQCoordUnpairRGFail.fastq ]
+then
+  let "status = 1"
+fi
+
+../bin/bam bam2FastQ --in testFiles/testBam2FastQCoord.sam --firstOut results/testBam2FastQCoordFirstRGFail.fastq --noph --splitRG 2> results/testBam2FastQCoordFirstRGFail.log
+if [ $? -eq 0 ]
+then
+    echo "bam2FastQ passed when expected to fail."
+    let "status = 1"
+fi
+diff -I "^Version: .*" results/testBam2FastQCoordFirstRGFail.log expected/testBam2FastQCoordFirstRGFail.log
+let "status |= $?"
+if [ -e results/testBam2FastQCoordFirstRGFail.fastq ]
+then
+  let "status = 1"
+fi
+
+../bin/bam bam2FastQ --in testFiles/testBam2FastQCoord.sam --secondOut results/testBam2FastQCoordSecondRGFail.fastq --noph --splitRG 2> results/testBam2FastQCoordSecondRGFail.log
+if [ $? -eq 0 ]
+then
+    echo "bam2FastQ passed when expected to fail."
+    let "status = 1"
+fi
+diff -I "^Version: .*" results/testBam2FastQCoordSecondRGFail.log expected/testBam2FastQCoordSecondRGFail.log
+let "status |= $?"
+if [ -e results/testBam2FastQCoordSecondRGFail.fastq ]
+then
+  let "status = 1"
+fi
+
+##########################################
+# Test valid splitRG command - no RG
+../bin/bam bam2FastQ --in testFiles/testBam2FastQCoord.sam --outBase results/testBam2FastQCoordNoRG --noph --splitRG 2> results/testBam2FastQCoordNoRG.log
+let "status |= $?"
+diff results/testBam2FastQCoordNoRG.fastq expected/testBam2FastQCoordNoRG.fastq
+let "status |= $?"
+diff results/testBam2FastQCoordNoRG_1.fastq expected/testBam2FastQCoordNoRG_1.fastq
+let "status |= $?"
+diff results/testBam2FastQCoordNoRG_2.fastq expected/testBam2FastQCoordNoRG_2.fastq
+let "status |= $?"
+diff results/testBam2FastQCoordNoRG.log expected/testBam2FastQCoordNoRG.log
+let "status |= $?"
+
+../bin/bam bam2FastQ --readName --in testFiles/testClipOverlapReadName.sam --outBase results/testBam2FastQReadNameNoRG --noph 2> results/testBam2FastQReadNameNoRG.log
+let "status |= $?"
+diff results/testBam2FastQReadNameNoRG.fastq expected/testBam2FastQReadNameNoRG.fastq
+let "status |= $?"
+diff results/testBam2FastQReadNameNoRG_1.fastq expected/testBam2FastQReadNameNoRG_1.fastq
+let "status |= $?"
+diff results/testBam2FastQReadNameNoRG_2.fastq expected/testBam2FastQReadNameNoRG_2.fastq
+let "status |= $?"
+diff results/testBam2FastQReadNameNoRG.log expected/testBam2FastQReadNameNoRG.log
+let "status |= $?"
+
+##########################################
+# Test valid splitRG command - RG
+../bin/bam bam2FastQ --in testFiles/testBam2FastQCoordRG.sam --outBase results/testBam2FastQCoordRG --noph --splitRG 2> results/testBam2FastQCoordRG.log
+let "status |= $?"
+diff results/testBam2FastQCoordRG_1.fastq expected/testBam2FastQCoordRG_1.fastq
+let "status |= $?"
+diff results/testBam2FastQCoordRG_2.fastq expected/testBam2FastQCoordRG_2.fastq
+let "status |= $?"
+diff results/testBam2FastQCoordRG.rg1.fastq expected/testBam2FastQCoordRG.rg1.fastq
+let "status |= $?"
+diff results/testBam2FastQCoordRG.rg1_1.fastq expected/testBam2FastQCoordRG.rg1_1.fastq
+let "status |= $?"
+diff results/testBam2FastQCoordRG.rg1_2.fastq expected/testBam2FastQCoordRG.rg1_2.fastq
+let "status |= $?"
+diff results/testBam2FastQCoordRG.rg2_1.fastq expected/testBam2FastQCoordRG.rg2_1.fastq
+let "status |= $?"
+diff results/testBam2FastQCoordRG.rg2_2.fastq expected/testBam2FastQCoordRG.rg2_2.fastq
+let "status |= $?"
+diff results/testBam2FastQCoordRG.log expected/testBam2FastQCoordRG.log
+let "status |= $?"
+diff results/testBam2FastQCoordRG.list expected/testBam2FastQCoordRG.list
+let "status |= $?"
+if [ -e results/testBam2FastQCoordRG.fastq ]
+then
+  let "status = 1"
+fi
+if [ -e results/testBam2FastQCoordRG.rg2.fastq ]
+then
+  let "status = 1"
+fi
+
+../bin/bam bam2FastQ --readName --in testFiles/testBam2FastQReadNameRG.sam --outBase results/testBam2FastQReadNameRG --noph --splitRG 2> results/testBam2FastQReadNameRG.log
+let "status |= $?"
+diff results/testBam2FastQReadNameRG_1.fastq expected/testBam2FastQReadNameRG_1.fastq
+let "status |= $?"
+diff results/testBam2FastQReadNameRG_2.fastq expected/testBam2FastQReadNameRG_2.fastq
+let "status |= $?"
+diff results/testBam2FastQReadNameRG.rg1.fastq expected/testBam2FastQReadNameRG.rg1.fastq
+let "status |= $?"
+diff results/testBam2FastQReadNameRG.rg1_1.fastq expected/testBam2FastQReadNameRG.rg1_1.fastq
+let "status |= $?"
+diff results/testBam2FastQReadNameRG.rg1_2.fastq expected/testBam2FastQReadNameRG.rg1_2.fastq
+let "status |= $?"
+diff results/testBam2FastQReadNameRG.rg2_1.fastq expected/testBam2FastQReadNameRG.rg2_1.fastq
+let "status |= $?"
+diff results/testBam2FastQReadNameRG.rg2_2.fastq expected/testBam2FastQReadNameRG.rg2_2.fastq
+let "status |= $?"
+diff results/testBam2FastQReadNameRG.log expected/testBam2FastQReadNameRG.log
+let "status |= $?"
+diff results/testBam2FastQReadNameRG.list expected/testBam2FastQReadNameRG.list
+let "status |= $?"
+if [ -e results/testBam2FastQReadNameRG.fastq ]
+then
+  let "status = 1"
+fi
+if [ -e results/testBam2FastQReadNameRG.rg2.fastq ]
+then
+  let "status = 1"
+fi
 
 if [ $status != 0 ]
 then

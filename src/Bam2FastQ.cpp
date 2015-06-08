@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2012  Regents of the University of Michigan
+ *  Copyright (C) 2012-2015  Regents of the University of Michigan
  *
  *   This program is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@ const char* Bam2FastQ::DEFAULT_SECOND_EXT = "/2";
 
 Bam2FastQ::Bam2FastQ()
     : BamExecutable(),
+      mySamHeader(),
       myPool(),
       myMateMap(true),
       myUnpairedFile(NULL),
@@ -37,10 +38,17 @@ Bam2FastQ::Bam2FastQ()
       myNumMateFailures(0),
       myNumPairs(0),
       myNumUnpaired(0),
+      mySplitRG(false),
       myReverseComp(true),
       myRNPlus(false),
+      myOutBase(""),
       myFirstRNExt(DEFAULT_FIRST_EXT),
-      mySecondRNExt(DEFAULT_SECOND_EXT)
+      mySecondRNExt(DEFAULT_SECOND_EXT),
+      myFirstFileNameExt(""),
+      mySecondFileNameExt(""),
+      myUnpairedFileNameExt(""),
+      myOutFastqs(),
+      myFqList(NULL)
 {
 }
 
@@ -72,6 +80,7 @@ void Bam2FastQ::usage()
     std::cerr << "\tOptional Parameters:" << std::endl;
     std::cerr << "\t\t--readname      : Process the BAM as readName sorted instead\n"
               << "\t\t                  of coordinate if the header does not indicate a sort order." << std::endl;
+    std::cerr << "\t\t--splitRG       : Split into RG specific fastqs." << std::endl;
     std::cerr << "\t\t--merge         : Generate 1 interleaved (merged) FASTQ for paired-ends (unpaired in a separate file)\n"
               << "\t\t                  use firstOut to override the filename of the interleaved file." << std::endl;
     std::cerr << "\t\t--refFile       : Reference file for converting '=' in the sequence to the actual base" << std::endl;
@@ -102,7 +111,6 @@ int Bam2FastQ::execute(int argc, char **argv)
     String inFile = "";
     bool readName = false;
     String refFile = "";
-    String outBase = "";
     String firstOut = "";
     String secondOut = "";
     String unpairedOut = "";
@@ -111,9 +119,11 @@ int Bam2FastQ::execute(int argc, char **argv)
     bool noeof = false;
     bool params = false;
 
+    myOutBase = "";
     myNumMateFailures = 0;
     myNumPairs = 0;
     myNumUnpaired = 0;
+    mySplitRG = false;
     myReverseComp = true;
     myRNPlus = false;
     myFirstRNExt = DEFAULT_FIRST_EXT;
@@ -125,6 +135,7 @@ int Bam2FastQ::execute(int argc, char **argv)
         LONG_STRINGPARAMETER("in", &inFile)
         LONG_PARAMETER_GROUP("Optional Parameters")
         LONG_PARAMETER("readName", &readName)
+        LONG_PARAMETER("splitRG", &mySplitRG)
         LONG_PARAMETER("merge", &interleave)
         LONG_STRINGPARAMETER("refFile", &refFile)
         LONG_STRINGPARAMETER("firstRNExt", &myFirstRNExt)
@@ -134,7 +145,7 @@ int Bam2FastQ::execute(int argc, char **argv)
         LONG_PARAMETER("noeof", &noeof)
         LONG_PARAMETER("params", &params)
         LONG_PARAMETER_GROUP("Optional OutputFile Names")
-        LONG_STRINGPARAMETER("outBase", &outBase)
+        LONG_STRINGPARAMETER("outBase", &myOutBase)
         LONG_STRINGPARAMETER("firstOut", &firstOut)
         LONG_STRINGPARAMETER("secondOut", &secondOut)
         LONG_STRINGPARAMETER("unpairedOut", &unpairedOut)
@@ -175,33 +186,72 @@ int Bam2FastQ::execute(int argc, char **argv)
         return(-1);
     }
 
+    // Cannot specify both interleaved & secondOut since secondOut would be N/A.
+    if(interleave && !secondOut.IsEmpty())
+    {
+        usage();
+        inputParameters.Status();
+        std::cerr << "ERROR: Cannot specify --merge & --secondOut.\n";
+        return(-1);
+    }
+
+    // Cannot specify both splitRG & firstOut/secondOut/unpairedOut
+    // since it needs a different file for each RG.
+    if(mySplitRG && (!firstOut.IsEmpty() || 
+                   !secondOut.IsEmpty() || !unpairedOut.IsEmpty()))
+    {
+        usage();
+        inputParameters.Status();
+        std::cerr << "ERROR: Cannot specify --splitRG & --firstOut/--secondOut/--unpairedOut.\n";
+        std::cerr << "Use --outBase instead.\n";
+        return(-1);
+    }
+    // Cannot specify splitRG & output to stdout.
+    if(mySplitRG && (myOutBase[0] == '-'))
+    {
+        usage();
+        inputParameters.Status();
+        std::cerr << "ERROR: Cannot specify --splitRG & write to stdout.\n";
+        return(-1);
+    }
 
     // Check to see if the out file was specified, if not, generate it from
     // the input filename.
-    if(outBase == "")
+    if(myOutBase == "")
     {
         // Just remove the extension from the input filename.
         int extStart = inFile.FastFindLastChar('.');
         if(extStart <= 0)
         {
-            outBase = inFile;
+            myOutBase = inFile;
         }
         else
         {
-            outBase = inFile.Left(extStart);
+            myOutBase = inFile.Left(extStart);
         }
+    }
+
+    if(mySplitRG)
+    {
+        std::string fqList = myOutBase.c_str();
+        fqList += ".list";
+        myFqList = ifopen(fqList.c_str(), "w");
+        ifprintf(myFqList, "SAMPLE\tFASTQ1\tFASTQ2\tRGID\tLIBRARY\tCENTER\tPLATFORM\n");
     }
 
     // Check to see if the first/second/single-ended were specified and
     // if not, set them.
-    std::string firstExt = "_1.fastq";
+    myFirstFileNameExt = "_1.fastq";
+    mySecondFileNameExt = "_2.fastq";
+    myUnpairedFileNameExt = ".fastq";
     if(interleave)
     {
-        firstExt = "_interleaved.fastq";
+        myFirstFileNameExt = "_interleaved.fastq";
+        myFirstFileNameExt = "_interleaved.fastq";
     }
-    getFileName(firstOut, outBase, firstExt.c_str());
-    getFileName(secondOut, outBase, "_2.fastq");
-    getFileName(unpairedOut, outBase, ".fastq");
+    getFileName(firstOut, myFirstFileNameExt);
+    getFileName(secondOut, mySecondFileNameExt);
+    getFileName(unpairedOut, myUnpairedFileNameExt);
 
     if(params)
     {
@@ -212,58 +262,60 @@ int Bam2FastQ::execute(int argc, char **argv)
     // Open prior to opening the output files,
     // so if there is an error, the outputs don't get created.
     SamFile samIn;
-    SamFileHeader samHeader;
-    samIn.OpenForRead(inFile, &samHeader);
+    samIn.OpenForRead(inFile, &mySamHeader);
     // Skip non-primary reads.
     samIn.SetReadFlags(0, 0x0100);
 
-    // Open the output files.
-    myUnpairedFile = ifopen(unpairedOut, "w");
+    // Open the output files if not splitting RG
+    if(!mySplitRG)
+    {
+        myUnpairedFile = ifopen(unpairedOut, "w");
 
-    // Only open the first file if it is different than an already opened file.
-    if(firstOut != unpairedOut)
-    {
-        myFirstFile = ifopen(firstOut, "w");
-    }
-    else
-    {
-        myFirstFile = myUnpairedFile;
-    }
+        // Only open the first file if it is different than an already opened file.
+        if(firstOut != unpairedOut)
+        {
+            myFirstFile = ifopen(firstOut, "w");
+        }
+        else
+        {
+            myFirstFile = myUnpairedFile;
+        }
 
-    // If it is interleaved or the 2nd file is not a new name, set it appropriately.
-    if(interleave || secondOut == firstOut)
-    {
-        mySecondFile = myFirstFile;
-    }
-    else if(secondOut == unpairedOut)
-    {
-        mySecondFile = myUnpairedFile;
-    }
-    else
-    {
-        mySecondFile = ifopen(secondOut, "w");
-    }
+        // If it is interleaved or the 2nd file is not a new name, set it appropriately.
+        if(interleave || secondOut == firstOut)
+        {
+            mySecondFile = myFirstFile;
+        }
+        else if(secondOut == unpairedOut)
+        {
+            mySecondFile = myUnpairedFile;
+        }
+        else
+        {
+            mySecondFile = ifopen(secondOut, "w");
+        }
     
-    if(myUnpairedFile == NULL)
-    {
-        std::cerr << "Failed to open " << unpairedOut
-                  << " so can't convert bam2FastQ.\n";
-        return(-1);
-    }
-    if(myFirstFile == NULL)
-    {
-        std::cerr << "Failed to open " << firstOut
-                  << " so can't convert bam2FastQ.\n";
-        return(-1);
-    }
-    if(mySecondFile == NULL)
-    {
-        std::cerr << "Failed to open " << secondOut
-                  << " so can't convert bam2FastQ.\n";
-        return(-1);
+        if(myUnpairedFile == NULL)
+        {
+            std::cerr << "Failed to open " << unpairedOut
+                      << " so can't convert bam2FastQ.\n";
+            return(-1);
+        }
+        if(myFirstFile == NULL)
+        {
+            std::cerr << "Failed to open " << firstOut
+                      << " so can't convert bam2FastQ.\n";
+            return(-1);
+        }
+        if(mySecondFile == NULL)
+        {
+            std::cerr << "Failed to open " << secondOut
+                      << " so can't convert bam2FastQ.\n";
+            return(-1);
+        }
     }
 
-    if((readName) || (strcmp(samHeader.getSortOrder(), "queryname") == 0))
+    if((readName) || (strcmp(mySamHeader.getSortOrder(), "queryname") == 0))
     {
         readName = true;
     }
@@ -293,7 +345,7 @@ int Bam2FastQ::execute(int argc, char **argv)
             // Failed to allocate a new record.
             throw(std::runtime_error("Failed to allocate a new SAM/BAM record"));
         }
-        if(!samIn.ReadRecord(samHeader, *recordPtr))
+        if(!samIn.ReadRecord(mySamHeader, *recordPtr))
         {
             // Failed to read a record.
             returnStatus = samIn.GetStatus();
@@ -316,7 +368,8 @@ int Bam2FastQ::execute(int argc, char **argv)
         else
         {
             ++myNumUnpaired;
-            writeFastQ(*recordPtr, myUnpairedFile);
+            writeFastQ(*recordPtr, myUnpairedFile,
+                       myUnpairedFileNameExt);
         }
     }
 
@@ -363,7 +416,8 @@ void Bam2FastQ::handlePairedRN(SamRecord& samRec)
                       << " but couldn't find mate, so writing as "
                       << "unpaired (single-ended)\n";
             ++myNumMateFailures;
-            writeFastQ(*prevRec, myUnpairedFile);
+            writeFastQ(*prevRec, myUnpairedFile,
+                       myUnpairedFileNameExt);
             // Save this record to check against the next one.
             prevRec = &samRec;
         }
@@ -381,8 +435,10 @@ void Bam2FastQ::handlePairedRN(SamRecord& samRec)
                               << " are first fragment, so "
                               << "splitting one to be in the 2nd fastq.\n";
                 }
-                writeFastQ(samRec, myFirstFile, myFirstRNExt.c_str());
-                writeFastQ(*prevRec, mySecondFile, mySecondRNExt.c_str());
+                writeFastQ(samRec, myFirstFile, myFirstFileNameExt,
+                           myFirstRNExt.c_str());
+                writeFastQ(*prevRec, mySecondFile, mySecondFileNameExt,
+                           mySecondRNExt.c_str());
             }
             else
             {
@@ -392,8 +448,8 @@ void Bam2FastQ::handlePairedRN(SamRecord& samRec)
                               << " are first fragment, so "
                               << "splitting one to be in the 2nd fastq.\n";
                 }
-                writeFastQ(*prevRec, myFirstFile, myFirstRNExt.c_str());
-                writeFastQ(samRec, mySecondFile, mySecondRNExt.c_str());
+                writeFastQ(*prevRec, myFirstFile, myFirstFileNameExt, myFirstRNExt.c_str());
+                writeFastQ(samRec, mySecondFile, mySecondFileNameExt, mySecondRNExt.c_str());
             }
             // No previous record.
             prevRec = NULL;
@@ -437,7 +493,7 @@ void Bam2FastQ::handlePairedCoord(SamRecord& samRec)
                           << " but couldn't find mate, so writing as "
                           << "unpaired (single-ended)\n";
                 ++myNumMateFailures;
-                writeFastQ(samRec, myUnpairedFile);
+                writeFastQ(samRec, myUnpairedFile, myUnpairedFileNameExt);
             }
         }
         else
@@ -453,8 +509,8 @@ void Bam2FastQ::handlePairedCoord(SamRecord& samRec)
                               << " are first fragment, so "
                               << "splitting one to be in the 2nd fastq.\n";
                 }
-                writeFastQ(samRec, myFirstFile, myFirstRNExt.c_str());
-                writeFastQ(*mateRec, mySecondFile, mySecondRNExt.c_str());
+                writeFastQ(samRec, myFirstFile, myFirstFileNameExt, myFirstRNExt.c_str());
+                writeFastQ(*mateRec, mySecondFile, mySecondFileNameExt, mySecondRNExt.c_str());
             }
             else
             {
@@ -464,8 +520,8 @@ void Bam2FastQ::handlePairedCoord(SamRecord& samRec)
                               << " are first fragment, so "
                               << "splitting one to be in the 2nd fastq.\n";
                 }
-                writeFastQ(*mateRec, myFirstFile, myFirstRNExt.c_str());
-                writeFastQ(samRec, mySecondFile, mySecondRNExt.c_str());
+                writeFastQ(*mateRec, myFirstFile, myFirstFileNameExt, myFirstRNExt.c_str());
+                writeFastQ(samRec, mySecondFile, mySecondFileNameExt, mySecondRNExt.c_str());
             }
         }
     }
@@ -481,14 +537,72 @@ void Bam2FastQ::handlePairedCoord(SamRecord& samRec)
 
 
 void Bam2FastQ::writeFastQ(SamRecord& samRec, IFILE filePtr,
-                             const char* readNameExt)
+                           const std::string& fileNameExt, const char* readNameExt)
 {
     static int16_t flag;
     static std::string sequence;
     static String quality;
+    static std::string rg;
+    static std::string rgFastqExt;
+    static std::string fileName;
+    if(mySplitRG)
+    {
+        rg = samRec.getString("RG").c_str();
+        rgFastqExt = rg + fileNameExt;
 
+        OutFastqMap::iterator it;
+        it = myOutFastqs.find(rgFastqExt);
+        if(it == myOutFastqs.end())
+        {
+            // New file.
+            fileName = myOutBase.c_str();
+            if(rg != "")
+            {
+                fileName += '.';
+            }
+            else
+            {
+                rg = ".";
+            }
+            fileName += rgFastqExt;
+            filePtr = ifopen(fileName.c_str(), "w");
+            myOutFastqs[rgFastqExt] = filePtr;
+
+            if(fileNameExt != mySecondFileNameExt)
+            {
+                // first end.
+                const char* sm = mySamHeader.getRGTagValue("SM", rg.c_str());
+                if(strcmp(sm, "") == 0){sm = myOutBase.c_str();}
+                const char* lib = mySamHeader.getRGTagValue("LB", rg.c_str());
+                if(strcmp(lib, "") == 0){lib = sm;}
+                const char* pl = mySamHeader.getRGTagValue("PL", rg.c_str());
+                if(strcmp(pl, "") == 0){pl = "ILLUMINA";}
+                const char* cn = mySamHeader.getRGTagValue("CN", rg.c_str());
+                if(strcmp(cn, "") == 0){cn = "unknown";}
+                std::string fq2 = ".";
+                if(fileNameExt == myFirstFileNameExt)
+                {
+                    fq2 = myOutBase.c_str();
+                    if(rg != ".")
+                    {
+                        fq2 += '.';
+                        fq2 += rg;
+                    }
+                    fq2 += mySecondFileNameExt;
+                }
+                ifprintf(myFqList, "%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+                         sm, fileName.c_str(), fq2.c_str(),
+                         rg.c_str(), lib, cn, pl);
+            }
+        }
+        else
+        {
+            filePtr = it->second;
+        }
+    }
     if(filePtr == NULL)
     {
+        throw(std::runtime_error("Programming ERROR/EXITING: Bam2FastQ filePtr not set."));
         return;
     }
 
@@ -547,7 +661,7 @@ void Bam2FastQ::cleanUpMateMap(uint64_t readPos, bool flushAll)
             std::cerr << "Paired Read, " << firstRec->getReadName()
                       << " but couldn't find mate, so writing as "
                       << "unpaired (single-ended)\n";
-            writeFastQ(*firstRec, myUnpairedFile);
+            writeFastQ(*firstRec, myUnpairedFile, myUnpairedFileNameExt);
             ++myNumMateFailures;
 
             // Remove this record from the map.
@@ -596,21 +710,30 @@ void Bam2FastQ::closeFiles()
         ifclose(mySecondFile);
         mySecondFile = NULL;
     }
+
+    // Loop through the fastq map and close those files.
+    for (OutFastqMap::iterator it=myOutFastqs.begin(); 
+         it!=myOutFastqs.end(); ++it)
+    {
+        ifclose(it->second);
+        it->second = NULL;
+    }
+    myOutFastqs.clear();
 }
 
 
-void Bam2FastQ::getFileName(String& fn, const String& outBase, const char* ext)
+void Bam2FastQ::getFileName(String& fn, const std::string& ext)
 {
     if(fn.IsEmpty())
     {
-        if(outBase[0] != '-')
+        if(myOutBase[0] != '-')
         {
-            fn = outBase + ext;
+            fn = myOutBase + ext.c_str();
         }
         else
         {
             // starts with a '-', so writing to stdout, don't change the name.
-            fn = outBase;
+            fn = myOutBase;
         }
     }
 }

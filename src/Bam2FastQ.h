@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2012  Regents of the University of Michigan
+ *  Copyright (C) 2012-2015  Regents of the University of Michigan
  *
  *   This program is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -21,6 +21,12 @@
 
 #ifndef __BAM2FASTQ_H__
 #define __BAM2FASTQ_H__
+
+#ifdef __GXX_EXPERIMENTAL_CXX0X__
+#include <unordered_map>
+#else
+#include <map>
+#endif
 
 #include "BamExecutable.h"
 #include "SamRecord.h"
@@ -48,12 +54,14 @@ private:
     // Handles a record, writing the fastq to the specified file.
     // Releases the record.
     void writeFastQ(SamRecord& samRec, IFILE filePtr,
+                    const std::string& fileNameExt,
                     const char* readNameExt = "");
     void cleanUpMateMap(uint64_t readPos, bool flushAll = false);
 
     void closeFiles();
-    void getFileName(String& fn, const String& outBase, const char* ext);
+    void getFileName(String& fn, const std::string& ext);
 
+    SamFileHeader mySamHeader;
     SamRecordPool myPool;
     MateMapByCoord myMateMap;
 
@@ -65,11 +73,26 @@ private:
     int myNumPairs;
     int myNumUnpaired;
 
+    bool mySplitRG;
     bool myReverseComp;
     bool myRNPlus;
 
+    String myOutBase;
+
     String myFirstRNExt;
     String mySecondRNExt;
+
+    std::string myFirstFileNameExt;
+    std::string mySecondFileNameExt;
+    std::string myUnpairedFileNameExt;
+
+    #ifdef __GXX_EXPERIMENTAL_CXX0X__
+    typedef std::unordered_map<std::string, IFILE> OutFastqMap;
+    #else
+    typedef std::map<std::string, IFILE> OutFastqMap;
+    #endif
+    OutFastqMap myOutFastqs;
+    IFILE myFqList;
 };
 
 #endif
