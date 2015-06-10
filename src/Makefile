@@ -1,5 +1,5 @@
 EXE=bam
-TOOLBASE = BamExecutable Validate Convert Diff DumpHeader SplitChromosome WriteRegion DumpIndex ReadIndexedBam DumpRefInfo Filter ReadReference Revert Squeeze FindCigars Stats PileupElementBaseQCStats ClipOverlap MateMapByCoord SplitBam TrimBam MergeBam PolishBam GapInfo Logger Bam2FastQ Dedup Prediction LogisticRegression MathCholesky HashErrorModel Recab OverlapHandler OverlapClipLowerBaseQual ExplainFlags
+TOOLBASE = BamExecutable Validate Convert Diff DumpHeader SplitChromosome WriteRegion DumpIndex ReadIndexedBam DumpRefInfo Filter ReadReference Revert Squeeze FindCigars Stats PileupElementBaseQCStats ClipOverlap MateMapByCoord SplitBam TrimBam MergeBam PolishBam GapInfo Logger Bam2FastQ Dedup Dedup_LowMem Prediction LogisticRegression MathCholesky HashErrorModel Recab OverlapHandler OverlapClipLowerBaseQual ExplainFlags
 SRCONLY = Main.cpp
 HDRONLY = Covariates.h
 
