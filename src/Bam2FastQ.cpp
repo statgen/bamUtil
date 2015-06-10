@@ -246,7 +246,7 @@ int Bam2FastQ::execute(int argc, char **argv)
         std::string fqList = myOutBase.c_str();
         fqList += ".list";
         myFqList = ifopen(fqList.c_str(), "w");
-        ifprintf(myFqList, "SAMPLE\tFASTQ1\tFASTQ2\tRG\n");
+        ifprintf(myFqList, "MERGE_NAME\tFASTQ1\tFASTQ2\tRG\n");
     }
 
     // Check to see if the first/second/single-ended were specified and

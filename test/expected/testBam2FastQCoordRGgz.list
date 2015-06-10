@@ -1,4 +1,4 @@
-SAMPLE	FASTQ1	FASTQ2	RG
+MERGE_NAME	FASTQ1	FASTQ2	RG
 sm1	results/testBam2FastQCoordRGgz.rg1_1.fastq	results/testBam2FastQCoordRGgz.rg1_2.fastq	@RG	ID:rg1	SM:sm1
 sm2	results/testBam2FastQCoordRGgz.rg2_1.fastq	results/testBam2FastQCoordRGgz.rg2_2.fastq	@RG	ID:rg2	PL:ILLUMINA	LB:lib2	SM:sm2	CN:cn2
 sm1	results/testBam2FastQCoordRGgz.rg1.fastq	.	@RG	ID:rg1	SM:sm1
