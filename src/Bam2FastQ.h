@@ -65,6 +65,8 @@ private:
     SamRecordPool myPool;
     MateMapByCoord myMateMap;
 
+    InputFile::ifileCompression myCompression;
+
     IFILE myUnpairedFile;
     IFILE myFirstFile;
     IFILE mySecondFile;

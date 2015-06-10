@@ -404,6 +404,31 @@ then
   let "status = 1"
 fi
 
+##########################################
+# Test converting files sorted by read name into compressed file
+../bin/bam bam2FastQ --readName --in testFiles/testClipOverlapReadName.sam --outBase results/testBam2FastQReadNameGZ --gzip --noph 2> results/testBam2FastQReadNameGZ.log
+let "status |= $?"
+diff <(gunzip -c results/testBam2FastQReadNameGZ.fastq) <(gunzip -c expected/testBam2FastQReadNameGZ.fastq)
+let "status |= $?"
+diff <(gunzip -c results/testBam2FastQReadNameGZ_1.fastq) <(gunzip -c expected/testBam2FastQReadNameGZ_1.fastq)
+let "status |= $?"
+diff <(gunzip -c results/testBam2FastQReadNameGZ_2.fastq) <(gunzip -c expected/testBam2FastQReadNameGZ_2.fastq)
+let "status |= $?"
+diff results/testBam2FastQReadNameGZ.log expected/testBam2FastQReadNameGZ.log
+let "status |= $?"
+
+# Test clipping files sorted by coordinate into compressed file.
+../bin/bam bam2FastQ --in testFiles/testBam2FastQCoord.sam --outBase results/testBam2FastQCoordGZ --gzip --noph 2> results/testBam2FastQCoordGZ.log
+let "status |= $?"
+diff <(gunzip -c results/testBam2FastQCoordGZ.fastq) <(gunzip -c expected/testBam2FastQCoordGZ.fastq)
+let "status |= $?"
+diff <(gunzip -c results/testBam2FastQCoordGZ_1.fastq) <(gunzip -c expected/testBam2FastQCoordGZ_1.fastq)
+let "status |= $?"
+diff <(gunzip -c results/testBam2FastQCoordGZ_2.fastq) <(gunzip -c expected/testBam2FastQCoordGZ_2.fastq)
+let "status |= $?"
+diff results/testBam2FastQCoordGZ.log expected/testBam2FastQCoordGZ.log
+let "status |= $?"
+
 if [ $status != 0 ]
 then
   echo failed testBam2FastQ.sh

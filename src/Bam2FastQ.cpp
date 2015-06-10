@@ -32,6 +32,7 @@ Bam2FastQ::Bam2FastQ()
       mySamHeader(),
       myPool(),
       myMateMap(true),
+      myCompression(InputFile::DEFAULT),
       myUnpairedFile(NULL),
       myFirstFile(NULL),
       mySecondFile(NULL),
@@ -91,6 +92,7 @@ void Bam2FastQ::usage()
               << "\t\t                  default is \"" << DEFAULT_SECOND_EXT << "\"\n";
     std::cerr << "\t\t--rnPlus        : Add the Read Name/extension to the '+' line of the fastq records\n";
     std::cerr << "\t\t--noReverseComp : Do not reverse complement reads marked as reverse\n";
+    std::cerr << "\t\t--gzip          : Compress the output FASTQ files using gzip\n";
     std::cerr << "\t\t--noeof         : Do not expect an EOF block on a bam file." << std::endl;
     std::cerr << "\t\t--params        : Print the parameter settings to stderr" << std::endl;
     std::cerr << "\tOptional OutputFile Names:" << std::endl;
@@ -117,6 +119,7 @@ int Bam2FastQ::execute(int argc, char **argv)
 
     bool interleave = false;
     bool noeof = false;
+    bool gzip = false;
     bool params = false;
 
     myOutBase = "";
@@ -128,6 +131,7 @@ int Bam2FastQ::execute(int argc, char **argv)
     myRNPlus = false;
     myFirstRNExt = DEFAULT_FIRST_EXT;
     mySecondRNExt = DEFAULT_SECOND_EXT;
+    myCompression = InputFile::DEFAULT;
 
     ParameterList inputParameters;
     BEGIN_LONG_PARAMETERS(longParameterList)
@@ -142,6 +146,7 @@ int Bam2FastQ::execute(int argc, char **argv)
         LONG_STRINGPARAMETER("secondRNExt", &mySecondRNExt)
         LONG_PARAMETER("rnPlus", &myRNPlus)
         LONG_PARAMETER("noReverseComp", &myReverseComp)
+        LONG_PARAMETER("gzip", &gzip)
         LONG_PARAMETER("noeof", &noeof)
         LONG_PARAMETER("params", &params)
         LONG_PARAMETER_GROUP("Optional OutputFile Names")
@@ -164,6 +169,11 @@ int Bam2FastQ::execute(int argc, char **argv)
     {
         // Set that the eof block is not required.
         BgzfFileType::setRequireEofBlock(false);
+    }
+
+    if(gzip)
+    {
+        myCompression = InputFile::GZIP;
     }
 
     // Check to see if the in file was specified, if not, report an error.
@@ -235,7 +245,7 @@ int Bam2FastQ::execute(int argc, char **argv)
     {
         std::string fqList = myOutBase.c_str();
         fqList += ".list";
-        myFqList = ifopen(fqList.c_str(), "w");
+        myFqList = ifopen(fqList.c_str(), "w", myCompression);
         ifprintf(myFqList, "SAMPLE\tFASTQ1\tFASTQ2\tRGID\tLIBRARY\tCENTER\tPLATFORM\n");
     }
 
@@ -269,12 +279,12 @@ int Bam2FastQ::execute(int argc, char **argv)
     // Open the output files if not splitting RG
     if(!mySplitRG)
     {
-        myUnpairedFile = ifopen(unpairedOut, "w");
+        myUnpairedFile = ifopen(unpairedOut, "w", myCompression);
 
         // Only open the first file if it is different than an already opened file.
         if(firstOut != unpairedOut)
         {
-            myFirstFile = ifopen(firstOut, "w");
+            myFirstFile = ifopen(firstOut, "w", myCompression);
         }
         else
         {
@@ -292,7 +302,7 @@ int Bam2FastQ::execute(int argc, char **argv)
         }
         else
         {
-            mySecondFile = ifopen(secondOut, "w");
+            mySecondFile = ifopen(secondOut, "w", myCompression);
         }
     
         if(myUnpairedFile == NULL)
@@ -565,7 +575,7 @@ void Bam2FastQ::writeFastQ(SamRecord& samRec, IFILE filePtr,
                 rg = ".";
             }
             fileName += rgFastqExt;
-            filePtr = ifopen(fileName.c_str(), "w");
+            filePtr = ifopen(fileName.c_str(), "w", myCompression);
             myOutFastqs[rgFastqExt] = filePtr;
 
             if(fileNameExt != mySecondFileNameExt)
