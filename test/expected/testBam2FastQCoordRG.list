@@ -1,5 +1,5 @@
-SAMPLE	FASTQ1	FASTQ2	RGID	LIBRARY	CENTER	PLATFORM
-sm1	results/testBam2FastQCoordRG.rg1_1.fastq	results/testBam2FastQCoordRG.rg1_2.fastq	rg1	sm1	unknown	ILLUMINA
-sm2	results/testBam2FastQCoordRG.rg2_1.fastq	results/testBam2FastQCoordRG.rg2_2.fastq	rg2	lib2	cn2	ILLUMINA
-sm1	results/testBam2FastQCoordRG.rg1.fastq	.	rg1	sm1	unknown	ILLUMINA
-results/testBam2FastQCoordRG	results/testBam2FastQCoordRG_1.fastq	results/testBam2FastQCoordRG_2.fastq	.	results/testBam2FastQCoordRG	unknown	ILLUMINA
+SAMPLE	FASTQ1	FASTQ2	RG
+sm1	results/testBam2FastQCoordRG.rg1_1.fastq	results/testBam2FastQCoordRG.rg1_2.fastq	@RG	ID:rg1	SM:sm1
+sm2	results/testBam2FastQCoordRG.rg2_1.fastq	results/testBam2FastQCoordRG.rg2_2.fastq	@RG	ID:rg2	PL:ILLUMINA	LB:lib2	SM:sm2	CN:cn2
+sm1	results/testBam2FastQCoordRG.rg1.fastq	.	@RG	ID:rg1	SM:sm1
+results/testBam2FastQCoordRG	results/testBam2FastQCoordRG_1.fastq	results/testBam2FastQCoordRG_2.fastq	.

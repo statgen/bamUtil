@@ -246,7 +246,7 @@ int Bam2FastQ::execute(int argc, char **argv)
         std::string fqList = myOutBase.c_str();
         fqList += ".list";
         myFqList = ifopen(fqList.c_str(), "w", myCompression);
-        ifprintf(myFqList, "SAMPLE\tFASTQ1\tFASTQ2\tRGID\tLIBRARY\tCENTER\tPLATFORM\n");
+        ifprintf(myFqList, "SAMPLE\tFASTQ1\tFASTQ2\tRG\n");
     }
 
     // Check to see if the first/second/single-ended were specified and
@@ -554,7 +554,9 @@ void Bam2FastQ::writeFastQ(SamRecord& samRec, IFILE filePtr,
     static String quality;
     static std::string rg;
     static std::string rgFastqExt;
+    static std::string rgListStr;
     static std::string fileName;
+    static std::string fq2;
     if(mySplitRG)
     {
         rg = samRec.getString("RG").c_str();
@@ -583,13 +585,15 @@ void Bam2FastQ::writeFastQ(SamRecord& samRec, IFILE filePtr,
                 // first end.
                 const char* sm = mySamHeader.getRGTagValue("SM", rg.c_str());
                 if(strcmp(sm, "") == 0){sm = myOutBase.c_str();}
-                const char* lib = mySamHeader.getRGTagValue("LB", rg.c_str());
-                if(strcmp(lib, "") == 0){lib = sm;}
-                const char* pl = mySamHeader.getRGTagValue("PL", rg.c_str());
-                if(strcmp(pl, "") == 0){pl = "ILLUMINA";}
-                const char* cn = mySamHeader.getRGTagValue("CN", rg.c_str());
-                if(strcmp(cn, "") == 0){cn = "unknown";}
-                std::string fq2 = ".";
+
+                rgListStr.clear();
+                SamHeaderRG* rgPtr = mySamHeader.getRG(rg.c_str());
+                if((rgPtr == NULL) || (!rgPtr->appendString(rgListStr)))
+                {
+                    // No RG info for this record.
+                    rgListStr = ".\n";
+                }
+                fq2 = ".";
                 if(fileNameExt == myFirstFileNameExt)
                 {
                     fq2 = myOutBase.c_str();
@@ -600,9 +604,9 @@ void Bam2FastQ::writeFastQ(SamRecord& samRec, IFILE filePtr,
                     }
                     fq2 += mySecondFileNameExt;
                 }
-                ifprintf(myFqList, "%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+                ifprintf(myFqList, "%s\t%s\t%s\t%s",
                          sm, fileName.c_str(), fq2.c_str(),
-                         rg.c_str(), lib, cn, pl);
+                         rgListStr.c_str());
             }
         }
         else

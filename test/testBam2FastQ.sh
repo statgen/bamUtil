@@ -332,8 +332,10 @@ diff results/testBam2FastQCoordNoRG_2.fastq expected/testBam2FastQCoordNoRG_2.fa
 let "status |= $?"
 diff results/testBam2FastQCoordNoRG.log expected/testBam2FastQCoordNoRG.log
 let "status |= $?"
+diff results/testBam2FastQCoordNoRG.list expected/testBam2FastQCoordNoRG.list
+let "status |= $?"
 
-../bin/bam bam2FastQ --readName --in testFiles/testClipOverlapReadName.sam --outBase results/testBam2FastQReadNameNoRG --noph 2> results/testBam2FastQReadNameNoRG.log
+../bin/bam bam2FastQ --readName --in testFiles/testClipOverlapReadName.sam --outBase results/testBam2FastQReadNameNoRG --noph --splitRG 2> results/testBam2FastQReadNameNoRG.log
 let "status |= $?"
 diff results/testBam2FastQReadNameNoRG.fastq expected/testBam2FastQReadNameNoRG.fastq
 let "status |= $?"
@@ -342,6 +344,8 @@ let "status |= $?"
 diff results/testBam2FastQReadNameNoRG_2.fastq expected/testBam2FastQReadNameNoRG_2.fastq
 let "status |= $?"
 diff results/testBam2FastQReadNameNoRG.log expected/testBam2FastQReadNameNoRG.log
+let "status |= $?"
+diff results/testBam2FastQReadNameNoRG.list expected/testBam2FastQReadNameNoRG.list
 let "status |= $?"
 
 ##########################################

@@ -1,0 +1,3 @@
+SAMPLE	FASTQ1	FASTQ2	RG
+results/testBam2FastQCoordNoRG	results/testBam2FastQCoordNoRG_1.fastq	results/testBam2FastQCoordNoRG_2.fastq	.
+results/testBam2FastQCoordNoRG	results/testBam2FastQCoordNoRG.fastq	.	.
