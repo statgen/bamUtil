@@ -412,26 +412,55 @@ fi
 # Test converting files sorted by read name into compressed file
 ../bin/bam bam2FastQ --readName --in testFiles/testClipOverlapReadName.sam --outBase results/testBam2FastQReadNameGZ --gzip --noph 2> results/testBam2FastQReadNameGZ.log
 let "status |= $?"
-diff <(gunzip -c results/testBam2FastQReadNameGZ.fastq) <(gunzip -c expected/testBam2FastQReadNameGZ.fastq)
+diff <(gunzip -c results/testBam2FastQReadNameGZ.fastq) expected/testBam2FastQReadName.fastq
 let "status |= $?"
-diff <(gunzip -c results/testBam2FastQReadNameGZ_1.fastq) <(gunzip -c expected/testBam2FastQReadNameGZ_1.fastq)
+diff <(gunzip -c results/testBam2FastQReadNameGZ_1.fastq) expected/testBam2FastQReadName_1.fastq
 let "status |= $?"
-diff <(gunzip -c results/testBam2FastQReadNameGZ_2.fastq) <(gunzip -c expected/testBam2FastQReadNameGZ_2.fastq)
+diff <(gunzip -c results/testBam2FastQReadNameGZ_2.fastq) expected/testBam2FastQReadName_2.fastq
 let "status |= $?"
-diff results/testBam2FastQReadNameGZ.log expected/testBam2FastQReadNameGZ.log
+diff results/testBam2FastQReadNameGZ.log expected/testBam2FastQReadName.log
 let "status |= $?"
 
 # Test clipping files sorted by coordinate into compressed file.
 ../bin/bam bam2FastQ --in testFiles/testBam2FastQCoord.sam --outBase results/testBam2FastQCoordGZ --gzip --noph 2> results/testBam2FastQCoordGZ.log
 let "status |= $?"
-diff <(gunzip -c results/testBam2FastQCoordGZ.fastq) <(gunzip -c expected/testBam2FastQCoordGZ.fastq)
+diff <(gunzip -c results/testBam2FastQCoordGZ.fastq) expected/testBam2FastQCoord.fastq
 let "status |= $?"
-diff <(gunzip -c results/testBam2FastQCoordGZ_1.fastq) <(gunzip -c expected/testBam2FastQCoordGZ_1.fastq)
+diff <(gunzip -c results/testBam2FastQCoordGZ_1.fastq) expected/testBam2FastQCoord_1.fastq
 let "status |= $?"
-diff <(gunzip -c results/testBam2FastQCoordGZ_2.fastq) <(gunzip -c expected/testBam2FastQCoordGZ_2.fastq)
+diff <(gunzip -c results/testBam2FastQCoordGZ_2.fastq) expected/testBam2FastQCoord_2.fastq
 let "status |= $?"
-diff results/testBam2FastQCoordGZ.log expected/testBam2FastQCoordGZ.log
+diff results/testBam2FastQCoordGZ.log expected/testBam2FastQCoord.log
 let "status |= $?"
+
+../bin/bam bam2FastQ --in testFiles/testBam2FastQCoordRG.sam --outBase results/testBam2FastQCoordRGgz --noph --splitRG --gzip 2> results/testBam2FastQCoordRGgz.log
+let "status |= $?"
+diff <(gunzip -c results/testBam2FastQCoordRGgz_1.fastq) expected/testBam2FastQCoordRG_1.fastq
+let "status |= $?"
+diff <(gunzip -c results/testBam2FastQCoordRGgz_2.fastq) expected/testBam2FastQCoordRG_2.fastq
+let "status |= $?"
+diff <(gunzip -c results/testBam2FastQCoordRGgz.rg1.fastq) expected/testBam2FastQCoordRG.rg1.fastq
+let "status |= $?"
+diff <(gunzip -c results/testBam2FastQCoordRGgz.rg1_1.fastq) expected/testBam2FastQCoordRG.rg1_1.fastq
+let "status |= $?"
+diff <(gunzip -c results/testBam2FastQCoordRGgz.rg1_2.fastq) expected/testBam2FastQCoordRG.rg1_2.fastq
+let "status |= $?"
+diff <(gunzip -c results/testBam2FastQCoordRGgz.rg2_1.fastq) expected/testBam2FastQCoordRG.rg2_1.fastq
+let "status |= $?"
+diff <(gunzip -c results/testBam2FastQCoordRGgz.rg2_2.fastq) expected/testBam2FastQCoordRG.rg2_2.fastq
+let "status |= $?"
+diff results/testBam2FastQCoordRGgz.log expected/testBam2FastQCoordRG.log
+let "status |= $?"
+diff results/testBam2FastQCoordRGgz.list expected/testBam2FastQCoordRGgz.list
+let "status |= $?"
+if [ -e results/testBam2FastQCoordRGgz.fastq ]
+then
+  let "status = 1"
+fi
+if [ -e results/testBam2FastQCoordRGgz.rg2.fastq ]
+then
+  let "status = 1"
+fi
 
 if [ $status != 0 ]
 then

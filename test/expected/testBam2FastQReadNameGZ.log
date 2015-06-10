@@ -1,7 +1,0 @@
-Paired Read, 1 but couldn't find mate, so writing as unpaired (single-ended)
-Paired Read, 7 but couldn't find mate, so writing as unpaired (single-ended)
-
-Found 14 read pairs.
-Found 0 unpaired reads.
-Failed to find mates for 2 reads, so they were written as unpaired
-  (not included in either of the above counts).

@@ -245,7 +245,7 @@ int Bam2FastQ::execute(int argc, char **argv)
     {
         std::string fqList = myOutBase.c_str();
         fqList += ".list";
-        myFqList = ifopen(fqList.c_str(), "w", myCompression);
+        myFqList = ifopen(fqList.c_str(), "w");
         ifprintf(myFqList, "SAMPLE\tFASTQ1\tFASTQ2\tRG\n");
     }
 
@@ -723,6 +723,12 @@ void Bam2FastQ::closeFiles()
     {
         ifclose(mySecondFile);
         mySecondFile = NULL;
+    }
+
+    if(myFqList != NULL)
+    {
+        ifclose(myFqList);
+        myFqList = NULL;
     }
 
     // Loop through the fastq map and close those files.
