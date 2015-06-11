@@ -17,7 +17,7 @@ End: TIME
 Total # Reads skipped for building recab table: 0
 Total # Reads used for building recab table: 201
 # Bases observed: 1005 - #match: 996; #mismatch: 9
-# Bases Skipped for DBSNP: 0, for BaseQual < 5: 0
+# Bases Skipped for DBSNP: 0, for BaseQual < 5: 0, ref 'N': 0
 Writing recalibration table results/testRecabFast.sam.qemp
 Writing recalibrated file results/testRecabFast.sam
 Total # Reads recab table not applied to: 0

@@ -46,7 +46,7 @@ Sorting the indices of 16 duplicated records
 Total # Reads skipped for building recab table: 35
 Total # Reads used for building recab table: 2
 # Bases observed: 12 - #match: 5; #mismatch: 7
-# Bases Skipped for DBSNP: 0, for BaseQual < 5: 0
+# Bases Skipped for DBSNP: 0, for BaseQual < 5: 0, ref 'N': 0
 Writing recalibration table results/testDedupRecab.sam.qemp
 
 Writing results/testDedupRecab.sam

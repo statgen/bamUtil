@@ -110,6 +110,7 @@ private:
     // Per base counts.
     uint64_t myNumDBSnpSkips;
     uint64_t mySubMinQual;
+    uint64_t myAmbiguous;
     uint64_t myBMatchCount;
     uint64_t myBMismatchCount;
 

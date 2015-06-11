@@ -66,6 +66,7 @@ Recab::Recab()
     myNumQualTagErrors = 0;
     myNumDBSnpSkips = 0;
     mySubMinQual = 0;
+    myAmbiguous = 0;
     myBMatchCount = 0;
     myBMismatchCount = 0;
     myBasecounts = 0;
@@ -580,7 +581,14 @@ bool Recab::processReadBuildTable(SamRecord& samRecord)
 
         // Set the reference & read bases in the Covariates
         char refBase = (*myReferenceGenome)[refPos];
-        
+
+        if(BaseUtilities::isAmbiguous(refBase))
+        {
+            // N reference, so skip it when building the table.
+            ++myAmbiguous;
+            continue;
+        }
+
         if(reverse)
         {
             refBase = BaseAsciiMap::base2complement[(unsigned int)(refBase)];
@@ -761,8 +769,8 @@ void Recab::modelFitPrediction(const char* outputBase)
 
     Logger::gLogger->writeLog("# Bases observed: %ld - #match: %ld; #mismatch: %ld",
                               myBasecounts, myBMatchCount, myBMismatchCount);
-    Logger::gLogger->writeLog("# Bases Skipped for DBSNP: %ld, for BaseQual < %ld: %ld", 
-                              myNumDBSnpSkips, myMinBaseQual, mySubMinQual);
+    Logger::gLogger->writeLog("# Bases Skipped for DBSNP: %ld, for BaseQual < %ld: %ld, ref 'N': %ld", 
+                              myNumDBSnpSkips, myMinBaseQual, mySubMinQual, myAmbiguous);
     if(myNumQualTagErrors != 0)
     {
         Logger::gLogger->warning("%ld records did not have tag %s or it was invalid, so the quality field was used for those records.", myNumQualTagErrors, myQField.c_str());

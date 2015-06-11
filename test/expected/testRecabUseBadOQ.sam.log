@@ -18,7 +18,7 @@ End: TIME
 Total # Reads skipped for building recab table: 0
 Total # Reads used for building recab table: 201
 # Bases observed: 806 - #match: 799; #mismatch: 7
-# Bases Skipped for DBSNP: 0, for BaseQual < 5: 199
+# Bases Skipped for DBSNP: 0, for BaseQual < 5: 199, ref 'N': 0
 WARNING: 1 records did not have tag OQ or it was invalid, so the quality field was used for those records.
 Start model fitting!
 Writing recalibration table results/testRecabUseBadOQ.sam.recab
