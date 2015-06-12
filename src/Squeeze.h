@@ -36,12 +36,19 @@ public:
     ~Squeeze();
     static void squeezeDescription();
     void description();
+    void binningUsageLine();
+    void binningUsage();
     void usage();
     int execute(int argc, char **argv);
     virtual const char* getProgramName() {return("bam:squeeze");}
 
+    void addBinningParameters(LongParamContainer& params);
+    int processBinningParam();
+    int getQualCharFromQemp(uint8_t qemp);
+
 private:
     void binPhredQuals(int binStartPhred, int binEndPhred);
+    void bin(SamRecord& samRecord);
 
     // Non-phred max
     static const int MAX_QUAL_CHAR = 126;
@@ -49,6 +56,8 @@ private:
     static const int QUAL_CONVERT = 33;
     bool myBinMid;
     bool myBinHigh;
+    String myBinQualS;
+    String myBinQualF;
     // Non-phred indices
     int myQualBinMap[MAX_QUAL_CHAR+1];
 };

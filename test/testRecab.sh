@@ -243,6 +243,21 @@ let "status |= $?"
 diff -I "Start: .*" -I "End: .*" results/testRecabMaxQual49.sam.log expected/testRecabMaxQual49.sam.log
 let "status |= $?"
 
+###############
+# Recalibration with binning
+../bin/bam recab --noph --in testFiles/testRecab.sam --out results/testRecabBin.sam --refFile testFilesLibBam/chr1_partial.fa --fitModel --binMid --binQualS 2,3,10,20,25,30,35,40,50 > results/testRecabBin.txt 2> results/testRecabBin.log
+let "status |= $?"
+diff results/testRecabBin.sam expected/testRecabBin.sam
+let "status |= $?"
+diff results/testRecabBin.txt expected/testRecab.txt
+let "status |= $?"
+diff results/testRecabBin.log expected/empty.log
+let "status |= $?"
+diff <(sort results/testRecabBin.sam.qemp) <(sort expected/testRecab.sam.qemp)
+let "status |= $?"
+diff -I "Start: .*" -I "End: .*" results/testRecabBin.sam.log expected/testRecabBin.sam.log
+let "status |= $?"
+
 if [ $status != 0 ]
 then
   echo failed testRecab.sh

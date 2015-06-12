@@ -1,0 +1,27 @@
+Initialize errormodel structure...
+Start iterating SAM/BAM file testFiles/testRecab.sam
+Start: TIME
+
+Open reference
+Done! Sequence length 11520
+No dbSNP File
+End: TIME
+
+# mapped Reads observed: 201
+# unmapped Reads observed: 0
+# Secondary Reads observed: 0
+# Duplicate Reads observed: 0
+# QC Failure Reads observed: 0
+# Mapping Quality 0 Reads skipped: 0
+# Mapping Quality 255 Reads skipped: 0
+Total # Reads skipped for building recab table: 0
+Total # Reads used for building recab table: 201
+# Bases observed: 1005 - #match: 996; #mismatch: 9
+# Bases Skipped for DBSNP: 0, for BaseQual < 5: 0, ref 'N': 0
+Start model fitting!
+Writing recalibration table results/testRecabBin.sam.recab
+Writing recalibration table results/testRecabBin.sam.qemp
+Writing recalibrated file results/testRecabBin.sam
+Total # Reads recab table not applied to: 0
+Total # Reads recab table applied to: 201
+Recalibration successfully finished

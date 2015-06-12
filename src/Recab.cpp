@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2010-2012  Christian Fuchsberger,
+ *  Copyright (C) 2010-2015  Christian Fuchsberger,
  *                           Regents of the University of Michigan
  *
  *   This program is free software: you can redistribute it and/or modify
@@ -120,7 +120,8 @@ void Recab::usage()
 
 void Recab::recabSpecificUsageLine()
 {
-    std::cerr << "--refFile <ReferenceFile> [--dbsnp <dbsnpFile>] [--minBaseQual <minBaseQual>] [--maxBaseQual <maxBaseQual>] [--blended <weight>] [--fitModel] [--fast] [--keepPrevDbsnp] [--keepPrevNonAdjacent] [--useLogReg] [--qualField <tag>] [--storeQualTag <tag>] [--buildExcludeFlags <flag>] [--applyExcludeFlags <flag>]";
+    std::cerr << "--refFile <ReferenceFile> [--dbsnp <dbsnpFile>] [--minBaseQual <minBaseQual>] [--maxBaseQual <maxBaseQual>] [--blended <weight>] [--fitModel] [--fast] [--keepPrevDbsnp] [--keepPrevNonAdjacent] [--useLogReg] [--qualField <tag>] [--storeQualTag <tag>] [--buildExcludeFlags <flag>] [--applyExcludeFlags <flag>] ";
+    mySqueeze.binningUsageLine();
 }
 
 void Recab::recabSpecificUsage()
@@ -154,6 +155,7 @@ void Recab::recabSpecificUsage()
     std::cerr << "\t--buildExcludeFlags <flag>    : exclude reads with any of these flags set when building the" << std::endl;
     std::cerr << "\t                                recalibration table" << std::endl;
     std::cerr << "\t--applyExcludeFlags <flag>    : do not apply the recalibration table to any reads with any of these flags set" << std::endl;
+    mySqueeze.binningUsage();
 }
 
 
@@ -212,12 +214,11 @@ int Recab::execute(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    if(myRefFile.IsEmpty())
+    int status = processRecabParam();
+    if(status != 0)
     {
-        usage();
         inputParameters.Status();
-        std::cerr << "Missing required --refFile parameter" << std::endl;
-        return EXIT_FAILURE;
+        return(status);
     }
 
     if ( logFile.IsEmpty() )
@@ -323,6 +324,19 @@ void Recab::addRecabSpecificParameters(LongParamContainer& params)
     params.addString("buildExcludeFlags", &myBuildExcludeFlags);
     params.addString("applyExcludeFlags", &myApplyExcludeFlags);
     myParamsSetup = false;
+    mySqueeze.addBinningParameters(params);
+
+}
+
+
+int Recab::processRecabParam()
+{
+    if(myRefFile.IsEmpty())
+    {
+        std::cerr << "Missing required --refFile parameter" << std::endl;
+        return EXIT_FAILURE;
+    }
+    return(mySqueeze.processBinningParam());
 }
 
 
@@ -742,7 +756,7 @@ bool Recab::processReadApplyTable(SamRecord& samRecord)
         {
             qemp = myMaxBaseQual;
         }
-        myQualityStrings.newq[seqPos] = qemp+33;
+        myQualityStrings.newq[seqPos] = mySqueeze.getQualCharFromQemp(qemp);
     }
 
     if(!myStoreQualTag.IsEmpty())

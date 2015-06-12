@@ -147,6 +147,17 @@ let "status |= $?"
 sort results/testDedup2ForceRecabDA2Step.sam.qemp | diff - expected/testDedup2ForceRecabD.sam.qemp
 let "status |= $?"
 
+#Bin
+../bin/bam dedup --recab --in testFiles/testDedup.sam --out results/testDedupRecabBin.sam --refFile testFiles/ref_partial.fa --noph --binMid --binQualS 2,3,10,20,25,30,35,40,50 2> results/testDedupRecabBin.txt
+let "status |= $?"
+diff results/testDedupRecabBin.txt expected/testDedupRecab.txt
+let "status |= $?"
+diff results/testDedupRecabBin.sam expected/testDedupRecabBin.sam
+let "status |= $?"
+diff results/testDedupRecabBin.sam.log expected/testDedupRecabBin.sam.log
+let "status |= $?"
+sort results/testDedupRecabBin.sam.qemp | diff - expected/testDedupRecab.sam.qemp
+let "status |= $?"
 
 
 

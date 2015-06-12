@@ -1,0 +1,55 @@
+Reading ReferenceID 0
+
+Open reference
+Done! Sequence length 15240
+No dbSNP File
+Reading ReferenceID 1
+
+Reading ReferenceID 3
+
+Reading ReferenceID 4
+
+Reading ReferenceID 5
+
+WARNING: INVALID_GENOME_INDEX (chrom:pos 5:64) and record skipped... Reference in BAM is different from the ref used here!
+WARNING: INVALID_GENOME_INDEX (chrom:pos 5:62) and record skipped... Reference in BAM is different from the ref used here!
+Reading ReferenceID 23
+
+WARNING: INVALID_GENOME_INDEX (chrom:pos 4:162) and record skipped... Reference in BAM is different from the ref used here!
+WARNING: INVALID_GENOME_INDEX (chrom:pos 6:65) and record skipped... Reference in BAM is different from the ref used here!
+WARNING: INVALID_GENOME_INDEX (chrom:pos MT:1) and record skipped... Reference in BAM is different from the ref used here!
+WARNING: INVALID_GENOME_INDEX (chrom:pos MT:178) and record skipped... Reference in BAM is different from the ref used here!
+WARNING: INVALID_GENOME_INDEX (chrom:pos MT:1) and record skipped... Reference in BAM is different from the ref used here!
+WARNING: INVALID_GENOME_INDEX (chrom:pos MT:178) and record skipped... Reference in BAM is different from the ref used here!
+--------------------------------------------------------------------------
+SUMMARY STATISTICS OF THE READS
+Total number of reads: 37
+Total number of paired-end reads: 37
+Total number of properly paired reads: 16
+Total number of unmapped reads: 0
+Total number of reverse strand mapped reads: 18
+Total number of QC-failed reads: 0
+Total number of secondary reads: 0
+Size of singleKeyMap (must be zero): 0
+Size of pairedKeyMap (must be zero): 0
+Total number of missing mates: 1
+Total number of reads excluded from duplicate checking: 0
+--------------------------------------------------------------------------
+Sorting the indices of 16 duplicated records
+# mapped Reads observed: 37
+# unmapped Reads observed: 0
+# Secondary Reads observed: 0
+# Duplicate Reads observed: 16
+# QC Failure Reads observed: 0
+# Mapping Quality 0 Reads skipped: 11
+# Mapping Quality 255 Reads skipped: 0
+Total # Reads skipped for building recab table: 35
+Total # Reads used for building recab table: 2
+# Bases observed: 12 - #match: 5; #mismatch: 7
+# Bases Skipped for DBSNP: 0, for BaseQual < 5: 0, ref 'N': 0
+Writing recalibration table results/testDedupRecabBin.sam.qemp
+
+Writing results/testDedupRecabBin.sam
+Successfully marked 0 unpaired and 8 paired duplicate reads
+
+Dedup complete!

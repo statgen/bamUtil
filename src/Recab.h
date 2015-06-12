@@ -39,6 +39,7 @@
 #include "Prediction.h"
 #include "BaseAsciiMap.h"
 #include "BamExecutable.h"
+#include "Squeeze.h"
 
 class Recab : public BamExecutable
 {
@@ -59,6 +60,7 @@ public:
     void modelFitPrediction(const char* outputBase);
 
     void addRecabSpecificParameters(LongParamContainer& params);
+    int processRecabParam();
 
 private:
     static const int DEFAULT_MIN_BASE_QUAL = 5;
@@ -129,6 +131,9 @@ private:
     std::map<std::string, uint16_t> myRg2Id;
     typedef std::pair<std::map<std::string, uint16_t>::iterator, bool> RgInsertReturn;
     std::vector<std::string> myId2Rg;
+
+    // Squeeze
+    Squeeze mySqueeze;
 };
 
 #endif

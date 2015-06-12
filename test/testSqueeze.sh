@@ -143,6 +143,7 @@ fi
 
 if($ERROR == true)
 then
+    echo "Fail testSqueeze.sh"
   exit 1
 fi
 
