@@ -165,6 +165,16 @@ int Dedup_LowMem::execute(int argc, char** argv)
         logFile = outFile + ".log";
     }
     
+    if(myDoRecab)
+    {
+        int status = myRecab.processRecabParam();
+        if(status != 0)
+        {
+            inputParameters.Status();
+            return(status);
+        }
+    }
+
     if(params)
     {
         inputParameters.Status();
