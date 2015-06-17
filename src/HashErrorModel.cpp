@@ -91,25 +91,24 @@ uint8_t HashErrorModel::getQemp(BaseData& data)
     }
     
     // If it is not in the table, return the original quality.
-    try 
+    HashMatch::iterator iter = mismatchTable.find(data.getKey());
+    if(iter == mismatchTable.end())
     {
-        SMatches& matchMismatch = mismatchTable.at(data.getKey());
-        if(ourUseLogReg)
-        {
-            return(matchMismatch.qempLogReg);
-        }
-        if(matchMismatch.qempSimple == 255)
-        {
-            matchMismatch.qempSimple = 
-                getQempSimple(matchMismatch.m, matchMismatch.mm);
-        }
-        return(matchMismatch.qempSimple);
-    }
-    catch(std::out_of_range& oor)
-    {
-        // just return the original quality.
+        // Not in the table, so just return the original quality.
         return(data.qual);
     }
+
+    // in the table, so get the qemp
+    if(ourUseLogReg)
+    {
+        return(iter->second.qempLogReg);
+    }
+    if(iter->second.qempSimple == 255)
+    {
+        iter->second.qempSimple = 
+            getQempSimple(iter->second.m, iter->second.mm);
+    }
+    return(iter->second.qempSimple);
 }
 
 
