@@ -76,6 +76,8 @@ private:
     int myNumUnpaired;
 
     bool mySplitRG;
+    String myQField;
+    uint64_t myNumQualTagErrors;
     bool myReverseComp;
     bool myRNPlus;
 

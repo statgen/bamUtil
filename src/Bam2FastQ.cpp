@@ -40,6 +40,8 @@ Bam2FastQ::Bam2FastQ()
       myNumPairs(0),
       myNumUnpaired(0),
       mySplitRG(false),
+      myQField(""),
+      myNumQualTagErrors(0),
       myReverseComp(true),
       myRNPlus(false),
       myOutBase(""),
@@ -75,13 +77,15 @@ void Bam2FastQ::description()
 void Bam2FastQ::usage()
 {
     BamExecutable::usage();
-    std::cerr << "\t./bam bam2FastQ --in <inputFile> [--readName] [--refFile <referenceFile>] [--outBase <outputFileBase>] [--firstOut <1stReadInPairOutFile>] [--merge|--secondOut <2ndReadInPairOutFile>] [--unpairedOut <unpairedOutFile>] [--firstRNExt <firstInPairReadNameExt>] [--secondRNExt <secondInPairReadNameExt>] [--rnPlus] [--noReverseComp] [--noeof] [--params]" << std::endl;
+    std::cerr << "\t./bam bam2FastQ --in <inputFile> [--readName] [--splitRG] [--qualField <tag>] [--refFile <referenceFile>] [--outBase <outputFileBase>] [--firstOut <1stReadInPairOutFile>] [--merge|--secondOut <2ndReadInPairOutFile>] [--unpairedOut <unpairedOutFile>] [--firstRNExt <firstInPairReadNameExt>] [--secondRNExt <secondInPairReadNameExt>] [--rnPlus] [--noReverseComp] [--noeof] [--params]" << std::endl;
     std::cerr << "\tRequired Parameters:" << std::endl;
     std::cerr << "\t\t--in       : the SAM/BAM file to convert to FastQ" << std::endl;
     std::cerr << "\tOptional Parameters:" << std::endl;
     std::cerr << "\t\t--readname      : Process the BAM as readName sorted instead\n"
               << "\t\t                  of coordinate if the header does not indicate a sort order." << std::endl;
     std::cerr << "\t\t--splitRG       : Split into RG specific fastqs." << std::endl;
+    std::cerr << "\t\t--qualField     : Use the base quality from the specified tag\n";
+    std::cerr << "\t\t                  rather than from the Quality field (default)" << std::endl;
     std::cerr << "\t\t--merge         : Generate 1 interleaved (merged) FASTQ for paired-ends (unpaired in a separate file)\n"
               << "\t\t                  use firstOut to override the filename of the interleaved file." << std::endl;
     std::cerr << "\t\t--refFile       : Reference file for converting '=' in the sequence to the actual base" << std::endl;
@@ -127,6 +131,8 @@ int Bam2FastQ::execute(int argc, char **argv)
     myNumPairs = 0;
     myNumUnpaired = 0;
     mySplitRG = false;
+    myQField = "";
+    myNumQualTagErrors = 0;
     myReverseComp = true;
     myRNPlus = false;
     myFirstRNExt = DEFAULT_FIRST_EXT;
@@ -140,6 +146,7 @@ int Bam2FastQ::execute(int argc, char **argv)
         LONG_PARAMETER_GROUP("Optional Parameters")
         LONG_PARAMETER("readName", &readName)
         LONG_PARAMETER("splitRG", &mySplitRG)
+        LONG_STRINGPARAMETER("qualField", &myQField)
         LONG_PARAMETER("merge", &interleave)
         LONG_STRINGPARAMETER("refFile", &refFile)
         LONG_STRINGPARAMETER("firstRNExt", &myFirstRNExt)
@@ -403,6 +410,11 @@ int Bam2FastQ::execute(int argc, char **argv)
                   << " reads, so they were written as unpaired\n"
                   << "  (not included in either of the above counts).\n";
     }
+    if(myNumQualTagErrors != 0)
+    {
+        std::cerr << myNumQualTagErrors << " records did not have tag "
+                  << myQField.c_str() << " or it was invalid, so the quality field was used for those records.\n";
+    }
 
     return(returnStatus);
 }
@@ -623,7 +635,32 @@ void Bam2FastQ::writeFastQ(SamRecord& samRec, IFILE filePtr,
     flag = samRec.getFlag();
     const char* readName = samRec.getReadName();
     sequence = samRec.getSequence();
-    quality = samRec.getQuality();
+    if(myQField.IsEmpty())
+    {
+        // Read the quality from the quality field
+        quality = samRec.getQuality();
+    }
+    else
+    {
+        // Read Quality from the specified tag
+        const String* qTagPtr = samRec.getStringTag(myQField.c_str());
+        if((qTagPtr != NULL) && (qTagPtr->Length() == (int)sequence.length()))
+        {
+            // Use the tag value for quality
+            quality = qTagPtr->c_str();
+        }
+        else
+        {
+            // Tag was not found, so use the quality field.
+            ++myNumQualTagErrors;
+            if(myNumQualTagErrors == 1)
+            {
+                std::cerr << "Bam2FastQ: " << myQField.c_str() 
+                          << " tag was not found/invalid, so using the quality field in records without the tag\n";
+            }
+            quality = samRec.getQuality();
+        }
+    }
     
     if(SamFlag::isReverse(flag) && myReverseComp)
     {

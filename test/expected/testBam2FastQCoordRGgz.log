@@ -1,4 +1,3 @@
-Bam2FastQ: OQ tag was not found/invalid, so using the quality field in records without the tag
 Paired Read, 7 but couldn't find mate, so writing as unpaired (single-ended)
 Paired Read, 1 but couldn't find mate, so writing as unpaired (single-ended)
 Paired Read, 12 but couldn't find mate, so writing as unpaired (single-ended)
@@ -8,4 +7,3 @@ Found 20 read pairs.
 Found 4 unpaired reads.
 Failed to find mates for 3 reads, so they were written as unpaired
   (not included in either of the above counts).
-45 records did not have tag OQ or it was invalid, so the quality field was used for those records.

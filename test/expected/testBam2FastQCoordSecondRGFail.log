@@ -1,13 +1,15 @@
 Version: 1.0.13; Built: Mon Jun  7 12:26:20 EDT 2015 by mktrost
 
  bam2FastQ - Convert the specified BAM file to fastQs.
-	./bam bam2FastQ --in <inputFile> [--readName] [--refFile <referenceFile>] [--outBase <outputFileBase>] [--firstOut <1stReadInPairOutFile>] [--merge|--secondOut <2ndReadInPairOutFile>] [--unpairedOut <unpairedOutFile>] [--firstRNExt <firstInPairReadNameExt>] [--secondRNExt <secondInPairReadNameExt>] [--rnPlus] [--noReverseComp] [--noeof] [--params]
+	./bam bam2FastQ --in <inputFile> [--readName] [--splitRG] [--qualField <tag>] [--refFile <referenceFile>] [--outBase <outputFileBase>] [--firstOut <1stReadInPairOutFile>] [--merge|--secondOut <2ndReadInPairOutFile>] [--unpairedOut <unpairedOutFile>] [--firstRNExt <firstInPairReadNameExt>] [--secondRNExt <secondInPairReadNameExt>] [--rnPlus] [--noReverseComp] [--noeof] [--params]
 	Required Parameters:
 		--in       : the SAM/BAM file to convert to FastQ
 	Optional Parameters:
 		--readname      : Process the BAM as readName sorted instead
 		                  of coordinate if the header does not indicate a sort order.
 		--splitRG       : Split into RG specific fastqs.
+		--qualField     : Use the base quality from the specified tag
+		                  rather than from the Quality field (default)
 		--merge         : Generate 1 interleaved (merged) FASTQ for paired-ends (unpaired in a separate file)
 		                  use firstOut to override the filename of the interleaved file.
 		--refFile       : Reference file for converting '=' in the sequence to the actual base
@@ -33,8 +35,8 @@ Version: 1.0.13; Built: Mon Jun  7 12:26:20 EDT 2015 by mktrost
 
 Input Parameters
          Required Parameters : --in [testFiles/testBam2FastQCoord.sam]
-         Optional Parameters : --readName, --splitRG [ON], --merge,
-                               --refFile [], --firstRNExt [/1],
+         Optional Parameters : --readName, --splitRG [ON], --qualField [],
+                               --merge, --refFile [], --firstRNExt [/1],
                                --secondRNExt [/2], --rnPlus,
                                --noReverseComp [ON], --gzip, --noeof, --params
    Optional OutputFile Names : --outBase [], --firstOut [],

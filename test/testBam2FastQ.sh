@@ -350,7 +350,7 @@ let "status |= $?"
 
 ##########################################
 # Test valid splitRG command - RG
-../bin/bam bam2FastQ --in testFiles/testBam2FastQCoordRG.sam --outBase results/testBam2FastQCoordRG --noph --splitRG 2> results/testBam2FastQCoordRG.log
+../bin/bam bam2FastQ --in testFiles/testBam2FastQCoordRG.sam --outBase results/testBam2FastQCoordRG --noph --splitRG --qualField OQ 2> results/testBam2FastQCoordRG.log
 let "status |= $?"
 diff results/testBam2FastQCoordRG_1.fastq expected/testBam2FastQCoordRG_1.fastq
 let "status |= $?"
@@ -379,7 +379,7 @@ then
   let "status = 1"
 fi
 
-../bin/bam bam2FastQ --readName --in testFiles/testBam2FastQReadNameRG.sam --outBase results/testBam2FastQReadNameRG --noph --splitRG 2> results/testBam2FastQReadNameRG.log
+../bin/bam bam2FastQ --readName --in testFiles/testBam2FastQReadNameRG.sam --outBase results/testBam2FastQReadNameRG --noph --splitRG --qualField OQ 2> results/testBam2FastQReadNameRG.log
 let "status |= $?"
 diff results/testBam2FastQReadNameRG_1.fastq expected/testBam2FastQReadNameRG_1.fastq
 let "status |= $?"
@@ -443,13 +443,13 @@ diff <(gunzip -c results/testBam2FastQCoordRGgz.rg1.fastq) expected/testBam2Fast
 let "status |= $?"
 diff <(gunzip -c results/testBam2FastQCoordRGgz.rg1_1.fastq) expected/testBam2FastQCoordRG.rg1_1.fastq
 let "status |= $?"
-diff <(gunzip -c results/testBam2FastQCoordRGgz.rg1_2.fastq) expected/testBam2FastQCoordRG.rg1_2.fastq
+diff <(gunzip -c results/testBam2FastQCoordRGgz.rg1_2.fastq) expected/testBam2FastQCoordRGgz.rg1_2.fastq
 let "status |= $?"
 diff <(gunzip -c results/testBam2FastQCoordRGgz.rg2_1.fastq) expected/testBam2FastQCoordRG.rg2_1.fastq
 let "status |= $?"
 diff <(gunzip -c results/testBam2FastQCoordRGgz.rg2_2.fastq) expected/testBam2FastQCoordRG.rg2_2.fastq
 let "status |= $?"
-diff results/testBam2FastQCoordRGgz.log expected/testBam2FastQCoordRG.log
+diff results/testBam2FastQCoordRGgz.log expected/testBam2FastQCoordRGgz.log
 let "status |= $?"
 diff results/testBam2FastQCoordRGgz.list expected/testBam2FastQCoordRGgz.list
 let "status |= $?"
