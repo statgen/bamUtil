@@ -77,7 +77,7 @@ void Bam2FastQ::description()
 void Bam2FastQ::usage()
 {
     BamExecutable::usage();
-    std::cerr << "\t./bam bam2FastQ --in <inputFile> [--readName] [--splitRG] [--qualField <tag>] [--refFile <referenceFile>] [--outBase <outputFileBase>] [--firstOut <1stReadInPairOutFile>] [--merge|--secondOut <2ndReadInPairOutFile>] [--unpairedOut <unpairedOutFile>] [--firstRNExt <firstInPairReadNameExt>] [--secondRNExt <secondInPairReadNameExt>] [--rnPlus] [--noReverseComp] [--noeof] [--params]" << std::endl;
+    std::cerr << "\t./bam bam2FastQ --in <inputFile> [--readName] [--splitRG] [--qualField <tag>] [--refFile <referenceFile>] [--outBase <outputFileBase>] [--firstOut <1stReadInPairOutFile>] [--merge|--secondOut <2ndReadInPairOutFile>] [--unpairedOut <unpairedOutFile>] [--firstRNExt <firstInPairReadNameExt>] [--secondRNExt <secondInPairReadNameExt>] [--rnPlus] [--noReverseComp] [--region <chr>[:<pos>[:<base>]]] [--gzip] [--noeof] [--params]" << std::endl;
     std::cerr << "\tRequired Parameters:" << std::endl;
     std::cerr << "\t\t--in       : the SAM/BAM file to convert to FastQ" << std::endl;
     std::cerr << "\tOptional Parameters:" << std::endl;
@@ -96,6 +96,9 @@ void Bam2FastQ::usage()
               << "\t\t                  default is \"" << DEFAULT_SECOND_EXT << "\"\n";
     std::cerr << "\t\t--rnPlus        : Add the Read Name/extension to the '+' line of the fastq records\n";
     std::cerr << "\t\t--noReverseComp : Do not reverse complement reads marked as reverse\n";
+    std::cerr << "\t\t--region        : Only convert reads containing the specified region/nucleotide.\n"
+              << "\t\t                  Position formatted as: chr:pos:base\n"
+              << "\t\t                  pos (0-based) & base are optional.\n";
     std::cerr << "\t\t--gzip          : Compress the output FASTQ files using gzip\n";
     std::cerr << "\t\t--noeof         : Do not expect an EOF block on a bam file." << std::endl;
     std::cerr << "\t\t--params        : Print the parameter settings to stderr" << std::endl;
@@ -125,6 +128,8 @@ int Bam2FastQ::execute(int argc, char **argv)
     bool noeof = false;
     bool gzip = false;
     bool params = false;
+    String region = "";
+    char nucleotide = ' ';
 
     myOutBase = "";
     myNumMateFailures = 0;
@@ -138,6 +143,7 @@ int Bam2FastQ::execute(int argc, char **argv)
     myFirstRNExt = DEFAULT_FIRST_EXT;
     mySecondRNExt = DEFAULT_SECOND_EXT;
     myCompression = InputFile::DEFAULT;
+
 
     ParameterList inputParameters;
     BEGIN_LONG_PARAMETERS(longParameterList)
@@ -153,6 +159,7 @@ int Bam2FastQ::execute(int argc, char **argv)
         LONG_STRINGPARAMETER("secondRNExt", &mySecondRNExt)
         LONG_PARAMETER("rnPlus", &myRNPlus)
         LONG_PARAMETER("noReverseComp", &myReverseComp)
+        LONG_STRINGPARAMETER("region", &region)
         LONG_PARAMETER("gzip", &gzip)
         LONG_PARAMETER("noeof", &noeof)
         LONG_PARAMETER("params", &params)
@@ -181,6 +188,47 @@ int Bam2FastQ::execute(int argc, char **argv)
     if(gzip)
     {
         myCompression = InputFile::GZIP;
+    }
+
+    String chr = "";
+    int position = -1;
+    if(region != "")
+    {
+        // Parse region.
+        int chrStrEnd = region.FastFindChar(':',1);
+        if(chrStrEnd < 1)
+        {
+            // This region is just a chromosome.
+            chr = region;
+        }
+        else
+        {
+            chr = region.Left(chrStrEnd);
+            int posStrEnd = region.FastFindChar(':',chrStrEnd+1);
+            String posStr;
+            if(posStrEnd < chrStrEnd)
+            {
+                // No base specified
+                posStr = region.SubStr(chrStrEnd+1);
+            }
+            else
+            {
+                posStr = region.Mid(chrStrEnd+1, posStrEnd-1);
+                nucleotide = region[posStrEnd + 1];
+                if(posStrEnd + 1 != region.Length()-1)
+                {
+                    std::cerr << "ERROR: Invalid region string, '" << region
+                              << "', the nucleotide specified can only be a single base.\n";
+                    return(-1);
+                }
+            }
+            if(!posStr.AsInteger(position) || position < 0)
+            {
+                std::cerr << "ERROR: Invalid region string, '" << region
+                          << "', the position, '" << posStr << "' is not an integer.\n";
+                return(-1);
+            }                
+        }
     }
 
     // Check to see if the in file was specified, if not, report an error.
@@ -282,6 +330,18 @@ int Bam2FastQ::execute(int argc, char **argv)
     samIn.OpenForRead(inFile, &mySamHeader);
     // Skip non-primary reads.
     samIn.SetReadFlags(0, 0x0100);
+    if(chr != "")
+    {
+        samIn.ReadBamIndex();
+        if(position != -1)
+        {
+            samIn.SetReadSection(chr.c_str(), position, position + 1);
+        }
+        else
+        {
+            samIn.SetReadSection(chr.c_str());
+        }
+    }
 
     // Open the output files if not splitting RG
     if(!mySplitRG)
@@ -367,6 +427,16 @@ int Bam2FastQ::execute(int argc, char **argv)
             // Failed to read a record.
             returnStatus = samIn.GetStatus();
             continue;
+        }
+
+        // Check if the record has the correct base at the specified position (if applicable).
+        if(nucleotide != ' ')
+        {
+            if(recordPtr->getSequence(recordPtr->getCigarInfo()->getQueryIndex(position, recordPtr->get0BasedPosition())) != nucleotide)
+            {
+                // Go to next record
+                continue;
+            }
         }
 
         // Have a record.  Check to see if it is a pair or unpaired read.

@@ -1,0 +1,10 @@
+Paired Read, 1:F but couldn't find mate, so writing as unpaired (single-ended)
+Paired Read, 1:F but couldn't find mate, so writing as unpaired (single-ended)
+Paired Read, 18:295 but couldn't find mate, so writing as unpaired (single-ended)
+Paired Read, 18:295 but couldn't find mate, so writing as unpaired (single-ended)
+Paired Read, 18:296 but couldn't find mate, so writing as unpaired (single-ended)
+
+Found 0 read pairs.
+Found 0 unpaired reads.
+Failed to find mates for 5 reads, so they were written as unpaired
+  (not included in either of the above counts).

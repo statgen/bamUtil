@@ -1,7 +1,7 @@
 Version: 1.0.13; Built: Mon Jun  7 12:26:20 EDT 2015 by mktrost
 
  bam2FastQ - Convert the specified BAM file to fastQs.
-	./bam bam2FastQ --in <inputFile> [--readName] [--splitRG] [--qualField <tag>] [--refFile <referenceFile>] [--outBase <outputFileBase>] [--firstOut <1stReadInPairOutFile>] [--merge|--secondOut <2ndReadInPairOutFile>] [--unpairedOut <unpairedOutFile>] [--firstRNExt <firstInPairReadNameExt>] [--secondRNExt <secondInPairReadNameExt>] [--rnPlus] [--noReverseComp] [--noeof] [--params]
+	./bam bam2FastQ --in <inputFile> [--readName] [--splitRG] [--qualField <tag>] [--refFile <referenceFile>] [--outBase <outputFileBase>] [--firstOut <1stReadInPairOutFile>] [--merge|--secondOut <2ndReadInPairOutFile>] [--unpairedOut <unpairedOutFile>] [--firstRNExt <firstInPairReadNameExt>] [--secondRNExt <secondInPairReadNameExt>] [--rnPlus] [--noReverseComp] [--region <chr>[:<pos>[:<base>]]] [--gzip] [--noeof] [--params]
 	Required Parameters:
 		--in       : the SAM/BAM file to convert to FastQ
 	Optional Parameters:
@@ -20,6 +20,9 @@ Version: 1.0.13; Built: Mon Jun  7 12:26:20 EDT 2015 by mktrost
 		                  default is "/2"
 		--rnPlus        : Add the Read Name/extension to the '+' line of the fastq records
 		--noReverseComp : Do not reverse complement reads marked as reverse
+		--region        : Only convert reads containing the specified region/nucleotide.
+		                  Position formatted as: chr:pos:base
+		                  pos (0-based) & base are optional.
 		--gzip          : Compress the output FASTQ files using gzip
 		--noeof         : Do not expect an EOF block on a bam file.
 		--params        : Print the parameter settings to stderr
@@ -38,7 +41,8 @@ Input Parameters
          Optional Parameters : --readName, --splitRG [ON], --qualField [],
                                --merge, --refFile [], --firstRNExt [/1],
                                --secondRNExt [/2], --rnPlus,
-                               --noReverseComp [ON], --gzip, --noeof, --params
+                               --noReverseComp [ON], --region [], --gzip,
+                               --noeof, --params
    Optional OutputFile Names : --outBase [],
                                --firstOut [results/testBam2FastQCoordFirstRGFail.fastq],
                                --secondOut [], --unpairedOut []

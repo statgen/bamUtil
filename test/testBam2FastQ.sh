@@ -462,6 +462,53 @@ then
   let "status = 1"
 fi
 
+###########################################
+# Test with limiting reads to convert by position
+# Test clipping files sorted by coordinate, chr 1.
+../bin/bam bam2FastQ --in testFiles/sortedBam1.bam --outBase results/testBam2FastQCoordChr1 --noph --region 1 2> results/testBam2FastQCoordChr1.log
+let "status |= $?"
+diff results/testBam2FastQCoordChr1.fastq expected/testBam2FastQCoordChr1.fastq
+let "status |= $?"
+diff results/testBam2FastQCoordChr1_1.fastq expected/empty.txt
+let "status |= $?"
+diff results/testBam2FastQCoordChr1_2.fastq expected/empty.txt
+let "status |= $?"
+diff results/testBam2FastQCoordChr1.log expected/testBam2FastQCoordChr1.log
+let "status |= $?"
+# Test clipping files sorted by coordinate, chr 1, pos 76.
+../bin/bam bam2FastQ --in testFiles/sortedBam1.bam --outBase results/testBam2FastQCoordChr1Pos76 --noph --region 1:76 2> results/testBam2FastQCoordChr1Pos76.log
+let "status |= $?"
+diff results/testBam2FastQCoordChr1Pos76.fastq expected/testBam2FastQCoordChr1Pos76.fastq
+let "status |= $?"
+diff results/testBam2FastQCoordChr1Pos76_1.fastq expected/empty.txt
+let "status |= $?"
+diff results/testBam2FastQCoordChr1Pos76_2.fastq expected/empty.txt
+let "status |= $?"
+diff results/testBam2FastQCoordChr1Pos76.log expected/testBam2FastQCoordChr1Pos76.log
+let "status |= $?"
+# Test clipping files sorted by coordinate, chr 1, pos 76, base A.
+../bin/bam bam2FastQ --in testFiles/sortedBam1.bam --outBase results/testBam2FastQCoordChr1Pos76BaseA --noph --region 1:76:A 2> results/testBam2FastQCoordChr1Pos76BaseA.log
+let "status |= $?"
+diff results/testBam2FastQCoordChr1Pos76BaseA.fastq expected/empty.txt
+let "status |= $?"
+diff results/testBam2FastQCoordChr1Pos76BaseA_1.fastq expected/empty.txt
+let "status |= $?"
+diff results/testBam2FastQCoordChr1Pos76BaseA_2.fastq expected/empty.txt
+let "status |= $?"
+diff results/testBam2FastQCoordChr1Pos76BaseA.log expected/testBam2FastQCoordChr1Pos76BaseA.log
+let "status |= $?"
+# Test clipping files sorted by coordinate, chr 1, pos 76, base G.
+../bin/bam bam2FastQ --in testFiles/sortedBam1.bam --outBase results/testBam2FastQCoordChr1Pos76BaseG --noph --region 1:76:G 2> results/testBam2FastQCoordChr1Pos76BaseG.log
+let "status |= $?"
+diff results/testBam2FastQCoordChr1Pos76BaseG.fastq expected/testBam2FastQCoordChr1Pos76.fastq
+let "status |= $?"
+diff results/testBam2FastQCoordChr1Pos76BaseG_1.fastq expected/empty.txt
+let "status |= $?"
+diff results/testBam2FastQCoordChr1Pos76BaseG_2.fastq expected/empty.txt
+let "status |= $?"
+diff results/testBam2FastQCoordChr1Pos76BaseG.log expected/testBam2FastQCoordChr1Pos76.log
+let "status |= $?"
+
 if [ $status != 0 ]
 then
   echo failed testBam2FastQ.sh
