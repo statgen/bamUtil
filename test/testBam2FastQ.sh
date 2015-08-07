@@ -509,6 +509,18 @@ let "status |= $?"
 diff results/testBam2FastQCoordChr1Pos76BaseG.log expected/testBam2FastQCoordChr1Pos76.log
 let "status |= $?"
 
+# Test clipping files sorted by coordinate, chr 1, pos 76, base G.
+../bin/bam bam2FastQ --in testFiles/sortedBam1.bam --outBase results/testBam2FastQCoordChr1Pos76Baseg --noph --region 1:76:g 2> results/testBam2FastQCoordChr1Pos76Baseg.log
+let "status |= $?"
+diff results/testBam2FastQCoordChr1Pos76Baseg.fastq expected/testBam2FastQCoordChr1Pos76.fastq
+let "status |= $?"
+diff results/testBam2FastQCoordChr1Pos76Baseg_1.fastq expected/empty.txt
+let "status |= $?"
+diff results/testBam2FastQCoordChr1Pos76Baseg_2.fastq expected/empty.txt
+let "status |= $?"
+diff results/testBam2FastQCoordChr1Pos76Baseg.log expected/testBam2FastQCoordChr1Pos76.log
+let "status |= $?"
+
 if [ $status != 0 ]
 then
   echo failed testBam2FastQ.sh

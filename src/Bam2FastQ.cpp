@@ -214,7 +214,7 @@ int Bam2FastQ::execute(int argc, char **argv)
             else
             {
                 posStr = region.Mid(chrStrEnd+1, posStrEnd-1);
-                nucleotide = region[posStrEnd + 1];
+                nucleotide = toupper(region[posStrEnd + 1]);
                 if(posStrEnd + 1 != region.Length()-1)
                 {
                     std::cerr << "ERROR: Invalid region string, '" << region
@@ -432,7 +432,7 @@ int Bam2FastQ::execute(int argc, char **argv)
         // Check if the record has the correct base at the specified position (if applicable).
         if(nucleotide != ' ')
         {
-            if(recordPtr->getSequence(recordPtr->getCigarInfo()->getQueryIndex(position, recordPtr->get0BasedPosition())) != nucleotide)
+            if(toupper(recordPtr->getSequence(recordPtr->getCigarInfo()->getQueryIndex(position, recordPtr->get0BasedPosition()))) != nucleotide)
             {
                 // Go to next record
                 continue;
