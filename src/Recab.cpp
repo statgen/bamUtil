@@ -797,31 +797,46 @@ void Recab::modelFitPrediction(const char* outputBase)
         //// Model fitting + prediction
         std::string modelfile = outputBase;
         modelfile += ".model";
+        if(outputBase[0] == '-')
+        {
+            modelfile = "";
+        }
         
         prediction.setErrorModel(&(hasherrormodel));
         
         Logger::gLogger->writeLog("Start model fitting!");
         if(prediction.fitModel(true,modelfile))
-            prediction.outModel();
+        {
+            if(outputBase[0] != '-')
+            {
+                prediction.outModel();
+            }
+        }
         else
             Logger::gLogger->error("Could not fit model!");
         
         hasherrormodel.addPrediction(prediction.getModel(),myBlendedWeight);
 
-        std::string recabFile = outputBase;
-        recabFile += ".recab";
-        Logger::gLogger->writeLog("Writing recalibration table %s",recabFile.c_str());
-        if(!(hasherrormodel.writeTableQemp(recabFile,
-                                           myId2Rg, true)))
-            Logger::gLogger->error("Writing errormodel not possible!");
+        if(outputBase[0] != '-')
+        {
+            std::string recabFile = outputBase;
+            recabFile += ".recab";
+            Logger::gLogger->writeLog("Writing recalibration table %s",recabFile.c_str());
+            if(!(hasherrormodel.writeTableQemp(recabFile,
+                                               myId2Rg, true)))
+                Logger::gLogger->error("Writing errormodel not possible!");
+        }
     }
 
-    std::string qempFile = outputBase;
-    qempFile += ".qemp";
-    Logger::gLogger->writeLog("Writing recalibration table %s",qempFile.c_str());
-    if(!(hasherrormodel.writeTableQemp(qempFile,
-                                       myId2Rg, false)))
-        Logger::gLogger->error("Writing errormodel not possible!");
+    if(outputBase[0] != '-')
+    {
+        std::string qempFile = outputBase;
+        qempFile += ".qemp";
+        Logger::gLogger->writeLog("Writing recalibration table %s",qempFile.c_str());
+        if(!(hasherrormodel.writeTableQemp(qempFile,
+                                           myId2Rg, false)))
+            Logger::gLogger->error("Writing errormodel not possible!");
+    }
 }
 
 
