@@ -279,7 +279,15 @@ int Recab::execute(int argc, char *argv[])
     localtm = localtime(&now);
     Logger::gLogger->writeLog("End: %s", asctime(localtm));
 
-    modelFitPrediction(outFile);
+    if((outFile[0] == '-') && (logFile[0] != '-'))
+    {
+        // Since outFile is to stdout, and logfile isn't, pass logfile name 
+        modelFitPrediction(logFile);
+    }
+    else
+    {
+        modelFitPrediction(outFile);
+    }
 
     Logger::gLogger->writeLog("Writing recalibrated file %s",outFile.c_str());
 
@@ -805,15 +813,10 @@ void Recab::modelFitPrediction(const char* outputBase)
         prediction.setErrorModel(&(hasherrormodel));
         
         Logger::gLogger->writeLog("Start model fitting!");
-        if(prediction.fitModel(true,modelfile))
+        if(!prediction.fitModel(true,modelfile))
         {
-            if(outputBase[0] != '-')
-            {
-                prediction.outModel();
-            }
-        }
-        else
             Logger::gLogger->error("Could not fit model!");
+        }
         
         hasherrormodel.addPrediction(prediction.getModel(),myBlendedWeight);
 

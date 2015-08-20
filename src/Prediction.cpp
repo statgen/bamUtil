@@ -49,31 +49,16 @@ int Prediction::fitModel(bool writeModelFlag, std::string& filename)
   //set Matrix, succ, total
   // !!! all co-variates not 0?
   phasherrormodel->setDataforPrediction(X, succ, total, false);
-  if(!(filename.empty()))
-      writeLogRegdata(filename);
-
 
   fullmodel = lrengine.FitLogisticModel(X, succ,total, nrrounds);
+
+  if(!(filename.empty()))
+      writeLogRegdata(filename);
 
   if(fullmodel)
 	return 1;
   else
 	return 0;
-}
-
-void Prediction::outModel()
-{
-    if(fullmodel)
-        printf("Model\n");
-    printf("Effect Variance SE\n");
-    for(int i=0;i<lrengine.B.Length();i++)
-    {
-        double effect = lrengine.B[i];
-        double variance = lrengine.covB[i][i] + 1e-30;
-        double serror = sqrt(variance);
-        printf("%f %f %f \n",
-               effect, variance, serror);
-    }
 }
 
 void Prediction::setErrorModel(HashErrorModel *phasherrormodel)
@@ -102,6 +87,18 @@ int Prediction::writeLogRegdata(std::string& filename){
 		fprintf(pFile,"- %0.0f",succ[i]);
 		fprintf(pFile," %0.0f\n",total[i]);
 	}
+
+        if(fullmodel)
+            fprintf(pFile, "Model\n");
+        fprintf(pFile, "Effect Variance SE\n");
+        for(int i=0;i<lrengine.B.Length();i++)
+        {
+            double effect = lrengine.B[i];
+            double variance = lrengine.covB[i][i] + 1e-30;
+            double serror = sqrt(variance);
+            fprintf(pFile, "%f %f %f \n",
+                   effect, variance, serror);
+        }
 	fclose(pFile);
 	return 1;
 }
