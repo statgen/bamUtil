@@ -86,6 +86,7 @@ private:
     uint16_t myIntApplyExcludeFlags;
     int myMinBaseQual;
     int myMaxBaseQual;
+    int myMaxBaseQualChar;
     int myBlendedWeight;
     bool myFitModel;
     bool myFast;

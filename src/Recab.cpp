@@ -79,6 +79,7 @@ Recab::Recab()
     myLogReg = false;
     myMinBaseQual = DEFAULT_MIN_BASE_QUAL;
     myMaxBaseQual = DEFAULT_MAX_BASE_QUAL;
+    myMaxBaseQualChar = BaseUtilities::getAsciiQuality(DEFAULT_MAX_BASE_QUAL);
 }
 
 
@@ -132,6 +133,8 @@ void Recab::recabSpecificUsage()
     std::cerr << "\t--dbsnp <known variance file> : dbsnp file of positions" << std::endl;
     std::cerr << "\t--minBaseQual <minBaseQual>   : minimum base quality of bases to recalibrate (default: " << DEFAULT_MIN_BASE_QUAL << ")" << std::endl;
     std::cerr << "\t--maxBaseQual <maxBaseQual>   : maximum recalibrated base quality (default: " << DEFAULT_MAX_BASE_QUAL << ")" << std::endl;
+    std::cerr << "\t                                qualities over this value will be set to this value." << std::endl;
+    std::cerr << "\t                                This setting is applied after binning (if applicable)." << std::endl;
     std::cerr << "\t--blended <weight>            : blended model weight" << std::endl;
     std::cerr << "\t--fitModel                    : check if the logistic regression model fits the data" << std::endl;
     std::cerr << "\t                                overriden by fast, but automatically applied by useLogReg" << std::endl;
@@ -344,6 +347,8 @@ int Recab::processRecabParam()
         std::cerr << "Missing required --refFile parameter" << std::endl;
         return EXIT_FAILURE;
     }
+    myMaxBaseQualChar = BaseUtilities::getAsciiQuality(myMaxBaseQual);
+
     return(mySqueeze.processBinningParam());
 }
 
@@ -760,11 +765,12 @@ bool Recab::processReadApplyTable(SamRecord& samRecord)
 
         // Update quality score
         uint8_t qemp = hasherrormodel.getQemp(data);
-        if(qemp > myMaxBaseQual)
+        qemp = mySqueeze.getQualCharFromQemp(qemp);
+        if(qemp > myMaxBaseQualChar)
         {
-            qemp = myMaxBaseQual;
+            qemp = myMaxBaseQualChar;
         }
-        myQualityStrings.newq[seqPos] = mySqueeze.getQualCharFromQemp(qemp);
+        myQualityStrings.newq[seqPos] = qemp;
     }
 
     if(!myStoreQualTag.IsEmpty())

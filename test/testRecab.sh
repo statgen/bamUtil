@@ -260,6 +260,37 @@ let "status |= $?"
 
 
 ###############
+# Recalibration with binning max qual 21
+../bin/bam recab --noph --in testFiles/testRecab.sam --out results/testRecabBin21.sam --refFile testFilesLibBam/chr1_partial.fa --fitModel --binMid --binQualS 2,3,10,20,25,30,35,40,50  --maxBaseQual 21 > results/testRecabBin21.txt 2> results/testRecabBin21.log
+let "status |= $?"
+diff results/testRecabBin21.sam expected/testRecabBin21.sam
+let "status |= $?"
+diff results/testRecabBin21.txt expected/testRecab.txt
+let "status |= $?"
+diff results/testRecabBin21.log expected/empty.log
+let "status |= $?"
+diff <(sort results/testRecabBin21.sam.qemp) <(sort expected/testRecab.sam.qemp)
+let "status |= $?"
+diff -I "Start: .*" -I "End: .*" results/testRecabBin21.sam.log expected/testRecabBin21.sam.log
+let "status |= $?"
+
+###############
+# Recalibration with binning max qual 19
+../bin/bam recab --noph --in testFiles/testRecab.sam --out results/testRecabBin19.sam --refFile testFilesLibBam/chr1_partial.fa --fitModel --binMid --binQualS 2,3,10,20,25,30,35,40,50 --maxBaseQual 19 > results/testRecabBin19.txt 2> results/testRecabBin19.log
+let "status |= $?"
+diff results/testRecabBin19.sam expected/testRecabBin19.sam
+let "status |= $?"
+diff results/testRecabBin19.txt expected/testRecab.txt
+let "status |= $?"
+diff results/testRecabBin19.log expected/empty.log
+let "status |= $?"
+diff <(sort results/testRecabBin19.sam.qemp) <(sort expected/testRecab.sam.qemp)
+let "status |= $?"
+diff -I "Start: .*" -I "End: .*" results/testRecabBin19.sam.log expected/testRecabBin19.sam.log
+let "status |= $?"
+
+
+###############
 # Recalibration to stdout
 ../bin/bam recab --noph --in testFiles/testRecab.sam --out - --refFile testFilesLibBam/chr1_partial.fa --fitModel > results/testRecabStdout.sam 2> results/testRecabStdout.log
 let "status |= $?"
