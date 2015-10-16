@@ -4,13 +4,6 @@
 #Update version as necessary
 VERSION=1.0.14
 
-CXX11_AVAIL ?= 1
-
-CPP0X=$(shell if [ X$(CCVERSION) \> X4.3.0 ] ; then echo " -std=c++0x" ; fi)
-
-ifeq ($(CXX11_AVAIL), 0)
-CPP0X=
-endif
 
 CURRENT_PATH := $(dir $(lastword $(MAKEFILE_LIST)))
 LIB_PATH_GENERAL ?=../libStatGen
