@@ -48,6 +48,8 @@ RunningStat PileupElementBaseQCStats::avgAvgMapQCount;
 RunningStat PileupElementBaseQCStats::avgDepth;
 RunningStat PileupElementBaseQCStats::avgQ20;
 bool PileupElementBaseQCStats::ourBaseSum = false;
+BaseQCOutputFields PileupElementBaseQCStats::ourBaseQCOutputFields(true);
+
 
 void PileupElementBaseQCStats::filterDups(bool filterDups)
 {
@@ -71,15 +73,61 @@ void PileupElementBaseQCStats::setOutputFile(IFILE outputPtr)
 
 void PileupElementBaseQCStats::printHeader()
 {
-    if(ourPercentStats)
+    std::string outputStr;
+    getHeader(outputStr);
+    ifprintf(ourOutputFile, outputStr.c_str());
+}
+
+
+void PileupElementBaseQCStats::getHeader(std::string& outputStr, bool summaryHdr)
+{
+    outputStr.clear();
+    std::string prefix = "";
+
+    if(!summaryHdr)
     {
-        ifprintf(ourOutputFile, "chrom\tchromStart\tchromEnd\tDepth\tQ20Bases\tQ20BasesPct(%)\tTotalReads\tMappedBases\tMappingRate(%)\tMapRate_MQPass(%)\tZeroMapQual(%)\tMapQual<10(%)\tPairedReads(%)\tProperPaired(%)\tDupRate(%)\tQCFailRate(%)\tAverageMapQuality\tAverageMapQualCount\n");
-        //    ifprintf(ourOutputFile, "chrom\tchromStart\tchromEnd\tDepth\tQ20Bases(e9)\tQ20BasesPct(%)\tTotalReads(e6)\tMappedBases(e9)\tMappingRate(%)\tMapRate_MQPass(%)\tZeroMapQual(%)\tMapQual<10(%)\tPairedReads(%)\tProperPaired(%)\tDupRate(%)\tQCFailRate(%)\tAverageMapQuality\tAverageMapQualCount(e9)\n");
+        outputStr = "chrom\tchromStart";
+        prefix = "\t";
+        if(ourBaseQCOutputFields.chromEnd)
+        {
+            outputStr += "\tchromEnd";
+        }
+    }
+
+    if(ourPercentStats && !summaryHdr)
+    {
+        if(ourBaseQCOutputFields.depth)        { outputStr += "\tDepth"; }
+        if(ourBaseQCOutputFields.q20Bases)     { outputStr += "\tQ20Bases\tQ20BasesPct(%)"; }
+        if(ourBaseQCOutputFields.totalReads)   { outputStr += "\tTotalReads"; }
+        if(ourBaseQCOutputFields.mapped)       { outputStr += "\tMappedBases\tMappingRate(%)"; }
+        if(ourBaseQCOutputFields.passMapQ)     { outputStr += "\tMapRate_MQPass(%)"; }
+        if(ourBaseQCOutputFields.zeroMapQ)     { outputStr += "\tZeroMapQual(%)"; }
+        if(ourBaseQCOutputFields.mapQlt10)     { outputStr += "\tMapQual<10(%)"; }
+        if(ourBaseQCOutputFields.paired)       { outputStr += "\tPairedReads(%)"; }
+        if(ourBaseQCOutputFields.properPaired) { outputStr += "\tProperPaired(%)"; }
+        if(ourBaseQCOutputFields.dups)         { outputStr += "\tDupRate(%)"; }
+        if(ourBaseQCOutputFields.qcFail)       { outputStr += "\tQCFailRate(%)"; }
+        if(ourBaseQCOutputFields.avgMapQ)      { outputStr += "\tAverageMapQuality"; }
+        if(ourBaseQCOutputFields.numAvgMapQ)   { outputStr += "\tAverageMapQualCount"; }
     }
     else
     {
-        ifprintf(ourOutputFile, "chrom\tchromStart\tchromEnd\tTotalReads\tDups\tQCFail\tMapped\tPaired\tProperPaired\tZeroMapQual\tMapQual<10\tMapQual255\tPassMapQual\tAverageMapQuality\tAverageMapQualCount\tDepth\tQ20Bases\n");
+        if(ourBaseQCOutputFields.totalReads)   { outputStr += prefix; outputStr += "TotalReads"; prefix = "\t"; }
+        if(ourBaseQCOutputFields.dups)         { outputStr += prefix; outputStr += "Dups"; prefix = "\t"; }
+        if(ourBaseQCOutputFields.qcFail)       { outputStr += prefix; outputStr += "QCFail"; prefix = "\t"; }
+        if(ourBaseQCOutputFields.mapped)       { outputStr += prefix; outputStr += "Mapped"; prefix = "\t"; }
+        if(ourBaseQCOutputFields.paired)       { outputStr += prefix; outputStr += "Paired"; prefix = "\t"; }
+        if(ourBaseQCOutputFields.properPaired) { outputStr += prefix; outputStr += "ProperPaired"; prefix = "\t"; }
+        if(ourBaseQCOutputFields.zeroMapQ)     { outputStr += prefix; outputStr += "ZeroMapQual"; prefix = "\t"; }
+        if(ourBaseQCOutputFields.mapQlt10)     { outputStr += prefix; outputStr += "MapQual<10"; prefix = "\t"; }
+        if(ourBaseQCOutputFields.mapQ255)      { outputStr += prefix; outputStr += "MapQual255"; prefix = "\t"; }
+        if(ourBaseQCOutputFields.passMapQ)     { outputStr += prefix; outputStr += "PassMapQual"; prefix = "\t"; }
+        if(ourBaseQCOutputFields.avgMapQ)      { outputStr += prefix; outputStr += "AverageMapQuality"; prefix = "\t"; }
+        if(ourBaseQCOutputFields.numAvgMapQ)   { outputStr += prefix; outputStr += "AverageMapQualCount"; prefix = "\t"; }
+        if(ourBaseQCOutputFields.depth)        { outputStr += prefix; outputStr += "Depth"; prefix = "\t"; }
+        if(ourBaseQCOutputFields.q20Bases)     { outputStr += prefix; outputStr += "Q20Bases"; prefix = "\t"; };
     }
+    outputStr += "\n";
 }
 
 
@@ -99,23 +147,167 @@ void PileupElementBaseQCStats::printSummary()
 {
     if(ourBaseSum)
     {
-        fprintf(stderr, "\nSummary of Pileup Stats (1st Row is Mean, 2nd Row is Standard Deviation)\nTotalReads\tDups\tQCFail\tMapped\tPaired\tProperPaired\tZeroMapQual\tMapQual<10\tMapQual255\tPassMapQual\tAverageMapQuality\tAverageMapQualCount\tDepth\tQ20Bases\n");
+        fprintf(stderr, "\nSummary of Pileup Stats (1st Row is Mean, 2nd Row is Standard Deviation)\n");
         
-        fprintf(stderr, 
-                 "%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n",
-                 avgTotalReads.Mean(), avgDups.Mean(), avgQCFail.Mean(),
-                 avgMapped.Mean(), avgPaired.Mean(), avgProperPaired.Mean(),
-                 avgZeroMapQ.Mean(), avgLT10MapQ.Mean(), avgMapQ255.Mean(), 
-                 avgMapQPass.Mean(), avgAvgMapQ.Mean(), avgAvgMapQCount.Mean(),
-                 avgDepth.Mean(), avgQ20.Mean());
-        fprintf(stderr, 
-                 "%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n\n",
-                 avgTotalReads.StandardDeviation(), avgDups.StandardDeviation(), avgQCFail.StandardDeviation(),
-                 avgMapped.StandardDeviation(), avgPaired.StandardDeviation(), avgProperPaired.StandardDeviation(),
-                 avgZeroMapQ.StandardDeviation(), avgLT10MapQ.StandardDeviation(), avgMapQ255.StandardDeviation(), 
-                 avgMapQPass.StandardDeviation(), avgAvgMapQ.StandardDeviation(), avgAvgMapQCount.StandardDeviation(),
-                 avgDepth.StandardDeviation(), avgQ20.StandardDeviation());
+        std::string hdrStr;
+        getHeader(hdrStr, true);
+        fprintf(stderr, "%s", hdrStr.c_str());
+
+        std::string prefix = "";
+
+        if(ourBaseQCOutputFields.totalReads)
+        {
+            fprintf(stderr, "%s%f", prefix.c_str(), avgTotalReads.Mean());
+            prefix = "\t";
+        }
+        if(ourBaseQCOutputFields.dups)
+        {
+            fprintf(stderr, "%s%f", prefix.c_str(), avgDups.Mean());
+            prefix = "\t";
+        }
+        if(ourBaseQCOutputFields.qcFail)
+        {
+            fprintf(stderr, "%s%f", prefix.c_str(), avgQCFail.Mean());
+            prefix = "\t";
+        }
+        if(ourBaseQCOutputFields.mapped)
+        {
+            fprintf(stderr, "%s%f", prefix.c_str(), avgMapped.Mean());
+            prefix = "\t";
+        }
+        if(ourBaseQCOutputFields.paired)
+        {
+            fprintf(stderr, "%s%f", prefix.c_str(), avgPaired.Mean());
+            prefix = "\t";
+        }
+        if(ourBaseQCOutputFields.properPaired)
+        {
+            fprintf(stderr, "%s%f", prefix.c_str(), avgProperPaired.Mean());
+            prefix = "\t";
+        }
+        if(ourBaseQCOutputFields.zeroMapQ)
+        {
+            fprintf(stderr, "%s%f", prefix.c_str(), avgZeroMapQ.Mean());
+            prefix = "\t";
+        }
+        if(ourBaseQCOutputFields.mapQlt10)
+        {
+            fprintf(stderr, "%s%f", prefix.c_str(), avgLT10MapQ.Mean());
+            prefix = "\t";
+        }
+        if(ourBaseQCOutputFields.mapQ255)
+        {
+            fprintf(stderr, "%s%f", prefix.c_str(), avgMapQ255.Mean());
+            prefix = "\t";
+        }
+        if(ourBaseQCOutputFields.passMapQ)
+        {
+            fprintf(stderr, "%s%f", prefix.c_str(), avgMapQPass.Mean());
+            prefix = "\t";
+        }
+        if(ourBaseQCOutputFields.avgMapQ)
+        {
+            fprintf(stderr, "%s%f", prefix.c_str(), avgAvgMapQ.Mean());
+            prefix = "\t";
+        }
+        if(ourBaseQCOutputFields.numAvgMapQ)
+        {
+            fprintf(stderr, "%s%f", prefix.c_str(), avgAvgMapQCount.Mean());
+            prefix = "\t";
+        }
+        if(ourBaseQCOutputFields.depth)
+        {
+            fprintf(stderr, "%s%f", prefix.c_str(), avgDepth.Mean());
+            prefix = "\t";
+        }
+        if(ourBaseQCOutputFields.q20Bases)
+        {
+            fprintf(stderr, "%s%f", prefix.c_str(), avgQ20.Mean());
+            prefix = "\t";
+        }
+
+        fprintf(stderr, "\n");
+        prefix = "";
+
+        // Std Deviation
+        if(ourBaseQCOutputFields.totalReads)
+        {
+            fprintf(stderr, "%s%f", prefix.c_str(), avgTotalReads.StandardDeviation());
+            prefix = "\t";
+        }
+        if(ourBaseQCOutputFields.dups)
+        {
+            fprintf(stderr, "%s%f", prefix.c_str(), avgDups.StandardDeviation());
+            prefix = "\t";
+        }
+        if(ourBaseQCOutputFields.qcFail)
+        {
+            fprintf(stderr, "%s%f", prefix.c_str(), avgQCFail.StandardDeviation());
+            prefix = "\t";
+        }
+        if(ourBaseQCOutputFields.mapped)
+        {
+            fprintf(stderr, "%s%f", prefix.c_str(), avgMapped.StandardDeviation());
+            prefix = "\t";
+        }
+        if(ourBaseQCOutputFields.paired)
+        {
+            fprintf(stderr, "%s%f", prefix.c_str(), avgPaired.StandardDeviation());
+            prefix = "\t";
+        }
+        if(ourBaseQCOutputFields.properPaired)
+        {
+            fprintf(stderr, "%s%f", prefix.c_str(), avgProperPaired.StandardDeviation());
+            prefix = "\t";
+        }
+        if(ourBaseQCOutputFields.zeroMapQ)
+        {
+            fprintf(stderr, "%s%f", prefix.c_str(), avgZeroMapQ.StandardDeviation());
+            prefix = "\t";
+        }
+        if(ourBaseQCOutputFields.mapQlt10)
+        {
+            fprintf(stderr, "%s%f", prefix.c_str(), avgLT10MapQ.StandardDeviation());
+            prefix = "\t";
+        }
+        if(ourBaseQCOutputFields.mapQ255)
+        {
+            fprintf(stderr, "%s%f", prefix.c_str(), avgMapQ255.StandardDeviation());
+            prefix = "\t";
+        }
+        if(ourBaseQCOutputFields.passMapQ)
+        {
+            fprintf(stderr, "%s%f", prefix.c_str(), avgMapQPass.StandardDeviation());
+            prefix = "\t";
+        }
+        if(ourBaseQCOutputFields.avgMapQ)
+        {
+            fprintf(stderr, "%s%f", prefix.c_str(), avgAvgMapQ.StandardDeviation());
+            prefix = "\t";
+        }
+        if(ourBaseQCOutputFields.numAvgMapQ)
+        {
+            fprintf(stderr, "%s%f", prefix.c_str(), avgAvgMapQCount.StandardDeviation());
+            prefix = "\t";
+        }
+        if(ourBaseQCOutputFields.depth)
+        {
+            fprintf(stderr, "%s%f", prefix.c_str(), avgDepth.StandardDeviation());
+            prefix = "\t";
+        }
+        if(ourBaseQCOutputFields.q20Bases)
+        {
+            fprintf(stderr, "%s%f", prefix.c_str(), avgQ20.StandardDeviation());
+            prefix = "\t";
+        }
+        fprintf(stderr, "\n\n");
     }
+}
+
+
+void PileupElementBaseQCStats::setBaseQCOutputFields(const BaseQCOutputFields& baseQCFields)
+{
+    ourBaseQCOutputFields = baseQCFields;
 }
 
 
@@ -275,66 +467,156 @@ void PileupElementBaseQCStats::analyze()
             myOutputString = getChromosome();
             myOutputString += "\t";
             myOutputString += startPos;
-            myOutputString += "\t";
-            myOutputString += startPos + 1;
-            myOutputString += "\t";
-            myOutputString += depth;
-            myOutputString += "\t";
-            myOutputString += numQ20;
-            //        myOutputString += (double(numQ20))/E9_CALC;
-            myOutputString += "\t";
-            if(depth == 0)
-            {
-                myOutputString += (double)0;
+            if(ourBaseQCOutputFields.chromEnd)
+            { 
+                myOutputString += "\t";
+                myOutputString += startPos + 1;
             }
-            else
+            if(ourBaseQCOutputFields.depth)
             {
-                myOutputString += 100 * (double(numQ20))/depth;
+                myOutputString += "\t";
+                myOutputString += depth;
             }
-            myOutputString += "\t";
-            myOutputString += numEntries;
-            //        myOutputString += numEntries/E6_CALC;
-            myOutputString += "\t";
-            myOutputString += numMapped;
-            //        myOutputString += ((double)numMapped)/E9_CALC;
-            myOutputString += "\t";
-            if(numEntries == 0)
+            if(ourBaseQCOutputFields.q20Bases)
             {
-                myOutputString += "0.000\t0.000\t0.000\t0.000\t0.000\t0.000\t0.000\t0.000";
+                myOutputString += "\t";
+                myOutputString += numQ20;
+                //        myOutputString += (double(numQ20))/E9_CALC;
+                myOutputString += "\t";
+                if(depth == 0)
+                {
+                    myOutputString += (double)0;
+                }
+                else
+                {
+                    myOutputString += 100 * (double(numQ20))/depth;
+                }
             }
-            else
+            if(ourBaseQCOutputFields.totalReads)
             {
-                myOutputString += 100 * ((double)numMapped)/numEntries;
                 myOutputString += "\t";
-                myOutputString += 100 * ((double)numMapQPass)/numEntries;
+                myOutputString += numEntries;
+                //        myOutputString += numEntries/E6_CALC;
+            }
+            if(ourBaseQCOutputFields.mapped)
+            {
                 myOutputString += "\t";
-                myOutputString += 100 * ((double)numZeroMapQ)/numEntries;
+                myOutputString += numMapped;
+                //        myOutputString += ((double)numMapped)/E9_CALC;
                 myOutputString += "\t";
-                myOutputString += 100 * ((double)numLT10MapQ)/numEntries;
+                if(numEntries == 0)
+                {
+                    myOutputString += "0.000";
+                }
+                else
+                {
+                    myOutputString += 100 * ((double)numMapped)/numEntries;
+                }
+            }
+            if(ourBaseQCOutputFields.passMapQ)
+            {
                 myOutputString += "\t";
-                myOutputString += 100 * ((double)numPaired)/numEntries;
+                if(numEntries == 0)
+                {
+                    myOutputString += "0.000";
+                }
+                else
+                {
+                    myOutputString += 100 * ((double)numMapQPass)/numEntries;
+                }
+            }
+            if(ourBaseQCOutputFields.zeroMapQ)
+            {
                 myOutputString += "\t";
-                myOutputString += 100 * ((double)numProperPaired)/numEntries;
+                if(numEntries == 0)
+                {
+                    myOutputString += "0.000";
+                }
+                else
+                {
+                    myOutputString += 100 * ((double)numZeroMapQ)/numEntries;
+                }
+            }
+            if(ourBaseQCOutputFields.mapQlt10)
+            {
                 myOutputString += "\t";
-                myOutputString += 100 * ((double)numDups)/numEntries;
+                if(numEntries == 0)
+                {
+                    myOutputString += "0.000";
+                }
+                else
+                {
+                    myOutputString += 100 * ((double)numLT10MapQ)/numEntries;
+                }
+            }
+            if(ourBaseQCOutputFields.paired)
+            {
                 myOutputString += "\t";
-                myOutputString += 100 * ((double)numQCFail)/numEntries;
+                if(numEntries == 0)
+                {
+                    myOutputString += "0.000";
+                }
+                else
+                {
+                    myOutputString += 100 * ((double)numPaired)/numEntries;
+                }
+            }
+            if(ourBaseQCOutputFields.properPaired)
+            {
+                myOutputString += "\t";
+                if(numEntries == 0)
+                {
+                    myOutputString += "0.000";
+                }
+                else
+                {
+                    myOutputString += 100 * ((double)numProperPaired)/numEntries;
+                }
+            }
+            if(ourBaseQCOutputFields.dups)
+            {
+                myOutputString += "\t";
+                if(numEntries == 0)
+                {
+                    myOutputString += "0.000";
+                }
+                else
+                {
+                    myOutputString += 100 * ((double)numDups)/numEntries;
+                }
+            }
+            if(ourBaseQCOutputFields.qcFail)
+            {
+                myOutputString += "\t";
+                if(numEntries == 0)
+                {
+                    myOutputString += "0.000";
+                }
+                else
+                {
+                    myOutputString += 100 * ((double)numQCFail)/numEntries;
+                }
             }
 
-            myOutputString += "\t";
-            if(averageMapQCount != 0)
+            if(ourBaseQCOutputFields.avgMapQ)
             {
-                myOutputString += ((double)sumMapQ)/averageMapQCount;
+                myOutputString += "\t";
+                if(averageMapQCount != 0)
+                {
+                    myOutputString += ((double)sumMapQ)/averageMapQCount;
+                }
+                else
+                {
+                    myOutputString += "0.000";
+                }
             }
-            else
+            if(ourBaseQCOutputFields.numAvgMapQ)
             {
-                myOutputString += "0.000";
+                myOutputString += "\t";
+                myOutputString += averageMapQCount;
+                // myOutputString += ((double)averageMapQCount)/E9_CALC;
             }
-            myOutputString += "\t";
-            myOutputString += averageMapQCount;
-            // myOutputString += ((double)averageMapQCount)/E9_CALC;
             myOutputString += "\n";
-        
             ifprintf(ourOutputFile, myOutputString.c_str());
         }
         else
@@ -344,65 +626,110 @@ void PileupElementBaseQCStats::analyze()
             myOutputString = getChromosome();
             myOutputString += "\t";
             myOutputString += startPos;
-            myOutputString += "\t";
-            myOutputString += startPos + 1;
-            myOutputString += "\t";
-            myOutputString += numEntries;
-            myOutputString += "\t";
-            myOutputString += numDups;
-            myOutputString += "\t";
-            myOutputString += numQCFail;
-            myOutputString += "\t";
-            myOutputString += numMapped;
-            myOutputString += "\t";
-            myOutputString += numPaired;
-            myOutputString += "\t";
-            myOutputString += numProperPaired;
-            myOutputString += "\t";
-            myOutputString += numZeroMapQ;
-            myOutputString += "\t";
-            myOutputString += numLT10MapQ;
-            myOutputString += "\t";
-            myOutputString += numMapQ255;
-            myOutputString += "\t";
-            myOutputString += numMapQPass;
-            myOutputString += "\t";
-            if(averageMapQCount != 0)
+            
+            if(ourBaseQCOutputFields.chromEnd)
             {
-                myOutputString += ((double)sumMapQ)/averageMapQCount;
+                myOutputString += "\t"; 
+                myOutputString += startPos + 1;
             }
-            else
+            if(ourBaseQCOutputFields.totalReads)
             {
-                myOutputString += "0.000";
+                myOutputString += "\t";
+                myOutputString += numEntries;
             }
-            myOutputString += "\t";
-            myOutputString += averageMapQCount;
-            myOutputString += "\t";
-            myOutputString += depth;
-            myOutputString += "\t";
-            myOutputString += numQ20;
+            if(ourBaseQCOutputFields.dups)
+            {
+                myOutputString += "\t";
+                myOutputString += numDups;
+            }
+            if(ourBaseQCOutputFields.qcFail)
+            {
+                myOutputString += "\t";
+                myOutputString += numQCFail;
+            }
+            if(ourBaseQCOutputFields.mapped)
+            {
+                myOutputString += "\t";
+                myOutputString += numMapped;
+            }
+            if(ourBaseQCOutputFields.paired)
+            {
+                myOutputString += "\t";
+                myOutputString += numPaired;
+            }
+            if(ourBaseQCOutputFields.properPaired)
+            {
+                myOutputString += "\t";
+                myOutputString += numProperPaired;
+            }
+            if(ourBaseQCOutputFields.zeroMapQ)
+            {
+                myOutputString += "\t";
+                myOutputString += numZeroMapQ;
+            }
+            if(ourBaseQCOutputFields.mapQlt10)
+            {
+                myOutputString += "\t";
+                myOutputString += numLT10MapQ;
+            }
+            if(ourBaseQCOutputFields.mapQ255)
+            {
+                myOutputString += "\t";
+                myOutputString += numMapQ255;
+            }
+            if(ourBaseQCOutputFields.passMapQ)
+            {
+                myOutputString += "\t";
+                myOutputString += numMapQPass;
+            }
+            if(ourBaseQCOutputFields.avgMapQ)
+            {
+                myOutputString += "\t";
+                if(averageMapQCount != 0)
+                {
+                    myOutputString += ((double)sumMapQ)/averageMapQCount;
+                }
+                else
+                {
+                    myOutputString += "0.000";
+                }
+            }
+            if(ourBaseQCOutputFields.numAvgMapQ)
+            {
+                myOutputString += "\t";
+                myOutputString += averageMapQCount;
+            }
+            if(ourBaseQCOutputFields.depth)
+            {
+                myOutputString += "\t";
+                myOutputString += depth;
+            }
+            if(ourBaseQCOutputFields.q20Bases)
+            {
+                myOutputString += "\t";
+                myOutputString += numQ20;
+            }
             myOutputString += "\n";
-        
             ifprintf(ourOutputFile, myOutputString.c_str());
         }
 
         if(ourBaseSum)
         {
             // Update the average values.
-            avgTotalReads.Push(numEntries);
-            avgDups.Push(numDups);
-            avgQCFail.Push(numQCFail);
-            avgMapped.Push(numMapped);
-            avgPaired.Push(numPaired);
-            avgProperPaired.Push(numProperPaired);
-            avgZeroMapQ.Push(numZeroMapQ);
-            avgLT10MapQ.Push(numLT10MapQ);
-            avgMapQ255.Push(numMapQ255);
-            avgMapQPass.Push(numMapQPass);
-            avgAvgMapQ.Push( ((double)sumMapQ)/averageMapQCount);
-            avgAvgMapQCount.Push(averageMapQCount);
-            avgDepth.Push(depth);
-            avgQ20.Push(numQ20);
+            if(ourBaseQCOutputFields.totalReads)   { avgTotalReads.Push(numEntries); }
+            if(ourBaseQCOutputFields.dups)         { avgDups.Push(numDups); }
+            if(ourBaseQCOutputFields.qcFail)       { avgQCFail.Push(numQCFail); }
+            if(ourBaseQCOutputFields.mapped)       { avgMapped.Push(numMapped); }
+            if(ourBaseQCOutputFields.paired)       { avgPaired.Push(numPaired); }
+            if(ourBaseQCOutputFields.properPaired) { avgProperPaired.Push(numProperPaired); }
+            if(ourBaseQCOutputFields.zeroMapQ)     { avgZeroMapQ.Push(numZeroMapQ); }
+            if(ourBaseQCOutputFields.mapQlt10)     { avgLT10MapQ.Push(numLT10MapQ); }
+            if(ourBaseQCOutputFields.mapQ255)      { avgMapQ255.Push(numMapQ255); }
+            if(ourBaseQCOutputFields.passMapQ)     { avgMapQPass.Push(numMapQPass); }
+            if(ourBaseQCOutputFields.avgMapQ)      { avgAvgMapQ.Push( ((double)sumMapQ)/averageMapQCount); }
+            if(ourBaseQCOutputFields.numAvgMapQ)   { avgAvgMapQCount.Push(averageMapQCount); }
+            if(ourBaseQCOutputFields.depth)        { avgDepth.Push(depth); }
+            if(ourBaseQCOutputFields.q20Bases)     { avgQ20.Push(numQ20); }
         }
     }
 }

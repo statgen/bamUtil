@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011-2012  Regents of the University of Michigan
+ *  Copyright (C) 2011-2015  Regents of the University of Michigan
  *
  *   This program is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -76,6 +76,11 @@ void Stats::usage()
     std::cerr << "\t\t                  Default: " << PileupHelper::DEFAULT_WINDOW_SIZE << std::endl;
     std::cerr << "\t\t--minMapQual    : The minimum mapping quality for filtering reads in the baseQC stats." << std::endl;
     std::cerr << "\t\t--dbsnp         : The dbSnp file of positions to exclude from baseQC analysis." << std::endl;
+    std::cerr << "\tOptional BaseQC Field Specification Parameters:" << std::endl;
+    std::cerr << "\t\tIf any of these parameters are specified, only chrom, chromStart, and the specified fields will be output" << std::endl;
+    std::cerr << "\t\t--zeroMapQ      : Output Number of reads that have mapping quality 0 as part of baseQC analysis." << std::endl;
+    std::cerr << "\t\t--avgMapQ       : Output AverageMappingQuality as part of baseQC analysis." << std::endl;
+    std::cerr << "\t\t--numAvgMapQ    : Output Number of mapping qualities in AverageMappingQuality as part of baseQC analysis." << std::endl;
     std::cerr << std::endl;
 }
 
@@ -100,6 +105,9 @@ int Stats::execute(int argc, char **argv)
     bool withinRegion = false;
     int minMapQual = 0;
     String dbsnp = "";
+
+    BaseQCOutputFields baseQCFields(false);
+    
     PosList *dbsnpListPtr = NULL;
     bool baseSum = false;
     int bufferSize = PileupHelper::DEFAULT_WINDOW_SIZE;
@@ -130,6 +138,10 @@ int Stats::execute(int argc, char **argv)
         LONG_INTPARAMETER("bufferSize", &bufferSize)
         LONG_INTPARAMETER("minMapQual", &minMapQual)
         LONG_STRINGPARAMETER("dbsnp", &dbsnp)
+        LONG_PARAMETER_GROUP("Optional BaseQC Only Parameters Defining the Fields to Output")
+        LONG_PARAMETER("zeroMapQ", &baseQCFields.zeroMapQ)
+        LONG_PARAMETER("avgMapQ", &baseQCFields.avgMapQ)
+        LONG_PARAMETER("numAvgMapQ", &baseQCFields.numAvgMapQ)
         LONG_PHONEHOME(VERSION)
         END_LONG_PARAMETERS();
    
@@ -205,6 +217,13 @@ int Stats::execute(int argc, char **argv)
     {
         PileupElementBaseQCStats::setMapQualFilter(minMapQual);
         PileupElementBaseQCStats::setBaseSum(baseSum);
+
+        if(!baseQCFields.anyTrue())
+        {
+            // No individual fields were set, so set all fields to be output
+            baseQCFields.reset(true);
+        }
+        PileupElementBaseQCStats::setBaseQCOutputFields(baseQCFields);
     }
 
     if(params)

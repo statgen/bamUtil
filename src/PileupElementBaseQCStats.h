@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011  Regents of the University of Michigan
+ *  Copyright (C) 2011-2015  Regents of the University of Michigan
  *
  *   This program is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -25,6 +25,82 @@
 #include "PileupElement.h"
 #include "SimpleStats.h"
 
+class BaseQCOutputFields
+{
+public:
+    BaseQCOutputFields(bool val) {reset(val);}
+
+    virtual ~BaseQCOutputFields() {}
+
+    inline void reset(bool val)
+    {
+        chromEnd = val;
+        totalReads = val;
+        dups = val;
+        qcFail = val;
+        mapped = val;
+        paired = val;
+        properPaired = val;
+        zeroMapQ = val;
+        mapQlt10 = val;
+        mapQ255 = val;
+        passMapQ = val;
+        avgMapQ = val;
+        numAvgMapQ = val;
+        depth = val;
+        q20Bases = val;
+    }
+
+    bool anyTrue()
+    {
+        return(chromEnd || totalReads || dups || qcFail || mapped ||
+               paired || properPaired || zeroMapQ || mapQlt10 || mapQ255 ||
+               passMapQ || avgMapQ || numAvgMapQ || depth || q20Bases);
+    }
+
+    inline BaseQCOutputFields& operator=(const BaseQCOutputFields& input)
+    {
+        chromEnd = input.chromEnd;
+        totalReads = input.totalReads;
+        dups = input.dups;
+        qcFail = input.qcFail;
+        mapped = input.mapped;
+        paired = input.paired;
+        properPaired = input.properPaired;
+        zeroMapQ = input.zeroMapQ;
+        mapQlt10 = input.mapQlt10;
+        mapQ255 = input.mapQ255;
+        passMapQ = input.passMapQ;
+        avgMapQ = input.avgMapQ;
+        numAvgMapQ = input.numAvgMapQ;
+        depth = input.depth;
+        q20Bases = input.q20Bases;
+        
+        return *this;
+    }
+
+    bool chromEnd;
+    bool totalReads;
+    bool dups;
+    bool qcFail;
+    bool mapped;
+    bool paired;
+    bool properPaired;
+    bool zeroMapQ;
+    bool mapQlt10;
+    bool mapQ255;
+    bool passMapQ;
+    bool avgMapQ;
+    bool numAvgMapQ;
+    bool depth;
+    bool q20Bases;
+
+private:
+    BaseQCOutputFields() {}
+    BaseQCOutputFields(const BaseQCOutputFields& q) {}
+
+};
+
 class PileupElementBaseQCStats : public PileupElement
 {
 public:
@@ -45,6 +121,9 @@ public:
     // will have the wrong header..
     static void printHeader();
 
+    // pass true to summaryHdr to force it to print the summary header.
+    static void getHeader(std::string& outputStr, bool summaryHdr = false);
+
     /// The default setting is to not do percentStats (percentStats = false)
     static void setPercentStats(bool percentStats);
 
@@ -53,6 +132,9 @@ public:
 
     /// Prints a summary to stderr if setBaseSum was passed true.
     static void printSummary();
+
+    /// Sets the BaseQC output fields.
+    static void setBaseQCOutputFields(const BaseQCOutputFields& baseQCFields);
 
     PileupElementBaseQCStats();
 
@@ -98,6 +180,9 @@ private:
     static RunningStat avgQ20;
 
     static bool ourBaseSum;
+
+    // Which BaseQCFields to output.
+    static BaseQCOutputFields ourBaseQCOutputFields;
 
     int numEntries;
     int numQ20;
