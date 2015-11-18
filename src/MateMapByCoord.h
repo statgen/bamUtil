@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2011  Regents of the University of Michigan
+ *  Copyright (C) 2011-2015  Regents of the University of Michigan
  *
  *   This program is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -17,6 +17,12 @@
 
 #ifndef __MATE_MAP_BY_COORD_H__
 #define __MATE_MAP_BY_COORD_H__
+
+#ifdef __GXX_EXPERIMENTAL_CXX0X__
+#include <unordered_map>
+#else
+#include <map>
+#endif
 
 #include "SamFile.h"
 
@@ -58,8 +64,12 @@ protected:
 
 private:
     typedef std::pair<uint64_t, SamRecord*> MATE_MAP_PAIR;
+    #ifdef __GXX_EXPERIMENTAL_CXX0X__
     typedef std::multimap<uint64_t, SamRecord*> MATE_MAP;
-    
+    #else
+    typedef std::unordered_multimap<uint64_t, SamRecord*> MATE_MAP; 
+    #endif
+
     MATE_MAP myMateBuffer;
     bool myMateCoord;
 };
