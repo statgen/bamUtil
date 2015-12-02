@@ -111,8 +111,8 @@ Record 32
 INVALID_CIGAR (WARNING) : CIGAR does not evaluate to the same length as SEQ, (3 != 4).
 
 
-Number of records read = 32
-Number of valid records = 1
+Number of records read = 33
+Number of valid records = 2
 
 Error Counts:
 	FAIL_PARSE: 17
@@ -124,15 +124,15 @@ Error Counts:
 	INVALID_QUAL: 2
 	INVALID_TAG: 3
 
-TotalReads	14.00
-MappedReads	14.00
+TotalReads	15.00
+MappedReads	15.00
 PairedReads	6.00
 ProperPair	0.00
 DuplicateReads	0.00
 QCFailureReads	0.00
 
 MappingRate(%)	100.00
-PairedReads(%)	42.86
+PairedReads(%)	40.00
 ProperPair(%)	0.00
 DupRate(%)	0.00
 QCFailRate(%)	0.00
