@@ -112,5 +112,7 @@
 && diff results/statsBaseQCregQual2SummaryNoDetail.log expected/statsBaseQCregQual2PercentSummary.log \
 && \
 ../bin/bam stats --in testFiles/testStatsBaseQCSorted.bam --regionList testFiles/region.txt --minMapQual 20 --baseSum --noph 2> results/statsBaseQCregQual20SummaryNoDetail.log \
-&& diff results/statsBaseQCregQual20SummaryNoDetail.log expected/statsBaseQCregQual20Summary.log 
-
+&& diff results/statsBaseQCregQual20SummaryNoDetail.log expected/statsBaseQCregQual20Summary.log \
+&& \
+../bin/bam stats --in testFiles/testStatsBaseQC.sam --cBaseQC results/statsBaseQCsubset.txt --noph --zeroMapQ --avgMapQ --numAvgMapQ 2> results/statsBaseQCsubset.log \
+&& diff results/statsBaseQCsubset.txt expected/statsBaseQCsubset.txt && diff results/statsBaseQCsubset.log expected/statsBaseQCsubset.log

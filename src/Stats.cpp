@@ -138,7 +138,7 @@ int Stats::execute(int argc, char **argv)
         LONG_INTPARAMETER("bufferSize", &bufferSize)
         LONG_INTPARAMETER("minMapQual", &minMapQual)
         LONG_STRINGPARAMETER("dbsnp", &dbsnp)
-        LONG_PARAMETER_GROUP("Optional BaseQC Only Parameters Defining the Fields to Output")
+        LONG_PARAMETER_GROUP("Optional BaseQC Only Parameters Defining Output Fields")
         LONG_PARAMETER("zeroMapQ", &baseQCFields.zeroMapQ)
         LONG_PARAMETER("avgMapQ", &baseQCFields.avgMapQ)
         LONG_PARAMETER("numAvgMapQ", &baseQCFields.numAvgMapQ)
@@ -208,11 +208,6 @@ int Stats::execute(int argc, char **argv)
         PileupElementBaseQCStats::setPercentStats(false);
     }
 
-    if(baseQCPtr != NULL)
-    {
-        PileupElementBaseQCStats::setOutputFile(baseQCPtr);
-        PileupElementBaseQCStats::printHeader();
-    }
     if((baseQCPtr != NULL) || baseSum)
     {
         PileupElementBaseQCStats::setMapQualFilter(minMapQual);
@@ -224,6 +219,11 @@ int Stats::execute(int argc, char **argv)
             baseQCFields.reset(true);
         }
         PileupElementBaseQCStats::setBaseQCOutputFields(baseQCFields);
+    }
+    if(baseQCPtr != NULL)
+    {
+        PileupElementBaseQCStats::setOutputFile(baseQCPtr);
+        PileupElementBaseQCStats::printHeader();
     }
 
     if(params)
