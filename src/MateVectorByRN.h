@@ -21,13 +21,6 @@ typedef std::vector<RECORD> MATE_VECTOR;
 
 class Bam2FastQ;
 
-class RecordComparison {
- public:
-	bool operator()(const RECORD& lhs, const RECORD&rhs) const {
-		return (lhs.first > rhs.first); //sort it descendingly, because heap pop out the max
-	}
-};
-
 class MateVectorByRN {
 public:
 	MateVectorByRN(int vectorIndex, Bam2FastQ* host, std::string chr,

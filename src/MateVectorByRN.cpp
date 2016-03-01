@@ -18,6 +18,10 @@ std::mutex myLock2;
 #define MAX_LIMIT_PARAMETER 500000
 #define RECORD_POOL_PARAMETER 1000000
 
+bool records_greater(const RECORD& lhs, const RECORD& rhs) {
+    return lhs.first > rhs.first;
+}
+
 MateVectorByRN::MateVectorByRN() {
 	// TODO Auto-generated constructor stub
 
@@ -224,10 +228,10 @@ int MateVectorByRN::Add(SamRecord* record) {
 }
 
 void MateVectorByRN::Sort() {
-	const static RecordComparison rc;
-	//fprintf(stderr,"Sort %dth vector working buffer...\n",vectorIndex);
-	std::sort(myMateBuffer[bufferInUse].begin(),
-			myMateBuffer[bufferInUse].end(), rc);
+    //sort descending, because a max-heap provides the max
+    std::sort(myMateBuffer[bufferInUse].begin(),
+              myMateBuffer[bufferInUse].end(),
+              records_greater);
 }
 
 int MateVectorByRN::DumpMateVector() {
