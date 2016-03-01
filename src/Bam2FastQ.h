@@ -106,7 +106,6 @@ public:
     #endif
     OutFastqMap myOutFastqs;
     IFILE myFqList;
-private:
 };
 
 #endif
