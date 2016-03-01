@@ -33,6 +33,8 @@
 #include "MateMapByCoord.h"
 #include "SamCoordOutput.h"
 
+#include "ExternalMemorySortManager.h"
+
 class Bam2FastQ : public BamExecutable
 {
 public:
@@ -45,9 +47,11 @@ public:
     int execute(int argc, char **argv);
     virtual const char* getProgramName() {return("bam:bam2FastQ");}
 
-private:
+
     static const char* DEFAULT_FIRST_EXT;
     static const char* DEFAULT_SECOND_EXT;
+
+    void handlePairedRN(SamRecord& samRec, MateVectorByRN& myVector);
 
     void handlePairedRN(SamRecord& samRec);
     void handlePairedCoord(SamRecord& samRec);
@@ -56,6 +60,10 @@ private:
     void writeFastQ(SamRecord& samRec, IFILE filePtr,
                     const std::string& fileNameExt,
                     const char* readNameExt = "");
+    void writeFastQ(SamRecord& samRec, IFILE filePtr,
+    				const std::string& fileNameExt,
+					SamRecordPool* localPool,bool is_tmp,
+					const char* readNameExt = "");
     void cleanUpMateMap(uint64_t readPos, bool flushAll = false);
 
     void closeFiles();
@@ -82,6 +90,7 @@ private:
     bool myRNPlus;
 
     String myOutBase;
+    String myTmpOutBase;
 
     String myFirstRNExt;
     String mySecondRNExt;
@@ -97,6 +106,7 @@ private:
     #endif
     OutFastqMap myOutFastqs;
     IFILE myFqList;
+private:
 };
 
 #endif
