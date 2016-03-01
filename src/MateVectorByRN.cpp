@@ -224,9 +224,10 @@ int MateVectorByRN::Add(SamRecord* record) {
 }
 
 void MateVectorByRN::Sort() {
+	const static RecordComparison rc;
 	//fprintf(stderr,"Sort %dth vector working buffer...\n",vectorIndex);
 	std::sort(myMateBuffer[bufferInUse].begin(),
-			myMateBuffer[bufferInUse].end(), RecordComparison);
+			myMateBuffer[bufferInUse].end(), rc);
 }
 
 int MateVectorByRN::DumpMateVector() {
