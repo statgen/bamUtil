@@ -121,9 +121,6 @@ void Bam2FastQ::usage()
 
 int Bam2FastQ::execute(int argc, char **argv)
 {
-    //time recording
-    clock_t t;
-    t = clock();
     // Extract command line arguments.
     String inFile = "";
     bool readName = false;
@@ -513,7 +510,6 @@ int Bam2FastQ::execute(int argc, char **argv)
         std::cerr << myNumQualTagErrors << " records did not have tag "
                   << myQField.c_str() << " or it was invalid, so the quality field was used for those records.\n";
     }
-    fprintf(stderr,"Total time:%.2f sec\n", (float) (clock() - t) / CLOCKS_PER_SEC);
     return(returnStatus);
 }
 
