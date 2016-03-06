@@ -918,7 +918,7 @@ void Dedup::handleMissingMate(SamRecord* recordPtr)
     }
     else if(firstSameChrom)
     {
-        std::cerr << "ERROR: Records with missing mate can't be checked for "
+        std::cerr << "WARNING: Records with missing mate can't be checked for "
                   << "duplicates.\n";
         firstSameChrom = false;
     }
