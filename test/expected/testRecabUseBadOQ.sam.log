@@ -11,6 +11,7 @@ End: TIME
 # mapped Reads observed: 201
 # unmapped Reads observed: 0
 # Secondary Reads observed: 0
+# Supplementary Reads observed: 0
 # Duplicate Reads observed: 0
 # QC Failure Reads observed: 0
 # Mapping Quality 0 Reads skipped: 0

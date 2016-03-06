@@ -33,7 +33,8 @@ Total number of properly paired reads: 16
 Total number of unmapped reads: 0
 Total number of reverse strand mapped reads: 18
 Total number of QC-failed reads: 0
-Total number of secondary reads: 3
+Total number of secondary reads: 2
+Total number of supplementary reads: 1
 Size of singleKeyMap (must be zero): 0
 Size of pairedKeyMap (must be zero): 0
 Total number of missing mates: 4
@@ -42,7 +43,8 @@ Total number of reads excluded from duplicate checking: 3
 Sorting the indices of 10 duplicated records
 # mapped Reads observed: 37
 # unmapped Reads observed: 0
-# Secondary Reads observed: 3
+# Secondary Reads observed: 2
+# Supplementary Reads observed: 1
 # Duplicate Reads observed: 10
 # QC Failure Reads observed: 0
 # Mapping Quality 0 Reads skipped: 21

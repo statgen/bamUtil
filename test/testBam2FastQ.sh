@@ -26,6 +26,19 @@ diff results/testBam2FastQCoord.log expected/testBam2FastQCoord.log
 let "status |= $?"
 
 ##########################################
+# Test with secondary & supplementary
+../bin/bam bam2FastQ --in testFiles/testBam2FastQCoordSecSup.sam --outBase results/testBam2FastQCoordSecSup --noph 2> results/testBam2FastQCoordSecSup.log
+let "status |= $?"
+diff results/testBam2FastQCoordSecSup.fastq expected/testBam2FastQCoord.fastq
+let "status |= $?"
+diff results/testBam2FastQCoordSecSup_1.fastq expected/testBam2FastQCoord_1.fastq
+let "status |= $?"
+diff results/testBam2FastQCoordSecSup_2.fastq expected/testBam2FastQCoord_2.fastq
+let "status |= $?"
+diff results/testBam2FastQCoordSecSup.log expected/testBam2FastQCoord.log
+let "status |= $?"
+
+##########################################
 # Put the Read Name on the Plus Line
 # Test clipping files sorted by read name.
 ../bin/bam bam2FastQ --readName --in testFiles/testClipOverlapReadName.sam --outBase results/testBam2FastQReadNamePlus --rnPlus --noph 2> results/testBam2FastQReadNamePlus.log

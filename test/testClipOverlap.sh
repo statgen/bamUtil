@@ -17,6 +17,14 @@ let "status |= $?"
 diff results/testClipOverlapCoord.log expected/testClipOverlapCoord.log
 let "status |= $?"
 
+# Test clipping files sorted by coordinate with Secondary & Supplementary
+../bin/bam clipOverlap --in testFiles/testClipOverlapCoordSecSup.sam --out results/testClipOverlapCoordSecSup.sam --storeOrig XC --noph 2> results/testClipOverlapCoordSecSup.log
+let "status |= $?"
+diff results/testClipOverlapCoordSecSup.sam expected/testClipOverlapCoord.sam
+let "status |= $?"
+diff results/testClipOverlapCoordSecSup.log expected/testClipOverlapCoord.log
+let "status |= $?"
+
 # Test clipping files sorted by coordinate
 ../bin/bam clipOverlap --in testFiles/testClipOverlapCoord.sam --out results/testClipOverlapCoordUnmap.sam --storeOrig XC --noph --unmap 2> results/testClipOverlapCoordUnmap.log
 let "status |= $?"

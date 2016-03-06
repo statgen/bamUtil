@@ -98,6 +98,7 @@ private:
     uint64_t myMappedCount;
     uint64_t myUnMappedCount;
     uint64_t mySecondaryCount;
+    uint64_t mySupplementaryCount;
     uint64_t myDupCount;
     uint64_t myQCFailCount;
     uint64_t myMapQual0Count;

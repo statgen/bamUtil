@@ -1,0 +1,84 @@
+Usage: ./bam dedup --in <InputBamFile> --out <OutputBamFile> [--minQual <minPhred>] [--log <logFile>] [--oneChrom] [--rmDups] [--force] [--excludeFlags <flag>] [--verbose] [--noeof] [--params] [--recab] --refFile <ReferenceFile> [--dbsnp <dbsnpFile>] [--minBaseQual <minBaseQual>] [--maxBaseQual <maxBaseQual>] [--blended <weight>] [--fitModel] [--fast] [--keepPrevDbsnp] [--keepPrevNonAdjacent] [--useLogReg] [--qualField <tag>] [--storeQualTag <tag>] [--buildExcludeFlags <flag>] [--applyExcludeFlags <flag>] [--binQualS <minQualBin2>,<minQualBin3><...>] [--binQualF <filename>] [--binMid|binHigh]
+
+Required parameters :
+	--in <infile>   : Input BAM file name (must be sorted)
+	--out <outfile> : Output BAM file name (same order with original file)
+Optional parameters : 
+	--minQual <int> : Only add scores over this phred quality when determining a read's quality (default: 15)
+	--log <logfile> : Log and summary statistics (default: [outfile].log, or stderr if --out starts with '-')
+	--oneChrom      : Treat reads with mates on different chromosomes as single-ended.
+	--rmDups        : Remove duplicates (default is to mark duplicates)
+	--force         : Allow an already mark-duplicated BAM file, unmarking any previously marked 
+	                  duplicates and apply this duplicate marking logic.  Default is to throw errors
+	                  and exit when trying to run on an already mark-duplicated BAM
+	--excludeFlags <flag>    : exclude reads with any of these flags set when determining or marking duplicates
+	                           by default (0xB04): exclude unmapped, secondary reads, QC failures, and supplementary reads
+	--verbose       : Turn on verbose mode
+	--noeof         : Do not expect an EOF block on a bam file.
+	--params        : Print the parameter settings
+	--recab         : Recalibrate in addition to deduping
+
+Recab Specific Required Parameters
+	--refFile <reference file>    : reference file name
+Recab Specific Optional Parameters : 
+	--dbsnp <known variance file> : dbsnp file of positions
+	--minBaseQual <minBaseQual>   : minimum base quality of bases to recalibrate (default: 5)
+	--maxBaseQual <maxBaseQual>   : maximum recalibrated base quality (default: 50)
+	                                qualities over this value will be set to this value.
+	                                This setting is applied after binning (if applicable).
+	--blended <weight>            : blended model weight
+	--fitModel                    : check if the logistic regression model fits the data
+	                                overriden by fast, but automatically applied by useLogReg
+	--fast                        : use a compact representation that only allows:
+	                                   * at most 256 Read Groups
+	                                   * maximum quality 63
+	                                   * at most 127 cycles
+	                                overrides fitModel, but is overridden by useLogReg
+	                                uses up to about 2.25G more memory than running without --fast.
+	--keepPrevDbsnp               : do not exclude entries where the previous base is in dbsnp when
+	                                building the recalibration table
+	                                By default they are excluded from the table.
+	--keepPrevNonAdjacent         : do not exclude entries where the previous base is not adjacent
+	                                (not a Cigar M/X/=) when building the recalibration table
+	                                By default they are excluded from the table (except the first cycle).
+	--useLogReg                   : use logistic regression calculated quality for the new quality
+	                                automatically applies fitModel and overrides fast.
+	--qualField <quality tag>     : tag to get the starting base quality
+	                                (default is to get it from the Quality field)
+	--storeQualTag <quality tag>  : tag to store the previous quality into
+	--buildExcludeFlags <flag>    : exclude reads with any of these flags set when building the
+	                                recalibration table.  Default is 0xF04
+	--applyExcludeFlags <flag>    : do not apply the recalibration table to any reads with any of these flags set
+	Quality Binning Parameters (optional):
+	  Bin qualities by phred score, into the ranges specified by binQualS or binQualF (both cannot be used)
+	  Ranges are specified by comma separated minimum phred score for the bin, example: 1,17,20,30,40,50,70
+	  The first bin always starts at 0, so does not need to be specified.
+	  By default, the bin value is the low end of the range.
+		--binQualS   : Bin the Qualities as specified (phred): minQualOfBin2, minQualofBin3...
+		--binQualF   : Bin the Qualities based on the specified file
+		--binMid     : Use the mid point of the quality bin range for the quality value of the bin.
+		--binHigh    : Use the high end of the quality bin range for the quality value of the bin.
+
+
+
+Input Parameters
+                   Required Parameters : --in [testFiles/testDedup.sam],
+                                         --out [results/testDedupIncSup.sam]
+                   Optional Parameters : --minQual [15], --log [], --oneChrom,
+                                         --recab, --rmDups, --force,
+                                         --excludeFlags [0x304], --verbose,
+                                         --noeof, --params
+                             PhoneHome : --noPhoneHome [ON],
+                                         --phoneHomeThinning [50]
+             Required Recab Parameters : --refFile []
+             Optional Recab Parameters : --dbsnp [], --minBaseQual [5],
+                                         --maxBaseQual [50], --blended,
+                                         --fitModel, --fast, --keepPrevDbsnp,
+                                         --keepPrevNonAdjacent, --useLogReg,
+                                         --qualField [], --storeQualTag [],
+                                         --buildExcludeFlags [0x0F04],
+                                         --applyExcludeFlags [0x0000]
+   Optional Quality Binning Parameters : --binQualS [], --binQualF [],
+                                         --binMid, --binHigh
+
+ERROR: Supplementary reads must be excluded, edit --excludeFlags to include 0x0800

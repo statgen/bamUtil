@@ -67,7 +67,7 @@ void ClipOverlap::usage()
     std::cerr << "\t\t--readName     : Original file is sorted by Read Name instead of coordinate." << std::endl;
     std::cerr << "\t\t--stats        : Print some statistics on the overlaps." << std::endl;
     std::cerr << "\t\t--overlapsOnly : Only output overlapping read pairs" << std::endl;
-    std::cerr << "\t\t--excludeFlags : Skip records with any of the specified flags set, default 0x70C" << std::endl;
+    std::cerr << "\t\t--excludeFlags : Skip records with any of the specified flags set, default 0xF0C" << std::endl;
     std::cerr << "\t\t--unmapped     : Mark records that would be completely clipped as unmapped" << std::endl;
     std::cerr << "\t\t--noeof        : Do not expect an EOF block on a bam file." << std::endl;
     std::cerr << "\t\t--params       : Print the parameter settings to stderr" << std::endl;
@@ -93,7 +93,7 @@ int ClipOverlap::execute(int argc, char **argv)
     bool unmapped = false;
     bool noeof = false;
     bool params = false;
-    String excludeFlags = "0x70C";
+    String excludeFlags = "0xF0C";
 
     // TODO, cleanup legacy parameters
     ParameterList inputParameters;

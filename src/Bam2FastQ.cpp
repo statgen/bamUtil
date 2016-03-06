@@ -328,8 +328,8 @@ int Bam2FastQ::execute(int argc, char **argv)
     // so if there is an error, the outputs don't get created.
     SamFile samIn;
     samIn.OpenForRead(inFile, &mySamHeader);
-    // Skip non-primary reads.
-    samIn.SetReadFlags(0, 0x0100);
+    // Skip non-primary reads (supplementary and secondary).
+    samIn.SetReadFlags(0, 0x0900);
     if(chr != "")
     {
         samIn.ReadBamIndex();

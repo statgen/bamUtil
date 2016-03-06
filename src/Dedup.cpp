@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2010-2012  Regents of the University of Michigan
+ *  Copyright (C) 2010-2016  Regents of the University of Michigan
  *
  *   This program is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -91,7 +91,7 @@ void Dedup::usage()
     std::cerr << "\t                  duplicates and apply this duplicate marking logic.  Default is to throw errors" << std::endl;
     std::cerr << "\t                  and exit when trying to run on an already mark-duplicated BAM" << std::endl;
     std::cerr << "\t--excludeFlags <flag>    : exclude reads with any of these flags set when determining or marking duplicates" << std::endl;
-    std::cerr << "\t                           by default (0x304): exclude unmapped, secondary reads, and QC failures" << std::endl;
+    std::cerr << "\t                           by default (0xB04): exclude unmapped, secondary reads, QC failures, and supplementary reads" << std::endl;
     std::cerr << "\t--verbose       : Turn on verbose mode" << std::endl;
     std::cerr << "\t--noeof         : Do not expect an EOF block on a bam file." << std::endl;
     std::cerr << "\t--params        : Print the parameter settings" << std::endl;
@@ -112,7 +112,7 @@ int Dedup::execute(int argc, char** argv)
     myForceFlag = false;
     myNumMissingMate = 0;
     myMinQual = DEFAULT_MIN_QUAL;
-    String excludeFlags = "0x304";
+    String excludeFlags = "0xB04";
     uint16_t intExcludeFlags = 0;
     bool noeof = false;
     bool params = false;
@@ -177,6 +177,22 @@ int Dedup::execute(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
+    if(!SamFlag::isSecondary(intExcludeFlags))
+    {
+        usage();
+        inputParameters.Status();
+        std::cerr << "ERROR: Secondary reads must be excluded, edit --excludeFlags to include 0x0100\n";
+        return EXIT_FAILURE;
+    }
+
+    if(!(intExcludeFlags & SamFlag::SUPPLEMENTARY_ALIGNMENT))
+    {
+        usage();
+        inputParameters.Status();
+        std::cerr << "ERROR: Supplementary reads must be excluded, edit --excludeFlags to include 0x0800\n";
+        return EXIT_FAILURE;
+    }
+
     if(logFile.IsEmpty())
     {
         logFile = outFile + ".log";
@@ -226,6 +242,7 @@ int Dedup::execute(int argc, char** argv)
     uint32_t reverseCount = 0;
     uint32_t qualCheckFailCount = 0;
     uint32_t secondaryCount = 0;
+    uint32_t supplementaryCount = 0;
     uint32_t excludedCount = 0;
 
     // Now we start reading records
@@ -251,6 +268,7 @@ int Dedup::execute(int argc, char** argv)
         if(SamFlag::isReverse(flag))    ++reverseCount;
         if(SamFlag::isQCFailure(flag))  ++qualCheckFailCount;
         if(SamFlag::isSecondary(flag))  ++secondaryCount;
+        if(flag & SamFlag::SUPPLEMENTARY_ALIGNMENT)  ++supplementaryCount;
         if(!SamFlag::isMapped(flag))    ++unmappedCount;
 
         // put the record in the appropriate maps:
@@ -320,6 +338,8 @@ int Dedup::execute(int argc, char** argv)
                               qualCheckFailCount);
     Logger::gLogger->writeLog("Total number of secondary reads: %u",
                               secondaryCount);
+    Logger::gLogger->writeLog("Total number of supplementary reads: %u",
+                              supplementaryCount);
     Logger::gLogger->writeLog("Size of singleKeyMap (must be zero): %u",
                               myFragmentMap.size());
     Logger::gLogger->writeLog("Size of pairedKeyMap (must be zero): %u",

@@ -10,6 +10,32 @@ let "status |= $?"
 diff results/testDedup.sam.log expected/testDedup.sam.log
 let "status |= $?"
 
+../bin/bam dedup --in testFiles/testDedup.sam --out results/testDedupIncSec.sam --excludeFlags 0xA04 --noph 2> results/testDedupIncSec.txt
+if [ $? -eq 0 ]
+then
+    echo "Dedup passed when expected to fail."
+    status = 1
+fi
+diff results/testDedupIncSec.txt expected/testDedupIncSec.txt
+let "status |= $?"
+if [[ -e results/testDedupIncSec.sam || -e results/testDedupIncSec.sam.log ]]
+then
+  let "status = 2"
+fi
+
+../bin/bam dedup --in testFiles/testDedup.sam --out results/testDedupIncSup.sam --excludeFlags 0x304 --noph 2> results/testDedupIncSup.txt
+if [ $? -eq 0 ]
+then
+    echo "Dedup passed when expected to fail."
+    status = 1
+fi
+diff results/testDedupIncSup.txt expected/testDedupIncSup.txt
+let "status |= $?"
+if [[ -e results/testDedupIncSup.sam || -e results/testDedupIncSup.sam.log ]]
+then
+  let "status = 4"
+fi
+
 ../bin/bam dedup --recab --in testFiles/testDedup.sam --out results/testDedupRecab.sam --refFile testFiles/ref_partial.fa --noph 2> results/testDedupRecab.txt
 let "status |= $?"
 diff results/testDedupRecab.txt expected/testDedupRecab.txt
@@ -67,12 +93,12 @@ let "status |= $?"
 let "status |= $?"
 diff results/testDedup2Force.txt expected/testDedup.txt
 let "status |= $?"
-diff results/testDedup2Force.sam expected/testDedup1.sam
+diff results/testDedup2Force.sam expected/testDedup2F.sam
 let "status |= $?"
 diff results/testDedup2Force.sam.log expected/testDedup2Force.sam.log
 let "status |= $?"
 
-../bin/bam dedup --in testFiles/testDedup2.sam --out results/testDedup2Exclude.sam --excludeFlags 0x704 --noph 2> results/testDedup2Exclude.txt
+../bin/bam dedup --in testFiles/testDedup2.sam --out results/testDedup2Exclude.sam --excludeFlags 0xF04 --noph 2> results/testDedup2Exclude.txt
 let "status |= $?"
 diff results/testDedup2Exclude.txt expected/testDedup.txt
 let "status |= $?"
@@ -85,7 +111,7 @@ let "status |= $?"
 let "status |= $?"
 diff results/testDedup2ForceRecab2Step.txt expected/empty.txt
 let "status |= $?"
-diff results/testDedup2ForceRecab2Step.sam expected/testDedup1Recab.sam
+diff results/testDedup2ForceRecab2Step.sam expected/testDedup2RecabF.sam
 let "status |= $?"
 diff -I "Start: .*" -I "End: .*" results/testDedup2ForceRecab2Step.sam.log expected/testDedup2ForceRecab2Step.sam.log
 let "status |= $?"
@@ -96,7 +122,7 @@ let "status |= $?"
 let "status |= $?"
 diff results/testDedup2ForceRecab.txt expected/testDedup.txt
 let "status |= $?"
-diff results/testDedup2ForceRecab.sam expected/testDedup1Recab.sam
+diff results/testDedup2ForceRecab.sam expected/testDedup2RecabF.sam
 let "status |= $?"
 diff -I "Start: .*" -I "End: .*" results/testDedup2ForceRecab.sam.log expected/testDedup2ForceRecab.sam.log
 let "status |= $?"
@@ -125,7 +151,7 @@ let "status |= $?"
 sort results/testDedup2ForceRecabD.sam.qemp | diff - expected/testDedup2ForceRecabD.sam.qemp
 let "status |= $?"
 
-../bin/bam dedup --recab --force --in testFiles/testDedup2.sam --out results/testDedup2ForceRecabDA.sam --refFile testFiles/ref_partial.fa --excludeFlags 0x304 --buildExclude 0x204 --applyExclude 0x304 --noph 2> results/testDedup2ForceRecabDA.txt
+../bin/bam dedup --recab --force --in testFiles/testDedup2.sam --out results/testDedup2ForceRecabDA.sam --refFile testFiles/ref_partial.fa --excludeFlags 0xB04 --buildExclude 0x204 --applyExclude 0xB04 --noph 2> results/testDedup2ForceRecabDA.txt
 let "status |= $?"
 diff results/testDedup2ForceRecabDA.txt expected/testDedup.txt
 let "status |= $?"
@@ -136,7 +162,7 @@ let "status |= $?"
 sort results/testDedup2ForceRecabDA.sam.qemp | diff - expected/testDedup2ForceRecabD.sam.qemp
 let "status |= $?"
 
-../bin/bam recab --in results/testDedup2Force.sam --out results/testDedup2ForceRecabDA2Step.sam --refFile testFiles/ref_partial.fa --buildExclude 0x204 --applyExclude 0x304 --noph 2> results/testDedup2ForceRecabDA2Step.txt
+../bin/bam recab --in results/testDedup2Force.sam --out results/testDedup2ForceRecabDA2Step.sam --refFile testFiles/ref_partial.fa --buildExclude 0x204 --applyExclude 0xB04 --noph 2> results/testDedup2ForceRecabDA2Step.txt
 let "status |= $?"
 diff results/testDedup2ForceRecabDA2Step.txt expected/empty.txt
 let "status |= $?"
