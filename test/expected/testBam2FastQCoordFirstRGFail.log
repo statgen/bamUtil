@@ -1,49 +1,54 @@
-Version: 1.0.13; Built: Mon Jun  7 12:26:20 EDT 2015 by mktrost
+Version: 1.0.14; Built: Mon Feb 29 20:19:25 EST 2016 by pjvh
 
  bam2FastQ - Convert the specified BAM file to fastQs.
 	./bam bam2FastQ --in <inputFile> [--readName] [--splitRG] [--qualField <tag>] [--refFile <referenceFile>] [--outBase <outputFileBase>] [--firstOut <1stReadInPairOutFile>] [--merge|--secondOut <2ndReadInPairOutFile>] [--unpairedOut <unpairedOutFile>] [--firstRNExt <firstInPairReadNameExt>] [--secondRNExt <secondInPairReadNameExt>] [--rnPlus] [--noReverseComp] [--region <chr>[:<pos>[:<base>]]] [--gzip] [--noeof] [--params]
 	Required Parameters:
-		--in       : the SAM/BAM file to convert to FastQ
+		--in                    : the SAM/BAM file to convert to FastQ
 	Optional Parameters:
-		--readname      : Process the BAM as readName sorted instead
-		                  of coordinate if the header does not indicate a sort order.
-		--splitRG       : Split into RG specific fastqs.
-		--qualField     : Use the base quality from the specified tag
-		                  rather than from the Quality field (default)
-		--merge         : Generate 1 interleaved (merged) FASTQ for paired-ends (unpaired in a separate file)
-		                  use firstOut to override the filename of the interleaved file.
-		--refFile       : Reference file for converting '=' in the sequence to the actual base
-		                  if '=' are found and the refFile is not specified, 'N' is written to the FASTQ
-		--firstRNExt    : read name extension to use for first read in a pair
-		                  default is "/1"
-		--secondRNExt   : read name extension to use for second read in a pair
-		                  default is "/2"
-		--rnPlus        : Add the Read Name/extension to the '+' line of the fastq records
-		--noReverseComp : Do not reverse complement reads marked as reverse
-		--region        : Only convert reads containing the specified region/nucleotide.
-		                  Position formatted as: chr:pos:base
-		                  pos (0-based) & base are optional.
-		--gzip          : Compress the output FASTQ files using gzip
-		--noeof         : Do not expect an EOF block on a bam file.
-		--params        : Print the parameter settings to stderr
+		--readname              : Process the BAM as readName sorted instead
+		                          of coordinate if the header does not indicate a sort order.
+		--readNameOnTheFly      : Process the BAM by sorting readName regardless of its original order.
+		--nThread               : Specify number of thread to use.
+		--bedFile               : Specify regions to be processed.
+		--splitRG               : Split into RG specific fastqs.
+		--qualField             : Use the base quality from the specified tag
+		                          rather than from the Quality field (default)
+		--merge                 : Generate 1 interleaved (merged) FASTQ for paired-ends (unpaired in a separate file)
+		                          use firstOut to override the filename of the interleaved file.
+		--refFile               : Reference file for converting '=' in the sequence to the actual base
+		                          if '=' are found and the refFile is not specified, 'N' is written to the FASTQ
+		--firstRNExt            : read name extension to use for first read in a pair
+		                          default is "/1"
+		--secondRNExt           : read name extension to use for second read in a pair
+		                          default is "/2"
+		--rnPlus                : Add the Read Name/extension to the '+' line of the fastq records
+		--noReverseComp         : Do not reverse complement reads marked as reverse
+		--region                : Only convert reads containing the specified region/nucleotide.
+		                          Position formatted as: chr:pos:base
+		                          pos (0-based) & base are optional.
+		--gzip                  : Compress the output FASTQ files using gzip
+		--noeof                 : Do not expect an EOF block on a bam file.
+		--params                : Print the parameter settings to stderr
 	Optional OutputFile Names:
-		--outBase       : Base output name for generated output files
-		--firstOut      : Output name for the first in pair file
-		                  over-rides setting of outBase
-		--secondOut     : Output name for the second in pair file
-		                  over-rides setting of outBase
-		--unpairedOut   : Output name for unpaired reads
-		                  over-rides setting of outBase
+		--outBase               : Base output name for generated output files
+		--tmpFileOutBase        : Base output name for generated temporary files
+		--firstOut              : Output name for the first in pair file
+		                          over-rides setting of outBase
+		--secondOut             : Output name for the second in pair file
+		                          over-rides setting of outBase
+		--unpairedOut           : Output name for unpaired reads
+		                          over-rides setting of outBase
 
 
 Input Parameters
          Required Parameters : --in [testFiles/testBam2FastQCoord.sam]
-         Optional Parameters : --readName, --splitRG [ON], --qualField [],
-                               --merge, --refFile [], --firstRNExt [/1],
-                               --secondRNExt [/2], --rnPlus,
+         Optional Parameters : --readName, --sortByReadNameOnTheFly,
+                               --bedFile [], --nThread [1], --splitRG [ON],
+                               --qualField [], --merge, --refFile [],
+                               --firstRNExt [/1], --secondRNExt [/2], --rnPlus,
                                --noReverseComp [ON], --region [], --gzip,
                                --noeof, --params
-   Optional OutputFile Names : --outBase [],
+   Optional OutputFile Names : --outBase [], --tmpFileOutBase [],
                                --firstOut [results/testBam2FastQCoordFirstRGFail.fastq],
                                --secondOut [], --unpairedOut []
                    PhoneHome : --noPhoneHome [ON], --phoneHomeThinning [50]
