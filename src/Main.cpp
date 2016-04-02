@@ -94,6 +94,9 @@ void Usage()
     std::cerr << "Usage: " << std::endl;
     std::cerr << "\tbam <tool> [<tool arguments>]" << std::endl;
     std::cerr << "The usage for each tool is described by specifying the tool with no arguments." << std::endl;
+    std::cerr << std::endl;
+    std::cerr << "\tbam (usage|help)" << std::endl;
+    std::cerr << "Will print this error message and exit." << std::endl;
 }
 
 
@@ -110,7 +113,13 @@ int main(int argc, char ** argv)
     }
 
     String cmd = argv[1];
-    if(cmd.SlowCompare("readIndexedBam") == 0)
+
+    if(cmd.SlowCompare("usage") == 0 || cmd.SlowCompare("help") == 0)
+    {
+        Usage();
+        exit(0);
+    }
+    else if(cmd.SlowCompare("readIndexedBam") == 0)
     {
         bamExe = new ReadIndexedBam();
     }
