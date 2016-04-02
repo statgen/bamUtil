@@ -1,0 +1,5 @@
+language: cpp
+compiler: gcc
+install: make cloneLib
+script: make test
+sudo: false # See http://docs.travis-ci.com/user/migrating-from-legacy/

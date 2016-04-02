@@ -1,8 +1,9 @@
+[![Build Status](https://travis-ci.org/statgen/bamUtil.svg?branch=master)](https://travis-ci.org/statgen/bamUtil)
+
 bamUtil
 =======
 
 These files provide some programs for working on SAM/BAM files.
-
 
 To Build
 --------
