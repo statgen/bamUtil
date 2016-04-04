@@ -47,18 +47,18 @@
 #include "Bam2FastQ.h"
 #include "PhoneHome.h"
 
-void Usage()
+void WriteUsage(std::ostream& os)
 {
     BamExecutable::bamExecutableDescription();
-    std::cerr << std::endl;
-    std::cerr << "Tools to Rewrite SAM/BAM Files: " << std::endl;
+    os << std::endl;
+    os << "Tools to Rewrite SAM/BAM Files: " << std::endl;
     Convert::convertDescription();
     WriteRegion::writeRegionDescription();
     SplitChromosome::splitChromosomeDescription();
     SplitBam::splitBamDescription();
     FindCigars::findCigarsDescription();
 
-    std::cerr << "\nTools to Modify & write SAM/BAM Files: " << std::endl;
+    os << "\nTools to Modify & write SAM/BAM Files: " << std::endl;
     ClipOverlap::clipOverlapDescription();
     Filter::filterDescription();
     Revert::revertDescription();
@@ -70,33 +70,33 @@ void Usage()
     Dedup_LowMem::dedup_LowMemDescription();
     Recab::recabDescription();
 
-    std::cerr << "\nInformational Tools\n";
+    os << "\nInformational Tools\n";
     Validate::validateDescription();
     Diff::diffDescription();
     Stats::statsDescription();
     GapInfo::gapInfoDescription();
 
-    std::cerr << "\nTools to Print Information In Readable Format\n";
+    os << "\nTools to Print Information In Readable Format\n";
     DumpHeader::dumpHeaderDescription();
     DumpRefInfo::dumpRefInfoDescription();
     DumpIndex::dumpIndexDescription();
     ReadReference::readReferenceDescription();
     ExplainFlags::explainFlagsDescription();
 
-    std::cerr << "\nAdditional Tools\n";
+    os << "\nAdditional Tools\n";
     Bam2FastQ::bam2FastQDescription();
 
-    std::cerr << "\nDummy/Example Tools\n";
+    os << "\nDummy/Example Tools\n";
     ReadIndexedBam::readIndexedBamDescription();
 
 
-    std::cerr << std::endl;
-    std::cerr << "Usage: " << std::endl;
-    std::cerr << "\tbam <tool> [<tool arguments>]" << std::endl;
-    std::cerr << "The usage for each tool is described by specifying the tool with no arguments." << std::endl;
-    std::cerr << std::endl;
-    std::cerr << "\tbam (usage|help)" << std::endl;
-    std::cerr << "Will print this error message and exit." << std::endl;
+    os << std::endl;
+    os << "Usage: " << std::endl;
+    os << "\tbam <tool> [<tool arguments>]" << std::endl;
+    os << "The usage for each tool is described by specifying the tool with no arguments." << std::endl;
+    os << std::endl;
+    os << "\tbam (usage|help)" << std::endl;
+    os << "Will print this error message and exit." << std::endl;
 }
 
 
@@ -108,7 +108,7 @@ int main(int argc, char ** argv)
     if(argc < 2)
     {
         // Not enough args...
-        Usage();
+        WriteUsage(std::cerr);
         exit(-1);
     }
 
@@ -116,7 +116,7 @@ int main(int argc, char ** argv)
 
     if(cmd.SlowCompare("usage") == 0 || cmd.SlowCompare("help") == 0)
     {
-        Usage();
+        WriteUsage(std::cout);
         exit(0);
     }
     else if(cmd.SlowCompare("readIndexedBam") == 0)
@@ -234,7 +234,7 @@ int main(int argc, char ** argv)
             {
                 if(strcmp(argv[3], "NOEOF") != 0)
                 {
-                    Usage();
+                    WriteUsage(std::cerr);
                     exit(-1);
                 }
                 else
@@ -244,7 +244,7 @@ int main(int argc, char ** argv)
             }
             else
             {
-                Usage();
+                WriteUsage(std::cerr);
                 exit(-1);
             }
         }
