@@ -47,6 +47,14 @@
 #include "Bam2FastQ.h"
 #include "PhoneHome.h"
 
+// May add option to print to console in red for errors.
+namespace console_color
+{
+    static const std::string reset = "\033[0m";
+    static const std::string red = "\033[1;31m";
+}
+
+
 void WriteUsage(std::ostream& os)
 {
     BamExecutable::bamExecutableDescription();
@@ -108,6 +116,7 @@ int main(int argc, char ** argv)
     if(argc < 2)
     {
         // Not enough args...
+        std::cerr << "Error: Not enough args.\n\n";
         WriteUsage(std::cerr);
         exit(-1);
     }
