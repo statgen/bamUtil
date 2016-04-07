@@ -73,8 +73,8 @@ void PileupElementBaseQCStats::printHeader()
 {
     if(ourPercentStats)
     {
-        ifprintf(ourOutputFile, "chrom\tchromStart\tchromEnd\tDepth\tQ20Bases\tQ20BasesPct(%)\tTotalReads\tMappedBases\tMappingRate(%)\tMapRate_MQPass(%)\tZeroMapQual(%)\tMapQual<10(%)\tPairedReads(%)\tProperPaired(%)\tDupRate(%)\tQCFailRate(%)\tAverageMapQuality\tAverageMapQualCount\n");
-        //    ifprintf(ourOutputFile, "chrom\tchromStart\tchromEnd\tDepth\tQ20Bases(e9)\tQ20BasesPct(%)\tTotalReads(e6)\tMappedBases(e9)\tMappingRate(%)\tMapRate_MQPass(%)\tZeroMapQual(%)\tMapQual<10(%)\tPairedReads(%)\tProperPaired(%)\tDupRate(%)\tQCFailRate(%)\tAverageMapQuality\tAverageMapQualCount(e9)\n");
+        ifprintf(ourOutputFile, "chrom\tchromStart\tchromEnd\tDepth\tQ20Bases\tQ20BasesPct(%%)\tTotalReads\tMappedBases\tMappingRate(%%)\tMapRate_MQPass(%%)\tZeroMapQual(%%)\tMapQual<10(%%)\tPairedReads(%%)\tProperPaired(%%)\tDupRate(%%)\tQCFailRate(%%)\tAverageMapQuality\tAverageMapQualCount\n");
+        //    ifprintf(ourOutputFile, "chrom\tchromStart\tchromEnd\tDepth\tQ20Bases(e9)\tQ20BasesPct(%%)\tTotalReads(e6)\tMappedBases(e9)\tMappingRate(%%)\tMapRate_MQPass(%%)\tZeroMapQual(%%)\tMapQual<10(%%)\tPairedReads(%%)\tProperPaired(%%)\tDupRate(%%)\tQCFailRate(%%)\tAverageMapQuality\tAverageMapQualCount(e9)\n");
     }
     else
     {
