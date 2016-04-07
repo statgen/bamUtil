@@ -27,9 +27,9 @@
 class DumpIndex : public BamExecutable
 {
 public:
-    static void dumpIndexDescription();
-    void description();
-    void usage();
+    static void printDumpIndexDescription(std::ostream& os);
+    void printDescription(std::ostream& os);
+    void printUsage(std::ostream& os);
     int execute(int argc, char **argv);
     virtual const char* getProgramName() {return("bam:dumpIndex");}
 };

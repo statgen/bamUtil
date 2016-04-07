@@ -30,36 +30,36 @@ FindCigars::FindCigars()
 {
 }
 
-void FindCigars::findCigarsDescription()
+void FindCigars::printFindCigarsDescription(std::ostream& os)
 {
-    std::cerr << " findCigars - Output just the reads that contain any of the specified CIGAR operations." << std::endl;
+    os << " findCigars - Output just the reads that contain any of the specified CIGAR operations." << std::endl;
 }
 
 
-void FindCigars::description()
+void FindCigars::printDescription(std::ostream& os)
 {
-    findCigarsDescription();
+    printFindCigarsDescription(os);
 }
 
 
-void FindCigars::usage()
+void FindCigars::printUsage(std::ostream& os)
 {
-    BamExecutable::usage();
-    std::cerr << "\t./bam findCigars --in <inputFile> --out <outputFile.sam/bam/ubam (ubam is uncompressed bam)> [--cinsert] [--cdel] [--cpad] [--cskip] [--chardClip] [--csoftClip] [--nonM] [--noeof] [--params]" << std::endl;
-    std::cerr << "\tRequired Parameters:" << std::endl;
-    std::cerr << "\t\t--in         : the SAM/BAM file to be read" << std::endl;
-    std::cerr << "\t\t--out        : the SAM/BAM file to be written" << std::endl;
-    std::cerr << "\tOptional Parameters:" << std::endl;
-    std::cerr << "\t\t--cinsert     : output reads that contain insertions ('I')." << std::endl;
-    std::cerr << "\t\t--cdel        : output reads that contain deletions ('D')." << std::endl;
-    std::cerr << "\t\t--cpad        : output reads that contain pads ('P')." << std::endl;
-    std::cerr << "\t\t--cskip       : output reads that contain skips ('N')." << std::endl;
-    std::cerr << "\t\t--chardClip   : output reads that contain hard clips ('H')." << std::endl;
-    std::cerr << "\t\t--csoftClip   : output reads that contain soft clips ('S')." << std::endl;
-    std::cerr << "\t\t--nonM       : output reads that contain any non match/mismatch (anything other than 'M', '=', 'X')" << std::endl;
-    std::cerr << "\t\t--noeof      : do not expect an EOF block on a bam file." << std::endl;
-    std::cerr << "\t\t--params     : print the parameter settings" << std::endl;
-    std::cerr << std::endl;
+    BamExecutable::printUsage(os);
+    os << "\t./bam findCigars --in <inputFile> --out <outputFile.sam/bam/ubam (ubam is uncompressed bam)> [--cinsert] [--cdel] [--cpad] [--cskip] [--chardClip] [--csoftClip] [--nonM] [--noeof] [--params]" << std::endl;
+    os << "\tRequired Parameters:" << std::endl;
+    os << "\t\t--in         : the SAM/BAM file to be read" << std::endl;
+    os << "\t\t--out        : the SAM/BAM file to be written" << std::endl;
+    os << "\tOptional Parameters:" << std::endl;
+    os << "\t\t--cinsert     : output reads that contain insertions ('I')." << std::endl;
+    os << "\t\t--cdel        : output reads that contain deletions ('D')." << std::endl;
+    os << "\t\t--cpad        : output reads that contain pads ('P')." << std::endl;
+    os << "\t\t--cskip       : output reads that contain skips ('N')." << std::endl;
+    os << "\t\t--chardClip   : output reads that contain hard clips ('H')." << std::endl;
+    os << "\t\t--csoftClip   : output reads that contain soft clips ('S')." << std::endl;
+    os << "\t\t--nonM       : output reads that contain any non match/mismatch (anything other than 'M', '=', 'X')" << std::endl;
+    os << "\t\t--noeof      : do not expect an EOF block on a bam file." << std::endl;
+    os << "\t\t--params     : print the parameter settings" << std::endl;
+    os << std::endl;
 }
 
 
@@ -113,7 +113,7 @@ int FindCigars::execute(int argc, char **argv)
     // Check to see if the in file was specified, if not, report an error.
     if(inFile == "")
     {
-        usage();
+        printUsage(std::cerr);
         inputParameters.Status();
         // In file was not specified but it is mandatory.
         std::cerr << "--in is a mandatory argument, "
@@ -123,7 +123,7 @@ int FindCigars::execute(int argc, char **argv)
 
     if(outFile == "")
     {
-        usage();
+        printUsage(std::cerr);
         inputParameters.Status();
         // In file was not specified but it is mandatory.
         std::cerr << "--out is a mandatory argument, "

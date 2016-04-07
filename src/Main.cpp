@@ -17,6 +17,7 @@
 
 #include <iostream>
 #include <string.h>
+#include <algorithm>
 #include <stdlib.h>
 
 #include "Validate.h"
@@ -57,272 +58,302 @@ namespace console_color
 
 void WriteUsage(std::ostream& os)
 {
-    BamExecutable::bamExecutableDescription();
-    os << std::endl;
-    os << "Tools to Rewrite SAM/BAM Files: " << std::endl;
-    Convert::convertDescription();
-    WriteRegion::writeRegionDescription();
-    SplitChromosome::splitChromosomeDescription();
-    SplitBam::splitBamDescription();
-    FindCigars::findCigarsDescription();
-
-    os << "\nTools to Modify & write SAM/BAM Files: " << std::endl;
-    ClipOverlap::clipOverlapDescription();
-    Filter::filterDescription();
-    Revert::revertDescription();
-    Squeeze::squeezeDescription();
-    TrimBam::trimBamDescription();
-    MergeBam::mergeBamDescription();
-    PolishBam::polishBamDescription();
-    Dedup::dedupDescription();
-    Dedup_LowMem::dedup_LowMemDescription();
-    Recab::recabDescription();
-
-    os << "\nInformational Tools\n";
-    Validate::validateDescription();
-    Diff::diffDescription();
-    Stats::statsDescription();
-    GapInfo::gapInfoDescription();
-
-    os << "\nTools to Print Information In Readable Format\n";
-    DumpHeader::dumpHeaderDescription();
-    DumpRefInfo::dumpRefInfoDescription();
-    DumpIndex::dumpIndexDescription();
-    ReadReference::readReferenceDescription();
-    ExplainFlags::explainFlagsDescription();
-
-    os << "\nAdditional Tools\n";
-    Bam2FastQ::bam2FastQDescription();
-
-    os << "\nDummy/Example Tools\n";
-    ReadIndexedBam::readIndexedBamDescription();
-
+    BamExecutable::printBamExecutableDescription(os);
 
     os << std::endl;
     os << "Usage: " << std::endl;
-    os << "\tbam <tool> [<tool arguments>]" << std::endl;
-    os << "The usage for each tool is described by specifying the tool with no arguments." << std::endl;
+    os << "bam <tool> [<tool arguments>]" << std::endl;
+    os << "bam (usage|help) - Will print usage and exit." << std::endl;
+    os << "bam (usage|help) <tool> - Will print usage for specific tool and exit." << std::endl;
+
     os << std::endl;
-    os << "\tbam (usage|help)" << std::endl;
-    os << "Will print this error message and exit." << std::endl;
+    os << "Tools to Rewrite SAM/BAM Files: " << std::endl;
+    Convert::printConvertDescription(os);
+    WriteRegion::printWriteRegionDescription(os);
+    SplitChromosome::printSplitChromosomeDescription(os);
+    SplitBam::printSplitBamDescription(os);
+    FindCigars::printFindCigarsDescription(os);
+
+    os << "\nTools to Modify & write SAM/BAM Files: " << std::endl;
+    ClipOverlap::printClipOverlapDescription(os);
+    Filter::printFilterDescription(os);
+    Revert::printRevertDescription(os);
+    Squeeze::printSqueezeDescription(os);
+    TrimBam::printTrimBamDescription(os);
+    MergeBam::printMergeBamDescription(os);
+    PolishBam::printPolishBamDescription(os);
+    Dedup::printDedupDescription(os);
+    Dedup_LowMem::printDedup_LowMemDescription(os);
+    Recab::printRecabDescription(os);
+
+    os << "\nInformational Tools\n";
+    Validate::printValidateDescription(os);
+    Diff::printDiffDescription(os);
+    Stats::printStatsDescription(os);
+    GapInfo::printGapInfoDescription(os);
+
+    os << "\nTools to Print Information In Readable Format\n";
+    DumpHeader::printDumpHeaderDescription(os);
+    DumpRefInfo::printDumpRefInfoDescription(os);
+    DumpIndex::printDumpIndexDescription(os);
+    ReadReference::printReadReferenceDescription(os);
+    ExplainFlags::printExplainFlagsDescription(os);
+
+    os << "\nAdditional Tools\n";
+    Bam2FastQ::printBam2FastQDescription(os);
+
+    os << "\nDummy/Example Tools\n";
+    ReadIndexedBam::printReadIndexedBamDescription(os);
+}
+
+BamExecutable* CreateBamExe(const std::string& name)
+{
+    BamExecutable* ret = NULL;
+
+    if(name == "readIndexedBam")
+    {
+        ret = new ReadIndexedBam();
+    }
+    else if(name == "dumpHeader")
+    {
+        ret = new DumpHeader();
+    }
+    else if(name == "dumpIndex")
+    {
+        ret = new DumpIndex();
+    }
+    else if(name == "writeRegion")
+    {
+        ret = new WriteRegion();
+    }
+    else if(name == "validate")
+    {
+        ret = new Validate();
+    }
+    else if(name == "splitChromosome")
+    {
+        ret = new SplitChromosome();
+    }
+    else if(name == "dumpRefInfo")
+    {
+        ret = new DumpRefInfo();
+    }
+    else if(name == "explainFlags")
+    {
+        ret = new ExplainFlags();
+    }
+    else if(name == "filter")
+    {
+        ret = new Filter();
+    }
+    else if(name == "readReference")
+    {
+        ret = new ReadReference();
+    }
+    else if(name == "revert")
+    {
+        ret = new Revert();
+    }
+    else if(name == "diff")
+    {
+        ret = new Diff();
+    }
+    else if(name == "squeeze")
+    {
+        ret = new Squeeze();
+    }
+    else if(name == "findCigars")
+    {
+        ret = new FindCigars();
+    }
+    else if(name == "stats")
+    {
+        ret = new Stats();
+    }
+    else if(name == "clipOverlap")
+    {
+        ret = new ClipOverlap();
+    }
+    else if(name == "splitBam")
+    {
+        ret = new SplitBam();
+    }
+    else if(name == "trimBam")
+    {
+        ret = new TrimBam();
+    }
+    else if((name == "mergeBam") ||
+            (name == "rgMergeBam"))
+    {
+        ret = new MergeBam();
+    }
+    else if(name == "polishBam")
+    {
+        ret = new PolishBam();
+    }
+    else if(name == "gapInfo")
+    {
+        ret = new GapInfo();
+    }
+    else if(name == "dedup")
+    {
+        ret = new Dedup();
+    }
+    else if(name == "dedup_LowMem")
+    {
+        ret = new Dedup_LowMem();
+    }
+    else if(name == "recab")
+    {
+        ret = new Recab();
+    }
+    else if(name == "bam2FastQ")
+    {
+        ret = new Bam2FastQ();
+    }
+    else if(name == "convert")
+    {
+        ret = new Convert();
+    }
+
+    return ret;
 }
 
 
 int main(int argc, char ** argv)
 {
-    BamExecutable* bamExe = NULL;
+    int ret = 0;
+
 
     // Verify at least one arg.
-    if(argc < 2)
+    if (argc<2)
     {
         // Not enough args...
         std::cerr << "Error: Not enough args.\n\n";
         WriteUsage(std::cerr);
-        exit(-1);
-    }
-
-    String cmd = argv[1];
-
-    if(cmd.SlowCompare("usage") == 0 || cmd.SlowCompare("help") == 0)
-    {
-        WriteUsage(std::cout);
-        exit(0);
-    }
-    else if(cmd.SlowCompare("readIndexedBam") == 0)
-    {
-        bamExe = new ReadIndexedBam();
-    }
-    else if(cmd.SlowCompare("dumpHeader") == 0)
-    {
-        bamExe = new DumpHeader();
-    }
-    else if(cmd.SlowCompare("dumpIndex") == 0)
-    {
-        bamExe = new DumpIndex();
-    }
-    else if(cmd.SlowCompare("writeRegion") == 0)
-    {
-        bamExe = new WriteRegion();
-    }
-    else if(cmd.SlowCompare("validate") == 0)
-    {
-        bamExe = new Validate();
-    }
-    else if(cmd.SlowCompare("splitChromosome") == 0)
-    {
-        bamExe = new SplitChromosome();
-    }
-    else if(cmd.SlowCompare("dumpRefInfo") == 0)
-    {
-        bamExe = new DumpRefInfo();
-    }
-    else if(cmd.SlowCompare("explainFlags") == 0)
-    {
-        bamExe = new ExplainFlags();
-    }
-    else if(cmd.SlowCompare("filter") == 0)
-    {
-        bamExe = new Filter();
-    }
-    else if(cmd.SlowCompare("readReference") == 0)
-    {
-        bamExe = new ReadReference();
-    }
-    else if(cmd.SlowCompare("revert") == 0)
-    {
-        bamExe = new Revert();
-    }
-    else if(cmd.SlowCompare("diff") == 0)
-    {
-        bamExe = new Diff();
-    }
-    else if(cmd.SlowCompare("squeeze") == 0)
-    {
-        bamExe = new Squeeze();
-    }
-    else if(cmd.SlowCompare("findCigars") == 0)
-    {
-        bamExe = new FindCigars();
-    }
-    else if(cmd.SlowCompare("stats") == 0)
-    {
-        bamExe = new Stats();
-    }
-    else if(cmd.SlowCompare("clipOverlap") == 0)
-    {
-        bamExe = new ClipOverlap();
-    }
-    else if(cmd.SlowCompare("splitBam") == 0)
-    {
-        bamExe = new SplitBam();
-    }
-    else if(cmd.SlowCompare("trimBam") == 0)
-    {
-        bamExe = new TrimBam();
-    }
-    else if((cmd.SlowCompare("mergeBam") == 0) ||
-            (cmd.SlowCompare("rgMergeBam") == 0))
-    {
-        bamExe = new MergeBam();
-    }
-    else if(cmd.SlowCompare("polishBam") == 0)
-    {
-        bamExe = new PolishBam();
-    }
-    else if(cmd.SlowCompare("gapInfo") == 0)
-    {
-        bamExe = new GapInfo();
-    }
-    else if(cmd.SlowCompare("dedup") == 0)
-    {
-        bamExe = new Dedup();
-    }
-    else if(cmd.SlowCompare("dedup_LowMem") == 0)
-    {
-        bamExe = new Dedup_LowMem();
-    }
-    else if(cmd.SlowCompare("recab") == 0)
-    {
-        bamExe = new Recab();
-    }
-    else if(cmd.SlowCompare("bam2FastQ") == 0)
-    {
-        bamExe = new Bam2FastQ();
-    }
-    else if(cmd.SlowCompare("convert") == 0)
-    {
-        bamExe = new Convert();
+        ret = -1;
     }
     else
     {
-        // This is the backward compatable version of convert.
-        bool noeof = false;
-        if(argc != 3)
+        std::string cmd = argv[1];
+        std::transform(cmd.begin(), cmd.end(), cmd.begin(), ::tolower);
+
+        if(cmd == "usage" || cmd == "help")
         {
-            if(argc == 4)
+            if (argc == 2)
             {
-                if(strcmp(argv[3], "NOEOF") != 0)
-                {
-                    WriteUsage(std::cerr);
-                    exit(-1);
-                }
-                else
-                {
-                    noeof = true;
-                }
+                WriteUsage(std::cout);
             }
             else
             {
-                WriteUsage(std::cerr);
-                exit(-1);
+                BamExecutable* bamExe = CreateBamExe(argv[2]);
+
+                if (bamExe != NULL)
+                {
+                    bamExe->printUsage(std::cout);
+                }
+                else
+                {
+                    std::cerr << "Error: Invalid tool.\n\n";
+                    WriteUsage(std::cerr);
+                    ret = -1;
+                }
             }
         }
-        int numArgs = 6;
-        // char ** args;
-        char* args[7];
-        char arg1[] = "convert";
-        char arg2[] = "--in";
-        char arg4[] = "--out";
-        char arg6[] = "--noeof";
-        args[0] = argv[0];
-        args[1] = arg1;
-        args[2] = arg2;
-        args[3] = argv[1];
-        args[4] = arg4;
-        args[5] = argv[2];
-        if(noeof)
+        else
         {
-            args[6] = arg6;
-            ++numArgs;
+            BamExecutable* bamExe = CreateBamExe(cmd);
+
+            if(bamExe != NULL)
+            {
+                String compStatus;
+                try
+                {
+                    ret = bamExe->execute(argc, argv);
+                }
+                catch (std::runtime_error e)
+                {
+                    compStatus = "Exception";
+                    PhoneHome::completionStatus(compStatus.c_str());
+                    std::string errorMsg = "Exiting due to ERROR:\n\t";
+                    errorMsg += e.what();
+                    std::cerr << errorMsg << std::endl;
+                    return(-1);
+                }
+                compStatus = ret;
+                PhoneHome::completionStatus(compStatus.c_str());
+                delete bamExe;
+                bamExe = NULL;
+            }
+            else
+            {
+                // This is the backward compatable version of convert.
+                bool noeof = false;
+                if(argc != 3)
+                {
+                    if(argc == 4)
+                    {
+                        if(strcmp(argv[3], "NOEOF") != 0)
+                        {
+                            WriteUsage(std::cerr);
+                            exit(-1);
+                        }
+                        else
+                        {
+                            noeof = true;
+                        }
+                    }
+                    else
+                    {
+                        std::cerr << "Error: Invalid command.\n\n";
+                        WriteUsage(std::cerr);
+                        exit(-1);
+                    }
+                }
+                int numArgs = 6;
+                // char ** args;
+                char* args[7];
+                char arg1[] = "convert";
+                char arg2[] = "--in";
+                char arg4[] = "--out";
+                char arg6[] = "--noeof";
+                args[0] = argv[0];
+                args[1] = arg1;
+                args[2] = arg2;
+                args[3] = argv[1];
+                args[4] = arg4;
+                args[5] = argv[2];
+                if(noeof)
+                {
+                    args[6] = arg6;
+                    ++numArgs;
+                }
+
+                String compStatus;
+                try
+                {
+                    bamExe = new Convert();
+                    ret = bamExe->execute(numArgs, args);
+                }
+                catch (std::runtime_error e)
+                {
+                    compStatus = "Exception";
+                    PhoneHome::completionStatus(compStatus.c_str());
+
+                    std::string errorMsg = "Exiting due to ERROR:\n\t";
+                    errorMsg += e.what();
+                    std::cerr << errorMsg << std::endl;
+                    return(-1);
+                }
+                compStatus = ret;
+                PhoneHome::completionStatus(compStatus.c_str());
+                delete bamExe;
+                bamExe = NULL;
+            }
         }
-        int returnVal = 0;
-        String compStatus;
-        try
-        {
-            bamExe = new Convert();
-            returnVal = bamExe->execute(numArgs, args);
-        }
-        catch (std::runtime_error e)
-        {
-            compStatus = "Exception";
-            PhoneHome::completionStatus(compStatus.c_str());
-            
-            std::string errorMsg = "Exiting due to ERROR:\n\t";
-            errorMsg += e.what();
-            std::cerr << errorMsg << std::endl;
-            return(-1);
-        }
-        compStatus = returnVal;
-        PhoneHome::completionStatus(compStatus.c_str());
-        delete bamExe;
-        bamExe = NULL;
-        return(returnVal);
     }
-    
-    if(bamExe != NULL)
-    {
-        int returnVal = 0;
-        String compStatus;
-        try
-        {
-            returnVal = bamExe->execute(argc, argv);
-        }
-        catch (std::runtime_error e)
-        {
-            compStatus = "Exception";
-            PhoneHome::completionStatus(compStatus.c_str());
-            std::string errorMsg = "Exiting due to ERROR:\n\t";
-            errorMsg += e.what();
-            std::cerr << errorMsg << std::endl;
-            return(-1);
-        }
-        compStatus = returnVal;
-        PhoneHome::completionStatus(compStatus.c_str());
-        delete bamExe;
-        bamExe = NULL;
-        return(returnVal);
-    }
-    return(-1);
+
+    return ret;
 }
 
 

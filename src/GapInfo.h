@@ -29,9 +29,9 @@ class GapInfo : public BamExecutable
 public:
     GapInfo();
 
-    static void gapInfoDescription();
-    void description();
-    void usage();
+    static void printGapInfoDescription(std::ostream& os);
+    void printDescription(std::ostream& os);
+    void printUsage(std::ostream& os);
     int execute(int argc, char **argv);
     virtual const char* getProgramName() {return("bam:gapInfo");}
 

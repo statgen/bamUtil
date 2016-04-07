@@ -70,44 +70,44 @@ MergeBam::MergeBam()
 {
 }
 
-void MergeBam::mergeBamDescription()
+void MergeBam::printMergeBamDescription(std::ostream& os)
 {
-    std::cerr << " mergeBam - merge multiple BAMs and headers appending ReadGroupIDs if necessary" << std::endl;
+    os << " mergeBam - merge multiple BAMs and headers appending ReadGroupIDs if necessary" << std::endl;
 }
 
 
-void MergeBam::description()
+void MergeBam::printDescription(std::ostream& os)
 {
-    mergeBamDescription();
+    printMergeBamDescription(os);
 }
 
 
-void MergeBam::usage()
+void MergeBam::printUsage(std::ostream& os)
 {
-    BamExecutable::usage();
-     std::cerr << "Usage: mergeBam [-v] [--log logFile] [--ignorePI] --list <listFile> --out <outFile>\n" << std::endl;
-     std::cerr << "Required parameters :" << std::endl;
-     std::cerr << "--out/-o : Output BAM file (sorted)" << std::endl;
-     std::cerr << "--in/-i  : BAM file to be input, must be more than one of these options." << std::endl;
-     std::cerr << "            cannot be used with --list/-l" << std::endl;
-     std::cerr << "--list/-l : RGAList File. Tab-delimited list consisting of following columns (with headers):" << std::endl;
-     std::cerr << "\tBAM* : Input BAM file name to be merged" << std::endl;
-     std::cerr << "\tID* : Unique read group identifier" << std::endl;
-     std::cerr << "\tSM* : Sample name" << std::endl;
-     std::cerr << "\tLB : Library name" << std::endl;
-     std::cerr << "\tDS : Description" << std::endl;
-     std::cerr << "\tPU : Platform unit" << std::endl;
-     std::cerr << "\tPI : Predicted median insert size" << std::endl;
-     std::cerr << "\tCN : Name of sequencing center producing the read" << std::endl;
-     std::cerr << "\tDT : Date the rn was produced" << std::endl;
-     std::cerr << "\tPL : Platform/technology used to produce the read" << std::endl;
-     std::cerr << "\t* (Required fields)" << std::endl;
-     std::cerr << "Optional parameters : " << std::endl;
-     std::cerr << "--regions/-r : list of intervals, '<chr>:<start>-<end>', to merge separated by commas, ','\n";
-     std::cerr << "--regionFile/-R : file containing list of intervals, '<chr>:<start>-<end>', to merge, one per line\n";
-     std::cerr << "--ignorePI/-I : Ignore the RG PI field when comparing headers\n";
-     std::cerr << "--log/-L : Log file" << std::endl;
-     std::cerr << "--verbose/-v : Turn on verbose mode" << std::endl;
+    BamExecutable::printUsage(os);
+    os << "Usage: mergeBam [-v] [--log logFile] [--ignorePI] --list <listFile> --out <outFile>\n" << std::endl;
+    os << "Required parameters :" << std::endl;
+    os << "--out/-o : Output BAM file (sorted)" << std::endl;
+    os << "--in/-i  : BAM file to be input, must be more than one of these options." << std::endl;
+    os << "            cannot be used with --list/-l" << std::endl;
+    os << "--list/-l : RGAList File. Tab-delimited list consisting of following columns (with headers):" << std::endl;
+    os << "\tBAM* : Input BAM file name to be merged" << std::endl;
+    os << "\tID* : Unique read group identifier" << std::endl;
+    os << "\tSM* : Sample name" << std::endl;
+    os << "\tLB : Library name" << std::endl;
+    os << "\tDS : Description" << std::endl;
+    os << "\tPU : Platform unit" << std::endl;
+    os << "\tPI : Predicted median insert size" << std::endl;
+    os << "\tCN : Name of sequencing center producing the read" << std::endl;
+    os << "\tDT : Date the rn was produced" << std::endl;
+    os << "\tPL : Platform/technology used to produce the read" << std::endl;
+    os << "\t* (Required fields)" << std::endl;
+    os << "Optional parameters : " << std::endl;
+    os << "--regions/-r : list of intervals, '<chr>:<start>-<end>', to merge separated by commas, ','\n";
+    os << "--regionFile/-R : file containing list of intervals, '<chr>:<start>-<end>', to merge, one per line\n";
+    os << "--ignorePI/-I : Ignore the RG PI field when comparing headers\n";
+    os << "--log/-L : Log file" << std::endl;
+    os << "--verbose/-v : Turn on verbose mode" << std::endl;
 }
 
 // main function
@@ -208,13 +208,13 @@ int MergeBam::execute(int argc, char ** argv)
 
   // every argument must correspond to an option
   if ( optind < argc ) {
-    usage();
+    printUsage(std::cerr);
     Logger::gLogger->error("non-option argument exist");
   }
 
   // check the required arguments are nonempty
   if ( (vs_in_bam_files.empty() && s_list.empty()) || s_out.empty() ) {
-    usage();
+    printUsage(std::cerr);
     Logger::gLogger->error("At least one of the required argument is missing");
   }
 

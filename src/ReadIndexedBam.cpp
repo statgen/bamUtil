@@ -26,22 +26,22 @@
 #include "SamValidation.h"
 #include "PhoneHome.h"
 
-void ReadIndexedBam::readIndexedBamDescription()
+void ReadIndexedBam::printReadIndexedBamDescription(std::ostream& os)
 {
-    std::cerr << " readIndexedBam - Read Indexed BAM By Reference and write it from reference id -1 to maxRefId" << std::endl;
+    os << " readIndexedBam - Read Indexed BAM By Reference and write it from reference id -1 to maxRefId" << std::endl;
 }
 
 
-void ReadIndexedBam::description()
+void ReadIndexedBam::printDescription(std::ostream& os)
 {
-    readIndexedBamDescription();
+    printReadIndexedBamDescription(os);
 }
 
 
-void ReadIndexedBam::usage()
+void ReadIndexedBam::printUsage(std::ostream& os)
 {
-    BamExecutable::usage();
-    std::cerr << "\t./bam readIndexedBam <inputFilename> <outputFile.sam/bam> <bamIndexFile>" << std::endl;
+    BamExecutable::printUsage(os);
+    os << "\t./bam readIndexedBam <inputFilename> <outputFile.sam/bam> <bamIndexFile>" << std::endl;
 }
 
 
@@ -52,7 +52,7 @@ int ReadIndexedBam::execute(int argc, char ** argv)
         String noPhArg = "--noPhoneHome";
         if((argc != 6) || (noPhArg.SlowCompareToStem(argv[5]) != 0))
         {
-            usage();
+            printUsage(std::cerr);
             exit(-1);
         }
     }

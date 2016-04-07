@@ -24,36 +24,36 @@
 #include "SamFile.h"
 #include "SamFilter.h"
 
-void Filter::filterDescription()
+void Filter::printFilterDescription(std::ostream& os)
 {
-    std::cerr << " filter - Filter reads by clipping ends with too high of a mismatch percentage and by marking reads unmapped if the quality of mismatches is too high" << std::endl;
+    os << " filter - Filter reads by clipping ends with too high of a mismatch percentage and by marking reads unmapped if the quality of mismatches is too high" << std::endl;
 }
 
-void Filter::description()
+void Filter::printDescription(std::ostream& os)
 {
-    filterDescription();
+    printFilterDescription(os);
 }
 
 
-void Filter::usage()
+void Filter::printUsage(std::ostream& os)
 {
-    BamExecutable::usage();
-    std::cerr << "\t./bam filter --in <inputFilename>  --refFile <referenceFilename>  --out <outputFilename> [--noeof] [--qualityThreshold <qualThresh>] [--defaultQualityInt <defaultQual>] [--mismatchThreshold <mismatchThresh>] [--params]"<< std::endl;
-    std::cerr << "\tRequired Parameters:" << std::endl;
-    std::cerr << "\t\t--in       : the SAM/BAM file to be read" << std::endl;
-    std::cerr << "\t\t--refFile  : the reference file" << std::endl;
-    std::cerr << "\t\t--out      : the SAM/BAM file to write to" << std::endl;
-    std::cerr << "\tOptional Parameters:" << std::endl;
-    std::cerr << "\t\t--noeof             : do not expect an EOF block on a bam file." << std::endl;
-    std::cerr << "\t\t--qualityThreshold  : maximum sum of the mismatch qualities before marking\n"
+    BamExecutable::printUsage(os);
+    os << "\t./bam filter --in <inputFilename>  --refFile <referenceFilename>  --out <outputFilename> [--noeof] [--qualityThreshold <qualThresh>] [--defaultQualityInt <defaultQual>] [--mismatchThreshold <mismatchThresh>] [--params]"<< std::endl;
+    os << "\tRequired Parameters:" << std::endl;
+    os << "\t\t--in       : the SAM/BAM file to be read" << std::endl;
+    os << "\t\t--refFile  : the reference file" << std::endl;
+    os << "\t\t--out      : the SAM/BAM file to write to" << std::endl;
+    os << "\tOptional Parameters:" << std::endl;
+    os << "\t\t--noeof             : do not expect an EOF block on a bam file." << std::endl;
+    os << "\t\t--qualityThreshold  : maximum sum of the mismatch qualities before marking\n"
               << "\t\t                      a read unmapped. (Defaults to 60)" << std::endl;
-    std::cerr << "\t\t--defaultQualityInt : quality value to use for mismatches that do not have a quality\n" 
+    os << "\t\t--defaultQualityInt : quality value to use for mismatches that do not have a quality\n" 
               << "\t\t                      (Defaults to 20)" << std::endl;
-    std::cerr << "\t\t--mismatchThreshold : decimal value indicating the maximum ratio of mismatches to\n"
+    os << "\t\t--mismatchThreshold : decimal value indicating the maximum ratio of mismatches to\n"
               << "\t\t                      matches and mismatches allowed before clipping from the ends\n"
               << "\t\t                      (Defaults to .10)" << std::endl;
-    std::cerr << "\t\t--params            : print the parameter settings" << std::endl;
-    std::cerr << std::endl;
+    os << "\t\t--params            : print the parameter settings" << std::endl;
+    os << std::endl;
 }
 
 
@@ -100,7 +100,7 @@ int Filter::execute(int argc, char **argv)
     // Check to see if the in file was specified, if not, report an error.
     if(inFile == "")
     {
-        usage();
+        printUsage(std::cerr);
         inputParameters.Status();
         // In file was not specified but it is mandatory.
         std::cerr << "--in is a mandatory argument, "
@@ -109,7 +109,7 @@ int Filter::execute(int argc, char **argv)
     }
     if(outFile == "")
     {
-        usage();
+        printUsage(std::cerr);
         inputParameters.Status();
         // In file was not specified but it is mandatory.
         std::cerr << "--out is a mandatory argument, "

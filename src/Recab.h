@@ -47,11 +47,11 @@ public:
     Recab();
     ~Recab();
 
-    static void recabDescription();
-    void description();
-    void usage();
-    void recabSpecificUsageLine();
-    void recabSpecificUsage();
+    static void printRecabDescription(std::ostream& os);
+    void printDescription(std::ostream& os);
+    void printUsage(std::ostream& os);
+    void printRecabSpecificUsageLine(std::ostream& os);
+    void printRecabSpecificUsage(std::ostream& os);
     int execute(int argc, char **argv);
     virtual const char* getProgramName() {return("bam:recab");}
 

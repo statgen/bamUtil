@@ -25,58 +25,58 @@
 #include "PileupElementBaseQCStats.h"
 #include "SamFlag.h"
 
-void Stats::statsDescription()
+void Stats::printStatsDescription(std::ostream& os)
 {
-    std::cerr << " stats - Stats a SAM/BAM File" << std::endl;
+    os << " stats - Stats a SAM/BAM File" << std::endl;
 }
 
 
-void Stats::description()
+void Stats::printDescription(std::ostream& os)
 {
-    statsDescription();
+    printStatsDescription(os);
 }
 
 
-void Stats::usage()
+void Stats::printUsage(std::ostream& os)
 {
-    BamExecutable::usage();
-    std::cerr << "\t./bam stats --in <inputFile> [--basic] [--qual] [--phred] [--pBaseQC <outputFileName>] [--cBaseQC <outputFileName>] [--maxNumReads <maxNum>]"
+    BamExecutable::printUsage(os);
+    os << "\t./bam stats --in <inputFile> [--basic] [--qual] [--phred] [--pBaseQC <outputFileName>] [--cBaseQC <outputFileName>] [--maxNumReads <maxNum>]"
               << "[--unmapped] [--bamIndex <bamIndexFile>] [--regionList <regFileName>] [--requiredFlags <integerRequiredFlags>] [--excludeFlags <integerExcludeFlags>] [--noeof] [--params] [--withinRegion] [--baseSum] [--bufferSize <buffSize>] [--minMapQual <minMapQ>] [--dbsnp <dbsnpFile>]" << std::endl;
-    std::cerr << "\tRequired Parameters:" << std::endl;
-    std::cerr << "\t\t--in : the SAM/BAM file to calculate stats for" << std::endl;
-    std::cerr << "\tTypes of Statistics that can be generated:" << std::endl;
-    std::cerr << "\t\t--basic         : Turn on basic statistic generation" << std::endl;
-    std::cerr << "\t\t--qual          : Generate a count for each quality (displayed as non-phred quality)" << std::endl;
-    std::cerr << "\t\t--phred         : Generate a count for each quality (displayed as phred quality)" << std::endl;
-    std::cerr << "\t\t--pBaseQC       : Write per base statistics as Percentages to the specified file." << std::endl;
-    std::cerr << "\t\t                  pBaseQC & cBaseQC cannot both be specified." << std::endl;
-    std::cerr << "\t\t--cBaseQC       : Write per base statistics as Counts to the specified file." << std::endl;
-    std::cerr << "\t\t                  pBaseQC & cBaseQC cannot both be specified." << std::endl;
-    std::cerr << "\tOptional Parameters:" << std::endl;
-    std::cerr << "\t\t--maxNumReads   : Maximum number of reads to process" << std::endl;
-    std::cerr << "\t\t                  Defaults to -1 to indicate all reads." << std::endl;
-    std::cerr << "\t\t--unmapped      : Only process unmapped reads (requires a bamIndex file)" << std::endl;
-    std::cerr << "\t\t--bamIndex      : The path/name of the bam index file" << std::endl;
-    std::cerr << "\t\t                  (if required and not specified, uses the --in value + \".bai\")" << std::endl;
-    std::cerr << "\t\t--regionList    : File containing the regions to be processed chr<tab>start_pos<tab>end_pos." << std::endl;
-    std::cerr << "\t\t                  Positions are 0 based and the end_pos is not included in the region." << std::endl;
-    std::cerr << "\t\t                  Uses bamIndex." << std::endl;
-    std::cerr << "\t\t--excludeFlags  : Skip any records with any of the specified flags set\n";
-    std::cerr << "\t\t                  (specify an integer representation of the flags)\n";
-    std::cerr << "\t\t--requiredFlags : Only process records with all of the specified flags set\n";
-    std::cerr << "\t\t                  (specify an integer representation of the flags)\n";
-    std::cerr << "\t\t--noeof         : Do not expect an EOF block on a bam file." << std::endl;
-    std::cerr << "\t\t--params        : Print the parameter settings." << std::endl;
-    std::cerr << "\tOptional phred/qual Only Parameters:" << std::endl;
-    std::cerr << "\t\t--withinRegion  : Only count qualities if they fall within regions specified.\n";
-    std::cerr << "\t\t                  Only applicable if regionList is also specified.\n";
-    std::cerr << "\tOptional BaseQC Only Parameters:" << std::endl;
-    std::cerr << "\t\t--baseSum       : Print an overall summary of the baseQC for the file to stderr." << std::endl;
-    std::cerr << "\t\t--bufferSize    : Size of the pileup buffer for calculating the BaseQC parameters." << std::endl;
-    std::cerr << "\t\t                  Default: " << PileupHelper::DEFAULT_WINDOW_SIZE << std::endl;
-    std::cerr << "\t\t--minMapQual    : The minimum mapping quality for filtering reads in the baseQC stats." << std::endl;
-    std::cerr << "\t\t--dbsnp         : The dbSnp file of positions to exclude from baseQC analysis." << std::endl;
-    std::cerr << std::endl;
+    os << "\tRequired Parameters:" << std::endl;
+    os << "\t\t--in : the SAM/BAM file to calculate stats for" << std::endl;
+    os << "\tTypes of Statistics that can be generated:" << std::endl;
+    os << "\t\t--basic         : Turn on basic statistic generation" << std::endl;
+    os << "\t\t--qual          : Generate a count for each quality (displayed as non-phred quality)" << std::endl;
+    os << "\t\t--phred         : Generate a count for each quality (displayed as phred quality)" << std::endl;
+    os << "\t\t--pBaseQC       : Write per base statistics as Percentages to the specified file." << std::endl;
+    os << "\t\t                  pBaseQC & cBaseQC cannot both be specified." << std::endl;
+    os << "\t\t--cBaseQC       : Write per base statistics as Counts to the specified file." << std::endl;
+    os << "\t\t                  pBaseQC & cBaseQC cannot both be specified." << std::endl;
+    os << "\tOptional Parameters:" << std::endl;
+    os << "\t\t--maxNumReads   : Maximum number of reads to process" << std::endl;
+    os << "\t\t                  Defaults to -1 to indicate all reads." << std::endl;
+    os << "\t\t--unmapped      : Only process unmapped reads (requires a bamIndex file)" << std::endl;
+    os << "\t\t--bamIndex      : The path/name of the bam index file" << std::endl;
+    os << "\t\t                  (if required and not specified, uses the --in value + \".bai\")" << std::endl;
+    os << "\t\t--regionList    : File containing the regions to be processed chr<tab>start_pos<tab>end_pos." << std::endl;
+    os << "\t\t                  Positions are 0 based and the end_pos is not included in the region." << std::endl;
+    os << "\t\t                  Uses bamIndex." << std::endl;
+    os << "\t\t--excludeFlags  : Skip any records with any of the specified flags set\n";
+    os << "\t\t                  (specify an integer representation of the flags)\n";
+    os << "\t\t--requiredFlags : Only process records with all of the specified flags set\n";
+    os << "\t\t                  (specify an integer representation of the flags)\n";
+    os << "\t\t--noeof         : Do not expect an EOF block on a bam file." << std::endl;
+    os << "\t\t--params        : Print the parameter settings." << std::endl;
+    os << "\tOptional phred/qual Only Parameters:" << std::endl;
+    os << "\t\t--withinRegion  : Only count qualities if they fall within regions specified.\n";
+    os << "\t\t                  Only applicable if regionList is also specified.\n";
+    os << "\tOptional BaseQC Only Parameters:" << std::endl;
+    os << "\t\t--baseSum       : Print an overall summary of the baseQC for the file to stderr." << std::endl;
+    os << "\t\t--bufferSize    : Size of the pileup buffer for calculating the BaseQC parameters." << std::endl;
+    os << "\t\t                  Default: " << PileupHelper::DEFAULT_WINDOW_SIZE << std::endl;
+    os << "\t\t--minMapQual    : The minimum mapping quality for filtering reads in the baseQC stats." << std::endl;
+    os << "\t\t--dbsnp         : The dbSnp file of positions to exclude from baseQC analysis." << std::endl;
+    os << std::endl;
 }
 
 
@@ -150,7 +150,7 @@ int Stats::execute(int argc, char **argv)
     // Check to see if the in file was specified, if not, report an error.
     if(inFile == "")
     {
-        usage();
+        printUsage(std::cerr);
         inputParameters.Status();
         // In file was not specified but it is mandatory.
         std::cerr << "--in is a mandatory argument for stats, "
@@ -179,7 +179,7 @@ int Stats::execute(int argc, char **argv)
     IFILE baseQCPtr = NULL;
     if(!pBaseQC.IsEmpty() && !cBaseQC.IsEmpty())
     {
-        usage();
+        printUsage(std::cerr);
         inputParameters.Status();
         // Cannot specify both types of baseQC.
         std::cerr << "Cannot specify both --pBaseQC & --cBaseQC." << std::endl;

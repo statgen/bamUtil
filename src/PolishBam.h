@@ -27,9 +27,9 @@
 class PolishBam : public BamExecutable
 {
 public:
-    static void polishBamDescription();
-    void description();
-    void usage();
+    static void printPolishBamDescription(std::ostream& os);
+    void printDescription(std::ostream& os);
+    void printUsage(std::ostream& os);
     int execute(int argc, char **argv);
     virtual const char* getProgramName() {return("bam:polishBam");}
 };

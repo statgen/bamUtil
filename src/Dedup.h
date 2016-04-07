@@ -34,9 +34,9 @@
 class Dedup : public BamExecutable
 {
 public:
-    static void dedupDescription();
-    void description();
-    void usage();
+    static void printDedupDescription(std::ostream& os);
+    void printDescription(std::ostream& os);
+    void printUsage(std::ostream& os);
     int execute(int argc, char **argv);
     virtual const char* getProgramName() {return("bam:dedup");}
 

@@ -22,23 +22,23 @@
 #include "BgzfFileType.h"
 #include "GenomeSequence.h"
 
-void ReadReference::readReferenceDescription()
+void ReadReference::printReadReferenceDescription(std::ostream& os)
 {
-    std::cerr << " readReference - Print the reference string for the specified region" << std::endl;
+    os << " readReference - Print the reference string for the specified region" << std::endl;
 }
 
 
-void ReadReference::description()
+void ReadReference::printDescription(std::ostream& os)
 {
-    readReferenceDescription();
+    printReadReferenceDescription(os);
 }
 
 
-void ReadReference::usage()
+void ReadReference::printUsage(std::ostream& os)
 {
-    BamExecutable::usage();
-    std::cerr << "\t./bam readReference --refFile <referenceFilename> --refName <reference Name> --start <0 based start> --end <0 based end>|--numBases <number of bases> [--params]"<< std::endl;
-    std::cerr << "\tRequired Parameters:\n"
+    BamExecutable::printUsage(os);
+    os << "\t./bam readReference --refFile <referenceFilename> --refName <reference Name> --start <0 based start> --end <0 based end>|--numBases <number of bases> [--params]"<< std::endl;
+    os << "\tRequired Parameters:\n"
               << "\t\t--refFile  : the reference\n"
               << "\t\t--refName  : the SAM/BAM reference Name to read\n"
               << "\t\t--start    : inclusive 0-based start position\n"
@@ -82,14 +82,14 @@ int ReadReference::execute(int argc, char **argv)
     if((refName == "") || (start == UNSPECIFIED_INT) || 
        ((end == UNSPECIFIED_INT) && (numBases == UNSPECIFIED_INT)))
     {
-        usage();
+        printUsage(std::cerr);
         inputParameters.Status();
         std::cerr << "Missing Required Parameter\n\n";
         return(-1);
     }
     if((end != UNSPECIFIED_INT) && (numBases != UNSPECIFIED_INT))
     {
-        usage();
+        printUsage(std::cerr);
         inputParameters.Status();
         std::cerr << "Only --end or --numBases can be specified\n\n";
         return(-1);

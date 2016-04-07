@@ -24,30 +24,30 @@
 #include "Parameters.h"
 #include "BgzfFileType.h"
 
-void DumpRefInfo::dumpRefInfoDescription()
+void DumpRefInfo::printDumpRefInfoDescription(std::ostream& os)
 {
-    std::cerr << " dumpRefInfo - Print SAM/BAM Reference Name Information" 
+    os << " dumpRefInfo - Print SAM/BAM Reference Name Information"
               << std::endl;
 }
 
 
-void DumpRefInfo::description()
+void DumpRefInfo::printDescription(std::ostream& os)
 {
-    dumpRefInfoDescription();
+    printDumpRefInfoDescription(os);
 }
 
 
-void DumpRefInfo::usage()
+void DumpRefInfo::printUsage(std::ostream& os)
 {
-    BamExecutable::usage();
-    std::cerr << "\t./bam dumpRefInfo --in <inputFilename> [--noeof] [--printRecordRefs] [--params]" << std::endl;
-    std::cerr << "\tRequired Parameters:" << std::endl;
-    std::cerr << "\t\t--in               : the SAM/BAM file to be read" << std::endl;
-    std::cerr << "\tOptional Parameters:" << std::endl;
-    std::cerr << "\t\t--noeof            : do not expect an EOF block on a bam file." << std::endl;
-    std::cerr << "\t\t--printRecordRefs  : print the reference information for the records in the file (grouped by reference)." << std::endl;
-    std::cerr << "\t\t--params           : print the parameter settings" << std::endl;
-    std::cerr << std::endl;
+    BamExecutable::printUsage(os);
+    os << "\t./bam dumpRefInfo --in <inputFilename> [--noeof] [--printRecordRefs] [--params]" << std::endl;
+    os << "\tRequired Parameters:" << std::endl;
+    os << "\t\t--in               : the SAM/BAM file to be read" << std::endl;
+    os << "\tOptional Parameters:" << std::endl;
+    os << "\t\t--noeof            : do not expect an EOF block on a bam file." << std::endl;
+    os << "\t\t--printRecordRefs  : print the reference information for the records in the file (grouped by reference)." << std::endl;
+    os << "\t\t--params           : print the parameter settings" << std::endl;
+    os << std::endl;
 }
 
 
@@ -86,7 +86,7 @@ int DumpRefInfo::execute(int argc, char **argv)
     // Check to see if the in file was specified, if not, report an error.
     if(inFile == "")
     {
-        usage();
+        printUsage(std::cerr);
         inputParameters.Status();
         // In file was not specified but it is mandatory.
         std::cerr << "--in is a mandatory argument, "

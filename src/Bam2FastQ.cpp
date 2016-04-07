@@ -62,55 +62,55 @@ Bam2FastQ::~Bam2FastQ()
 }
 
 
-void Bam2FastQ::bam2FastQDescription()
+void Bam2FastQ::printBam2FastQDescription(std::ostream& os)
 {
-    std::cerr << " bam2FastQ - Convert the specified BAM file to fastQs." << std::endl;
+    os << " bam2FastQ - Convert the specified BAM file to fastQs." << std::endl;
 }
 
 
-void Bam2FastQ::description()
+void Bam2FastQ::printDescription(std::ostream& os)
 {
-    bam2FastQDescription();
+    printBam2FastQDescription(os);
 }
 
 
-void Bam2FastQ::usage()
+void Bam2FastQ::printUsage(std::ostream& os)
 {
-    BamExecutable::usage();
-    std::cerr << "\t./bam bam2FastQ --in <inputFile> [--readName] [--splitRG] [--qualField <tag>] [--refFile <referenceFile>] [--outBase <outputFileBase>] [--firstOut <1stReadInPairOutFile>] [--merge|--secondOut <2ndReadInPairOutFile>] [--unpairedOut <unpairedOutFile>] [--firstRNExt <firstInPairReadNameExt>] [--secondRNExt <secondInPairReadNameExt>] [--rnPlus] [--noReverseComp] [--region <chr>[:<pos>[:<base>]]] [--gzip] [--noeof] [--params]" << std::endl;
-    std::cerr << "\tRequired Parameters:" << std::endl;
-    std::cerr << "\t\t--in       : the SAM/BAM file to convert to FastQ" << std::endl;
-    std::cerr << "\tOptional Parameters:" << std::endl;
-    std::cerr << "\t\t--readname      : Process the BAM as readName sorted instead\n"
+    BamExecutable::printUsage(os);
+    os << "\t./bam bam2FastQ --in <inputFile> [--readName] [--splitRG] [--qualField <tag>] [--refFile <referenceFile>] [--outBase <outputFileBase>] [--firstOut <1stReadInPairOutFile>] [--merge|--secondOut <2ndReadInPairOutFile>] [--unpairedOut <unpairedOutFile>] [--firstRNExt <firstInPairReadNameExt>] [--secondRNExt <secondInPairReadNameExt>] [--rnPlus] [--noReverseComp] [--region <chr>[:<pos>[:<base>]]] [--gzip] [--noeof] [--params]" << std::endl;
+    os << "\tRequired Parameters:" << std::endl;
+    os << "\t\t--in       : the SAM/BAM file to convert to FastQ" << std::endl;
+    os << "\tOptional Parameters:" << std::endl;
+    os << "\t\t--readname      : Process the BAM as readName sorted instead\n"
               << "\t\t                  of coordinate if the header does not indicate a sort order." << std::endl;
-    std::cerr << "\t\t--splitRG       : Split into RG specific fastqs." << std::endl;
-    std::cerr << "\t\t--qualField     : Use the base quality from the specified tag\n";
-    std::cerr << "\t\t                  rather than from the Quality field (default)" << std::endl;
-    std::cerr << "\t\t--merge         : Generate 1 interleaved (merged) FASTQ for paired-ends (unpaired in a separate file)\n"
+    os << "\t\t--splitRG       : Split into RG specific fastqs." << std::endl;
+    os << "\t\t--qualField     : Use the base quality from the specified tag\n";
+    os << "\t\t                  rather than from the Quality field (default)" << std::endl;
+    os << "\t\t--merge         : Generate 1 interleaved (merged) FASTQ for paired-ends (unpaired in a separate file)\n"
               << "\t\t                  use firstOut to override the filename of the interleaved file." << std::endl;
-    std::cerr << "\t\t--refFile       : Reference file for converting '=' in the sequence to the actual base" << std::endl;
-    std::cerr << "\t\t                  if '=' are found and the refFile is not specified, 'N' is written to the FASTQ" << std::endl;
-    std::cerr << "\t\t--firstRNExt    : read name extension to use for first read in a pair\n" 
+    os << "\t\t--refFile       : Reference file for converting '=' in the sequence to the actual base" << std::endl;
+    os << "\t\t                  if '=' are found and the refFile is not specified, 'N' is written to the FASTQ" << std::endl;
+    os << "\t\t--firstRNExt    : read name extension to use for first read in a pair\n"
               << "\t\t                  default is \"" << DEFAULT_FIRST_EXT << "\"\n";
-    std::cerr << "\t\t--secondRNExt   : read name extension to use for second read in a pair\n" 
+    os << "\t\t--secondRNExt   : read name extension to use for second read in a pair\n"
               << "\t\t                  default is \"" << DEFAULT_SECOND_EXT << "\"\n";
-    std::cerr << "\t\t--rnPlus        : Add the Read Name/extension to the '+' line of the fastq records\n";
-    std::cerr << "\t\t--noReverseComp : Do not reverse complement reads marked as reverse\n";
-    std::cerr << "\t\t--region        : Only convert reads containing the specified region/nucleotide.\n"
+    os << "\t\t--rnPlus        : Add the Read Name/extension to the '+' line of the fastq records\n";
+    os << "\t\t--noReverseComp : Do not reverse complement reads marked as reverse\n";
+    os << "\t\t--region        : Only convert reads containing the specified region/nucleotide.\n"
               << "\t\t                  Position formatted as: chr:pos:base\n"
               << "\t\t                  pos (0-based) & base are optional.\n";
-    std::cerr << "\t\t--gzip          : Compress the output FASTQ files using gzip\n";
-    std::cerr << "\t\t--noeof         : Do not expect an EOF block on a bam file." << std::endl;
-    std::cerr << "\t\t--params        : Print the parameter settings to stderr" << std::endl;
-    std::cerr << "\tOptional OutputFile Names:" << std::endl;
-    std::cerr << "\t\t--outBase       : Base output name for generated output files" << std::endl;
-    std::cerr << "\t\t--firstOut      : Output name for the first in pair file" << std::endl;
-    std::cerr << "\t\t                  over-rides setting of outBase" << std::endl;
-    std::cerr << "\t\t--secondOut     : Output name for the second in pair file" << std::endl;
-    std::cerr << "\t\t                  over-rides setting of outBase" << std::endl;
-    std::cerr << "\t\t--unpairedOut   : Output name for unpaired reads" << std::endl;
-    std::cerr << "\t\t                  over-rides setting of outBase" << std::endl;
-    std::cerr << std::endl;
+    os << "\t\t--gzip          : Compress the output FASTQ files using gzip\n";
+    os << "\t\t--noeof         : Do not expect an EOF block on a bam file." << std::endl;
+    os << "\t\t--params        : Print the parameter settings to stderr" << std::endl;
+    os << "\tOptional OutputFile Names:" << std::endl;
+    os << "\t\t--outBase       : Base output name for generated output files" << std::endl;
+    os << "\t\t--firstOut      : Output name for the first in pair file" << std::endl;
+    os << "\t\t                  over-rides setting of outBase" << std::endl;
+    os << "\t\t--secondOut     : Output name for the second in pair file" << std::endl;
+    os << "\t\t                  over-rides setting of outBase" << std::endl;
+    os << "\t\t--unpairedOut   : Output name for unpaired reads" << std::endl;
+    os << "\t\t                  over-rides setting of outBase" << std::endl;
+    os << std::endl;
 }
 
 
@@ -234,7 +234,7 @@ int Bam2FastQ::execute(int argc, char **argv)
     // Check to see if the in file was specified, if not, report an error.
     if(inFile == "")
     {
-        usage();
+        printUsage(std::cerr);
         inputParameters.Status();
         // In file was not specified but it is mandatory.
         std::cerr << "--in is a mandatory argument, "
@@ -245,7 +245,7 @@ int Bam2FastQ::execute(int argc, char **argv)
     // Cannot specify both interleaved & secondOut since secondOut would be N/A.
     if(interleave && !secondOut.IsEmpty())
     {
-        usage();
+        printUsage(std::cerr);
         inputParameters.Status();
         std::cerr << "ERROR: Cannot specify --merge & --secondOut.\n";
         return(-1);
@@ -254,7 +254,7 @@ int Bam2FastQ::execute(int argc, char **argv)
     // Cannot specify both interleaved & secondOut since secondOut would be N/A.
     if(interleave && !secondOut.IsEmpty())
     {
-        usage();
+        printUsage(std::cerr);
         inputParameters.Status();
         std::cerr << "ERROR: Cannot specify --merge & --secondOut.\n";
         return(-1);
@@ -265,7 +265,7 @@ int Bam2FastQ::execute(int argc, char **argv)
     if(mySplitRG && (!firstOut.IsEmpty() || 
                    !secondOut.IsEmpty() || !unpairedOut.IsEmpty()))
     {
-        usage();
+        printUsage(std::cerr);
         inputParameters.Status();
         std::cerr << "ERROR: Cannot specify --splitRG & --firstOut/--secondOut/--unpairedOut.\n";
         std::cerr << "Use --outBase instead.\n";
@@ -274,7 +274,7 @@ int Bam2FastQ::execute(int argc, char **argv)
     // Cannot specify splitRG & output to stdout.
     if(mySplitRG && (myOutBase[0] == '-'))
     {
-        usage();
+        printUsage(std::cerr);
         inputParameters.Status();
         std::cerr << "ERROR: Cannot specify --splitRG & write to stdout.\n";
         return(-1);

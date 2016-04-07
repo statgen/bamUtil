@@ -34,11 +34,11 @@ class Squeeze : public BamExecutable
 public:
     Squeeze();
     ~Squeeze();
-    static void squeezeDescription();
-    void description();
-    void binningUsageLine();
-    void binningUsage();
-    void usage();
+    static void printSqueezeDescription(std::ostream& os);
+    void printDescription(std::ostream& os);
+    void printBinningUsageLine(std::ostream& os);
+    void printBinningUsage(std::ostream& os);
+    void printUsage(std::ostream& os);
     int execute(int argc, char **argv);
     virtual const char* getProgramName() {return("bam:squeeze");}
 

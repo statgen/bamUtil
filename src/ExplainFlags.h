@@ -27,9 +27,9 @@ class ExplainFlags : public BamExecutable
 {
 public:
     ExplainFlags();
-    static void explainFlagsDescription();
-    void description();
-    void usage();
+    static void printExplainFlagsDescription(std::ostream& os);
+    void printDescription(std::ostream& os);
+    void printUsage(std::ostream& os);
     int execute(int argc, char **argv);
     virtual const char* getProgramName() {return("bam:explainFlags");}
 

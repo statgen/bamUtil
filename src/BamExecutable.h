@@ -25,14 +25,14 @@
 class BamExecutable
 {
 public: 
-    static void bamVersion();
-    static void bamExecutableDescription();
+    static void printBamVersion(std::ostream& os);
+    static void printBamExecutableDescription(std::ostream& os);
     BamExecutable();
     virtual ~BamExecutable();
 
     /// Print the 
-    virtual void description();
-    virtual void usage();
+    virtual void printDescription(std::ostream& os);
+    virtual void printUsage(std::ostream& os);
     virtual int execute(int argc, char**argv) = 0;
     
     virtual const char* getProgramName() {return("bam");}

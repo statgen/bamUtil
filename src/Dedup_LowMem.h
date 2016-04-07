@@ -34,9 +34,9 @@
 class Dedup_LowMem : public BamExecutable
 {
 public:
-    static void dedup_LowMemDescription();
-    void description();
-    void usage();
+    static void printDedup_LowMemDescription(std::ostream& os);
+    void printDescription(std::ostream& os);
+    void printUsage(std::ostream& os);
     int execute(int argc, char **argv);
     virtual const char* getProgramName() {return("bam:dedup_LowMem");}
 

@@ -26,35 +26,35 @@
 #include "BgzfFileType.h"
 #include "SamValidation.h"
 
-void Convert::convertDescription()
+void Convert::printConvertDescription(std::ostream& os)
 {
-    std::cerr << " convert - Convert SAM/BAM to SAM/BAM" << std::endl;
+    os << " convert - Convert SAM/BAM to SAM/BAM" << std::endl;
 }
 
 
-void Convert::description()
+void Convert::printDescription(std::ostream& os)
 {
-    convertDescription();
+    printConvertDescription(os);
 }
 
 
-void Convert::usage()
+void Convert::printUsage(std::ostream& os)
 {
-    BamExecutable::usage();
-    std::cerr << "\t./bam convert --in <inputFile> --out <outputFile.sam/bam/ubam (ubam is uncompressed bam)> [--refFile <reference filename>] [--useBases|--useEquals|--useOrigSeq] [--lshift] [--noeof] [--params]" << std::endl;
-    std::cerr << "\tRequired Parameters:" << std::endl;
-    std::cerr << "\t\t--in         : the SAM/BAM file to be read" << std::endl;
-    std::cerr << "\t\t--out        : the SAM/BAM file to be written" << std::endl;
-    std::cerr << "\tOptional Parameters:" << std::endl;
-    std::cerr << "\t\t--refFile    : reference file name" << std::endl;
-    std::cerr << "\t\t--lshift     : left shift indels when writing records\n";
-    std::cerr << "\t\t--noeof      : do not expect an EOF block on a bam file" << std::endl;
-    std::cerr << "\t\t--params     : print the parameter settings" << std::endl;
-    std::cerr << "\t\t--recover    : attempt error recovery while reading a bam file" << std::endl;
-    std::cerr << "\tOptional Sequence Parameters (only specify one):" << std::endl;
-    std::cerr << "\t\t--useOrigSeq : Leave the sequence as is (default & used if reference is not specified)" << std::endl;
-    std::cerr << "\t\t--useBases   : Convert any '=' in the sequence to the appropriate base using the reference (requires --refFile)" << std::endl;
-    std::cerr << "\t\t--useEquals  : Convert any bases that match the reference to '=' (requires --refFile)" << std::endl;
+    BamExecutable::printUsage(os);
+    os << "\t./bam convert --in <inputFile> --out <outputFile.sam/bam/ubam (ubam is uncompressed bam)> [--refFile <reference filename>] [--useBases|--useEquals|--useOrigSeq] [--lshift] [--noeof] [--params]" << std::endl;
+    os << "\tRequired Parameters:" << std::endl;
+    os << "\t\t--in         : the SAM/BAM file to be read" << std::endl;
+    os << "\t\t--out        : the SAM/BAM file to be written" << std::endl;
+    os << "\tOptional Parameters:" << std::endl;
+    os << "\t\t--refFile    : reference file name" << std::endl;
+    os << "\t\t--lshift     : left shift indels when writing records\n";
+    os << "\t\t--noeof      : do not expect an EOF block on a bam file" << std::endl;
+    os << "\t\t--params     : print the parameter settings" << std::endl;
+    os << "\t\t--recover    : attempt error recovery while reading a bam file" << std::endl;
+    os << "\tOptional Sequence Parameters (only specify one):" << std::endl;
+    os << "\t\t--useOrigSeq : Leave the sequence as is (default & used if reference is not specified)" << std::endl;
+    os << "\t\t--useBases   : Convert any '=' in the sequence to the appropriate base using the reference (requires --refFile)" << std::endl;
+    os << "\t\t--useEquals  : Convert any bases that match the reference to '=' (requires --refFile)" << std::endl;
 }
 
 #define SIGNATURE_LENGTH (sizeof(bamRecordStruct))
@@ -130,7 +130,7 @@ int Convert::execute(int argc, char **argv)
     // Check to see if the in file was specified, if not, report an error.
     if(inFile == "")
     {
-        usage();
+        printUsage(std::cerr);
         inputParameters.Status();
         // In file was not specified but it is mandatory.
         std::cerr << "--in is a mandatory argument, "
@@ -140,7 +140,7 @@ int Convert::execute(int argc, char **argv)
 
     if(outFile == "")
     {
-        usage();
+        printUsage(std::cerr);
         inputParameters.Status();
         // In file was not specified but it is mandatory.
         std::cerr << "--out is a mandatory argument, "

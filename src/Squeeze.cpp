@@ -38,64 +38,64 @@ Squeeze::~Squeeze()
 {
 }
 
-void Squeeze::squeezeDescription()
+void Squeeze::printSqueezeDescription(std::ostream& os)
 {
-    std::cerr << " squeeze -  reduces files size by dropping OQ fields, duplicates, & specified tags, using '=' when a base matches the reference, binning quality scores, and replacing readNames with unique integers" << std::endl;
+    os << " squeeze -  reduces files size by dropping OQ fields, duplicates, & specified tags, using '=' when a base matches the reference, binning quality scores, and replacing readNames with unique integers" << std::endl;
 }
 
 
-void Squeeze::description()
+void Squeeze::printDescription(std::ostream& os)
 {
-    squeezeDescription();
+    printSqueezeDescription(os);
 }
 
 
-void Squeeze::binningUsageLine()
+void Squeeze::printBinningUsageLine(std::ostream& os)
 {
-    std::cerr << "[--binQualS <minQualBin2>,<minQualBin3><...>] [--binQualF <filename>] [--binMid|binHigh]";
+    os << "[--binQualS <minQualBin2>,<minQualBin3><...>] [--binQualF <filename>] [--binMid|binHigh]";
 }
 
 
-void Squeeze::binningUsage()
+void Squeeze::printBinningUsage(std::ostream& os)
 {
-    std::cerr << "\tQuality Binning Parameters (optional):" << std::endl;
-    std::cerr << "\t  Bin qualities by phred score, into the ranges specified by binQualS or binQualF (both cannot be used)" << std::endl;
-    std::cerr << "\t  Ranges are specified by comma separated minimum phred score for the bin, example: 1,17,20,30,40,50,70" << std::endl;
-    std::cerr << "\t  The first bin always starts at 0, so does not need to be specified." << std::endl;
-    std::cerr << "\t  By default, the bin value is the low end of the range." << std::endl;
-    std::cerr << "\t\t--binQualS   : Bin the Qualities as specified (phred): minQualOfBin2, minQualofBin3..." << std::endl;
-    std::cerr << "\t\t--binQualF   : Bin the Qualities based on the specified file" << std::endl;
-    std::cerr << "\t\t--binMid     : Use the mid point of the quality bin range for the quality value of the bin." << std::endl;
-    std::cerr << "\t\t--binHigh    : Use the high end of the quality bin range for the quality value of the bin." << std::endl;
+    os << "\tQuality Binning Parameters (optional):" << std::endl;
+    os << "\t  Bin qualities by phred score, into the ranges specified by binQualS or binQualF (both cannot be used)" << std::endl;
+    os << "\t  Ranges are specified by comma separated minimum phred score for the bin, example: 1,17,20,30,40,50,70" << std::endl;
+    os << "\t  The first bin always starts at 0, so does not need to be specified." << std::endl;
+    os << "\t  By default, the bin value is the low end of the range." << std::endl;
+    os << "\t\t--binQualS   : Bin the Qualities as specified (phred): minQualOfBin2, minQualofBin3..." << std::endl;
+    os << "\t\t--binQualF   : Bin the Qualities based on the specified file" << std::endl;
+    os << "\t\t--binMid     : Use the mid point of the quality bin range for the quality value of the bin." << std::endl;
+    os << "\t\t--binHigh    : Use the high end of the quality bin range for the quality value of the bin." << std::endl;
 }
 
 
 // print Usage
-void Squeeze::usage()
+void Squeeze::printUsage(std::ostream& os)
 {
-    BamExecutable::usage();
-    std::cerr << "\t./bam squeeze --in <inputFile> --out <outputFile.sam/bam/ubam (ubam is uncompressed bam)> [--refFile <refFilePath/Name>] [--keepOQ] [--keepDups] [--readName <readNameMapFile.txt>] [--sReadName <readNameMapFile.txt>] [--rmTags <Tag:Type[,Tag:Type]*>] [--noeof] [--params] ";
-    binningUsageLine();
-    std::cerr << std::endl;
-    std::cerr << "\tRequired Parameters:" << std::endl;
-    std::cerr << "\t\t--in         : the SAM/BAM file to be read" << std::endl;
-    std::cerr << "\t\t--out        : the SAM/BAM file to be written" << std::endl;
-    std::cerr << "\tOptional Parameters:" << std::endl;
-    std::cerr << "\t\t--refFile    : reference file name used to convert any bases that match the reference to '='" << std::endl;
-    std::cerr << "\t\t--keepOQ     : keep the OQ tag rather than removing it.  Default is to remove it." << std::endl;
-    std::cerr << "\t\t--keepDups   : keep duplicates rather than removing records marked duplicate.  Default is to remove them." << std::endl;
-    std::cerr << "\t\t--sReadName  : Replace read names with unique integers and write the mapping to the specified file." << std::endl;
-    std::cerr << "                   This version requires the input file to have been presorted by readname, but" << std::endl;
-    std::cerr << "                   no validation is done to ensure this.  If it is not sorted, a readname will" << std::endl;
-    std::cerr << "                   get mapped to multiple new values." << std::endl;
-    std::cerr << "\t\t--readName   : Replace read names with unique integers and write the mapping to the specified file." << std::endl; 
-    std::cerr << "                   This version does not require the input file to have been presorted by readname," << std::endl;
-    std::cerr << "                   but uses a lot of memory since it stores all the read names." << std::endl;
-    std::cerr << "\t\t--rmTags     : Remove the specified Tags formatted as Tag:Type,Tag:Type,Tag:Type..." << std::endl;
-    std::cerr << "\t\t--noeof      : do not expect an EOF block on a bam file." << std::endl;
-    std::cerr << "\t\t--params     : print the parameter settings" << std::endl;
-    binningUsage();
-    std::cerr << std::endl;
+    BamExecutable::printUsage(os);
+    os << "\t./bam squeeze --in <inputFile> --out <outputFile.sam/bam/ubam (ubam is uncompressed bam)> [--refFile <refFilePath/Name>] [--keepOQ] [--keepDups] [--readName <readNameMapFile.txt>] [--sReadName <readNameMapFile.txt>] [--rmTags <Tag:Type[,Tag:Type]*>] [--noeof] [--params] ";
+    printBinningUsageLine(os);
+    os << std::endl;
+    os << "\tRequired Parameters:" << std::endl;
+    os << "\t\t--in         : the SAM/BAM file to be read" << std::endl;
+    os << "\t\t--out        : the SAM/BAM file to be written" << std::endl;
+    os << "\tOptional Parameters:" << std::endl;
+    os << "\t\t--refFile    : reference file name used to convert any bases that match the reference to '='" << std::endl;
+    os << "\t\t--keepOQ     : keep the OQ tag rather than removing it.  Default is to remove it." << std::endl;
+    os << "\t\t--keepDups   : keep duplicates rather than removing records marked duplicate.  Default is to remove them." << std::endl;
+    os << "\t\t--sReadName  : Replace read names with unique integers and write the mapping to the specified file." << std::endl;
+    os << "                   This version requires the input file to have been presorted by readname, but" << std::endl;
+    os << "                   no validation is done to ensure this.  If it is not sorted, a readname will" << std::endl;
+    os << "                   get mapped to multiple new values." << std::endl;
+    os << "\t\t--readName   : Replace read names with unique integers and write the mapping to the specified file." << std::endl;
+    os << "                   This version does not require the input file to have been presorted by readname," << std::endl;
+    os << "                   but uses a lot of memory since it stores all the read names." << std::endl;
+    os << "\t\t--rmTags     : Remove the specified Tags formatted as Tag:Type,Tag:Type,Tag:Type..." << std::endl;
+    os << "\t\t--noeof      : do not expect an EOF block on a bam file." << std::endl;
+    os << "\t\t--params     : print the parameter settings" << std::endl;
+    printBinningUsage(os);
+    os << std::endl;
 }
 
 // main function
@@ -150,7 +150,7 @@ int Squeeze::execute(int argc, char ** argv)
     // Check to see if the in file was specified, if not, report an error.
     if(inFile == "")
     {
-        usage();
+        printUsage(std::cerr);
         inputParameters.Status();
         // In file was not specified but it is mandatory.
         std::cerr << "--in is a mandatory argument, "
@@ -160,7 +160,7 @@ int Squeeze::execute(int argc, char ** argv)
 
     if(outFile == "")
     {
-        usage();
+        printUsage(std::cerr);
         inputParameters.Status();
         // In file was not specified but it is mandatory.
         std::cerr << "--out is a mandatory argument, "
@@ -172,7 +172,7 @@ int Squeeze::execute(int argc, char ** argv)
     // they mean the same thing, except the one indicates that the input file is sorted by read name.
     if(!readName.IsEmpty() && !sReadName.IsEmpty())
     {
-        usage();
+        printUsage(std::cerr);
         inputParameters.Status();
         std::cerr << "ERROR: --readName and --sReadName cannot both be specified\n";
         return(-1);
