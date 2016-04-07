@@ -27,9 +27,9 @@
 class SplitChromosome : public BamExecutable
 {
 public:
-    static void splitChromosomeDescription();
-    void description();
-    void usage();
+    static void printSplitChromosomeDescription(std::ostream& os);
+    void printDescription(std::ostream& os);
+    void printUsage(std::ostream& os);
     int execute(int argc, char **argv);
     virtual const char* getProgramName() {return("bam:splitChromosome");}
 };

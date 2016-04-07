@@ -28,9 +28,9 @@
 class Validate : public BamExecutable
 {
 public:
-    static void validateDescription();
-    void description();
-    void usage();
+    static void printValidateDescription(std::ostream& os);
+    void printDescription(std::ostream& os);
+    void printUsage(std::ostream& os);
     int execute(int argc, char **argv);
     virtual const char* getProgramName() {return("bam:validate");}
 };

@@ -28,9 +28,9 @@
 class Stats : public BamExecutable
 {
 public:
-    static void statsDescription();
-    void description();
-    void usage();
+    static void printStatsDescription(std::ostream& os);
+    void printDescription(std::ostream& os);
+    void printUsage(std::ostream& os);
     int execute(int argc, char **argv);
     virtual const char* getProgramName() {return("bam:stats");}
 

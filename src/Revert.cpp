@@ -31,34 +31,34 @@ Revert::Revert()
 {
 }
 
-void Revert::revertDescription()
+void Revert::printRevertDescription(std::ostream& os)
 {
-    std::cerr << " revert - Revert SAM/BAM replacing the specified fields with their previous values (if known) and removes specified tags" << std::endl;
+    os << " revert - Revert SAM/BAM replacing the specified fields with their previous values (if known) and removes specified tags" << std::endl;
 }
 
 
-void Revert::description()
+void Revert::printDescription(std::ostream& os)
 {
-    revertDescription();
+    printRevertDescription(os);
 }
 
 
-void Revert::usage()
+void Revert::printUsage(std::ostream& os)
 {
-    BamExecutable::usage();
-    std::cerr << "\t./bam revert --in <inputFile> --out <outputFile.sam/bam/ubam (ubam is uncompressed bam)> [--cigar] [--qual] [--keepTags] [--rmBQ] [--rmTags <Tag:Type[,Tag:Type]*>] [--noeof] [--params]" << std::endl;
-    std::cerr << "\tRequired Parameters:" << std::endl;
-    std::cerr << "\t\t--in         : the SAM/BAM file to be read" << std::endl;
-    std::cerr << "\t\t--out        : the SAM/BAM file to be written" << std::endl;
-    std::cerr << "\tOptional Parameters:" << std::endl;
-    std::cerr << "\t\t--cigar      : update the cigar and the position based on the OC & OP tags." << std::endl;
-    std::cerr << "\t\t--qual       : update the quality based on the OQ tag." << std::endl;
-    std::cerr << "\t\t--keepTags   : keep the tags that are used to update the record.  Default is to remove them." << std::endl;
-    std::cerr << "\t\t--rmBQ       : Remove the BQ Tag." << std::endl;
-    std::cerr << "\t\t--rmTags     : Remove the specified Tags formatted as Tag:Type,Tag:Type,Tag:Type..." << std::endl;
-    std::cerr << "\t\t--noeof      : do not expect an EOF block on a bam file." << std::endl;
-    std::cerr << "\t\t--params     : print the parameter settings" << std::endl;
-    std::cerr << std::endl;
+    BamExecutable::printUsage(os);
+    os << "\t./bam revert --in <inputFile> --out <outputFile.sam/bam/ubam (ubam is uncompressed bam)> [--cigar] [--qual] [--keepTags] [--rmBQ] [--rmTags <Tag:Type[,Tag:Type]*>] [--noeof] [--params]" << std::endl;
+    os << "\tRequired Parameters:" << std::endl;
+    os << "\t\t--in         : the SAM/BAM file to be read" << std::endl;
+    os << "\t\t--out        : the SAM/BAM file to be written" << std::endl;
+    os << "\tOptional Parameters:" << std::endl;
+    os << "\t\t--cigar      : update the cigar and the position based on the OC & OP tags." << std::endl;
+    os << "\t\t--qual       : update the quality based on the OQ tag." << std::endl;
+    os << "\t\t--keepTags   : keep the tags that are used to update the record.  Default is to remove them." << std::endl;
+    os << "\t\t--rmBQ       : Remove the BQ Tag." << std::endl;
+    os << "\t\t--rmTags     : Remove the specified Tags formatted as Tag:Type,Tag:Type,Tag:Type..." << std::endl;
+    os << "\t\t--noeof      : do not expect an EOF block on a bam file." << std::endl;
+    os << "\t\t--params     : print the parameter settings" << std::endl;
+    os << std::endl;
 }
 
 
@@ -106,7 +106,7 @@ int Revert::execute(int argc, char **argv)
     // Check to see if the in file was specified, if not, report an error.
     if(inFile == "")
     {
-        usage();
+        printUsage(std::cerr);
         inputParameters.Status();
         // In file was not specified but it is mandatory.
         std::cerr << "--in is a mandatory argument, "
@@ -116,7 +116,7 @@ int Revert::execute(int argc, char **argv)
 
     if(outFile == "")
     {
-        usage();
+        printUsage(std::cerr);
         inputParameters.Status();
         // In file was not specified but it is mandatory.
         std::cerr << "--out is a mandatory argument, "

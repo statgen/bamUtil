@@ -23,32 +23,32 @@
 #include "Parameters.h"
 #include "BgzfFileType.h"
 
-void SplitChromosome::splitChromosomeDescription()
+void SplitChromosome::printSplitChromosomeDescription(std::ostream& os)
 {
-    std::cerr << " splitChromosome - Split BAM by Chromosome" << std::endl;
+    os << " splitChromosome - Split BAM by Chromosome" << std::endl;
 }
 
 
-void SplitChromosome::description()
+void SplitChromosome::printDescription(std::ostream& os)
 {
-    splitChromosomeDescription();
+    printSplitChromosomeDescription(os);
 }
 
 
-void SplitChromosome::usage()
+void SplitChromosome::printUsage(std::ostream& os)
 {
-    BamExecutable::usage();
-    std::cerr << "\t./bam splitChromosome --in <inputFilename>  --out <outputFileBaseName> [--noeof] [--bamout|--samout] [--params]"<< std::endl;
-    std::cerr << "\tRequired Parameters:" << std::endl;
-    std::cerr << "\t\t--in       : the BAM file to be split" << std::endl;
-    std::cerr << "\t\t--out      : the base filename for the SAM/BAM files to write into.  Does not include the extension.\n";
-    std::cerr << "                 CHROM.bam or CHROM.sam will be appended to the basename where CHROM is the chromosome name.\n";
-    std::cerr << "\tOptional Parameters:" << std::endl;
-    std::cerr << "\t\t--noeof  : do not expect an EOF block on a bam file." << std::endl;
-    std::cerr << "\t\t--bamout : write the output files in BAM format (default)." << std::endl;
-    std::cerr << "\t\t--samout : write the output files in SAM format." << std::endl;
-    std::cerr << "\t\t--params : print the parameter settings" << std::endl;
-    std::cerr << std::endl;
+    BamExecutable::printUsage(os);
+    os << "\t./bam splitChromosome --in <inputFilename>  --out <outputFileBaseName> [--noeof] [--bamout|--samout] [--params]"<< std::endl;
+    os << "\tRequired Parameters:" << std::endl;
+    os << "\t\t--in       : the BAM file to be split" << std::endl;
+    os << "\t\t--out      : the base filename for the SAM/BAM files to write into.  Does not include the extension.\n";
+    os << "                 CHROM.bam or CHROM.sam will be appended to the basename where CHROM is the chromosome name.\n";
+    os << "\tOptional Parameters:" << std::endl;
+    os << "\t\t--noeof  : do not expect an EOF block on a bam file." << std::endl;
+    os << "\t\t--bamout : write the output files in BAM format (default)." << std::endl;
+    os << "\t\t--samout : write the output files in SAM format." << std::endl;
+    os << "\t\t--params : print the parameter settings" << std::endl;
+    os << std::endl;
 }
 
 
@@ -98,7 +98,7 @@ int SplitChromosome::execute(int argc, char **argv)
     // Check to see if the in file was specified, if not, report an error.
     if(inFile == "")
     {
-        usage();
+        printUsage(std::cerr);
         inputParameters.Status();
         // In file was not specified but it is mandatory.
         std::cerr << "--in is a mandatory argument, "
@@ -107,7 +107,7 @@ int SplitChromosome::execute(int argc, char **argv)
     }
     if(outFileBase == "")
     {
-        usage();
+        printUsage(std::cerr);
         inputParameters.Status();
         // In file was not specified but it is mandatory.
         std::cerr << "--out is a mandatory argument, "

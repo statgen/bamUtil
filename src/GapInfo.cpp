@@ -27,33 +27,33 @@ GapInfo::GapInfo()
 }
 
 
-void GapInfo::gapInfoDescription()
+void GapInfo::printGapInfoDescription(std::ostream& os)
 {
-    std::cerr << " gapInfo - Print information on the gap between read pairs in a SAM/BAM File." << std::endl;
+    os << " gapInfo - Print information on the gap between read pairs in a SAM/BAM File." << std::endl;
 }
 
 
-void GapInfo::description()
+void GapInfo::printDescription(std::ostream& os)
 {
-    gapInfoDescription();
+    printGapInfoDescription(os);
 }
 
 
-void GapInfo::usage()
+void GapInfo::printUsage(std::ostream& os)
 {
-    BamExecutable::usage();
-    std::cerr << "\t./bam gapInfo --in <inputFile> --out <outputFile> [--noeof] [--params]" << std::endl;
-    std::cerr << "\tRequired Parameters:" << std::endl;
-    std::cerr << "\t\t--in          : the SAM/BAM file to print read pair gap info for" << std::endl;
-    std::cerr << "\t\t--out         : the output file to be written" << std::endl;
-    std::cerr << "\tOptional Parameters:" << std::endl;
-    std::cerr << "\t\t--refFile     : reference file, used to skip gaps that include reference base 'N' (for runs without --detailed)";
-    std::cerr << "\t\t--detailed    : Print  the details for each read pair" << std::endl;
-    std::cerr << "\tOptional Parameters for the Detailed Option:" << std::endl;
-    std::cerr << "\t\t--checkFirst  : Check the first in pair flag and print \"NotFirst\" if it isn't first" << std::endl;
-    std::cerr << "\t\t--checkStrand : Check the strand flag and print \"Reverse\" if it is reverse complimented" << std::endl;
-    std::cerr << "\t\t--noeof       : Do not expect an EOF block on a bam file." << std::endl;
-    std::cerr << "\t\t--params      : Print the parameter settings to stderr" << std::endl;
+    BamExecutable::printUsage(os);
+    os << "\t./bam gapInfo --in <inputFile> --out <outputFile> [--noeof] [--params]" << std::endl;
+    os << "\tRequired Parameters:" << std::endl;
+    os << "\t\t--in          : the SAM/BAM file to print read pair gap info for" << std::endl;
+    os << "\t\t--out         : the output file to be written" << std::endl;
+    os << "\tOptional Parameters:" << std::endl;
+    os << "\t\t--refFile     : reference file, used to skip gaps that include reference base 'N' (for runs without --detailed)";
+    os << "\t\t--detailed    : Print  the details for each read pair" << std::endl;
+    os << "\tOptional Parameters for the Detailed Option:" << std::endl;
+    os << "\t\t--checkFirst  : Check the first in pair flag and print \"NotFirst\" if it isn't first" << std::endl;
+    os << "\t\t--checkStrand : Check the strand flag and print \"Reverse\" if it is reverse complimented" << std::endl;
+    os << "\t\t--noeof       : Do not expect an EOF block on a bam file." << std::endl;
+    os << "\t\t--params      : Print the parameter settings to stderr" << std::endl;
 }
 
 
@@ -102,7 +102,7 @@ int GapInfo::execute(int argc, char **argv)
     // Check to see if the in file was specified, if not, report an error.
     if(inFile == "")
     {
-        usage();
+        printUsage(std::cerr);
         inputParameters.Status();
         // In file was not specified but it is mandatory.
         std::cerr << "--in is a mandatory argument, "
@@ -113,7 +113,7 @@ int GapInfo::execute(int argc, char **argv)
     // Check to see if the out file was specified, if not, report an error.
     if(outFile == "")
     {
-        usage();
+        printUsage(std::cerr);
         inputParameters.Status();
         // Out file was not specified but it is mandatory.
         std::cerr << "--out is a mandatory argument, "

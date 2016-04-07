@@ -89,77 +89,77 @@ Recab::~Recab()
 }
 
 
-void Recab::recabDescription()
+void Recab::printRecabDescription(std::ostream& os)
 {
-    std::cerr << " recab - Recalibrate\n";
+    os << " recab - Recalibrate\n";
 }
 
 
-void Recab::description()
+void Recab::printDescription(std::ostream& os)
 {
-    recabDescription();
+    printRecabDescription(os);
 }
 
 
-void Recab::usage()
+void Recab::printUsage(std::ostream& os)
 {
-    std::cerr << "Usage: ./bam recab (options) --in <InputBamFile> --out <OutputFile> [--log <logFile>] [--verbose] [--noeof] [--params] ";
-    recabSpecificUsageLine();
-    std::cerr << std::endl << std::endl;
+    os << "Usage: ./bam recab (options) --in <InputBamFile> --out <OutputFile> [--log <logFile>] [--verbose] [--noeof] [--params] ";
+    printRecabSpecificUsageLine(os);
+    os << std::endl << std::endl;
 
-    std::cerr << "Required General Parameters :" << std::endl;
-    std::cerr << "\t--in <infile>   : input BAM file name" << std::endl;
-    std::cerr << "\t--out <outfile> : output recalibration file name" << std::endl;
-    std::cerr << "Optional General Parameters : " << std::endl;
-    std::cerr << "\t--log <logfile> : log and summary statistics (default: [outfile].log)" << std::endl;
-    std::cerr << "\t--verbose       : Turn on verbose mode" << std::endl;
-    std::cerr << "\t--noeof         : do not expect an EOF block on a bam file." << std::endl;
-    std::cerr << "\t--params        : print the parameter settings" << std::endl;
-   recabSpecificUsage();
-    std::cerr << "\n" << std::endl;
+    os << "Required General Parameters :" << std::endl;
+    os << "\t--in <infile>   : input BAM file name" << std::endl;
+    os << "\t--out <outfile> : output recalibration file name" << std::endl;
+    os << "Optional General Parameters : " << std::endl;
+    os << "\t--log <logfile> : log and summary statistics (default: [outfile].log)" << std::endl;
+    os << "\t--verbose       : Turn on verbose mode" << std::endl;
+    os << "\t--noeof         : do not expect an EOF block on a bam file." << std::endl;
+    os << "\t--params        : print the parameter settings" << std::endl;
+    printRecabSpecificUsage(os);
+    os << "\n" << std::endl;
 }
 
 
-void Recab::recabSpecificUsageLine()
+void Recab::printRecabSpecificUsageLine(std::ostream& os)
 {
-    std::cerr << "--refFile <ReferenceFile> [--dbsnp <dbsnpFile>] [--minBaseQual <minBaseQual>] [--maxBaseQual <maxBaseQual>] [--blended <weight>] [--fitModel] [--fast] [--keepPrevDbsnp] [--keepPrevNonAdjacent] [--useLogReg] [--qualField <tag>] [--storeQualTag <tag>] [--buildExcludeFlags <flag>] [--applyExcludeFlags <flag>] ";
-    mySqueeze.binningUsageLine();
+    os << "--refFile <ReferenceFile> [--dbsnp <dbsnpFile>] [--minBaseQual <minBaseQual>] [--maxBaseQual <maxBaseQual>] [--blended <weight>] [--fitModel] [--fast] [--keepPrevDbsnp] [--keepPrevNonAdjacent] [--useLogReg] [--qualField <tag>] [--storeQualTag <tag>] [--buildExcludeFlags <flag>] [--applyExcludeFlags <flag>] ";
+    mySqueeze.printBinningUsageLine(os);
 }
 
-void Recab::recabSpecificUsage()
+void Recab::printRecabSpecificUsage(std::ostream& os)
 {
-    std::cerr << "\nRecab Specific Required Parameters\n";
-    std::cerr << "\t--refFile <reference file>    : reference file name" << std::endl;
-    std::cerr << "Recab Specific Optional Parameters : " << std::endl;
-    std::cerr << "\t--dbsnp <known variance file> : dbsnp file of positions" << std::endl;
-    std::cerr << "\t--minBaseQual <minBaseQual>   : minimum base quality of bases to recalibrate (default: " << DEFAULT_MIN_BASE_QUAL << ")" << std::endl;
-    std::cerr << "\t--maxBaseQual <maxBaseQual>   : maximum recalibrated base quality (default: " << DEFAULT_MAX_BASE_QUAL << ")" << std::endl;
-    std::cerr << "\t                                qualities over this value will be set to this value." << std::endl;
-    std::cerr << "\t                                This setting is applied after binning (if applicable)." << std::endl;
-    std::cerr << "\t--blended <weight>            : blended model weight" << std::endl;
-    std::cerr << "\t--fitModel                    : check if the logistic regression model fits the data" << std::endl;
-    std::cerr << "\t                                overriden by fast, but automatically applied by useLogReg" << std::endl;
-    std::cerr << "\t--fast                        : use a compact representation that only allows:" << std::endl;
-    std::cerr << "\t                                   * at most " << (BaseData::getFastMaxRG() + 1) << " Read Groups" << std::endl;
-    std::cerr << "\t                                   * maximum quality " << BaseData::getFastMaxQual() << std::endl;
-    std::cerr << "\t                                   * at most " << BaseData::getFastMaxCycles() << " cycles" << std::endl;
-    std::cerr << "\t                                overrides fitModel, but is overridden by useLogReg" << std::endl;
-    std::cerr << "\t                                uses up to about 2.25G more memory than running without --fast." << std::endl;
-    std::cerr << "\t--keepPrevDbsnp               : do not exclude entries where the previous base is in dbsnp when\n";
-    std::cerr << "\t                                building the recalibration table" << std::endl;
-    std::cerr << "\t                                By default they are excluded from the table." << std::endl;
-    std::cerr << "\t--keepPrevNonAdjacent         : do not exclude entries where the previous base is not adjacent\n";
-    std::cerr << "\t                                (not a Cigar M/X/=) when building the recalibration table" << std::endl;
-    std::cerr << "\t                                By default they are excluded from the table (except the first cycle)." << std::endl;
-    std::cerr << "\t--useLogReg                   : use logistic regression calculated quality for the new quality" << std::endl;
-    std::cerr << "\t                                automatically applies fitModel and overrides fast." << std::endl;
-    std::cerr << "\t--qualField <quality tag>     : tag to get the starting base quality\n";
-    std::cerr << "\t                                (default is to get it from the Quality field)" << std::endl;
-    std::cerr << "\t--storeQualTag <quality tag>  : tag to store the previous quality into" << std::endl;
-    std::cerr << "\t--buildExcludeFlags <flag>    : exclude reads with any of these flags set when building the" << std::endl;
-    std::cerr << "\t                                recalibration table.  Default is 0xF04" << std::endl;
-    std::cerr << "\t--applyExcludeFlags <flag>    : do not apply the recalibration table to any reads with any of these flags set" << std::endl;
-    mySqueeze.binningUsage();
+    os << "\nRecab Specific Required Parameters\n";
+    os << "\t--refFile <reference file>    : reference file name" << std::endl;
+    os << "Recab Specific Optional Parameters : " << std::endl;
+    os << "\t--dbsnp <known variance file> : dbsnp file of positions" << std::endl;
+    os << "\t--minBaseQual <minBaseQual>   : minimum base quality of bases to recalibrate (default: " << DEFAULT_MIN_BASE_QUAL << ")" << std::endl;
+    os << "\t--maxBaseQual <maxBaseQual>   : maximum recalibrated base quality (default: " << DEFAULT_MAX_BASE_QUAL << ")" << std::endl;
+    os << "\t                                qualities over this value will be set to this value." << std::endl;
+    os << "\t                                This setting is applied after binning (if applicable)." << std::endl;
+    os << "\t--blended <weight>            : blended model weight" << std::endl;
+    os << "\t--fitModel                    : check if the logistic regression model fits the data" << std::endl;
+    os << "\t                                overriden by fast, but automatically applied by useLogReg" << std::endl;
+    os << "\t--fast                        : use a compact representation that only allows:" << std::endl;
+    os << "\t                                   * at most " << (BaseData::getFastMaxRG() + 1) << " Read Groups" << std::endl;
+    os << "\t                                   * maximum quality " << BaseData::getFastMaxQual() << std::endl;
+    os << "\t                                   * at most " << BaseData::getFastMaxCycles() << " cycles" << std::endl;
+    os << "\t                                overrides fitModel, but is overridden by useLogReg" << std::endl;
+    os << "\t                                uses up to about 2.25G more memory than running without --fast." << std::endl;
+    os << "\t--keepPrevDbsnp               : do not exclude entries where the previous base is in dbsnp when\n";
+    os << "\t                                building the recalibration table" << std::endl;
+    os << "\t                                By default they are excluded from the table." << std::endl;
+    os << "\t--keepPrevNonAdjacent         : do not exclude entries where the previous base is not adjacent\n";
+    os << "\t                                (not a Cigar M/X/=) when building the recalibration table" << std::endl;
+    os << "\t                                By default they are excluded from the table (except the first cycle)." << std::endl;
+    os << "\t--useLogReg                   : use logistic regression calculated quality for the new quality" << std::endl;
+    os << "\t                                automatically applies fitModel and overrides fast." << std::endl;
+    os << "\t--qualField <quality tag>     : tag to get the starting base quality\n";
+    os << "\t                                (default is to get it from the Quality field)" << std::endl;
+    os << "\t--storeQualTag <quality tag>  : tag to store the previous quality into" << std::endl;
+    os << "\t--buildExcludeFlags <flag>    : exclude reads with any of these flags set when building the" << std::endl;
+    os << "\t                                recalibration table.  Default is 0xF04" << std::endl;
+    os << "\t--applyExcludeFlags <flag>    : do not apply the recalibration table to any reads with any of these flags set" << std::endl;
+    mySqueeze.printBinningUsage(os);
 }
 
 
@@ -204,7 +204,7 @@ int Recab::execute(int argc, char *argv[])
 
     if(inFile.IsEmpty())
     {
-        usage();
+        printUsage(std::cerr);
         inputParameters.Status();
         std::cerr << "Missing required --in parameter" << std::endl;
         return EXIT_FAILURE;
@@ -212,7 +212,7 @@ int Recab::execute(int argc, char *argv[])
 
     if(outFile.IsEmpty())
     {
-        usage();
+        printUsage(std::cerr);
         inputParameters.Status();
         std::cerr << "Missing required --out parameter" << std::endl;
         return EXIT_FAILURE;

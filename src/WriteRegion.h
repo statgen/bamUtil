@@ -29,9 +29,9 @@ class WriteRegion : public BamExecutable
 {
 public:
     WriteRegion();
-    static void writeRegionDescription();
-    void description();
-    void usage();
+    static void printWriteRegionDescription(std::ostream& os);
+    void printDescription(std::ostream& os);
+    void printUsage(std::ostream& os);
     int execute(int argc, char **argv);
     virtual const char* getProgramName() {return("bam:writeRegion");}
 

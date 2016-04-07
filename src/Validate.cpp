@@ -25,41 +25,41 @@
 #include "BgzfFileType.h"
 #include "SamValidation.h"
 
-void Validate::validateDescription()
+void Validate::printValidateDescription(std::ostream& os)
 {
-    std::cerr << " validate - Validate a SAM/BAM File" << std::endl;
+    os << " validate - Validate a SAM/BAM File" << std::endl;
 }
 
 
-void Validate::description()
+void Validate::printDescription(std::ostream& os)
 {
-    validateDescription();
+    printValidateDescription(os);
 }
 
 
-void Validate::usage()
+void Validate::printUsage(std::ostream& os)
 {
-    BamExecutable::usage();
-    std::cerr << "\t./bam validate --in <inputFile> [--noeof] [--so_flag|--so_coord|--so_query] [--maxErrors <numErrors>] [--verbose] [--printableErrors <numReportedErrors>] [--disableStatistics] [--params]" << std::endl;
-    std::cerr << "\tRequired Parameters:" << std::endl;
-    std::cerr << "\t\t--in : the SAM/BAM file to be validated" << std::endl;
-    std::cerr << "\tOptional Parameters:" << std::endl;
-    std::cerr << "\t\t--noeof             : do not expect an EOF block on a bam file." << std::endl;
-    std::cerr << "\t\t--refFile           : the reference file" << std::endl;
-    std::cerr << "\t\t--so_flag           : validate the file is sorted based on the header's @HD SO flag." << std::endl;
-    std::cerr << "\t\t--so_coord          : validate the file is sorted based on the coordinate." << std::endl;
-    std::cerr << "\t\t--so_query          : validate the file is sorted based on the query name." << std::endl;
-    std::cerr << "\t\t--maxErrors         : Number of records with errors/invalids to allow before quiting." << std::endl;
-    std::cerr << "\t\t                      -1 (default) indicates to not quit until the entire file is validated." << std::endl;
-    std::cerr << "\t\t                      0 indicates not to read/validate anything." << std::endl;
-    std::cerr << "\t\t--verbose           : Print specific error details rather than just a summary" << std::endl;
-    std::cerr << "\t\t--printableErrors   : Maximum number of records with errors to print the details of\n"
+    BamExecutable::printUsage(os);
+    os << "\t./bam validate --in <inputFile> [--noeof] [--so_flag|--so_coord|--so_query] [--maxErrors <numErrors>] [--verbose] [--printableErrors <numReportedErrors>] [--disableStatistics] [--params]" << std::endl;
+    os << "\tRequired Parameters:" << std::endl;
+    os << "\t\t--in : the SAM/BAM file to be validated" << std::endl;
+    os << "\tOptional Parameters:" << std::endl;
+    os << "\t\t--noeof             : do not expect an EOF block on a bam file." << std::endl;
+    os << "\t\t--refFile           : the reference file" << std::endl;
+    os << "\t\t--so_flag           : validate the file is sorted based on the header's @HD SO flag." << std::endl;
+    os << "\t\t--so_coord          : validate the file is sorted based on the coordinate." << std::endl;
+    os << "\t\t--so_query          : validate the file is sorted based on the query name." << std::endl;
+    os << "\t\t--maxErrors         : Number of records with errors/invalids to allow before quiting." << std::endl;
+    os << "\t\t                      -1 (default) indicates to not quit until the entire file is validated." << std::endl;
+    os << "\t\t                      0 indicates not to read/validate anything." << std::endl;
+    os << "\t\t--verbose           : Print specific error details rather than just a summary" << std::endl;
+    os << "\t\t--printableErrors   : Maximum number of records with errors to print the details of\n"
               << "\t\t                      before suppressing them when in verbose (defaults to 100)" 
               << std::endl;
-    std::cerr << "\t\t--disableStatistics : Turn off statistic generation" << std::endl;
-    std::cerr << "\t\t--params            : Print the parameter settings" << std::endl;
+    os << "\t\t--disableStatistics : Turn off statistic generation" << std::endl;
+    os << "\t\t--params            : Print the parameter settings" << std::endl;
     //    std::cerr << "\t\t--quiet             : Suppress the display of errors and summary statistics" << std::endl;
-    std::cerr << std::endl;
+    os << std::endl;
 }
 
 
@@ -127,7 +127,7 @@ int Validate::execute(int argc, char **argv)
     // Check to see if the in file was specified, if not, report an error.
     if(inFile == "")
     {
-        usage();
+        printUsage(std::cerr);
         inputParameters.Status();
         // In file was not specified but it is mandatory.
         std::cerr << "--in is a mandatory argument for validate, "

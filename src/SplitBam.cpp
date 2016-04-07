@@ -56,38 +56,38 @@
 //    -v : turn on verbose mode
 ///////////////////////////////////////////////////////////////////////
 
-void SplitBam::splitBamDescription()
+void SplitBam::printSplitBamDescription(std::ostream& os)
 {
-    std::cerr << " splitBam - Split a BAM file into multiple BAM files based on ReadGroup" << std::endl;
+    os << " splitBam - Split a BAM file into multiple BAM files based on ReadGroup" << std::endl;
 }
 
 
-void SplitBam::description()
+void SplitBam::printDescription(std::ostream& os)
 {
-    splitBamDescription();
+    printSplitBamDescription(os);
 }
 
 
 // print Usage
-void SplitBam::usage()
+void SplitBam::printUsage(std::ostream& os)
 {
-    BamExecutable::usage();
-  std::cerr << "\t ./bam splitBam [-v] -i <inputBAMFile> -o <outPrefix> [-L logFile]" << std::endl;
-  std::cerr << "splitBam splits a BAM file into multiple BAM files based on" << std::endl;
-  std::cerr << "ReadGroup according to the following details." << std::endl;
-  std::cerr << "\t(1) Creates multiple output files named [outprefix].[RGID].bam, for" << std::endl;
-  std::cerr << "\teach ReadGroup ID (RGID) in the BAM record" << std::endl;
-  std::cerr << "\t(2) Headers are a copy of the original file, removing @RG and @PG" << std::endl;
-  std::cerr << "\theaders where IDs match with the other ReadGroup IDs." << std::endl;
-  std::cerr << "\t(3) Copy each of the original file's BAM record to one of the output" << std::endl;
-  std::cerr << "file where the ReadGroup ID matches" << std::endl;
-  std::cerr << "Required arguments:" << std::endl;
-  std::cerr << "-i/--in [inputBAMFile] : Original BAM file containing readGroup info" << std::endl;
-  std::cerr << "-o/--out [outPrefix] : prefix of output bam files of [outprefix].[RGID].bam" << std::endl;
-  std::cerr << "Optional arguments:" << std::endl;
-  std::cerr << "-L/--log [logFile]  : log file name. default is listFile.log" << std::endl;
-  std::cerr << "-v/--verbose : turn on verbose mode" << std::endl;
-  std::cerr << "-n/--noeof : turn off the check for an EOF block at the end of a bam file" << std::endl;
+    BamExecutable::printUsage(os);
+    os << "\t ./bam splitBam [-v] -i <inputBAMFile> -o <outPrefix> [-L logFile]" << std::endl;
+    os << "splitBam splits a BAM file into multiple BAM files based on" << std::endl;
+    os << "ReadGroup according to the following details." << std::endl;
+    os << "\t(1) Creates multiple output files named [outprefix].[RGID].bam, for" << std::endl;
+    os << "\teach ReadGroup ID (RGID) in the BAM record" << std::endl;
+    os << "\t(2) Headers are a copy of the original file, removing @RG and @PG" << std::endl;
+    os << "\theaders where IDs match with the other ReadGroup IDs." << std::endl;
+    os << "\t(3) Copy each of the original file's BAM record to one of the output" << std::endl;
+    os << "file where the ReadGroup ID matches" << std::endl;
+    os << "Required arguments:" << std::endl;
+    os << "-i/--in [inputBAMFile] : Original BAM file containing readGroup info" << std::endl;
+    os << "-o/--out [outPrefix] : prefix of output bam files of [outprefix].[RGID].bam" << std::endl;
+    os << "Optional arguments:" << std::endl;
+    os << "-L/--log [logFile]  : log file name. default is listFile.log" << std::endl;
+    os << "-v/--verbose : turn on verbose mode" << std::endl;
+    os << "-n/--noeof : turn off the check for an EOF block at the end of a bam file" << std::endl;
 }
 
 // main function
@@ -175,13 +175,13 @@ int SplitBam::execute(int argc, char ** argv)
 
   // every argument must correspond to an option
   if ( optind < (argc-1) ) {
-    usage();
+    printUsage(std::cerr);
     Logger::gLogger->error("non-option argument exist");
   }
 
   // check the required arguments are nonempty
   if ( s_in.empty() || s_out.empty() ) {
-    usage();
+    printUsage(std::cerr);
     Logger::gLogger->error("At least one of the required argument is missing");
   }
 

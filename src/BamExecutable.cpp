@@ -35,28 +35,28 @@ BamExecutable::~BamExecutable()
 }
 
 
-void BamExecutable::bamVersion()
+void BamExecutable::printBamVersion(std::ostream& os)
 {
-    std::cerr << "Version: " << VERSION
+    os << "Version: " << VERSION
               << "; Built: " << DATE << " by "<< USER << std::endl;
 }
 
-void BamExecutable::bamExecutableDescription()
+void BamExecutable::printBamExecutableDescription(std::ostream& os)
 {
-    std::cerr << "Set of tools for operating on SAM/BAM files." << std::endl;
-    bamVersion();
+    os << "Set of tools for operating on SAM/BAM files." << std::endl;
+    printBamVersion(os);
 }
 
 
-void BamExecutable::description()
+void BamExecutable::printDescription(std::ostream& os)
 {
-    bamExecutableDescription();
+    printBamExecutableDescription(os);
 }
 
 
-void BamExecutable::usage()
+void BamExecutable::printUsage(std::ostream& os)
 {
-    bamVersion();
-    std::cerr << std::endl;
-    description();
+    printBamVersion(os);
+    os << std::endl;
+    printDescription(os);
 }

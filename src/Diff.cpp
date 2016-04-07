@@ -85,49 +85,49 @@ Diff::~Diff()
 }
 
 
-void Diff::diffDescription()
+void Diff::printDiffDescription(std::ostream& os)
 {
-    std::cerr << " diff - Diff 2 coordinate sorted SAM/BAM files." << std::endl;
+    os << " diff - Diff 2 coordinate sorted SAM/BAM files." << std::endl;
 }
 
 
-void Diff::description()
+void Diff::printDescription(std::ostream& os)
 {
-    diffDescription();
+    printDiffDescription(os);
 }
 
 
-void Diff::usage()
+void Diff::printUsage(std::ostream& os)
 {
-    BamExecutable::usage();
-    std::cerr << "\t./bam diff --in1 <inputFile> --in2 <inputFile> [--out <outputFile>] [--all] [--flag] [--mapQual] [--mate] [--isize] [--seq] [--baseQual] [--tags <Tag:Type[,Tag:Type]*>] [--everyTag] [--noCigar] [--noPos] [--onlyDiffs] [--recPoolSize <int>] [--posDiff <int>] [--noeof] [--params]" << std::endl;
-    std::cerr << "\tRequired Parameters:" << std::endl;
-    std::cerr << "\t\t--in1         : first coordinate sorted SAM/BAM file to be diffed" << std::endl;
-    std::cerr << "\t\t--in2         : second coordinate sorted SAM/BAM file to be diffed" << std::endl;
-    std::cerr << "\tOptional Parameters:" << std::endl;
-    std::cerr << "\t\t--out         : output filename, use .bam extension to output in SAM/BAM format instead of diff format." << std::endl;
-    std::cerr << "\t\t                In SAM/BAM format there will be 3 output files:" << std::endl;
-    std::cerr << "\t\t                    1) the specified name with record diffs" << std::endl;
-    std::cerr << "\t\t                    2) specified name with _only_<in1>.sam/bam with records only in the in1 file" << std::endl;
-    std::cerr << "\t\t                    3) specified name with _only_<in2>.sam/bam with records only in the in2 file" << std::endl;
-    std::cerr << "\t\t--all         : diff all the SAM/BAM fields." << std::endl;
-    std::cerr << "\t\t--flag        : diff the flags." << std::endl;
-    std::cerr << "\t\t--mapQual     : diff the mapping qualities." << std::endl;
-    std::cerr << "\t\t--mate        : diff the mate chrom/pos." << std::endl;
-    std::cerr << "\t\t--isize       : diff the insert sizes." << std::endl;
-    std::cerr << "\t\t--seq         : diff the sequence bases." << std::endl;
-    std::cerr << "\t\t--baseQual    : diff the base qualities." << std::endl;
-    std::cerr << "\t\t--tags        : diff the specified Tags formatted as Tag:Type,Tag:Type,Tag:Type..." << std::endl;
-    std::cerr << "\t\t--everyTag    : diff all the Tags" << std::endl;
-    std::cerr << "\t\t--noCigar     : do not diff the the cigars." << std::endl;
-    std::cerr << "\t\t--noPos       : do not diff the positions." << std::endl;
-    std::cerr << "\t\t--onlyDiffs   : only print the fields that are different, otherwise for any diff all the fields that are compared are printed." << std::endl;
-    std::cerr << "\t\t--recPoolSize : number of records to allow to be stored at a time, default value: " << myMaxAllowedRecs << std::endl;
-    std::cerr << "\t\t                Set to -1 for unlimited number of records" << std::endl;
-    std::cerr << "\t\t--posDiff     : max base pair difference between possibly matching records, default value: " << myThreshold << std::endl;
-    std::cerr << "\t\t--noeof       : do not expect an EOF block on a bam file." << std::endl;
-    std::cerr << "\t\t--params      : print the parameter settings" << std::endl;
-    std::cerr << std::endl;
+    BamExecutable::printUsage(os);
+    os << "\t./bam diff --in1 <inputFile> --in2 <inputFile> [--out <outputFile>] [--all] [--flag] [--mapQual] [--mate] [--isize] [--seq] [--baseQual] [--tags <Tag:Type[,Tag:Type]*>] [--everyTag] [--noCigar] [--noPos] [--onlyDiffs] [--recPoolSize <int>] [--posDiff <int>] [--noeof] [--params]" << std::endl;
+    os << "\tRequired Parameters:" << std::endl;
+    os << "\t\t--in1         : first coordinate sorted SAM/BAM file to be diffed" << std::endl;
+    os << "\t\t--in2         : second coordinate sorted SAM/BAM file to be diffed" << std::endl;
+    os << "\tOptional Parameters:" << std::endl;
+    os << "\t\t--out         : output filename, use .bam extension to output in SAM/BAM format instead of diff format." << std::endl;
+    os << "\t\t                In SAM/BAM format there will be 3 output files:" << std::endl;
+    os << "\t\t                    1) the specified name with record diffs" << std::endl;
+    os << "\t\t                    2) specified name with _only_<in1>.sam/bam with records only in the in1 file" << std::endl;
+    os << "\t\t                    3) specified name with _only_<in2>.sam/bam with records only in the in2 file" << std::endl;
+    os << "\t\t--all         : diff all the SAM/BAM fields." << std::endl;
+    os << "\t\t--flag        : diff the flags." << std::endl;
+    os << "\t\t--mapQual     : diff the mapping qualities." << std::endl;
+    os << "\t\t--mate        : diff the mate chrom/pos." << std::endl;
+    os << "\t\t--isize       : diff the insert sizes." << std::endl;
+    os << "\t\t--seq         : diff the sequence bases." << std::endl;
+    os << "\t\t--baseQual    : diff the base qualities." << std::endl;
+    os << "\t\t--tags        : diff the specified Tags formatted as Tag:Type,Tag:Type,Tag:Type..." << std::endl;
+    os << "\t\t--everyTag    : diff all the Tags" << std::endl;
+    os << "\t\t--noCigar     : do not diff the the cigars." << std::endl;
+    os << "\t\t--noPos       : do not diff the positions." << std::endl;
+    os << "\t\t--onlyDiffs   : only print the fields that are different, otherwise for any diff all the fields that are compared are printed." << std::endl;
+    os << "\t\t--recPoolSize : number of records to allow to be stored at a time, default value: " << myMaxAllowedRecs << std::endl;
+    os << "\t\t                Set to -1 for unlimited number of records" << std::endl;
+    os << "\t\t--posDiff     : max base pair difference between possibly matching records, default value: " << myThreshold << std::endl;
+    os << "\t\t--noeof       : do not expect an EOF block on a bam file." << std::endl;
+    os << "\t\t--params      : print the parameter settings" << std::endl;
+    os << std::endl;
 }
 
 
@@ -200,7 +200,7 @@ int Diff::execute(int argc, char **argv)
     // Check to see if the in file was specified, if not, report an error.
     if(inFile1 == "")
     {
-        usage();
+        printUsage(std::cerr);
         inputParameters.Status();
         // In file was not specified but it is mandatory.
         std::cerr << "--in1 is a mandatory argument, "
@@ -210,7 +210,7 @@ int Diff::execute(int argc, char **argv)
 
     if(inFile2 == "")
     {
-        usage();
+        printUsage(std::cerr);
         inputParameters.Status();
         // In file was not specified but it is mandatory.
         std::cerr << "--in2 is a mandatory argument, "

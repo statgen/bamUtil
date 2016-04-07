@@ -39,9 +39,9 @@ public:
     Bam2FastQ();
     ~Bam2FastQ();
 
-    static void bam2FastQDescription();
-    void description();
-    void usage();
+    static void printBam2FastQDescription(std::ostream& os);
+    void printDescription(std::ostream& os);
+    void printUsage(std::ostream& os);
     int execute(int argc, char **argv);
     virtual const char* getProgramName() {return("bam:bam2FastQ");}
 

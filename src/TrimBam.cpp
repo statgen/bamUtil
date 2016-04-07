@@ -28,38 +28,38 @@
 #include "PhoneHome.h"
 #include "SamFilter.h"
 
-void TrimBam::trimBamDescription()
+void TrimBam::printTrimBamDescription(std::ostream& os)
 {
-    std::cerr << " trimBam - Trim the ends of reads in a SAM/BAM file changing read ends to 'N' and quality to '!' or softclipping the ends (resulting file will not be sorted)" << std::endl;
+    os << " trimBam - Trim the ends of reads in a SAM/BAM file changing read ends to 'N' and quality to '!' or softclipping the ends (resulting file will not be sorted)" << std::endl;
 }
 
 
-void TrimBam::description()
+void TrimBam::printDescription(std::ostream& os)
 {
-    trimBamDescription();
+    printTrimBamDescription(os);
 }
 
 
-void TrimBam::usage()
+void TrimBam::printUsage(std::ostream& os)
 {
-    BamExecutable::usage();
-    std::cerr << "\t./bam trimBam [inFile] [outFile] [num-bases-to-trim-on-each-side]\n";
-    std::cerr << "Alternately, the number of bases from each side can be specified (either or both -L/-R (--left/--right) can be specified):\n";
-    std::cerr << "\t./bam trimBam [inFile] [outFile] -L [num-bases-to-trim-from-left] -R [num-bases-to-trim-from-right]\n";
-    std::cerr << "By default reverse strands are reversed and then the left & right are trimmed .\n";
-    std::cerr << "This means that --left actually trims from the right of the read in the SAM/BAM for reverse reads.\n";
-    std::cerr << "Optionally --ignoreStrand/-i can be specified to ignore the strand information and treat forward/reverse the same.\n";
-    std::cerr << "trimBam will modify the sequences to 'N', and the quality string to '!', unless --clip/-c is specified.\n";
-    std::cerr << "--clip/-c indicates to soft clip instead of modifying the sequence or quality\n";
-    std::cerr << "\tWhen clipping:\n";
-    std::cerr << "\t  * if the entire read would be soft clipped, no clipping is done, and instead the read is marked as unmapped\n";
-    std::cerr << "\t  * mate information is not updated (start positions/mapping may change after soft clipping)\n";
-    std::cerr << "\t        * run samtools fixmate to fix mate information (will first need to sort by read name)\n";
-    std::cerr << "\t  * output is not sorted (start positions/mapping may change after soft clipping)\n";
-    std::cerr << "\t        * run samtools sort to resort by coordinate (after fixmate)\n";
-    std::cerr << "\t  * soft clips already in the read are maintained or added to\n";
-    std::cerr << "\t        * if 3 bases were clipped and 2 are specified to be clipped, no change is made to that end\n";
-    std::cerr << "\t        * if 3 bases were clipped and 5 are specified to be clipped, 2 additional bases are clipped from that end\n";
+    BamExecutable::printUsage(os);
+    os << "\t./bam trimBam [inFile] [outFile] [num-bases-to-trim-on-each-side]\n";
+    os << "Alternately, the number of bases from each side can be specified (either or both -L/-R (--left/--right) can be specified):\n";
+    os << "\t./bam trimBam [inFile] [outFile] -L [num-bases-to-trim-from-left] -R [num-bases-to-trim-from-right]\n";
+    os << "By default reverse strands are reversed and then the left & right are trimmed .\n";
+    os << "This means that --left actually trims from the right of the read in the SAM/BAM for reverse reads.\n";
+    os << "Optionally --ignoreStrand/-i can be specified to ignore the strand information and treat forward/reverse the same.\n";
+    os << "trimBam will modify the sequences to 'N', and the quality string to '!', unless --clip/-c is specified.\n";
+    os << "--clip/-c indicates to soft clip instead of modifying the sequence or quality\n";
+    os << "\tWhen clipping:\n";
+    os << "\t  * if the entire read would be soft clipped, no clipping is done, and instead the read is marked as unmapped\n";
+    os << "\t  * mate information is not updated (start positions/mapping may change after soft clipping)\n";
+    os << "\t        * run samtools fixmate to fix mate information (will first need to sort by read name)\n";
+    os << "\t  * output is not sorted (start positions/mapping may change after soft clipping)\n";
+    os << "\t        * run samtools sort to resort by coordinate (after fixmate)\n";
+    os << "\t  * soft clips already in the read are maintained or added to\n";
+    os << "\t        * if 3 bases were clipped and 2 are specified to be clipped, no change is made to that end\n";
+    os << "\t        * if 3 bases were clipped and 5 are specified to be clipped, 2 additional bases are clipped from that end\n";
 }
 
 // main function
@@ -77,7 +77,7 @@ int TrimBam::execute(int argc, char ** argv)
   std::string outName = "";
 
   if ( argc < 5 ) {
-    usage();
+    printUsage(std::cerr);
     std::cerr << "ERROR: Incorrect number of parameters specified\n";
     return(-1);
   }

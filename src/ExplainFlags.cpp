@@ -29,25 +29,25 @@ ExplainFlags::ExplainFlags()
     
 }
 
-void ExplainFlags::explainFlagsDescription()
+void ExplainFlags::printExplainFlagsDescription(std::ostream& os)
 {
-    std::cerr << " explainFlags - Describe flags" << std::endl;
+    os << " explainFlags - Describe flags" << std::endl;
 }
 
-void ExplainFlags::description()
+void ExplainFlags::printDescription(std::ostream& os)
 {
-    explainFlagsDescription();
+    printExplainFlagsDescription(os);
 }
 
-void ExplainFlags::usage()
+void ExplainFlags::printUsage(std::ostream& os)
 {
-    BamExecutable::usage();
-    std::cerr << "\t./bam explainFlags --hex|dec <flag> [--params]" << std::endl;
-    std::cerr << "\tFlagValue Parameters:" << std::endl;
-    std::cerr << "\t\t--hex     : Explain this hex flag" << std::endl;
-    std::cerr << "\t\t--dec     : Explain this decimal flag" << std::endl;
-    std::cerr << "\t\t--params  : print the parameter settings" << std::endl;
-    std::cerr << std::endl;
+    BamExecutable::printUsage(os);
+    os << "\t./bam explainFlags --hex|dec <flag> [--params]" << std::endl;
+    os << "\tFlagValue Parameters:" << std::endl;
+    os << "\t\t--hex     : Explain this hex flag" << std::endl;
+    os << "\t\t--dec     : Explain this decimal flag" << std::endl;
+    os << "\t\t--params  : print the parameter settings" << std::endl;
+    os << std::endl;
 }
 
 
@@ -80,14 +80,14 @@ int ExplainFlags::execute(int argc, char **argv)
 
     if((hexFlag.Length() != 0) && (decFlag != -1))
     {
-        usage();
+        printUsage(std::cerr);
         inputParameters.Status();
         std::cerr << "Can't specify both --hex & --dec" << std::endl;
         return(-1);
     }
     if((hexFlag.Length() == 0) && (decFlag == -1))
     {
-        usage();
+        printUsage(std::cerr);
         inputParameters.Status();
         std::cerr << "Either --hex or --dec is required" << std::endl;
         return(-1);

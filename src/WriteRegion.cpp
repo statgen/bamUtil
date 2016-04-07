@@ -49,56 +49,56 @@ WriteRegion::WriteRegion()
     
 }
 
-void WriteRegion::writeRegionDescription()
+void WriteRegion::printWriteRegionDescription(std::ostream& os)
 {
-    std::cerr << " writeRegion - Write a file with reads in the specified region and/or have the specified read name" << std::endl;
+    os << " writeRegion - Write a file with reads in the specified region and/or have the specified read name" << std::endl;
 }
 
-void WriteRegion::description()
+void WriteRegion::printDescription(std::ostream& os)
 {
-    writeRegionDescription();
+    printWriteRegionDescription(os);
 }
 
-void WriteRegion::usage()
+void WriteRegion::printUsage(std::ostream& os)
 {
-    BamExecutable::usage();
-    std::cerr << "\t./bam writeRegion --in <inputFilename>  --out <outputFilename> [--bamIndex <bamIndexFile>] "
+    BamExecutable::printUsage(os);
+    os << "\t./bam writeRegion --in <inputFilename>  --out <outputFilename> [--bamIndex <bamIndexFile>] "
               << "[--refName <reference Name> | --refID <reference ID>] [--start <0-based start pos>] "
               << "[--end <0-based end psoition>] [--bed <bed filename>] [--withinRegion] [--readName <readName>] [--rnFile <readNameFileName>] "
               << "[--lshift] [--params] [--noeof]" << std::endl;
-    std::cerr << "\tRequired Parameters:" << std::endl;
-    std::cerr << "\t\t--in        : the BAM file to be read" << std::endl;
-    std::cerr << "\t\t--out       : the SAM/BAM file to write to" << std::endl;
-    std::cerr << "\tOptional Parameters for Specifying a Region:" << std::endl;
-    std::cerr << "\t\t--bamIndex  : the path/name of the bam index file" << std::endl;
-    std::cerr << "\t\t              (if not specified, uses the --in value + \".bai\")" << std::endl;
-    std::cerr << "\t\t--refName   : the BAM reference Name to read" << std::endl;
-    std::cerr << "\t\t              Either this or refID can be specified." << std::endl;
-    std::cerr << "\t\t              Defaults to all references." << std::endl;
-    std::cerr << "\t\t--refID     : the BAM reference ID to read." << std::endl;
-    std::cerr << "\t\t              Either this or refName can be specified." << std::endl;
-    std::cerr << "\t\t              Defaults to all references." << std::endl;
-    std::cerr << "\t\t              Specify -1 for unmapped" << std::endl;
-    std::cerr << "\t\t--start     : inclusive 0-based start position." << std::endl;
-    std::cerr << "\t\t              Defaults to -1: meaning from the start of the reference." << std::endl;
-    std::cerr << "\t\t              Only applicable if refName/refID is set." << std::endl;
-    std::cerr << "\t\t--end       : exclusive 0-based end position." << std::endl;
-    std::cerr << "\t\t              Defaults to -1: meaning til the end of the reference." << std::endl;
-    std::cerr << "\t\t              Only applicable if refName/refID is set." << std::endl;
-    std::cerr << "\t\t--bed       : use the specified bed file for regions." << std::endl;
-    std::cerr << "\t\t--withinReg : only print reads fully enclosed within the region." << std::endl;
-    std::cerr << "\t\t--readName  : only print reads with this read name." << std::endl;
-    std::cerr << "\t\t--rnFile    : only print reads with read names found in the specified file,\n";
-    std::cerr << "\t\t              delimited by comma, space, tab, or new line (',', ' ', '\\t', or '\\n')." << std::endl;
-    std::cerr << "\tOptional Parameters For Other Operations:\n";
-    std::cerr << "\t\t--lshift        : left shift indels when writing records\n";
-    std::cerr << "\t\t--excludeFlags  : Skip any records with any of the specified flags set\n";
-    std::cerr << "\t\t                  (specify an integer representation of the flags)\n";
-    std::cerr << "\t\t--requiredFlags : Only process records with all of the specified flags set\n";
-    std::cerr << "\t\t                  (specify an integer representation of the flags)\n";
-    std::cerr << "\t\t--params        : print the parameter settings" << std::endl;
-    std::cerr << "\t\t--noeof         : do not expect an EOF block on a bam file." << std::endl;
-    std::cerr << std::endl;
+    os << "\tRequired Parameters:" << std::endl;
+    os << "\t\t--in        : the BAM file to be read" << std::endl;
+    os << "\t\t--out       : the SAM/BAM file to write to" << std::endl;
+    os << "\tOptional Parameters for Specifying a Region:" << std::endl;
+    os << "\t\t--bamIndex  : the path/name of the bam index file" << std::endl;
+    os << "\t\t              (if not specified, uses the --in value + \".bai\")" << std::endl;
+    os << "\t\t--refName   : the BAM reference Name to read" << std::endl;
+    os << "\t\t              Either this or refID can be specified." << std::endl;
+    os << "\t\t              Defaults to all references." << std::endl;
+    os << "\t\t--refID     : the BAM reference ID to read." << std::endl;
+    os << "\t\t              Either this or refName can be specified." << std::endl;
+    os << "\t\t              Defaults to all references." << std::endl;
+    os << "\t\t              Specify -1 for unmapped" << std::endl;
+    os << "\t\t--start     : inclusive 0-based start position." << std::endl;
+    os << "\t\t              Defaults to -1: meaning from the start of the reference." << std::endl;
+    os << "\t\t              Only applicable if refName/refID is set." << std::endl;
+    os << "\t\t--end       : exclusive 0-based end position." << std::endl;
+    os << "\t\t              Defaults to -1: meaning til the end of the reference." << std::endl;
+    os << "\t\t              Only applicable if refName/refID is set." << std::endl;
+    os << "\t\t--bed       : use the specified bed file for regions." << std::endl;
+    os << "\t\t--withinReg : only print reads fully enclosed within the region." << std::endl;
+    os << "\t\t--readName  : only print reads with this read name." << std::endl;
+    os << "\t\t--rnFile    : only print reads with read names found in the specified file,\n";
+    os << "\t\t              delimited by comma, space, tab, or new line (',', ' ', '\\t', or '\\n')." << std::endl;
+    os << "\tOptional Parameters For Other Operations:\n";
+    os << "\t\t--lshift        : left shift indels when writing records\n";
+    os << "\t\t--excludeFlags  : Skip any records with any of the specified flags set\n";
+    os << "\t\t                  (specify an integer representation of the flags)\n";
+    os << "\t\t--requiredFlags : Only process records with all of the specified flags set\n";
+    os << "\t\t                  (specify an integer representation of the flags)\n";
+    os << "\t\t--params        : print the parameter settings" << std::endl;
+    os << "\t\t--noeof         : do not expect an EOF block on a bam file." << std::endl;
+    os << std::endl;
 }
 
 
@@ -169,7 +169,7 @@ int WriteRegion::execute(int argc, char **argv)
     // Check to see if the in file was specified, if not, report an error.
     if(inFile == "")
     {
-        usage();
+        printUsage(std::cerr);
         // mandatory argument was not specified.
         inputParameters.Status();
         std::cerr << "Missing mandatory argument: --in" << std::endl;
@@ -177,7 +177,7 @@ int WriteRegion::execute(int argc, char **argv)
     }
     if(outFile == "")
     {
-        usage();
+        printUsage(std::cerr);
         // mandatory argument was not specified.
         inputParameters.Status();
         std::cerr << "Missing mandatory argument: --out" << std::endl;

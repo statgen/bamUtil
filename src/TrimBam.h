@@ -28,9 +28,9 @@
 class TrimBam : public BamExecutable
 {
 public:
-    static void trimBamDescription();
-    void description();
-    void usage();
+    static void printTrimBamDescription(std::ostream& os);
+    void printDescription(std::ostream& os);
+    void printUsage(std::ostream& os);
     int execute(int argc, char **argv);
     virtual const char* getProgramName() {return("bam:trimBam");}
 };

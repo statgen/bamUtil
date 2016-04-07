@@ -43,41 +43,41 @@ ClipOverlap::ClipOverlap()
 }
 
 
-void ClipOverlap::clipOverlapDescription()
+void ClipOverlap::printClipOverlapDescription(std::ostream& os)
 {
-    std::cerr << " clipOverlap - Clip overlapping read pairs in a SAM/BAM File already sorted by Coordinate or ReadName" << std::endl;
+    os << " clipOverlap - Clip overlapping read pairs in a SAM/BAM File already sorted by Coordinate or ReadName" << std::endl;
 }
 
 
-void ClipOverlap::description()
+void ClipOverlap::printDescription(std::ostream& os)
 {
-    clipOverlapDescription();
+    printClipOverlapDescription(os);
 }
 
 
-void ClipOverlap::usage()
+void ClipOverlap::printUsage(std::ostream& os)
 {
-    BamExecutable::usage();
-    std::cerr << "\t./bam clipOverlap --in <inputFile> --out <outputFile> [--storeOrig <tag>] [--readName] [--stats] [--overlapsOnly] [--excludeFlags <flag>] [--poolSize <numRecords allowed to allocate>] [--poolSkipOverlap] [--noeof] [--params]" << std::endl;
-    std::cerr << "\tRequired Parameters:" << std::endl;
-    std::cerr << "\t\t--in           : the SAM/BAM file to clip overlaping read pairs for" << std::endl;
-    std::cerr << "\t\t--out          : the SAM/BAM file to be written" << std::endl;
-    std::cerr << "\tOptional Parameters:" << std::endl;
-    std::cerr << "\t\t--storeOrig    : Store the original cigar in the specified tag." << std::endl;
-    std::cerr << "\t\t--readName     : Original file is sorted by Read Name instead of coordinate." << std::endl;
-    std::cerr << "\t\t--stats        : Print some statistics on the overlaps." << std::endl;
-    std::cerr << "\t\t--overlapsOnly : Only output overlapping read pairs" << std::endl;
-    std::cerr << "\t\t--excludeFlags : Skip records with any of the specified flags set, default 0xF0C" << std::endl;
-    std::cerr << "\t\t--unmapped     : Mark records that would be completely clipped as unmapped" << std::endl;
-    std::cerr << "\t\t--noeof        : Do not expect an EOF block on a bam file." << std::endl;
-    std::cerr << "\t\t--params       : Print the parameter settings to stderr" << std::endl;
-    std::cerr << "\tClipping By Coordinate Optional Parameters:" << std::endl;
-    std::cerr << "\t\t--poolSize     : Maximum number of records the program is allowed to allocate" << std::endl;
-    std::cerr << "\t\t                 for clipping on Coordinate sorted files. (Default: " << DEFAULT_POOL_SIZE << ")" << std::endl;
-    std::cerr << "\t\t--poolSkipClip : Skip clipping reads to free of usable records when the" << std::endl;
-    std::cerr << "\t\t                 poolSize is hit. The default action is to just clip the" << std::endl;
-    std::cerr << "\t\t                 first read in a pair to free up the record." << std::endl;
-    std::cerr << std::endl;
+    BamExecutable::printUsage(os);
+    os << "\t./bam clipOverlap --in <inputFile> --out <outputFile> [--storeOrig <tag>] [--readName] [--stats] [--overlapsOnly] [--excludeFlags <flag>] [--poolSize <numRecords allowed to allocate>] [--poolSkipOverlap] [--noeof] [--params]" << std::endl;
+    os << "\tRequired Parameters:" << std::endl;
+    os << "\t\t--in           : the SAM/BAM file to clip overlaping read pairs for" << std::endl;
+    os << "\t\t--out          : the SAM/BAM file to be written" << std::endl;
+    os << "\tOptional Parameters:" << std::endl;
+    os << "\t\t--storeOrig    : Store the original cigar in the specified tag." << std::endl;
+    os << "\t\t--readName     : Original file is sorted by Read Name instead of coordinate." << std::endl;
+    os << "\t\t--stats        : Print some statistics on the overlaps." << std::endl;
+    os << "\t\t--overlapsOnly : Only output overlapping read pairs" << std::endl;
+    os << "\t\t--excludeFlags : Skip records with any of the specified flags set, default 0xF0C" << std::endl;
+    os << "\t\t--unmapped     : Mark records that would be completely clipped as unmapped" << std::endl;
+    os << "\t\t--noeof        : Do not expect an EOF block on a bam file." << std::endl;
+    os << "\t\t--params       : Print the parameter settings to stderr" << std::endl;
+    os << "\tClipping By Coordinate Optional Parameters:" << std::endl;
+    os << "\t\t--poolSize     : Maximum number of records the program is allowed to allocate" << std::endl;
+    os << "\t\t                 for clipping on Coordinate sorted files. (Default: " << DEFAULT_POOL_SIZE << ")" << std::endl;
+    os << "\t\t--poolSkipClip : Skip clipping reads to free of usable records when the" << std::endl;
+    os << "\t\t                 poolSize is hit. The default action is to just clip the" << std::endl;
+    os << "\t\t                 first read in a pair to free up the record." << std::endl;
+    os << std::endl;
 }
 
 
@@ -136,7 +136,7 @@ int ClipOverlap::execute(int argc, char **argv)
     // Check to see if the in file was specified, if not, report an error.
     if(inFile == "")
     {
-        usage();
+        printUsage(std::cerr);
         inputParameters.Status();
         // In file was not specified but it is mandatory.
         std::cerr << "--in is a mandatory argument, "
@@ -147,7 +147,7 @@ int ClipOverlap::execute(int argc, char **argv)
     // Check to see if the out file was specified, if not, report an error.
     if(outFile == "")
     {
-        usage();
+        printUsage(std::cerr);
         inputParameters.Status();
         // Out file was not specified but it is mandatory.
         std::cerr << "--out is a mandatory argument, "
@@ -157,7 +157,7 @@ int ClipOverlap::execute(int argc, char **argv)
 
     if((storeOrig.Length() != 0) && (storeOrig.Length() != 2))
     {
-        usage();
+        printUsage(std::cerr);
         inputParameters.Status();
         std::cerr << "--storeOrig tag name must be 2 characters.\n";
         return(-1);
@@ -166,7 +166,7 @@ int ClipOverlap::execute(int argc, char **argv)
     myOverlapHandler = new OverlapClipLowerBaseQual();
     if(myOverlapHandler == NULL)
     {
-        usage();
+        printUsage(std::cerr);
         inputParameters.Status();
         std::cerr << "Failed to allocate the overlap handler\n";
         return(-1);

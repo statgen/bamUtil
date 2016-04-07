@@ -61,43 +61,43 @@ Dedup::~Dedup()
     myMateMap.clear();
 }
 
-void Dedup::dedupDescription()
+void Dedup::printDedupDescription(std::ostream& os)
 {
-    std::cerr << " dedup - Mark Duplicates\n";
+    os << " dedup - Mark Duplicates\n";
 }
 
 
-void Dedup::description()
+void Dedup::printDescription(std::ostream& os)
 {
-    dedupDescription();
+    printDedupDescription(os);
 }
 
 
-void Dedup::usage()
+void Dedup::printUsage(std::ostream& os)
 {
-    std::cerr << "Usage: ./bam dedup --in <InputBamFile> --out <OutputBamFile> [--minQual <minPhred>] [--log <logFile>] [--oneChrom] [--rmDups] [--force] [--excludeFlags <flag>] [--verbose] [--noeof] [--params] [--recab] ";
-    myRecab.recabSpecificUsageLine();
-    std::cerr << std::endl << std::endl;
-    std::cerr << "Required parameters :" << std::endl;
-    std::cerr << "\t--in <infile>   : Input BAM file name (must be sorted)" << std::endl;
-    std::cerr << "\t--out <outfile> : Output BAM file name (same order with original file)" << std::endl;
-    std::cerr << "Optional parameters : " << std::endl;
-    std::cerr << "\t--minQual <int> : Only add scores over this phred quality when determining a read's quality (default: "
+    os << "Usage: ./bam dedup --in <InputBamFile> --out <OutputBamFile> [--minQual <minPhred>] [--log <logFile>] [--oneChrom] [--rmDups] [--force] [--excludeFlags <flag>] [--verbose] [--noeof] [--params] [--recab] ";
+    myRecab.printRecabSpecificUsageLine(os);
+    os << std::endl << std::endl;
+    os << "Required parameters :" << std::endl;
+    os << "\t--in <infile>   : Input BAM file name (must be sorted)" << std::endl;
+    os << "\t--out <outfile> : Output BAM file name (same order with original file)" << std::endl;
+    os << "Optional parameters : " << std::endl;
+    os << "\t--minQual <int> : Only add scores over this phred quality when determining a read's quality (default: "
               << DEFAULT_MIN_QUAL << ")" << std::endl;
-    std::cerr << "\t--log <logfile> : Log and summary statistics (default: [outfile].log, or stderr if --out starts with '-')" << std::endl;
-    std::cerr << "\t--oneChrom      : Treat reads with mates on different chromosomes as single-ended." << std::endl;
-    std::cerr << "\t--rmDups        : Remove duplicates (default is to mark duplicates)" << std::endl;
-    std::cerr << "\t--force         : Allow an already mark-duplicated BAM file, unmarking any previously marked " << std::endl;
-    std::cerr << "\t                  duplicates and apply this duplicate marking logic.  Default is to throw errors" << std::endl;
-    std::cerr << "\t                  and exit when trying to run on an already mark-duplicated BAM" << std::endl;
-    std::cerr << "\t--excludeFlags <flag>    : exclude reads with any of these flags set when determining or marking duplicates" << std::endl;
-    std::cerr << "\t                           by default (0xB04): exclude unmapped, secondary reads, QC failures, and supplementary reads" << std::endl;
-    std::cerr << "\t--verbose       : Turn on verbose mode" << std::endl;
-    std::cerr << "\t--noeof         : Do not expect an EOF block on a bam file." << std::endl;
-    std::cerr << "\t--params        : Print the parameter settings" << std::endl;
-    std::cerr << "\t--recab         : Recalibrate in addition to deduping" << std::endl;
-    myRecab.recabSpecificUsage();
-    std::cerr << "\n" << std::endl;
+    os << "\t--log <logfile> : Log and summary statistics (default: [outfile].log, or stderr if --out starts with '-')" << std::endl;
+    os << "\t--oneChrom      : Treat reads with mates on different chromosomes as single-ended." << std::endl;
+    os << "\t--rmDups        : Remove duplicates (default is to mark duplicates)" << std::endl;
+    os << "\t--force         : Allow an already mark-duplicated BAM file, unmarking any previously marked " << std::endl;
+    os << "\t                  duplicates and apply this duplicate marking logic.  Default is to throw errors" << std::endl;
+    os << "\t                  and exit when trying to run on an already mark-duplicated BAM" << std::endl;
+    os << "\t--excludeFlags <flag>    : exclude reads with any of these flags set when determining or marking duplicates" << std::endl;
+    os << "\t                           by default (0xB04): exclude unmapped, secondary reads, QC failures, and supplementary reads" << std::endl;
+    os << "\t--verbose       : Turn on verbose mode" << std::endl;
+    os << "\t--noeof         : Do not expect an EOF block on a bam file." << std::endl;
+    os << "\t--params        : Print the parameter settings" << std::endl;
+    os << "\t--recab         : Recalibrate in addition to deduping" << std::endl;
+    myRecab.printRecabSpecificUsage(os);
+    os<< "\n" << std::endl;
 }
 
 int Dedup::execute(int argc, char** argv) 
@@ -152,7 +152,7 @@ int Dedup::execute(int argc, char** argv)
 
     if(inFile.IsEmpty())
     {
-        usage();
+        printUsage(std::cerr);
         inputParameters.Status();
         std::cerr << "Specify an input file" << std::endl;
         return EXIT_FAILURE;
@@ -160,7 +160,7 @@ int Dedup::execute(int argc, char** argv)
 
     if(outFile.IsEmpty())
     {
-        usage();
+        printUsage(std::cerr);
         inputParameters.Status();
         std::cerr << "Specify an output file" << std::endl;
         return EXIT_FAILURE;
@@ -170,7 +170,7 @@ int Dedup::execute(int argc, char** argv)
 
     if(myForceFlag && SamFlag::isDuplicate(intExcludeFlags))
     {
-        usage();
+        printUsage(std::cerr);
         inputParameters.Status();
         std::cerr << "Cannot specify --force and Duplicate in the excludeFlags.  Since --force indicates to override"
                   << " previous duplicate setting and the excludeFlags says to skip those, you can't do both.\n";
@@ -179,7 +179,7 @@ int Dedup::execute(int argc, char** argv)
 
     if(!SamFlag::isSecondary(intExcludeFlags))
     {
-        usage();
+        printUsage(std::cerr);
         inputParameters.Status();
         std::cerr << "ERROR: Secondary reads must be excluded, edit --excludeFlags to include 0x0100\n";
         return EXIT_FAILURE;
@@ -187,7 +187,7 @@ int Dedup::execute(int argc, char** argv)
 
     if(!(intExcludeFlags & SamFlag::SUPPLEMENTARY_ALIGNMENT))
     {
-        usage();
+        printUsage(std::cerr);
         inputParameters.Status();
         std::cerr << "ERROR: Supplementary reads must be excluded, edit --excludeFlags to include 0x0800\n";
         return EXIT_FAILURE;

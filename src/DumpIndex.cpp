@@ -24,29 +24,29 @@
 #include "Parameters.h"
 #include <iomanip>
 
-void DumpIndex::dumpIndexDescription()
+void DumpIndex::printDumpIndexDescription(std::ostream& os)
 {
-    std::cerr << " dumpIndex - Print BAM Index File in English" << std::endl;
+    os << " dumpIndex - Print BAM Index File in English" << std::endl;
 }
 
 
-void DumpIndex::description()
+void DumpIndex::printDescription(std::ostream& os)
 {
-    dumpIndexDescription();
+    printDumpIndexDescription(os);
 }
 
 
-void DumpIndex::usage()
+void DumpIndex::printUsage(std::ostream& os)
 {
-    BamExecutable::usage();
-    std::cerr << "\t./bam dumpIndex --bamIndex <bamIndexFile> [--refID <ref#>] [--summary] [--params]" << std::endl;
-    std::cerr << "\tRequired Parameters:" << std::endl;
-    std::cerr << "\t\t--bamIndex : the path/name of the bam index file to display" << std::endl;
-    std::cerr << "\tOptional Parameters:" << std::endl;
-    std::cerr << "\t\t--refID    : the reference ID to read, defaults to print all\n";
-    std::cerr << "\t\t--summary  : only print a summary - 1 line per reference.\n";
-    std::cerr << "\t\t--params   : print the parameter settings" << std::endl;
-    std::cerr << std::endl;
+    BamExecutable::printUsage(os);
+    os << "\t./bam dumpIndex --bamIndex <bamIndexFile> [--refID <ref#>] [--summary] [--params]" << std::endl;
+    os << "\tRequired Parameters:" << std::endl;
+    os << "\t\t--bamIndex : the path/name of the bam index file to display" << std::endl;
+    os << "\tOptional Parameters:" << std::endl;
+    os << "\t\t--refID    : the reference ID to read, defaults to print all\n";
+    os << "\t\t--summary  : only print a summary - 1 line per reference.\n";
+    os << "\t\t--params   : print the parameter settings" << std::endl;
+    os << std::endl;
 }
 
 
@@ -78,7 +78,7 @@ int DumpIndex::execute(int argc, char **argv)
     // Check to see if the index file was specified, if not, report an error.
     if(indexFile == "")
     {
-        usage();
+        printUsage(std::cerr);
         inputParameters.Status();
         // mandatory argument was not specified.
         std::cerr << "Missing mandatory argument: --bamIndex" << std::endl;

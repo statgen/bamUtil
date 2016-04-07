@@ -189,50 +189,49 @@ Hyun Min Kang, March 22, 2010
 #  Tom Blackwell,  University of Michigan,   March 16, 2010
 */
 
-void PolishBam::polishBamDescription()
+void PolishBam::printPolishBamDescription(std::ostream& os)
 {
-    std::cerr << " polishBam - adds/updates header lines & adds the RG tag to each record" << std::endl;
+    os << " polishBam - adds/updates header lines & adds the RG tag to each record" << std::endl;
 }
 
 
-void PolishBam::description()
+void PolishBam::printDescription(std::ostream& os)
 {
-    polishBamDescription();
+    printPolishBamDescription(os);
 }
 
 
-void PolishBam::usage()
+void PolishBam::printUsage(std::ostream& os)
 {
-    BamExecutable::usage();
-     std::cerr << "Usage: polishBam (options) --in <inBamFile> --out <outBamFile>\n" << std::endl;
-     std::cerr << "Required parameters : " << std::endl;
-     std::cerr << "-i/--in : input BAM file" << std::endl;
-     std::cerr << "-o/--out : output BAM file" << std::endl;
-     std::cerr << "Optional parameters :" << std::endl;
-     std::cerr << "-v : turn on verbose mode" << std::endl;
-     std::cerr << "-l/--log : writes logfile with specified name." << std::endl;
-     std::cerr << "--HD : add @HD header line" << std::endl;
-     std::cerr << "--RG : add @RG header line" << std::endl;
-     std::cerr << "--PG : add @PG header line" << std::endl;
-     std::cerr << "--CO : add @CO header line" << std::endl;
-     std::cerr << "-f/--fasta : fasta reference file to compute MD5sums and update SQ tags" << std:: endl;
-     std::cerr << "--AS : AS tag for genome assembly identifier" << std::endl;
-     std::cerr << "--UR : UR tag for @SQ tag (if different from --fasta)" << std::endl;
-     std::cerr << "--SP : SP tag for @SQ tag" << std:: endl;
-     std::cerr << "--checkSQ : check the consistency of SQ tags (SN and LN) with existing header lines. Must be used with --fasta option" << std::endl;
-     std::cerr << "\n" << std::endl;
+    BamExecutable::printUsage(os);
+    os << "Usage: polishBam (options) --in <inBamFile> --out <outBamFile>\n" << std::endl;
+    os << "Required parameters : " << std::endl;
+    os << "-i/--in : input BAM file" << std::endl;
+    os << "-o/--out : output BAM file" << std::endl;
+    os << "Optional parameters :" << std::endl;
+    os << "-v : turn on verbose mode" << std::endl;
+    os << "-l/--log : writes logfile with specified name." << std::endl;
+    os << "--HD : add @HD header line" << std::endl;
+    os << "--RG : add @RG header line" << std::endl;
+    os << "--PG : add @PG header line" << std::endl;
+    os << "--CO : add @CO header line" << std::endl;
+    os << "-f/--fasta : fasta reference file to compute MD5sums and update SQ tags" << std:: endl;
+    os << "--AS : AS tag for genome assembly identifier" << std::endl;
+    os << "--UR : UR tag for @SQ tag (if different from --fasta)" << std::endl;
+    os << "--SP : SP tag for @SQ tag" << std:: endl;
+    os << "--checkSQ : check the consistency of SQ tags (SN and LN) with existing header lines. Must be used with --fasta option" << std::endl;
+    os << "\n" << std::endl;
 }
 
 void replaceTabChar(std::string& headerLine)
 {
     // Convert "\t" to '\t'
     size_t tabPos = headerLine.find("\\t", 0);
-        while(tabPos != std::string::npos)
-        {
-            headerLine.replace(tabPos, 2, "\t");
-            tabPos = headerLine.find("\\t", tabPos);
-        }
-
+    while(tabPos != std::string::npos)
+    {
+        headerLine.replace(tabPos, 2, "\t");
+        tabPos = headerLine.find("\\t", tabPos);
+    }
 }
 
 void checkHeaderStarts(std::vector<std::string>& headerLines, const char* type) {
@@ -376,17 +375,17 @@ int PolishBam::execute(int argc, char ** argv)
   Logger::gLogger = new Logger(sLogFile.c_str(), bVerbose);
 
   if ( optind < argc ) {
-    usage();
+    printUsage(std::cerr);
     Logger::gLogger->error("non-option argument %s exist ",argv[optind]);
   }
 
   if ( sInFile.empty() || sOutFile.empty() ) {
-    usage();
+    printUsage(std::cerr);
     Logger::gLogger->error("Input and output files are required");
   }
 
   if ( ( bCheckSQ ) && ( sFasta.empty() ) ) {
-    usage();
+    printUsage(std::cerr);
     Logger::gLogger->error("--checkSQ option must be used with --fasta option");
   }
 

@@ -24,22 +24,22 @@
 #include "Parameters.h"
 #include "PhoneHome.h"
 
-void DumpHeader::dumpHeaderDescription()
+void DumpHeader::printDumpHeaderDescription(std::ostream& os)
 {
-    std::cerr << " dumpHeader - Print SAM/BAM Header" << std::endl;
+    os << " dumpHeader - Print SAM/BAM Header" << std::endl;
 }
 
 
-void DumpHeader::description()
+void DumpHeader::printDescription(std::ostream& os)
 {
-    dumpHeaderDescription();
+    printDumpHeaderDescription(os);
 }
 
 
-void DumpHeader::usage()
+void DumpHeader::printUsage(std::ostream& os)
 {
-    BamExecutable::usage();
-    std::cerr << "\t./bam dumpHeader <inputFile>" << std::endl;
+    BamExecutable::printUsage(os);
+    os << "\t./bam dumpHeader <inputFile>" << std::endl;
 }
 
 
@@ -51,7 +51,7 @@ int DumpHeader::execute(int argc, char **argv)
         String noPhArg = "--noPhoneHome";
         if((argc != 4) || (noPhArg.SlowCompareToStem(argv[3]) != 0))
         {
-            usage();
+            printUsage(std::cerr);
             exit(-1);
         }
     }
