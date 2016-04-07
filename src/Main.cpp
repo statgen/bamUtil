@@ -55,6 +55,12 @@ namespace console_color
     static const std::string red = "\033[1;31m";
 }
 
+std::string ToLowerCase(const char* cstr)
+{
+    std::string str(cstr);
+    std::transform(str.begin(), str.end(), str.begin(), ::tolower);
+    return str;
+}
 
 void WriteUsage(std::ostream& os)
 {
@@ -110,19 +116,19 @@ BamExecutable* CreateBamExe(const std::string& name)
 {
     BamExecutable* ret = NULL;
 
-    if(name == "readIndexedBam")
+    if(name == ToLowerCase("readIndexedBam"))
     {
         ret = new ReadIndexedBam();
     }
-    else if(name == "dumpHeader")
+    else if(name == ToLowerCase("dumpHeader"))
     {
         ret = new DumpHeader();
     }
-    else if(name == "dumpIndex")
+    else if(name == ToLowerCase("dumpIndex"))
     {
         ret = new DumpIndex();
     }
-    else if(name == "writeRegion")
+    else if(name == ToLowerCase("writeRegion"))
     {
         ret = new WriteRegion();
     }
@@ -130,15 +136,15 @@ BamExecutable* CreateBamExe(const std::string& name)
     {
         ret = new Validate();
     }
-    else if(name == "splitChromosome")
+    else if(name == ToLowerCase("splitChromosome"))
     {
         ret = new SplitChromosome();
     }
-    else if(name == "dumpRefInfo")
+    else if(name == ToLowerCase("dumpRefInfo"))
     {
         ret = new DumpRefInfo();
     }
-    else if(name == "explainFlags")
+    else if(name == ToLowerCase("explainFlags"))
     {
         ret = new ExplainFlags();
     }
@@ -146,7 +152,7 @@ BamExecutable* CreateBamExe(const std::string& name)
     {
         ret = new Filter();
     }
-    else if(name == "readReference")
+    else if(name == ToLowerCase("readReference"))
     {
         ret = new ReadReference();
     }
@@ -162,7 +168,7 @@ BamExecutable* CreateBamExe(const std::string& name)
     {
         ret = new Squeeze();
     }
-    else if(name == "findCigars")
+    else if(name == ToLowerCase("findCigars"))
     {
         ret = new FindCigars();
     }
@@ -170,28 +176,28 @@ BamExecutable* CreateBamExe(const std::string& name)
     {
         ret = new Stats();
     }
-    else if(name == "clipOverlap")
+    else if(name == ToLowerCase("clipOverlap"))
     {
         ret = new ClipOverlap();
     }
-    else if(name == "splitBam")
+    else if(name == ToLowerCase("splitBam"))
     {
         ret = new SplitBam();
     }
-    else if(name == "trimBam")
+    else if(name == ToLowerCase("trimBam"))
     {
         ret = new TrimBam();
     }
-    else if((name == "mergeBam") ||
-            (name == "rgMergeBam"))
+    else if((name == ToLowerCase("mergeBam")) ||
+            (name == ToLowerCase("rgMergeBam")))
     {
         ret = new MergeBam();
     }
-    else if(name == "polishBam")
+    else if(name == ToLowerCase("polishBam"))
     {
         ret = new PolishBam();
     }
-    else if(name == "gapInfo")
+    else if(name == ToLowerCase("gapInfo"))
     {
         ret = new GapInfo();
     }
@@ -199,7 +205,7 @@ BamExecutable* CreateBamExe(const std::string& name)
     {
         ret = new Dedup();
     }
-    else if(name == "dedup_LowMem")
+    else if(name == ToLowerCase("dedup_LowMem"))
     {
         ret = new Dedup_LowMem();
     }
@@ -207,7 +213,7 @@ BamExecutable* CreateBamExe(const std::string& name)
     {
         ret = new Recab();
     }
-    else if(name == "bam2FastQ")
+    else if(name == ToLowerCase("bam2FastQ"))
     {
         ret = new Bam2FastQ();
     }
