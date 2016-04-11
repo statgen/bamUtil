@@ -33,46 +33,32 @@
 #include "MateMapByCoord.h"
 #include "SamCoordOutput.h"
 
+#include "ExternalMemorySortManager.h"
+
 class Bam2FastQ : public BamExecutable
 {
-public:
-    Bam2FastQ();
-    ~Bam2FastQ();
-
-    static void printBam2FastQDescription(std::ostream& os);
-    void printDescription(std::ostream& os);
-    void printUsage(std::ostream& os);
-    int execute(int argc, char **argv);
-    virtual const char* getProgramName() {return("bam:bam2FastQ");}
-
 private:
     static const char* DEFAULT_FIRST_EXT;
     static const char* DEFAULT_SECOND_EXT;
 
-    void handlePairedRN(SamRecord& samRec);
+    void handlePairedRN(SamRecord& samRec, MateVectorByRN& myVector);
+
+
     void handlePairedCoord(SamRecord& samRec);
-    // Handles a record, writing the fastq to the specified file.
-    // Releases the record.
-    void writeFastQ(SamRecord& samRec, IFILE filePtr,
-                    const std::string& fileNameExt,
-                    const char* readNameExt = "");
+
     void cleanUpMateMap(uint64_t readPos, bool flushAll = false);
 
     void closeFiles();
     void getFileName(String& fn, const std::string& ext);
 
     SamFileHeader mySamHeader;
-    SamRecordPool myPool;
+
     MateMapByCoord myMateMap;
 
     InputFile::ifileCompression myCompression;
 
-    IFILE myUnpairedFile;
-    IFILE myFirstFile;
-    IFILE mySecondFile;
 
-    int myNumMateFailures;
-    int myNumPairs;
+
     int myNumUnpaired;
 
     bool mySplitRG;
@@ -83,20 +69,53 @@ private:
 
     String myOutBase;
 
-    String myFirstRNExt;
-    String mySecondRNExt;
-
-    std::string myFirstFileNameExt;
-    std::string mySecondFileNameExt;
-    std::string myUnpairedFileNameExt;
-
     #ifdef __GXX_EXPERIMENTAL_CXX0X__
     typedef std::unordered_map<std::string, IFILE> OutFastqMap;
     #else
     typedef std::map<std::string, IFILE> OutFastqMap;
     #endif
+
     OutFastqMap myOutFastqs;
     IFILE myFqList;
+    std::string prevRN;
+public:
+    Bam2FastQ();
+    ~Bam2FastQ();
+
+    static void bam2FastQDescription();
+    void description();
+    void usage();
+    int execute(int argc, char **argv);
+    virtual const char* getProgramName() {return("bam:bam2FastQ");}
+
+    void handlePairedRN(SamRecord& samRec);
+    // Handles a record, writing the fastq to the specified file.
+    // Releases the record.
+    void writeFastQ(SamRecord& samRec, IFILE filePtr,
+                    const std::string& fileNameExt,
+                    const char* readNameExt = "");
+    void writeFastQ(SamRecord& samRec, IFILE filePtr,
+    				const std::string& fileNameExt,
+					SamRecordPool* localPool,bool is_tmp,
+					const char* readNameExt = "");
+
+    SamRecordPool myPool;
+
+    IFILE myFirstFile;
+    IFILE mySecondFile;
+    IFILE myUnpairedFile;
+
+    std::string myFirstFileNameExt;
+    std::string mySecondFileNameExt;
+    std::string myUnpairedFileNameExt;
+    String myFirstRNExt;
+    String mySecondRNExt;
+
+    String myTmpOutBase;
+    int myNumPairs;
+    int myNumMateFailures;
+    SamRecord* prevRec;
+
 };
 
 #endif
