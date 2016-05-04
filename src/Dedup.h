@@ -22,6 +22,9 @@
 #include <vector>
 #include <set>
 #include <map>
+#ifdef __GXX_EXPERIMENTAL_CXX0X__
+#include <unordered_map>
+#endif
 #include "SamRecordPool.h"
 #include "Recab.h"
 #include "SamFlag.h"
@@ -41,6 +44,7 @@ public:
     virtual const char* getProgramName() {return("bam:dedup");}
 
     Dedup():
+        mySecondarySupplementaryMap(),
         myRecab(),
         myDoRecab(false),
         myOneChrom(false),
@@ -193,6 +197,17 @@ private:
     typedef std::vector< uint32_t >::iterator Int32VectorIterator;
     Int32Vector myDupList;
 
+    // Secondary and Supplementary Read Map
+    // True means it should be marked duplicate, 
+    // false means it should not be marked duplicate.
+    typedef std::pair<std::string,bool> NonPrimaryPair;
+    #ifdef __GXX_EXPERIMENTAL_CXX0X__
+    typedef std::unordered_map<std::string,bool> NonPrimaryMap;
+    #else
+    typedef std::multimap<std::string,bool> NonPrimaryMap;
+    #endif
+    NonPrimaryMap mySecondarySupplementaryMap;
+
     // Recalibrator logic.
     Recab myRecab;
     bool myDoRecab;
@@ -241,6 +256,8 @@ private:
     void handleMissingMate(SamRecord* recordPtr);
 
     void handleDuplicate(uint32_t index, SamRecord* recordPtr);
+
+    void markDuplicateInNonPrimaryMaps(SamRecord* recordPtr);
 
     inline int getFirstIndex(const DupKey& key1, 
                              int key1Index,

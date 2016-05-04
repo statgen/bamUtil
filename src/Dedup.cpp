@@ -59,6 +59,7 @@ Dedup::~Dedup()
         mySamPool.releaseRecord(iter->second.recordPtr);
     }
     myMateMap.clear();
+    mySecondarySupplementaryMap.clear();
 }
 
 void Dedup::printDedupDescription(std::ostream& os)
@@ -261,20 +262,25 @@ int Dedup::execute(int argc, char** argv)
             returnStatus = samIn.GetStatus();
             continue;
         }
+        recordCount = samIn.GetCurrentRecordCount();
+
         // Take note of properties of this record
         int flag = recordPtr->getFlag();
         if(SamFlag::isPaired(flag))     ++pairedCount;
         if(SamFlag::isProperPair(flag)) ++properPairCount;
         if(SamFlag::isReverse(flag))    ++reverseCount;
         if(SamFlag::isQCFailure(flag))  ++qualCheckFailCount;
+        if(!SamFlag::isMapped(flag))    ++unmappedCount;
         if(SamFlag::isSecondary(flag))  ++secondaryCount;
         if(flag & SamFlag::SUPPLEMENTARY_ALIGNMENT)  ++supplementaryCount;
-        if(!SamFlag::isMapped(flag))    ++unmappedCount;
-
-        // put the record in the appropriate maps:
-        //   single reads go in myFragmentMap
-        //   paired reads go in myPairedMap
-        recordCount = samIn.GetCurrentRecordCount();
+        
+        // Store Secondary & Supplementary in an unordered map for matching
+        // with the primary read
+        if(SamFlag::isSecondary(flag) || 
+           (flag & SamFlag::SUPPLEMENTARY_ALIGNMENT))
+        {
+            mySecondarySupplementaryMap.insert(NonPrimaryPair(recordPtr->getReadName(), false));
+        }
 
         // if we have moved to a new position, look back at previous reads for duplicates
         if (hasPositionChanged(*recordPtr))
@@ -305,6 +311,9 @@ int Dedup::execute(int argc, char** argv)
                 Logger::gLogger->error("Use -f to clear the duplicate flag and start the deduping procedure over");
             }
 
+            // put the record in the appropriate maps:
+            //   single reads go in myFragmentMap
+            //   paired reads go in myPairedMap
             checkDups(*recordPtr, recordCount);
         }
         // let the user know we're not napping
@@ -356,6 +365,9 @@ int Dedup::execute(int argc, char** argv)
     std::sort(myDupList.begin(), myDupList.end(),
               std::less<uint32_t> ());
 
+    ////////////////////////////////////////////////////////////
+    // Second Pass through the file
+
     // get ready to write the output file by making a second pass
     // through the input file
     samIn.OpenForRead(inFile.c_str());
@@ -379,7 +391,8 @@ int Dedup::execute(int argc, char** argv)
     Logger::gLogger->writeLog("\nWriting %s", outFile.c_str());
 
     // count the duplicate records as a check
-    uint32_t singleDuplicates(0), pairedDuplicates(0);
+    uint32_t singleDuplicates(0), pairedDuplicates(0),
+        secondaryDuplicates(0), supplementaryDuplicates(0);
 
     // start reading records and writing them out
     SamRecord record;
@@ -393,10 +406,9 @@ int Dedup::execute(int argc, char** argv)
         // modify the duplicate flag and write out the record,
         // if it's appropriate
         int flag = record.getFlag();
+
         if (foundDup)
         {   
-            // this record is a duplicate, so mark it.
-            record.setFlag( flag | 0x400 );
             currentDupIndex++;
             // increment duplicate counters to verify we found them all
             if ( ( ( flag & 0x0001 ) == 0 ) || ( flag & 0x0008 ) )
@@ -407,12 +419,43 @@ int Dedup::execute(int argc, char** argv)
             {
                 pairedDuplicates++;
             }
+
+            // Update NonPrimaryMap to indicate this readname is a duplicate
+            // (if the readname is in the map)
+            // Need to do it here in case the non-primary read comes after the primary one
+            // so the read name was not in the map when the primary read was encountered
+            // on the first pass through the file.
+            markDuplicateInNonPrimaryMaps(&record);
+        }
+        else if(SamFlag::isSecondary(flag) || 
+           (flag & SamFlag::SUPPLEMENTARY_ALIGNMENT))
+        {
+            // Check the supplemenatry map to see if this read is a duplicate.
+            foundDup = mySecondarySupplementaryMap[record.getReadName()];
+            if(foundDup)
+            {
+                if(flag & SamFlag::SUPPLEMENTARY_ALIGNMENT)
+                {
+                    ++supplementaryDuplicates;
+                }
+                else
+                {
+                    ++secondaryDuplicates;
+                }
+            }
+        }
+
+        if(foundDup)
+        {
+            // this record is a duplicate, so mark it.
+            record.setFlag( flag | 0x400 );
+
             // recalibrate if necessary.
             if(myDoRecab)
             {
                 myRecab.processReadApplyTable(record);
             }
-
+            
             // write the record if we are not removing duplicates
             if (!removeFlag ) samOut.WriteRecord(header, record);
         }
@@ -442,10 +485,12 @@ int Dedup::execute(int argc, char** argv)
     samIn.Close();
     samOut.Close();
 
-    Logger::gLogger->writeLog("Successfully %s %u unpaired and %u paired duplicate reads", 
+    Logger::gLogger->writeLog("Successfully %s %u unpaired, %u paired duplicate reads, %u secondary reads, and %u supplementary reads", 
                               removeFlag ? "removed" : "marked" ,
                               singleDuplicates,
-                              pairedDuplicates/2);
+                              pairedDuplicates/2,
+                              secondaryDuplicates,
+                              supplementaryDuplicates);
     Logger::gLogger->writeLog("\nDedup complete!");
     return 0;
 }
@@ -969,6 +1014,38 @@ void Dedup::handleDuplicate(uint32_t index, SamRecord* recordPtr)
 
     // Add the index to the duplicate list.
     myDupList.push_back(index);
+
+    // Update NonPrimaryMap to indicate this readname is a duplicate
+    // (if the readname is in the map)
+    markDuplicateInNonPrimaryMaps(recordPtr);
+
     // Release the record.
     mySamPool.releaseRecord(recordPtr);
+}
+
+
+void Dedup::markDuplicateInNonPrimaryMaps(SamRecord* recordPtr)
+{
+    // Check the NonPrimary Maps.
+    if(recordPtr == NULL)
+    {
+        return;
+    }
+    int flag = recordPtr->getFlag();
+
+    // check the maps if the read is:
+    //     * single end
+    //     * the mate is unmapped (treated as single end)
+    //  or * first fragment (only want to check for 1 of the 2 mates)
+    if(!SamFlag::isPaired(flag) || !SamFlag::isMateMapped(flag) ||
+       SamFlag::isFirstFragment(flag))
+    {
+        NonPrimaryMap::iterator iter;
+        iter = mySecondarySupplementaryMap.find(recordPtr->getReadName());
+        if(iter != mySecondarySupplementaryMap.end())
+        {
+            // Found in the non primary map, so set it to be a dupilcate.
+            iter->second = true;
+        }
+    }
 }

@@ -28,6 +28,6 @@ Total number of reads excluded from duplicate checking: 13
 Sorting the indices of 0 duplicated records
 
 Writing results/testDedup2Exclude.sam
-Successfully marked 0 unpaired and 0 paired duplicate reads
+Successfully marked 0 unpaired, 0 paired duplicate reads, 0 secondary reads, and 0 supplementary reads
 
 Dedup complete!

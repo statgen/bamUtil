@@ -56,6 +56,6 @@ Total # Reads used for building recab table: 4
 Writing recalibration table results/testDedup2ForceRecabD.sam.qemp
 
 Writing results/testDedup2ForceRecabD.sam
-Successfully marked 0 unpaired and 5 paired duplicate reads
+Successfully marked 0 unpaired, 5 paired duplicate reads, 0 secondary reads, and 0 supplementary reads
 
 Dedup complete!
