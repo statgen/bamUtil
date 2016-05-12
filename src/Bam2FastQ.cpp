@@ -74,15 +74,15 @@ Bam2FastQ::~Bam2FastQ()
 }
 
 
-void Bam2FastQ::bam2FastQDescription(std::ostream& os)
+void Bam2FastQ::printBam2FastQDescription(std::ostream& os)
 {
     os << " bam2FastQ - Convert the specified BAM file to fastQs." << std::endl;
 }
 
 
-void Bam2FastQ::description(std::ostream& os)
+void Bam2FastQ::printDescription(std::ostream& os)
 {
-    bam2FastQDescription(os);
+    printBam2FastQDescription(os);
 }
 
 
