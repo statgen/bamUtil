@@ -95,7 +95,7 @@ void Bam2FastQ::printUsage(std::ostream& os)
     os << "\tOptional Parameters:" << std::endl;
     os << "\t\t--readname            : Process the BAM as readName sorted instead\n"
               << "\t\t                        of coordinate if the header does not indicate a sort order." << std::endl;
-    os << "\t\t--readNameOnTheFly    : Process the BAM by sorting readName regardless of its original order."<< std::endl;
+    os << "\t\t--sortByReadNameOnTheFly    : Process the BAM by sorting readName regardless of its original order."<< std::endl;
     os << "\t\t--nThread             : Specify number of thread to use." << std::endl;
     os << "\t\t--bedFile             : Specify regions to be processed." << std::endl;
     os << "\t\t--splitRG             : Split into RG specific fastqs." << std::endl;
