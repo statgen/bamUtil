@@ -185,11 +185,6 @@ int Bam2FastQ::execute(int argc, char **argv)
         BgzfFileType::setRequireEofBlock(false);
     }
 
-    if(gzip)
-    {
-        myCompression = InputFile::GZIP;
-    }
-
     String chr = "";
     int position = -1;
     if(region != "")
@@ -312,8 +307,17 @@ int Bam2FastQ::execute(int argc, char **argv)
     if(interleave)
     {
         myFirstFileNameExt = "_interleaved.fastq";
-        myFirstFileNameExt = "_interleaved.fastq";
     }
+
+    // If output is gziped
+    if(gzip)
+    {
+        myCompression = InputFile::GZIP;
+	      myFirstFileNameExt += ".gz";
+	      mySecondFileNameExt += ".gz";
+	      myUnpairedFileNameExt += ".gz";
+    }
+
     getFileName(firstOut, myFirstFileNameExt);
     getFileName(secondOut, mySecondFileNameExt);
     getFileName(unpairedOut, myUnpairedFileNameExt);
