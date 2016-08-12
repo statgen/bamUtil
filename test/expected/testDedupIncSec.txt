@@ -1,4 +1,4 @@
-Usage: ./bam dedup --in <InputBamFile> --out <OutputBamFile> [--minQual <minPhred>] [--log <logFile>] [--oneChrom] [--rmDups] [--force] [--excludeFlags <flag>] [--verbose] [--noeof] [--params] [--recab] --refFile <ReferenceFile> [--dbsnp <dbsnpFile>] [--minBaseQual <minBaseQual>] [--maxBaseQual <maxBaseQual>] [--blended <weight>] [--fitModel] [--fast] [--keepPrevDbsnp] [--keepPrevNonAdjacent] [--useLogReg] [--qualField <tag>] [--storeQualTag <tag>] [--buildExcludeFlags <flag>] [--applyExcludeFlags <flag>] [--binQualS <minQualBin2>,<minQualBin3><...>] [--binQualF <filename>] [--binMid|binHigh]
+Usage: ./bam dedup --in <InputBamFile> --out <OutputBamFile> [--minQual <minPhred>] [--log <logFile>] [--oneChrom] [--rmDups] [--force] [--excludeFlags <flag>] [--verbose] [--noeof] [--params] [--recab] --refFile <ReferenceFile> [--dbsnp <dbsnpFile>] [--minBaseQual <minBaseQual>] [--maxBaseQual <maxBaseQual>] [--blended <weight>] [--fitModel] [--fast] [--keepPrevDbsnp] [--keepPrevNonAdjacent] [--useLogReg] [--qualField <tag>] [--storeQualTag <tag>] [--buildExcludeFlags <flag>] [--applyExcludeFlags <flag>] [--binQualS <minQualBin2>,<minQualBin3><...>] [--binQualF <filename>] [--binMid|binHigh|binCustom]
 
 Required parameters :
 	--in <infile>   : Input BAM file name (must be sorted)
@@ -56,6 +56,7 @@ Recab Specific Optional Parameters :
 	  By default, the bin value is the low end of the range.
 		--binQualS   : Bin the Qualities as specified (phred): minQualOfBin2, minQualofBin3...
 		--binQualF   : Bin the Qualities based on the specified file
+		--binCustom  : Use the custom point of the quality bin (followed by colon) for the quality value of the bin.
 		--binMid     : Use the mid point of the quality bin range for the quality value of the bin.
 		--binHigh    : Use the high end of the quality bin range for the quality value of the bin.
 
@@ -79,6 +80,6 @@ Input Parameters
                                          --buildExcludeFlags [0x0F04],
                                          --applyExcludeFlags [0x0000]
    Optional Quality Binning Parameters : --binQualS [], --binQualF [],
-                                         --binMid, --binHigh
+                                         --binMid, --binCustom, --binHigh
 
 ERROR: Secondary reads must be excluded, edit --excludeFlags to include 0x0100
