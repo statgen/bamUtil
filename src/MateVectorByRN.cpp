@@ -13,7 +13,7 @@
 #include <mutex>
 
 #define Section_Skip 10000000
-std::mutex myLock2;
+std::mutex myLock;
 
 #define SHRINK_LIMIT_PARAMETER 100000
 #define MAX_LIMIT_PARAMETER 500000
@@ -87,16 +87,14 @@ int MateVectorByRN::HandlePairedRN(SamRecord& samRec, bool ready2Dump) { //all S
 //							<< " are first fragment, so "
 //							<< "splitting one to be in the 2nd fastq.\n";
 //				}
-
+				myLock.lock();
 				host->writeFastQ(samRec, host->myFirstFile, FirstFileNameExt,
 						myPool, false, host->myFirstRNExt.c_str());
 				host->writeFastQ(*prevRec, host->mySecondFile,
 						SecondFileNameExt, myPool, false,
 						host->mySecondRNExt.c_str());
-
-				myLock2.lock();
 				host->myNumPairs++;
-				myLock2.unlock();
+				myLock.unlock();
 
 			} else {
 //				if (!SamFlag::isFirstFragment(prevRec->getFlag())) {
@@ -104,15 +102,13 @@ int MateVectorByRN::HandlePairedRN(SamRecord& samRec, bool ready2Dump) { //all S
 //							<< " are first fragment, so "
 //							<< "splitting one to be in the 2nd fastq.\n";
 //				}
-
+				myLock.lock();
 				host->writeFastQ(*prevRec, host->myFirstFile, FirstFileNameExt,
 						myPool, false, host->myFirstRNExt.c_str());
 				host->writeFastQ(samRec, host->mySecondFile, SecondFileNameExt,
 						myPool, false, host->mySecondRNExt.c_str());
-
-				myLock2.lock();
 				host->myNumPairs++;
-				myLock2.unlock();
+				myLock.unlock();
 
 			}
 			// No previous record.

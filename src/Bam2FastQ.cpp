@@ -346,7 +346,13 @@ int Bam2FastQ::execute(int argc, char **argv)
     if(interleave)
     {
         myFirstFileNameExt = "_interleaved.fastq";
-        myFirstFileNameExt = "_interleaved.fastq";
+        mySecondFileNameExt = "_interleaved.fastq";
+    }
+    if(gzip)
+    {
+	    myFirstFileNameExt+=".gz";
+	    mySecondFileNameExt+=".gz";
+	    myUnpairedFileNameExt+=".gz";
     }
     getFileName(firstOut, myFirstFileNameExt);
     getFileName(secondOut, mySecondFileNameExt);
@@ -859,8 +865,8 @@ void Bam2FastQ::writeFastQ(SamRecord& samRec, IFILE filePtr,
     myPool.releaseRecord(&samRec);
 }
 
-#include <mutex>
-std::mutex myLock3;
+//#include <mutex>
+//std::mutex myLock3;
 void Bam2FastQ::writeFastQ(SamRecord& samRec, IFILE filePtr,
                            const std::string& fileNameExt, SamRecordPool* localPool, bool is_tmp, const char* readNameExt)
 {
@@ -878,7 +884,7 @@ void Bam2FastQ::writeFastQ(SamRecord& samRec, IFILE filePtr,
         rgFastqExt = rg + fileNameExt;
 
         OutFastqMap::iterator it;
-        myLock3.lock();
+  //      myLock3.lock();
         it = myOutFastqs.find(rgFastqExt);
 
         if(it == myOutFastqs.end())
@@ -897,7 +903,7 @@ void Bam2FastQ::writeFastQ(SamRecord& samRec, IFILE filePtr,
             filePtr = ifopen(fileName.c_str(), "w", myCompression);
             myOutFastqs[rgFastqExt] = filePtr;
 
-            myLock3.unlock();
+    //        myLock3.unlock();
 
             if(fileNameExt != mySecondFileNameExt)
             {
@@ -930,7 +936,7 @@ void Bam2FastQ::writeFastQ(SamRecord& samRec, IFILE filePtr,
         }
         else
         {
-        	myLock3.unlock();
+      //  	myLock3.unlock();
             filePtr = it->second;
         }
     }
@@ -960,9 +966,9 @@ void Bam2FastQ::writeFastQ(SamRecord& samRec, IFILE filePtr,
         else
         {
             // Tag was not found, so use the quality field.
-        	myLock3.lock();
+        //	myLock3.lock();
             ++myNumQualTagErrors;
-            myLock3.unlock();
+         //   myLock3.unlock();
             if(myNumQualTagErrors == 1)
             {
                 std::cerr << "Bam2FastQ: " << myQField.c_str()
@@ -988,7 +994,7 @@ void Bam2FastQ::writeFastQ(SamRecord& samRec, IFILE filePtr,
             sequence[i] = (char)toupper(sequence[i]);
         }
     }
-    myLock3.lock();
+//    myLock3.lock();
     if(myRNPlus)
     {
 
@@ -1000,7 +1006,7 @@ void Bam2FastQ::writeFastQ(SamRecord& samRec, IFILE filePtr,
         ifprintf(filePtr, "@%s%s\n%s\n+\n%s\n", readName, readNameExt,
                  sequence.c_str(), quality.c_str());
     }
-    myLock3.unlock();
+//    myLock3.unlock();
     // Release the record.
     localPool->releaseRecord(&samRec);
 }

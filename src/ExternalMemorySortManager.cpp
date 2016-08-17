@@ -12,7 +12,7 @@
 #include <cstdio>
 
 #define Section_Skip 10000000
-std::mutex myLock;
+extern std::mutex myLock;
 ExternalMemorySortManager::ExternalMemorySortManager() {
 	// TODO Auto-generated constructor stub
 
@@ -336,14 +336,13 @@ int ExternalMemorySortManager::miniMergeSort(MateVectorByRN* tmpVector) { //read
 //								<< "splitting one to be in the 2nd fastq.\n";
 //					}
 
-
+					myLock.lock();
 					host->writeFastQ(*samRec, host->myFirstFile,
 							host->myFirstFileNameExt, tmpVector->myPool, false,
 							host->myFirstRNExt.c_str());
 					host->writeFastQ(*tmpVector->prevRec, host->mySecondFile,
 							host->mySecondFileNameExt, tmpVector->myPool, false,
 							host->mySecondRNExt.c_str());
-					myLock.lock();
 					host->myNumPairs++;
 					myLock.unlock();
 
@@ -354,14 +353,13 @@ int ExternalMemorySortManager::miniMergeSort(MateVectorByRN* tmpVector) { //read
 //								<< " are first fragment, so "
 //								<< "splitting one to be in the 2nd fastq.\n";
 //					}
-
+					myLock.lock();
 					host->writeFastQ(*tmpVector->prevRec, host->myFirstFile,
 							host->myFirstFileNameExt, tmpVector->myPool, false,
 							host->myFirstRNExt.c_str());
 					host->writeFastQ(*samRec, host->mySecondFile,
 							host->mySecondFileNameExt, tmpVector->myPool, false,
 							host->mySecondRNExt.c_str());
-					myLock.lock();
 					host->myNumPairs++;
 					myLock.unlock();
 
