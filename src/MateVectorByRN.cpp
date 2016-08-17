@@ -150,13 +150,18 @@ int MateVectorByRN::Read(const std::string& bamFile) {		//end not included
 		tmpFileNameBase = std::string(host->myTmpOutBase.c_str())
 				+ std::string("_") + chr + ":" + std::to_string(begin) + "_"
 				+ std::to_string(end) + "_";
-	FIN.ReadBamIndex();
-	std::cerr<<"Region:"<<chr<<":"<<begin<<"-"<<end<<"\t in process"<<std::endl;
-	if (!FIN.SetReadSection(chr.c_str(), begin, end)) {
-		std::cerr << "Region:" << chr << ":" << begin << "-" << end
-				<< "\tdoes not exist" << std::endl;
-		return 1;
+
+	if(chr!="no.bai")//no index file available
+	{
+		FIN.ReadBamIndex();
+		std::cerr<<"Region:"<<chr<<":"<<begin<<"-"<<end<<"\t in process"<<std::endl;
+		if (!FIN.SetReadSection(chr.c_str(), begin, end)) {
+			std::cerr << "Region:" << chr << ":" << begin << "-" << end
+					  << "\tdoes not exist" << std::endl;
+			return 1;
+		}
 	}
+
 	SamRecord* recordPtr = myPool->getRecord();
 	if (recordPtr == NULL) {
 		std::cerr << "Get record from myPool failed!" << std::endl;

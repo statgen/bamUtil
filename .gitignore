@@ -3,3 +3,5 @@ bin
 test/testFilesLibBam
 *~
 *.tgz
+CMakeLists.txt
+.idea

@@ -61,9 +61,15 @@ int ExternalMemorySortManager::FindAllBeginPointer() {
 
 	std::ifstream fin(bedFile.c_str());
 	std::priority_queue<POPCORN, std::vector<POPCORN>, PopcornComparison> tmpHeap;
-	if (bedFile == "") {	//create segments on the fly
+	if(THREAD_NUM==1) {
+		MateVectorList.push_back(
+				new MateVectorByRN(0, host, std::string("no.bai"), -1,
+								   -1));
+		masterTmpFileList.push_back(std::string(""));
+		sortHeap.push_back(tmpHeap);
+	}else if (bedFile == "") {//create segments on the fly
 		SamFileHeader tmpHeader;
-		SamFile fin(bamFile.c_str(), SamFile::READ, &tmpHeader);
+//		SamFile fin(bamFile.c_str(), SamFile::READ, &tmpHeader);
 		int nSQ = tmpHeader.getNumSQs();
 		std::string chrName;
 		int seqLength(0);
@@ -82,7 +88,7 @@ int ExternalMemorySortManager::FindAllBeginPointer() {
 			{
 				MateVectorList.push_back(
 						new MateVectorByRN(vectorIndex, host, chrName, begin,
-								begin + Section_Skip));
+										   begin + Section_Skip));
 				masterTmpFileList.push_back(std::string(""));
 				sortHeap.push_back(tmpHeap);
 				vectorIndex++;
@@ -90,19 +96,19 @@ int ExternalMemorySortManager::FindAllBeginPointer() {
 			//else begin=(seqLength-Section_Skip)>0?(seqLength-Section_Skip):1;//for debug purpose
 			MateVectorList.push_back(
 					new MateVectorByRN(vectorIndex, host, chrName, begin,
-							seqLength));
+									   seqLength));
 			masterTmpFileList.push_back(std::string(""));
 			sortHeap.push_back(tmpHeap);
 			vectorIndex++;
 		}
 		MateVectorList.push_back(
 				new MateVectorByRN(vectorIndex, host, std::string("*"), -1,
-						-1));
+								   -1));
 		masterTmpFileList.push_back(std::string(""));
 		sortHeap.push_back(tmpHeap);
 		vectorIndex++;
-
-	} else {	//divide task according to bed file
+	}
+	else {	//divide task according to bed file
 
 		if (!fin.is_open()) {
 			std::cerr << "Open file " << bedFile << " failed!";
@@ -127,7 +133,7 @@ int ExternalMemorySortManager::FindAllBeginPointer() {
 int ExternalMemorySortManager::Dispatch() {
 
 	if (THREAD_NUM > 1) {
-		std::thread t[THREAD_NUM];
+        std::vector<std::thread> t(THREAD_NUM);
 
 		int *workDone = new int[MateVectorList.size()];
 		for (uint i = 0; i != MateVectorList.size(); ++i)
