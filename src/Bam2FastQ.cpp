@@ -18,8 +18,8 @@
 #include "Bam2FastQ.h"
 #include "BgzfFileType.h"
 #include "BaseUtilities.h"
-#include "SamFlag.h"
-#include "SamFile.h"
+//#include "SamFlag.h"
+//#include "SamFile.h"
 #include "SamHelper.h"
 
 const char* Bam2FastQ::DEFAULT_FIRST_EXT = "/1";
@@ -146,7 +146,7 @@ int Bam2FastQ::execute(int argc, char **argv)
     String unpairedOut = "";
     String bedFile="";
 
-    bool interleave = false;
+    bool interleave = true;
     bool noeof = false;
     bool gzip = false;
     bool params = false;
@@ -158,7 +158,7 @@ int Bam2FastQ::execute(int argc, char **argv)
     myNumMateFailures = 0;
     myNumPairs = 0;
     myNumUnpaired = 0;
-    mySplitRG = false;
+    mySplitRG = true;
     myQField = "";
     myNumQualTagErrors = 0;
     myReverseComp = true;
@@ -242,7 +242,7 @@ int Bam2FastQ::execute(int argc, char **argv)
             else
             {
                 posStr = region.Mid(chrStrEnd+1, posStrEnd-1);
-                nucleotide = toupper(region[posStrEnd + 1]);
+                nucleotide = (char)toupper(region[posStrEnd + 1]);
                 if(posStrEnd + 1 != region.Length()-1)
                 {
                     std::cerr << "ERROR: Invalid region string, '" << region
@@ -451,7 +451,7 @@ int Bam2FastQ::execute(int argc, char **argv)
     }
 
     SamRecord* recordPtr;
-    int16_t samFlag;
+    uint16_t samFlag;
 
 
     SamStatus::Status returnStatus = SamStatus::SUCCESS;
@@ -732,7 +732,7 @@ void Bam2FastQ::handlePairedCoord(SamRecord& samRec)
 void Bam2FastQ::writeFastQ(SamRecord& samRec, IFILE filePtr,
                            const std::string& fileNameExt, const char* readNameExt)
 {
-    static int16_t flag;
+    static uint16_t flag;
     static std::string sequence;
     static String quality;
     static std::string rg;
@@ -843,7 +843,7 @@ void Bam2FastQ::writeFastQ(SamRecord& samRec, IFILE filePtr,
     else
     {
         // Ensure it is all capitalized.
-        int seqLen = sequence.size();
+        unsigned long seqLen = sequence.size();
         for (int i = 0; i < seqLen; i++)
         {
             sequence[i] = (char)toupper(sequence[i]);
@@ -870,7 +870,7 @@ void Bam2FastQ::writeFastQ(SamRecord& samRec, IFILE filePtr,
 void Bam2FastQ::writeFastQ(SamRecord& samRec, IFILE filePtr,
                            const std::string& fileNameExt, SamRecordPool* localPool, bool is_tmp, const char* readNameExt)
 {
-    int16_t flag;
+    uint16_t flag;
     std::string sequence;
     String quality;
     std::string rg;
@@ -988,7 +988,7 @@ void Bam2FastQ::writeFastQ(SamRecord& samRec, IFILE filePtr,
     else
     {
         // Ensure it is all capitalized.
-        int seqLen = sequence.size();
+        unsigned long seqLen = sequence.size();
         for (int i = 0; i < seqLen; i++)
         {
             sequence[i] = (char)toupper(sequence[i]);
