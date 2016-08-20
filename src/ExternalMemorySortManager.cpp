@@ -12,7 +12,7 @@
 #include <cstdio>
 
 #define Section_Skip 10000000
-std::mutex myLock;
+extern std::mutex myLock;
 ExternalMemorySortManager::ExternalMemorySortManager() {
 	// TODO Auto-generated constructor stub
 
@@ -61,9 +61,15 @@ int ExternalMemorySortManager::FindAllBeginPointer() {
 
 	std::ifstream fin(bedFile.c_str());
 	std::priority_queue<POPCORN, std::vector<POPCORN>, PopcornComparison> tmpHeap;
-	if (bedFile == "") {	//create segments on the fly
+	if(THREAD_NUM==1) {
+		MateVectorList.push_back(
+				new MateVectorByRN(0, host, std::string("no.bai"), -1,
+								   -1));
+		masterTmpFileList.push_back(std::string(""));
+		sortHeap.push_back(tmpHeap);
+	}else if (bedFile == "") {//create segments on the fly
 		SamFileHeader tmpHeader;
-		SamFile fin(bamFile.c_str(), SamFile::READ, &tmpHeader);
+//		SamFile fin(bamFile.c_str(), SamFile::READ, &tmpHeader);
 		int nSQ = tmpHeader.getNumSQs();
 		std::string chrName;
 		int seqLength(0);
@@ -82,7 +88,7 @@ int ExternalMemorySortManager::FindAllBeginPointer() {
 			{
 				MateVectorList.push_back(
 						new MateVectorByRN(vectorIndex, host, chrName, begin,
-								begin + Section_Skip));
+										   begin + Section_Skip));
 				masterTmpFileList.push_back(std::string(""));
 				sortHeap.push_back(tmpHeap);
 				vectorIndex++;
@@ -90,19 +96,19 @@ int ExternalMemorySortManager::FindAllBeginPointer() {
 			//else begin=(seqLength-Section_Skip)>0?(seqLength-Section_Skip):1;//for debug purpose
 			MateVectorList.push_back(
 					new MateVectorByRN(vectorIndex, host, chrName, begin,
-							seqLength));
+									   seqLength));
 			masterTmpFileList.push_back(std::string(""));
 			sortHeap.push_back(tmpHeap);
 			vectorIndex++;
 		}
 		MateVectorList.push_back(
 				new MateVectorByRN(vectorIndex, host, std::string("*"), -1,
-						-1));
+								   -1));
 		masterTmpFileList.push_back(std::string(""));
 		sortHeap.push_back(tmpHeap);
 		vectorIndex++;
-
-	} else {	//divide task according to bed file
+	}
+	else {	//divide task according to bed file
 
 		if (!fin.is_open()) {
 			std::cerr << "Open file " << bedFile << " failed!";
@@ -127,7 +133,7 @@ int ExternalMemorySortManager::FindAllBeginPointer() {
 int ExternalMemorySortManager::Dispatch() {
 
 	if (THREAD_NUM > 1) {
-		std::thread t[THREAD_NUM];
+        std::vector<std::thread> t(THREAD_NUM);
 
 		int *workDone = new int[MateVectorList.size()];
 		for (uint i = 0; i != MateVectorList.size(); ++i)
@@ -336,14 +342,13 @@ int ExternalMemorySortManager::miniMergeSort(MateVectorByRN* tmpVector) { //read
 //								<< "splitting one to be in the 2nd fastq.\n";
 //					}
 
-
+					myLock.lock();
 					host->writeFastQ(*samRec, host->myFirstFile,
 							host->myFirstFileNameExt, tmpVector->myPool, false,
 							host->myFirstRNExt.c_str());
 					host->writeFastQ(*tmpVector->prevRec, host->mySecondFile,
 							host->mySecondFileNameExt, tmpVector->myPool, false,
 							host->mySecondRNExt.c_str());
-					myLock.lock();
 					host->myNumPairs++;
 					myLock.unlock();
 
@@ -354,14 +359,13 @@ int ExternalMemorySortManager::miniMergeSort(MateVectorByRN* tmpVector) { //read
 //								<< " are first fragment, so "
 //								<< "splitting one to be in the 2nd fastq.\n";
 //					}
-
+					myLock.lock();
 					host->writeFastQ(*tmpVector->prevRec, host->myFirstFile,
 							host->myFirstFileNameExt, tmpVector->myPool, false,
 							host->myFirstRNExt.c_str());
 					host->writeFastQ(*samRec, host->mySecondFile,
 							host->mySecondFileNameExt, tmpVector->myPool, false,
 							host->mySecondRNExt.c_str());
-					myLock.lock();
 					host->myNumPairs++;
 					myLock.unlock();
 

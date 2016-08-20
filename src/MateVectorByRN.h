@@ -23,6 +23,7 @@ class Bam2FastQ;
 
 class RecordComparison {
 public:
+	RecordComparison() {}
 	bool operator()(const RECORD& lhs, const RECORD&rhs) const {
 		return (lhs.first > rhs.first); //sort it descendingly, because heap pop out the max
 	}
