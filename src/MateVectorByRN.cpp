@@ -15,7 +15,7 @@
 #define Section_Skip 10000000
 std::mutex myLock;
 
-#define SHRINK_LIMIT_PARAMETER 100000
+#define SHRINK_LIMIT_PARAMETER 200000
 #define MAX_LIMIT_PARAMETER 500000
 #define RECORD_POOL_PARAMETER 1000000
 
@@ -33,9 +33,9 @@ MateVectorByRN::~MateVectorByRN() {
 }
 
 MateVectorByRN::MateVectorByRN(int tmpVectorIndex, Bam2FastQ *conversionHost,
-                               std::string chromosome, long CoordinateStart, long CoordinateEnd) :
+                               std::string chromosome, long CoordinateStart, long CoordinateEnd, long recordLimit) :
         bufferInUse(0), myNumPairs(0), count(0), SHRINK_LIMIT(
-        SHRINK_LIMIT_PARAMETER), MAX_LIMIT(MAX_LIMIT_PARAMETER)/*,myPool(RECORD_POOL_PARAMETER)*/{
+        SHRINK_LIMIT_PARAMETER), MAX_LIMIT(recordLimit)/*,myPool(RECORD_POOL_PARAMETER)*/{
 
     prevRec = NULL;
     prevRN = "";
