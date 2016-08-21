@@ -32,7 +32,7 @@ public:
 class MateVectorByRN {
 public:
 	MateVectorByRN(int vectorIndex, Bam2FastQ* host, std::string chr,
-			long begin, long end);
+			long begin, long end, long recordLimit);
 	MateVectorByRN();
 	virtual ~MateVectorByRN();
 

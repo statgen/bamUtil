@@ -139,6 +139,7 @@ int Bam2FastQ::execute(int argc, char **argv) {
     bool readName = false;
     bool sortByReadNameOnTheFly = false;
     int nThread = 1;
+    int recordLimit=1000000;
     String refFile = "";
     String firstOut = "";
     String secondOut = "";
@@ -174,6 +175,7 @@ int Bam2FastQ::execute(int argc, char **argv) {
                     LONG_PARAMETER_GROUP("Optional Parameters")
                     LONG_PARAMETER("readName", &readName)
                     LONG_PARAMETER("sortByReadNameOnTheFly", &sortByReadNameOnTheFly)
+                    LONG_INTPARAMETER("maxRecordLimitPerDump",&recordLimit)
                     LONG_STRINGPARAMETER("bedFile", &bedFile)
                     LONG_INTPARAMETER("nThread", &nThread)
 
@@ -461,7 +463,7 @@ int Bam2FastQ::execute(int argc, char **argv) {
         closeFiles();
     } else {
         std::cerr << "Using sortByReadNameOnTheFly process..." << std::endl;
-        ExternalMemorySortManager myManager(this, std::string(inFile.c_str()), nThread, 1000000,
+        ExternalMemorySortManager myManager(this, std::string(inFile.c_str()), nThread, recordLimit,
                                             std::string(bedFile.c_str()));
         std::cerr << "Ready to FindAllBeginPointer... " << std::endl;
         myManager.FindAllBeginPointer();

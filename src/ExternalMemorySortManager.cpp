@@ -64,7 +64,7 @@ int ExternalMemorySortManager::FindAllBeginPointer() {
 	if(THREAD_NUM==1) {
 		MateVectorList.push_back(
 				new MateVectorByRN(0, host, std::string("no.bai"), -1,
-								   -1));
+								   -1,RECORD_LIMIT));
 		masterTmpFileList.push_back(std::string(""));
 		sortHeap.push_back(tmpHeap);
 	}else if (bedFile == "") {//create segments on the fly
@@ -88,7 +88,7 @@ int ExternalMemorySortManager::FindAllBeginPointer() {
 			{
 				MateVectorList.push_back(
 						new MateVectorByRN(vectorIndex, host, chrName, begin,
-										   begin + Section_Skip));
+										   begin + Section_Skip, RECORD_LIMIT));
 				masterTmpFileList.push_back(std::string(""));
 				sortHeap.push_back(tmpHeap);
 				vectorIndex++;
@@ -96,14 +96,14 @@ int ExternalMemorySortManager::FindAllBeginPointer() {
 			//else begin=(seqLength-Section_Skip)>0?(seqLength-Section_Skip):1;//for debug purpose
 			MateVectorList.push_back(
 					new MateVectorByRN(vectorIndex, host, chrName, begin,
-									   seqLength));
+									   seqLength, RECORD_LIMIT));
 			masterTmpFileList.push_back(std::string(""));
 			sortHeap.push_back(tmpHeap);
 			vectorIndex++;
 		}
 		MateVectorList.push_back(
 				new MateVectorByRN(vectorIndex, host, std::string("*"), -1,
-								   -1));
+								   -1,RECORD_LIMIT));
 		masterTmpFileList.push_back(std::string(""));
 		sortHeap.push_back(tmpHeap);
 		vectorIndex++;
@@ -120,7 +120,7 @@ int ExternalMemorySortManager::FindAllBeginPointer() {
 		while (getline(fin, line)) {
 			parseRegion(line, chr, begin, end);
 			MateVectorList.push_back(
-					new MateVectorByRN(vectorIndex, host, chr, begin, end));
+					new MateVectorByRN(vectorIndex, host, chr, begin, end, RECORD_LIMIT));
 			masterTmpFileList.push_back(std::string(""));
 			sortHeap.push_back(tmpHeap);
 			vectorIndex++;
