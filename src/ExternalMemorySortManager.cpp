@@ -206,6 +206,10 @@ int ExternalMemorySortManager::MergeSort(/*std::vector<std::string> tmpFileList*
 
 		tmpFileHandle.push_back(fin);
 		tmpRecord.second = host->myPool.getRecord();
+		if (tmpRecord.second == NULL) {
+			std::cerr << "Get record from myPool failed!" << std::endl;
+			exit(EXIT_FAILURE);
+		}
 		fin->ReadRecord(tmpHeader, *tmpRecord.second);
 		tmpRecord.first = tmpRecord.second->getReadName();
 		masterHeap.push(std::make_pair(tmpRecord, fin));
@@ -240,6 +244,10 @@ int ExternalMemorySortManager::MergeSort(/*std::vector<std::string> tmpFileList*
 		} else {
 
 			tmpRecord.second = host->myPool.getRecord();
+			if (tmpRecord.second == NULL) {
+				std::cerr << "Get record from myPool failed!" << std::endl;
+				exit(EXIT_FAILURE);
+			}
 			tmpFin->ReadRecord(tmpHeader, *tmpRecord.second);
 			tmpRecord.first = tmpRecord.second->getReadName();
 			masterHeap.push(std::make_pair(tmpRecord, tmpFin));
@@ -305,6 +313,10 @@ int ExternalMemorySortManager::miniMergeSort(MateVectorByRN* tmpVector) { //read
 		}
 		tmpFileHandle.push_back(fin);
 		tmpRecord.second = tmpVector->myPool->getRecord();
+		if (tmpRecord.second == NULL) {
+			std::cerr << "Get record from myPool failed!" << std::endl;
+			exit(EXIT_FAILURE);
+		}
 		fin->ReadRecord(tmpHeader, *tmpRecord.second);
 		tmpRecord.first = tmpRecord.second->getReadName();
 		sortHeap[vectorIndex].push(POPCORN(tmpRecord, fin));
@@ -387,6 +399,10 @@ int ExternalMemorySortManager::miniMergeSort(MateVectorByRN* tmpVector) { //read
 		} else {
 
 			tmpRecord.second = tmpVector->myPool->getRecord();
+			if (tmpRecord.second == NULL) {
+				std::cerr << "Get record from myPool failed!" << std::endl;
+				exit(EXIT_FAILURE);
+			}
 			tmpFin->ReadRecord(tmpHeader, *tmpRecord.second);
 			tmpRecord.first = tmpRecord.second->getReadName();
 			sortHeap[vectorIndex].push(POPCORN(tmpRecord, tmpFin));
