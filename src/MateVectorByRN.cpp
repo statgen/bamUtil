@@ -49,7 +49,7 @@ MateVectorByRN::MateVectorByRN(int tmpVectorIndex, Bam2FastQ *conversionHost,
     end = CoordinateEnd;
     vectorIndex = tmpVectorIndex;
     tmpFileIndex = 0;
-    myPool = new SamRecordPool;
+    myPool = new SamRecordPool(-1);
 
 }
 
@@ -175,6 +175,10 @@ int MateVectorByRN::Read(const std::string &bamFile) {        //end not included
         Add(recordPtr);
         alreadyRead++;
         recordPtr = myPool->getRecord();
+        if (recordPtr == NULL) {
+            std::cerr << "Get record from myPool failed!" << std::endl;
+            exit(EXIT_FAILURE);
+        }
     }
     myPool->releaseRecord(recordPtr);
     DumpMateVector();
