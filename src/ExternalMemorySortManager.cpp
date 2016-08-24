@@ -216,15 +216,15 @@ int ExternalMemorySortManager::MergeSort(/*std::vector<std::string> tmpFileList*
 	}
 
 	if (nFile <= 0) {
-		std::cerr << "Fatal error, no all.tmp file exists!\n" << std::endl;
-		host->myFirstFile->ifclose();
-		host->mySecondFile->ifclose();
-		host->myUnpairedFile->ifclose();
+		std::cerr << "no unpaired reads found in vectors' mini.merge.all.tmp files.\n" << std::endl;
+//		host->myFirstFile->ifclose();
+//		host->mySecondFile->ifclose();
+//		host->myUnpairedFile->ifclose();
 		for (uint i = 0; i != tmpFileList.size(); ++i) {
 			std::remove(tmpFileList[i].c_str());
 		}
-		exit(EXIT_FAILURE);
-		//return 1; //no existing tmp files
+		//exit(EXIT_FAILURE);
+		return 0; //no existing tmp files
 	}
 	int closedFile = 0;
 	POPCORN tmpPop;
