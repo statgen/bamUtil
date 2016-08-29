@@ -51,7 +51,6 @@ private:
     void closeFiles();
     void getFileName(String& fn, const std::string& ext);
 
-    SamFileHeader mySamHeader;
 
     MateMapByCoord myMateMap;
 
@@ -98,7 +97,7 @@ public:
     				const std::string& fileNameExt,
 					SamRecordPool* localPool,bool is_tmp,
 					const char* readNameExt = "");
-
+    SamFileHeader mySamHeader;
     SamRecordPool myPool;
 
     IFILE myFirstFile;
