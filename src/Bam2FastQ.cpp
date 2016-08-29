@@ -462,6 +462,9 @@ int Bam2FastQ::execute(int argc, char **argv) {
         samIn.Close();
         closeFiles();
     } else {
+        SamFile samIn;
+        samIn.OpenForRead(inFile, &mySamHeader);
+        samIn.Close();
         std::cerr << "Using sortByReadNameOnTheFly process..." << std::endl;
         ExternalMemorySortManager myManager(this, std::string(inFile.c_str()), nThread, recordLimit,
                                             std::string(bedFile.c_str()));
