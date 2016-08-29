@@ -135,6 +135,9 @@ int MateVectorByRN::Read(const std::string &bamFile) {        //end not included
     SamFile FIN;
 //    std::cerr<<"Open file handle ready!"<<std::endl;
     FIN.OpenForRead(bamFile.c_str(), &tmpHeader);
+    myLock.lock();
+    host->mySamHeader=tmpHeader;
+    myLock.unlock();
     FIN.SetReadFlags(0, 0x0900);//ignore secondary and supplementary alignment
 //    std::cerr<<"Open file handle done!"<<std::endl;
     if (!FIN.IsOpen()) {
