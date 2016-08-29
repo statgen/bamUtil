@@ -307,6 +307,7 @@ int Bam2FastQ::execute(int argc, char **argv)
     if(interleave)
     {
         myFirstFileNameExt = "_interleaved.fastq";
+        mySecondFileNameExt = "_interleaved.fastq";
     }
 
     // If output is gziped

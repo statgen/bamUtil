@@ -422,6 +422,86 @@ then
 fi
 
 ##########################################
+# Test valid splitRG command - RG with interleave
+../bin/bam bam2FastQ --in testFiles/testBam2FastQCoordRG.sam --merge --outBase results/testBam2FastQCoordRGi --noph --splitRG --qualField OQ 2> results/testBam2FastQCoordRGinterleaved.log
+let "status |= $?"
+diff results/testBam2FastQCoordRGi_interleaved.fastq expected/testBam2FastQCoordRGi_interleaved.fastq
+let "status |= $?"
+diff results/testBam2FastQCoordRGi.rg1.fastq expected/testBam2FastQCoordRG.rg1.fastq
+let "status |= $?"
+diff results/testBam2FastQCoordRGi.rg1_interleaved.fastq expected/testBam2FastQCoordRGi.rg1_interleaved.fastq
+let "status |= $?"
+diff results/testBam2FastQCoordRGi.rg2_interleaved.fastq expected/testBam2FastQCoordRGi.rg2_interleaved.fastq
+let "status |= $?"
+diff results/testBam2FastQCoordRGinterleaved.log expected/testBam2FastQCoordRG.log
+let "status |= $?"
+diff results/testBam2FastQCoordRGi.list expected/testBam2FastQCoordRGi.list
+let "status |= $?"
+if [ -e results/testBam2FastQCoordRGi.fastq ]
+then
+  let "status = 1"
+fi
+if [ -e results/testBam2FastQCoordRGi.rg2.fastq ]
+then
+  let "status = 1"
+fi
+if [ -e results/testBam2FastQCoordRGi_1.rg1.fastq ]
+then
+  let "status = 1"
+fi
+if [ -e results/testBam2FastQCoordRGi_2.rg1.fastq ]
+then
+  let "status = 1"
+fi
+if [ -e results/testBam2FastQCoordRGi_1.rg2.fastq ]
+then
+  let "status = 1"
+fi
+if [ -e results/testBam2FastQCoordRGi_2.rg2.fastq ]
+then
+  let "status = 1"
+fi
+
+../bin/bam bam2FastQ --readName --in testFiles/testBam2FastQReadNameRG.sam --outBase results/testBam2FastQReadNameRGi --noph --splitRG --qualField OQ --merge 2> results/testBam2FastQReadNameRGi.log
+let "status |= $?"
+diff results/testBam2FastQReadNameRGi_interleaved.fastq expected/testBam2FastQReadNameRGi_interleaved.fastq
+let "status |= $?"
+diff results/testBam2FastQReadNameRGi.rg1.fastq expected/testBam2FastQReadNameRGi.rg1.fastq
+let "status |= $?"
+diff results/testBam2FastQReadNameRGi.rg1_interleaved.fastq expected/testBam2FastQReadNameRGi.rg1_interleaved.fastq
+let "status |= $?"
+diff results/testBam2FastQReadNameRGi.rg2_interleaved.fastq expected/testBam2FastQReadNameRGi.rg2_interleaved.fastq
+let "status |= $?"
+diff results/testBam2FastQReadNameRGi.log expected/testBam2FastQReadNameRG.log
+let "status |= $?"
+diff results/testBam2FastQReadNameRGi.list expected/testBam2FastQReadNameRGi.list
+let "status |= $?"
+if [ -e results/testBam2FastQReadNameRGi.fastq ]
+then
+  let "status = 1"
+fi
+if [ -e results/testBam2FastQReadNameRGi.rg2.fastq ]
+then
+  let "status = 1"
+fi
+if [ -e results/testBam2FastQReadNameRGi.rg1_1.fastq ]
+then
+  let "status = 1"
+fi
+if [ -e results/testBam2FastQReadNameRGi.rg1_2.fastq ]
+then
+  let "status = 1"
+fi
+if [ -e results/testBam2FastQReadNameRGi.rg2_1.fastq ]
+then
+  let "status = 1"
+fi
+if [ -e results/testBam2FastQReadNameRGi.rg2_2.fastq ]
+then
+  let "status = 1"
+fi
+
+##########################################
 # Test converting files sorted by read name into compressed file
 ../bin/bam bam2FastQ --readName --in testFiles/testClipOverlapReadName.sam --outBase results/testBam2FastQReadNameGZ --gzip --noph 2> results/testBam2FastQReadNameGZ.log
 let "status |= $?"

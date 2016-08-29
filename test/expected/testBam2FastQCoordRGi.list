@@ -1,0 +1,2 @@
+MERGE_NAME	FASTQ1	FASTQ2	RG
+sm1	results/testBam2FastQCoordRGi.rg1.fastq	.	@RG	ID:rg1	SM:sm1
