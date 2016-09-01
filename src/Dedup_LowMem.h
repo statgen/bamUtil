@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2010-2015  Regents of the University of Michigan
+ *  Copyright (C) 2010-2016  Regents of the University of Michigan
  *
  *   This program is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -48,7 +48,8 @@ public:
         lastCoordinate(-1), lastReference(-1), numLibraries(0), 
         myNumMissingMate(0),
         myForceFlag(false),
-        myMinQual(15)
+        myMinQual(15),
+        myClipOffset(1000)
     {}
 
     ~Dedup_LowMem();
@@ -104,10 +105,11 @@ private:
             orientation = key.orientation;
             libraryID = key.libraryID;
         }
-        inline void cleanupKey(int32_t referenceID, int32_t coord)
+        inline void cleanupKey(int32_t referenceID, int32_t coord, 
+                               uint32_t clipOffset)
         {
             reference = referenceID;
-            coordinate = coord - CLIP_OFFSET;
+            coordinate = coord - clipOffset;
             orientation = false;
             libraryID = 0;
         }
@@ -223,9 +225,10 @@ private:
     int myNumMissingMate;
     bool myForceFlag;
     int myMinQual;
+    uint32_t myClipOffset;
 
     static const int DEFAULT_MIN_QUAL;
-    static const uint32_t CLIP_OFFSET;
+    static const uint32_t DEFAULT_CLIP_OFFSET;
 
     // Once record is read, look back at previous reads and determine 
     // if any no longer need to be kept for duplicate checking.

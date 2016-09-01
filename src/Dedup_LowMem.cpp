@@ -29,7 +29,7 @@
 #include "BgzfFileType.h"
 
 const int Dedup_LowMem::DEFAULT_MIN_QUAL = 15;
-const uint32_t Dedup_LowMem::CLIP_OFFSET = 1000;
+const uint32_t Dedup_LowMem::DEFAULT_CLIP_OFFSET = 1000;
 
 Dedup_LowMem::~Dedup_LowMem()
 {
@@ -67,6 +67,7 @@ void Dedup_LowMem::printUsage(std::ostream& os)
     os << "Optional parameters : " << std::endl;
     os << "\t--minQual <int> : Only add scores over this phred quality when determining a read's quality (default: "
               << DEFAULT_MIN_QUAL << ")" << std::endl;
+    os << "\t--clipOffset <int> : Maximum number of bases clipped at start/end of a read.  Default is 1000." << std::endl;
     os << "\t--log <logfile> : Log and summary statistics (default: [outfile].log, or stderr if --out starts with '-')" << std::endl;
     os << "\t--oneChrom      : Treat reads with mates on different chromosomes as single-ended." << std::endl;
     os << "\t--rmDups        : Remove duplicates (default is to mark duplicates)" << std::endl;
@@ -95,6 +96,7 @@ int Dedup_LowMem::execute(int argc, char** argv)
     myForceFlag = false;
     myNumMissingMate = 0;
     myMinQual = DEFAULT_MIN_QUAL;
+    myClipOffset = DEFAULT_CLIP_OFFSET;
     String excludeFlags = "0xB04";
     uint16_t intExcludeFlags = 0;
     bool noeof = false;
@@ -106,6 +108,7 @@ int Dedup_LowMem::execute(int argc, char** argv)
     parameters.addString("out", &outFile);
     parameters.addGroup("Optional Parameters");
     parameters.addInt("minQual", & myMinQual);
+    parameters.addInt("clipOffset", &myClipOffset);
     parameters.addString("log", &logFile);
     parameters.addBool("oneChrom", &myOneChrom);
     parameters.addBool("recab", &myDoRecab);
@@ -452,7 +455,7 @@ void Dedup_LowMem::cleanupPriorReads(SamRecord* record)
     {
         int32_t reference = record->getReferenceID();
         int32_t coordinate = record->get0BasedPosition();
-        tempKey2.cleanupKey(reference, coordinate);
+        tempKey2.cleanupKey(reference, coordinate, myClipOffset);
         fragmentFinish = myFragmentMap.lower_bound(tempKey2);
         // Now do the same thing with the paired reads
         PairedKey pairedKey(emptyKey, tempKey2);
