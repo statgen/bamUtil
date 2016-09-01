@@ -143,6 +143,13 @@ int Dedup_LowMem::execute(int argc, char** argv)
         std::cerr << "Specify an input file" << std::endl;
         return EXIT_FAILURE;
     }
+    if((inFile == "-") || (inFile == "-.ubam") || (inFile == "-.bam"))
+    {
+        printUsage(std::cerr);
+        inputParameters.Status();
+        std::cerr << "Cannot read from stdin since the file needs to be read twice\n";
+        return EXIT_FAILURE;
+    }
 
     if(outFile.IsEmpty())
     {
