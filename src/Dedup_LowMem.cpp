@@ -42,6 +42,7 @@ Dedup_LowMem::~Dedup_LowMem()
 
     // Free any entries in the mate map.
     myMateMap.clear();
+    mySecondarySupplementaryMap.clear();
 }
 
 void Dedup_LowMem::printDedup_LowMemDescription(std::ostream& os)
@@ -67,7 +68,6 @@ void Dedup_LowMem::printUsage(std::ostream& os)
     os << "Optional parameters : " << std::endl;
     os << "\t--minQual <int> : Only add scores over this phred quality when determining a read's quality (default: "
               << DEFAULT_MIN_QUAL << ")" << std::endl;
-    os << "\t--clipOffset <int> : Maximum number of bases clipped at start/end of a read.  Default is 1000." << std::endl;
     os << "\t--log <logfile> : Log and summary statistics (default: [outfile].log, or stderr if --out starts with '-')" << std::endl;
     os << "\t--oneChrom      : Treat reads with mates on different chromosomes as single-ended." << std::endl;
     os << "\t--rmDups        : Remove duplicates (default is to mark duplicates)" << std::endl;
@@ -76,6 +76,8 @@ void Dedup_LowMem::printUsage(std::ostream& os)
     os << "\t                  and exit when trying to run on an already mark-duplicated BAM" << std::endl;
     os << "\t--excludeFlags <flag>    : exclude reads with any of these flags set when determining or marking duplicates" << std::endl;
     os << "\t                           by default (0xB04): exclude unmapped, secondary reads, QC failures, and supplementary reads" << std::endl;
+    os << "\t--allReadNames  : Store all readNames for supplemental/secondary matching" << std::endl;
+    os << "\t                  This could use more memory, but should be faster than looking up readName for every read in teh non-primary map" << std::endl;
     os << "\t--verbose       : Turn on verbose mode" << std::endl;
     os << "\t--noeof         : Do not expect an EOF block on a bam file." << std::endl;
     os << "\t--params        : Print the parameter settings" << std::endl;
@@ -115,6 +117,7 @@ int Dedup_LowMem::execute(int argc, char** argv)
     parameters.addBool("rmDups", &removeFlag);
     parameters.addBool("force", &myForceFlag);
     parameters.addString("excludeFlags", &excludeFlags);
+    parameters.addBool("allReadNames", &myAllReadNames);
     parameters.addBool("verbose", &verboseFlag);
     parameters.addBool("noeof", &noeof);
     parameters.addBool("params", &params);
@@ -127,6 +130,10 @@ int Dedup_LowMem::execute(int argc, char** argv)
     
     // parameters start at index 2 rather than 1.
     inputParameters.Read(argc, argv, 2);
+
+    // set myMarkNonPrimary to myAllReadNames to indicate we need to mark
+    // non-primary reads as duplicates based on the primary read.
+    myMarkNonPrimary = myAllReadNames;
     
     // If no eof block is required for a bgzf file, set the bgzf file type to 
     // not look for it.
@@ -254,20 +261,26 @@ int Dedup_LowMem::execute(int argc, char** argv)
             returnStatus = samIn.GetStatus();
             continue;
         }
+        recordCount = samIn.GetCurrentRecordCount();
+
         // Take note of properties of this record
         int flag = recordPtr->getFlag();
         if(SamFlag::isPaired(flag))     ++pairedCount;
         if(SamFlag::isProperPair(flag)) ++properPairCount;
         if(SamFlag::isReverse(flag))    ++reverseCount;
         if(SamFlag::isQCFailure(flag))  ++qualCheckFailCount;
+        if(!SamFlag::isMapped(flag))    ++unmappedCount;
         if(SamFlag::isSecondary(flag))  ++secondaryCount;
         if(flag & SamFlag::SUPPLEMENTARY_ALIGNMENT)  ++supplementaryCount;
-        if(!SamFlag::isMapped(flag))    ++unmappedCount;
 
-        // put the record in the appropriate maps:
-        //   single reads go in myFragmentMap
-        //   paired reads go in myPairedMap
-        recordCount = samIn.GetCurrentRecordCount();
+        
+        // Store Secondary & Supplementary in an unordered map for matching
+        // with the primary read
+        if(myMarkNonPrimary && (SamFlag::isSecondary(flag) || 
+                                (flag & SamFlag::SUPPLEMENTARY_ALIGNMENT)))
+        {
+            mySecondarySupplementaryMap.insert(NonPrimaryPair(recordPtr->getReadName(), false));
+        }
 
         // if we have moved to a new position, look back at previous reads for duplicates
         if (hasPositionChanged(*recordPtr))
@@ -298,6 +311,9 @@ int Dedup_LowMem::execute(int argc, char** argv)
                 Logger::gLogger->error("Use -f to clear the duplicate flag and start the dedup_LowMem procedure over");
             }
 
+            // put the record in the appropriate maps:
+            //   single reads go in myFragmentMap
+            //   paired reads go in myPairedMap
             checkDups(*recordPtr, recordCount);
             mySamPool.releaseRecord(recordPtr);
         }
@@ -350,6 +366,9 @@ int Dedup_LowMem::execute(int argc, char** argv)
     std::sort(myDupList.begin(), myDupList.end(),
               std::less<uint32_t> ());
 
+    ////////////////////////////////////////////////////////////
+    // Second Pass through the file
+
     // get ready to write the output file by making a second pass
     // through the input file
     samIn.OpenForRead(inFile.c_str());
@@ -373,7 +392,8 @@ int Dedup_LowMem::execute(int argc, char** argv)
     Logger::gLogger->writeLog("\nWriting %s", outFile.c_str());
 
     // count the duplicate records as a check
-    uint32_t singleDuplicates(0), pairedDuplicates(0);
+    uint32_t singleDuplicates(0), pairedDuplicates(0),
+        secondaryDuplicates(0), supplementaryDuplicates(0);
 
     // start reading records and writing them out
     SamRecord record;
@@ -387,10 +407,9 @@ int Dedup_LowMem::execute(int argc, char** argv)
         // modify the duplicate flag and write out the record,
         // if it's appropriate
         int flag = record.getFlag();
+
         if (foundDup)
         {   
-            // this record is a duplicate, so mark it.
-            record.setFlag( flag | 0x400 );
             currentDupIndex++;
             // increment duplicate counters to verify we found them all
             if ( ( ( flag & 0x0001 ) == 0 ) || ( flag & 0x0008 ) )
@@ -401,6 +420,40 @@ int Dedup_LowMem::execute(int argc, char** argv)
             {
                 pairedDuplicates++;
             }
+
+            // Update NonPrimaryMap to indicate this readname is a duplicate
+            // (if the readname is in the map)
+            // Need to do it here in case the non-primary read comes after the primary one
+            // so the read name was not in the map when the primary read was encountered
+            // on the first pass through the file.
+            if(myMarkNonPrimary)
+            {
+                markDuplicateInNonPrimaryMaps(record.getReadName());
+            }
+        }
+        else if(myMarkNonPrimary && (SamFlag::isSecondary(flag) || 
+                                     (flag & SamFlag::SUPPLEMENTARY_ALIGNMENT)))
+        {
+            // Check the supplemenatry map to see if this read is a duplicate.
+            foundDup = mySecondarySupplementaryMap[record.getReadName()];
+            if(foundDup)
+            {
+                if(flag & SamFlag::SUPPLEMENTARY_ALIGNMENT)
+                {
+                    ++supplementaryDuplicates;
+                }
+                else
+                {
+                    ++secondaryDuplicates;
+                }
+            }
+        }
+
+        if(foundDup)
+        {
+            // this record is a duplicate, so mark it.
+            record.setFlag( flag | 0x400 );
+
             // recalibrate if necessary.
             if(myDoRecab)
             {
@@ -436,10 +489,12 @@ int Dedup_LowMem::execute(int argc, char** argv)
     samIn.Close();
     samOut.Close();
 
-    Logger::gLogger->writeLog("Successfully %s %u unpaired and %u paired duplicate reads", 
+    Logger::gLogger->writeLog("Successfully %s %u unpaired, %u paired duplicate reads, %u secondary reads, and %u supplementary reads", 
                               removeFlag ? "removed" : "marked" ,
                               singleDuplicates,
-                              pairedDuplicates/2);
+                              pairedDuplicates/2,
+                              secondaryDuplicates,
+                              supplementaryDuplicates);
     Logger::gLogger->writeLog("\nDedup_LowMem complete!");
     return 0;
 }
@@ -603,13 +658,17 @@ void Dedup_LowMem::checkDups(SamRecord& record, uint32_t recordCount)
             // There was a previous record and it is not paired,
             // so mark it as a duplicate. 
             // Duplicate checking/marking for pairs is handled below.
-            handleDuplicate(fragData->recordIndex);
+            handleDuplicate(fragData->recordIndex, fragData->readName.c_str());
         }
 
         // Store this record for later duplicate checking.
         fragData->sumBaseQual = sumBaseQual;
         fragData->recordIndex = recordCount;
         fragData->paired = recordPaired;
+        if(myAllReadNames)
+        {
+            fragData->readName = record.getReadName();
+        }
     }
     else
     {
@@ -618,7 +677,7 @@ void Dedup_LowMem::checkDups(SamRecord& record, uint32_t recordCount)
         if(recordPaired == false)
         {
             // This record is a duplicate, so mark it and release it.
-            handleDuplicate(recordCount);
+            handleDuplicate(recordCount, record.getReadName());
         }
     }
 
@@ -723,15 +782,16 @@ void Dedup_LowMem::checkDups(SamRecord& record, uint32_t recordCount)
         {
             // The old pair had higher quality so mark the new pair as a
             // duplicate and release them.
-            handleDuplicate(mateIndex);
-            handleDuplicate(recordCount);
+            handleDuplicate(mateIndex, record.getReadName());
+            handleDuplicate(recordCount, NULL);
         }
         else
         {
             // The new pair has higher quality, so keep that.
             // First mark the previous one as duplicates and release them.
-            handleDuplicate(storedPair->record1Index);
-            handleDuplicate(storedPair->record2Index);
+            handleDuplicate(storedPair->record1Index, 
+                            storedPair->readName.c_str());
+            handleDuplicate(storedPair->record2Index, NULL);
             // Store this pair's information.
             if(record1Index == mateIndex)
             {
@@ -740,6 +800,10 @@ void Dedup_LowMem::checkDups(SamRecord& record, uint32_t recordCount)
                 storedPair->sumBaseQual = sumBaseQual;
                 storedPair->record1Index = mateIndex;
                 storedPair->record2Index = recordCount;
+                if(myAllReadNames)
+                {
+                    storedPair->readName = record.getReadName();
+                }
             }
             else
             {
@@ -748,6 +812,10 @@ void Dedup_LowMem::checkDups(SamRecord& record, uint32_t recordCount)
                 storedPair->sumBaseQual = sumBaseQual;
                 storedPair->record1Index = recordCount;
                 storedPair->record2Index = mateIndex;
+                if(myAllReadNames)
+                {
+                    storedPair->readName = record.getReadName();
+                }
             }
         }
     }
@@ -755,6 +823,10 @@ void Dedup_LowMem::checkDups(SamRecord& record, uint32_t recordCount)
     {
         // Store this pair's information.
         storedPair->sumBaseQual = sumBaseQual;
+        if(myAllReadNames)
+        {
+            storedPair->readName = record.getReadName();
+        }
 
         if(record1Index == mateIndex)
         {
@@ -908,8 +980,31 @@ void Dedup_LowMem::handleMissingMate(int32_t refID, int32_t mateRefID)
 }
 
 
-void Dedup_LowMem::handleDuplicate(uint32_t index)
+void Dedup_LowMem::handleDuplicate(uint32_t index, const char* readName)
 {
     // Add the index to the duplicate list.
     myDupList.push_back(index);
+
+    // Update NonPrimaryMap to indicate this readname is a duplicate
+    // (if the readname is in the map)
+    if(myMarkNonPrimary)
+    {
+        markDuplicateInNonPrimaryMaps(readName);
+    }
+}
+
+
+void Dedup_LowMem::markDuplicateInNonPrimaryMaps(const char* readName)
+{
+    if(myMarkNonPrimary && (readName != NULL) && (strlen(readName) != 0))
+    {
+        // Check the NonPrimary Maps.
+        NonPrimaryMap::iterator iter;
+        iter = mySecondarySupplementaryMap.find(readName);
+        if(iter != mySecondarySupplementaryMap.end())
+        {
+            // Found in the non primary map, so set it to be a dupilcate.
+            iter->second = true;
+        }
+    }
 }
