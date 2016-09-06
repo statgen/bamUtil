@@ -1,2 +1,5 @@
 MERGE_NAME	FASTQ1	FASTQ2	RG
+sm1	results/testBam2FastQCoordRGi.rg1_interleaved.fastq	results/testBam2FastQCoordRGi.rg1_interleaved.fastq	@RG	ID:rg1	SM:sm1
+sm2	results/testBam2FastQCoordRGi.rg2_interleaved.fastq	results/testBam2FastQCoordRGi.rg2_interleaved.fastq	@RG	ID:rg2	PL:ILLUMINA	LB:lib2	SM:sm2	CN:cn2
 sm1	results/testBam2FastQCoordRGi.rg1.fastq	.	@RG	ID:rg1	SM:sm1
+results/testBam2FastQCoordRGi	results/testBam2FastQCoordRGi_interleaved.fastq	results/testBam2FastQCoordRGi_interleaved.fastq	.
