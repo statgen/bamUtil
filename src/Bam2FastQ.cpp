@@ -682,7 +682,7 @@ void Bam2FastQ::writeFastQ(SamRecord &samRec, IFILE filePtr,
             filePtr = ifopen(fileName.c_str(), "w", myCompression);
             myOutFastqs[rgFastqExt] = filePtr;
 
-            if (fileNameExt != mySecondFileNameExt) {
+            if (fileNameExt != mySecondFileNameExt||myFirstFileNameExt == mySecondFileNameExt) {
                 // first end.
                 const char *sm = mySamHeader.getRGTagValue("SM", rg.c_str());
                 if (strcmp(sm, "") == 0) { sm = myOutBase.c_str(); }
@@ -798,7 +798,7 @@ void Bam2FastQ::writeFastQ(SamRecord &samRec, IFILE filePtr,
 
             //        myLock3.unlock();
 
-            if (fileNameExt != mySecondFileNameExt) {
+            if (fileNameExt != mySecondFileNameExt||myFirstFileNameExt == mySecondFileNameExt){
                 // first end.
                 const char *sm = mySamHeader.getRGTagValue("SM", rg.c_str());
                 if (strcmp(sm, "") == 0) { sm = myOutBase.c_str(); }
