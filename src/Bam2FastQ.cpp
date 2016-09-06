@@ -667,7 +667,7 @@ void Bam2FastQ::writeFastQ(SamRecord& samRec, IFILE filePtr,
             filePtr = ifopen(fileName.c_str(), "w", myCompression);
             myOutFastqs[rgFastqExt] = filePtr;
 
-            if(fileNameExt != mySecondFileNameExt)
+            if(fileNameExt != mySecondFileNameExt || myFirstFileNameExt == mySecondFileNameExt)
             {
                 // first end.
                 const char* sm = mySamHeader.getRGTagValue("SM", rg.c_str());
