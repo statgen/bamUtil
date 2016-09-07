@@ -69,14 +69,19 @@ private:
     String myOutBase;
 
     #ifdef __GXX_EXPERIMENTAL_CXX0X__
-    typedef std::unordered_map<std::string, IFILE> OutFastqMap;
+    typedef std::unordered_map<std::string, std::vector<IFILE> > OutFastqMap;
+    typedef std::unordered_map<std::string, int > OutFastqRgCnt;
     #else
-    typedef std::map<std::string, IFILE> OutFastqMap;
+    typedef std::map<std::string, std::vector<IFILE> > OutFastqMap;
+    typedef std::map<std::string, int > OutFastqRgCnt;
     #endif
 
     OutFastqMap myOutFastqs;
+    OutFastqRgCnt myOutFastqRgCnt;
     IFILE myFqList;
     std::string prevRN;
+
+    int FASTQ_FILE_SIZE;
 public:
     Bam2FastQ();
     ~Bam2FastQ();

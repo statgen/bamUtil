@@ -52,7 +52,7 @@ public:
 
 	int DumpMateVector();
 
-	int HandlePairedRN(SamRecord& Record, bool ready2Dump);
+	int HandlePairedRN(SamRecord &Record, int dumpStatus);
 	//int ReadNameReduction();//optional
 	//clear buffer, reset shrink_limit
 	void ClearWorkingBuffer();
