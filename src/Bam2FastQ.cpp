@@ -41,6 +41,7 @@ Bam2FastQ::Bam2FastQ()
           myOutFastqs(),
           myFqList(NULL),
           prevRN(""),
+          FASTQ_FILE_SIZE(0),
 //	  flag(0),
 //	  sequence(""),
 //	  quality(""),
@@ -140,6 +141,7 @@ int Bam2FastQ::execute(int argc, char **argv) {
     bool sortByReadNameOnTheFly = false;
     int nThread = 1;
     int recordLimit=1000000;
+    int recordLimitFq=0;
     String refFile = "";
     String firstOut = "";
     String secondOut = "";
@@ -176,6 +178,7 @@ int Bam2FastQ::execute(int argc, char **argv) {
                     LONG_PARAMETER("readName", &readName)
                     LONG_PARAMETER("sortByReadNameOnTheFly", &sortByReadNameOnTheFly)
                     LONG_INTPARAMETER("maxRecordLimitPerDump",&recordLimit)
+                    LONG_INTPARAMETER("maxRecordLimitPerFq",&recordLimitFq)
                     LONG_STRINGPARAMETER("bedFile", &bedFile)
                     LONG_INTPARAMETER("nThread", &nThread)
 
@@ -212,6 +215,8 @@ int Bam2FastQ::execute(int argc, char **argv) {
         // Set that the eof block is not required.
         BgzfFileType::setRequireEofBlock(false);
     }
+
+    FASTQ_FILE_SIZE=recordLimitFq;
 
     String chr = "";
     int position = -1;
@@ -675,9 +680,14 @@ void Bam2FastQ::writeFastQ(SamRecord &samRec, IFILE filePtr,
             } else {
                 rg = ".";
             }
-            fileName += rgFastqExt;
+            if(FASTQ_FILE_SIZE>0) {
+                myOutFastqRgCnt[rgFastqExt]=0;
+                fileName = fileName + std::to_string(0) + '.' + rgFastqExt;
+            }
+            else
+                fileName+=rgFastqExt;
             filePtr = ifopen(fileName.c_str(), "w", myCompression);
-            myOutFastqs[rgFastqExt] = filePtr;
+            myOutFastqs[rgFastqExt].push_back(filePtr);
 
             if (fileNameExt != mySecondFileNameExt||myFirstFileNameExt == mySecondFileNameExt) {
                 // first end.
@@ -693,6 +703,10 @@ void Bam2FastQ::writeFastQ(SamRecord &samRec, IFILE filePtr,
                 fq2 = ".";
                 if (fileNameExt == myFirstFileNameExt) {
                     fq2 = myOutBase.c_str();
+
+                    if(FASTQ_FILE_SIZE>0)
+                    fq2 +='.' + std::to_string(0);
+
                     if (rg != ".") {
                         fq2 += '.';
                         fq2 += rg;
@@ -704,7 +718,51 @@ void Bam2FastQ::writeFastQ(SamRecord &samRec, IFILE filePtr,
                          rgListStr.c_str());
             }
         } else {
-            filePtr = it->second;
+            if(FASTQ_FILE_SIZE>0 && myOutFastqRgCnt[rgFastqExt] % FASTQ_FILE_SIZE ==0)
+            {
+                fileName = myOutBase.c_str();
+                if (rg != "") {
+                    fileName += '.';
+                } else {
+                    rg = ".";
+                }
+
+                fileName = fileName+std::to_string((int)myOutFastqRgCnt[rgFastqExt]/FASTQ_FILE_SIZE)+'.'+rgFastqExt;
+                filePtr = ifopen(fileName.c_str(), "w", myCompression);
+                myOutFastqs[rgFastqExt].push_back(filePtr);
+
+                //        myLock3.unlock();
+
+                if (fileNameExt != mySecondFileNameExt||myFirstFileNameExt == mySecondFileNameExt){
+                    // first end.
+                    const char *sm = mySamHeader.getRGTagValue("SM", rg.c_str());
+                    if (strcmp(sm, "") == 0) { sm = myOutBase.c_str(); }
+
+                    rgListStr.clear();
+                    SamHeaderRG *rgPtr = mySamHeader.getRG(rg.c_str());
+                    if ((rgPtr == NULL) || (!rgPtr->appendString(rgListStr))) {
+                        // No RG info for this record.
+                        rgListStr = ".\n";
+                    }
+                    fq2 = ".";
+                    if (fileNameExt == myFirstFileNameExt) {
+                        fq2 = myOutBase.c_str();
+                        fq2 += '.'+std::to_string((int)myOutFastqRgCnt[rgFastqExt]/FASTQ_FILE_SIZE);
+                        if (rg != ".") {
+                            fq2 += '.';
+                            fq2 += rg;
+                        }
+                        fq2 += mySecondFileNameExt;
+                    }
+                    ifprintf(myFqList, "%s\t%s\t%s\t%s",
+                             sm, fileName.c_str(), fq2.c_str(),
+                             rgListStr.c_str());
+                }
+            }
+            else {
+                filePtr = it->second.back();
+            }
+            myOutFastqRgCnt[rgFastqExt]++;
         }
     }
     if (filePtr == NULL) {
@@ -789,9 +847,15 @@ void Bam2FastQ::writeFastQ(SamRecord &samRec, IFILE filePtr,
             } else {
                 rg = ".";
             }
-            fileName += rgFastqExt;
+
+            if(FASTQ_FILE_SIZE>0) {
+                myOutFastqRgCnt[rgFastqExt]=0;
+                fileName = fileName + std::to_string(0) + '.' + rgFastqExt;
+            }
+            else
+                fileName+=rgFastqExt;
             filePtr = ifopen(fileName.c_str(), "w", myCompression);
-            myOutFastqs[rgFastqExt] = filePtr;
+            myOutFastqs[rgFastqExt].push_back(filePtr);
 
             //        myLock3.unlock();
 
@@ -809,6 +873,8 @@ void Bam2FastQ::writeFastQ(SamRecord &samRec, IFILE filePtr,
                 fq2 = ".";
                 if (fileNameExt == myFirstFileNameExt) {
                     fq2 = myOutBase.c_str();
+                    if(FASTQ_FILE_SIZE>0)
+                    fq2 +='.' + std::to_string(0);
                     if (rg != ".") {
                         fq2 += '.';
                         fq2 += rg;
@@ -821,7 +887,51 @@ void Bam2FastQ::writeFastQ(SamRecord &samRec, IFILE filePtr,
             }
         } else {
             //  	myLock3.unlock();
-            filePtr = it->second;
+            if(FASTQ_FILE_SIZE>0 && myOutFastqRgCnt[rgFastqExt] % FASTQ_FILE_SIZE ==0)
+            {
+                fileName = myOutBase.c_str();
+                if (rg != "") {
+                    fileName += '.';
+                } else {
+                    rg = ".";
+                }
+
+                fileName = fileName+std::to_string(myOutFastqRgCnt[rgFastqExt]/FASTQ_FILE_SIZE)+'.'+rgFastqExt;
+                filePtr = ifopen(fileName.c_str(), "w", myCompression);
+                myOutFastqs[rgFastqExt].push_back(filePtr);
+
+                //        myLock3.unlock();
+
+                if (fileNameExt != mySecondFileNameExt||myFirstFileNameExt == mySecondFileNameExt){
+                    // first end.
+                    const char *sm = mySamHeader.getRGTagValue("SM", rg.c_str());
+                    if (strcmp(sm, "") == 0) { sm = myOutBase.c_str(); }
+
+                    rgListStr.clear();
+                    SamHeaderRG *rgPtr = mySamHeader.getRG(rg.c_str());
+                    if ((rgPtr == NULL) || (!rgPtr->appendString(rgListStr))) {
+                        // No RG info for this record.
+                        rgListStr = ".\n";
+                    }
+                    fq2 = ".";
+                    if (fileNameExt == myFirstFileNameExt) {
+                        fq2 = myOutBase.c_str();
+                        fq2 += '.'+std::to_string((int)myOutFastqRgCnt[rgFastqExt]/FASTQ_FILE_SIZE);
+                        if (rg != ".") {
+                            fq2 += '.';
+                            fq2 += rg;
+                        }
+                        fq2 += mySecondFileNameExt;
+                    }
+                    ifprintf(myFqList, "%s\t%s\t%s\t%s",
+                             sm, fileName.c_str(), fq2.c_str(),
+                             rgListStr.c_str());
+                }
+            }
+            else {
+                filePtr = it->second.back();
+            }
+            myOutFastqRgCnt[rgFastqExt]++;
         }
     }
     if (filePtr == NULL) {
@@ -945,8 +1055,10 @@ void Bam2FastQ::closeFiles() {
     // Loop through the fastq map and close those files.
     for (OutFastqMap::iterator it = myOutFastqs.begin();
          it != myOutFastqs.end(); ++it) {
-        ifclose(it->second);
-        it->second = NULL;
+        for (int i = 0; i <it->second.size() ; ++i) {
+            ifclose(it->second[i]);
+            it->second[i] = NULL;
+        }
     }
     myOutFastqs.clear();
 }

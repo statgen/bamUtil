@@ -59,24 +59,38 @@ void MateVectorByRN::clearMyPool() {
 }
 
 int MateVectorByRN::HandlePairedRN(SamRecord &samRec,
-                                   bool ready2Dump) { //all SamRecord* handled via this function will be released
+                                   int dumpStatus) { //all SamRecord* handled via this function will be released
 
     if (prevRec == NULL) {
         prevRec = &samRec;
-
+        return 0;
     } else {
         if (strcmp(prevRec->getReadName(), samRec.getReadName()) != 0) {
-            if (ready2Dump) {
+            if (dumpStatus==2) {//dump tmp
                 tmpFile.WriteRecord(tmpHeader, *prevRec);
                 myPool->releaseRecord(prevRec);
                 prevRec = &samRec;
-            } else {
+                return 1;
+            }
+            else if(dumpStatus==1)// store rec before sort
+            {
+                // Read Name does not match, error, did not find pair.
+                myMateBuffer[bufferInUse].push_back(
+                        std::make_pair(std::string(prevRec->getReadName()),
+                                       prevRec));
+                // Save this record to check against the next one.
+                prevRec = &samRec;
+                return 2;
+            }
+            else // store rec after sort
+            {
                 // Read Name does not match, error, did not find pair.
                 myMateBuffer[1 - bufferInUse].push_back(
                         std::make_pair(std::string(prevRec->getReadName()),
                                        prevRec));
                 // Save this record to check against the next one.
                 prevRec = &samRec;
+                return 3;
             }
         } else {
             // Matching ReadNames.
@@ -114,10 +128,9 @@ int MateVectorByRN::HandlePairedRN(SamRecord &samRec,
             }
             // No previous record.
             prevRec = NULL;
+            return 4;
         }
     }
-
-    return 0;
 }
 
 bool MateVectorByRN::IsInTheRegion(SamRecord *record) {
@@ -215,7 +228,7 @@ int MateVectorByRN::Add(SamRecord *record) {
         Sort();
 
         for (uint i = 0; i < myMateBuffer[bufferInUse].size(); ++i) {
-            HandlePairedRN(*myMateBuffer[bufferInUse][i].second, false);
+            HandlePairedRN(*myMateBuffer[bufferInUse][i].second, 0);
         }
         SHRINK_LIMIT *= 2;
         ClearWorkingBuffer();
@@ -228,9 +241,7 @@ int MateVectorByRN::Add(SamRecord *record) {
         return 1;
 
     } else {
-        myMateBuffer[bufferInUse].push_back(
-                std::make_pair(std::string(record->getReadName()), record));
-        count++;
+        if(HandlePairedRN(*record, 1) ==2) count++;
     }
 
     return 0;
@@ -266,7 +277,7 @@ int MateVectorByRN::DumpMateVector() {
     }
     Sort();
     for (uint i = 0; i != myMateBuffer[bufferInUse].size(); ++i) {
-        HandlePairedRN(*myMateBuffer[bufferInUse][i].second, true);
+        HandlePairedRN(*myMateBuffer[bufferInUse][i].second, 2);
     }
     if (prevRec != NULL) {            //last one
         tmpFile.WriteRecord(tmpHeader, *prevRec);
