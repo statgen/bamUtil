@@ -718,7 +718,7 @@ void Bam2FastQ::writeFastQ(SamRecord &samRec, IFILE filePtr,
                          rgListStr.c_str());
             }
         } else {
-            if(FASTQ_FILE_SIZE>0 && myOutFastqRgCnt[rgFastqExt] % FASTQ_FILE_SIZE ==0)
+            if(FASTQ_FILE_SIZE>0 && myOutFastqRgCnt[rgFastqExt] % FASTQ_FILE_SIZE ==0)//found ext but need new chunk
             {
                 fileName = myOutBase.c_str();
                 if (rg != "") {
@@ -762,8 +762,8 @@ void Bam2FastQ::writeFastQ(SamRecord &samRec, IFILE filePtr,
             else {
                 filePtr = it->second.back();
             }
-            myOutFastqRgCnt[rgFastqExt]++;
         }
+        myOutFastqRgCnt[rgFastqExt]++;
     }
     if (filePtr == NULL) {
         throw (std::runtime_error("Programming ERROR/EXITING: Bam2FastQ filePtr not set."));
@@ -854,6 +854,7 @@ void Bam2FastQ::writeFastQ(SamRecord &samRec, IFILE filePtr,
             }
             else
                 fileName+=rgFastqExt;
+
             filePtr = ifopen(fileName.c_str(), "w", myCompression);
             myOutFastqs[rgFastqExt].push_back(filePtr);
 
@@ -931,8 +932,8 @@ void Bam2FastQ::writeFastQ(SamRecord &samRec, IFILE filePtr,
             else {
                 filePtr = it->second.back();
             }
-            myOutFastqRgCnt[rgFastqExt]++;
         }
+        myOutFastqRgCnt[rgFastqExt]++;
     }
     if (filePtr == NULL) {
         throw (std::runtime_error("Programming ERROR/EXITING: Bam2FastQ filePtr not set."));
@@ -1057,6 +1058,7 @@ void Bam2FastQ::closeFiles() {
          it != myOutFastqs.end(); ++it) {
         for (int i = 0; i <it->second.size() ; ++i) {
             ifclose(it->second[i]);
+
             it->second[i] = NULL;
         }
     }
