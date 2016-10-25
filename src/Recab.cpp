@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2010-2015  Christian Fuchsberger,
+ *  Copyright (C) 2010-2016  Christian Fuchsberger,
  *                           Regents of the University of Michigan
  *
  *   This program is free software: you can redistribute it and/or modify
@@ -50,7 +50,9 @@ Recab::Recab()
       myBuildExcludeFlags("0x0F04"),
       myApplyExcludeFlags("0x0000"),
       myIntBuildExcludeFlags(0),
-      myIntApplyExcludeFlags(0)
+      myIntApplyExcludeFlags(0),
+      myReferenceGenome(NULL),
+      myBuildChrs()
 {
     myMappedCount = 0;
     myUnMappedCount = 0;
@@ -73,6 +75,7 @@ Recab::Recab()
     myBasecounts = 0;
 
     myBlendedWeight = 0;
+    myMetricAllChroms = false;
     myFitModel = false;
     myFast = false;
     myKeepPrevDbsnp = false;
@@ -122,7 +125,7 @@ void Recab::printUsage(std::ostream& os)
 
 void Recab::printRecabSpecificUsageLine(std::ostream& os)
 {
-    os << "--refFile <ReferenceFile> [--dbsnp <dbsnpFile>] [--minBaseQual <minBaseQual>] [--maxBaseQual <maxBaseQual>] [--blended <weight>] [--fitModel] [--fast] [--keepPrevDbsnp] [--keepPrevNonAdjacent] [--useLogReg] [--qualField <tag>] [--storeQualTag <tag>] [--buildExcludeFlags <flag>] [--applyExcludeFlags <flag>] ";
+    os << "--refFile <ReferenceFile> [--dbsnp <dbsnpFile>] [--metric-all-chroms] [--minBaseQual <minBaseQual>] [--maxBaseQual <maxBaseQual>] [--blended <weight>] [--fitModel] [--fast] [--keepPrevDbsnp] [--keepPrevNonAdjacent] [--useLogReg] [--qualField <tag>] [--storeQualTag <tag>] [--buildExcludeFlags <flag>] [--applyExcludeFlags <flag>] ";
     mySqueeze.printBinningUsageLine(os);
 }
 
@@ -132,6 +135,10 @@ void Recab::printRecabSpecificUsage(std::ostream& os)
     os << "\t--refFile <reference file>    : reference file name" << std::endl;
     os << "Recab Specific Optional Parameters : " << std::endl;
     os << "\t--dbsnp <known variance file> : dbsnp file of positions" << std::endl;
+    os << "\t                                If a dbsnp file is specified, only the chromosomes in the dbsnp" << std::endl;
+    os << "\t                                file are used for building the recalibration table." << std::endl;
+    os << "\t--metric-all-chroms           : build recalibration table using all chromosomes" << std::endl;
+    os << "\t                                This option is the default unless a --dbsnp file is specified." << std::endl;
     os << "\t--minBaseQual <minBaseQual>   : minimum base quality of bases to recalibrate (default: " << DEFAULT_MIN_BASE_QUAL << ")" << std::endl;
     os << "\t--maxBaseQual <maxBaseQual>   : maximum recalibrated base quality (default: " << DEFAULT_MAX_BASE_QUAL << ")" << std::endl;
     os << "\t                                qualities over this value will be set to this value." << std::endl;
@@ -266,6 +273,7 @@ int Recab::execute(int argc, char *argv[])
     srand (time(NULL));
 
     int numRecs = 0;
+
     while(samIn.ReadRecord(samHeader, samRecord) == true)
     {
         processReadBuildTable(samRecord);
@@ -323,6 +331,7 @@ void Recab::addRecabSpecificParameters(LongParamContainer& params)
     params.addString("refFile", &myRefFile);
     params.addGroup("Optional Recab Parameters");
     params.addString("dbsnp", &myDbsnpFile);
+    params.addBool("metric-all-chroms", &myMetricAllChroms);
     params.addInt("minBaseQual", &myMinBaseQual);
     params.addInt("maxBaseQual", &myMaxBaseQual);
     params.addInt("blended", &myBlendedWeight);
@@ -410,6 +419,16 @@ bool Recab::processReadBuildTable(SamRecord& samRecord)
         return(false);
     }
 
+    chromosomeName = samRecord.getReferenceName();
+
+    // Check if the chromosome should be used to process the table.
+    if(!myMetricAllChroms && (myBuildChrs.find(chromosomeName) == myBuildChrs.end()))
+    {
+        // Dbsnp file was specified, but this chromosome was not in the dbdsnp file.
+        ++myNumBuildSkipped;
+        return(false);
+    }
+
     if(samRecord.getMapQuality() == 0)
     {
         // 0 mapping quality, so skip processing.
@@ -425,7 +444,6 @@ bool Recab::processReadBuildTable(SamRecord& samRecord)
         return(false);
     }
     
-    chromosomeName = samRecord.getReferenceName();
     readGroup = samRecord.getString("RG").c_str();
 
     // Look for the read group in the map.
@@ -872,10 +890,14 @@ void Recab::processParams()
         if(myDbsnpFile.IsEmpty())
         {
             Logger::gLogger->writeLog("No dbSNP File");
+            // No DBSNP file, so use all chromosomes.
+            myMetricAllChroms = true;
         }
-        else if(myReferenceGenome->loadDBSNP(myDbSNP,myDbsnpFile.c_str()))
+        else if(loadDbsnp())
         {
             Logger::gLogger->error("Failed to open dbSNP file.");
+            // No DBSNP file, so use all chromosomes.
+            myMetricAllChroms = true;
         }
     }
 
@@ -903,4 +925,109 @@ void Recab::processParams()
     myIntApplyExcludeFlags = myApplyExcludeFlags.AsInteger();
 
     myParamsSetup = true;
+}
+
+// Return false if correctly loaded, true otherwise.
+bool Recab::loadDbsnp()
+{
+    if(myDbsnpFile.IsEmpty())
+    {
+        // No file, so it was not correctly loaded, return true.
+        return(true);
+    }
+    std::cerr << "Load dbSNP file '" << myDbsnpFile.c_str() << "'; " << std::flush;
+
+    // Load the VCF dbsnp file
+    IFILE inputFile = ifopen(myDbsnpFile.c_str(), "r");
+    if(inputFile == NULL)
+    {
+        std::cerr << "Error: failed to open " << myDbsnpFile.c_str() << std::endl;
+        exit(1);
+    }
+
+    // anonymously (RAM resident only) create:
+    myDbSNP.create(myReferenceGenome->getNumberBases());
+    
+    // now load it into RAM
+    std::string chromosomeName;
+    std::string prevChr = "";
+    std::string position;
+    genomeIndex_t chromosomePosition1;  // 1-based
+    uint64_t    ignoredLineCount = 0;
+
+    // Read til the end of the file.
+    char* postPosPtr = NULL;
+    while(!inputFile->ifeof())
+    {
+        chromosomeName.clear();
+        position.clear();
+        // Read the chromosome
+        if(inputFile->readTilTab(chromosomeName) <= 0)
+        {
+            // hit either eof or end of line, check if
+            // it is a header.
+            if(chromosomeName.size()>0 && chromosomeName[0]=='#')
+            {
+                // header, so just continue.
+                continue;
+            }
+            // Not the header, so this line is poorly formatted.
+            ++ignoredLineCount;
+            // Continue to the next line.
+            continue;
+        }
+
+        // Check if it is a header line.
+        if(chromosomeName.size()>0 && chromosomeName[0]=='#')
+        {
+            // did not hit eof or end of line, 
+            // so discard the rest of the line.
+            inputFile->discardLine();
+            continue;
+        }
+
+        // Not a header, so read the position.
+        if(inputFile->readTilTab(position) > 0)
+        {
+            // Additional data on the line, so discard it.
+            inputFile->discardLine();
+        }
+
+        // Convert the position to a string.
+        chromosomePosition1 = strtoul(position.c_str(), &postPosPtr, 0);
+
+        if(postPosPtr == position.c_str())
+        {
+            ++ignoredLineCount;
+            continue;
+        }
+
+        // 1-based genome index.
+        genomeIndex_t genomeIndex = 
+            myReferenceGenome->getGenomePosition(chromosomeName.c_str(), chromosomePosition1);
+
+        // if the genome index is invalid, ignore it
+        if((genomeIndex == INVALID_GENOME_INDEX) || 
+           (genomeIndex > myReferenceGenome->getNumberBases()))
+        {
+            ignoredLineCount++;
+            continue;
+        }
+
+        myDbSNP.set(genomeIndex, true);
+        if(chromosomeName != prevChr)
+        {
+            myBuildChrs.insert(chromosomeName);
+            prevChr = chromosomeName;
+        }
+    }
+
+    if (ignoredLineCount > 0)
+    {
+        std::cerr << "loadDbsnp: ignored " << ignoredLineCount << " SNP positions due to invalid format of line." << std::endl;
+    }
+    ifclose(inputFile);
+    
+    std::cerr << "DONE!" << std::endl;
+    return false;
 }

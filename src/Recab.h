@@ -40,6 +40,11 @@
 #include "BaseAsciiMap.h"
 #include "BamExecutable.h"
 #include "Squeeze.h"
+#ifdef __GXX_EXPERIMENTAL_CXX0X__
+#include <unordered_set>
+#else
+#include <set>
+#endif
 
 class Recab : public BamExecutable
 {
@@ -73,6 +78,7 @@ private:
     } quality_t;
 
     void processParams();
+    bool loadDbsnp();
 
     // So external programs can read recab parameters.
     bool myParamsSetup;
@@ -88,6 +94,7 @@ private:
     int myMaxBaseQual;
     int myMaxBaseQualChar;
     int myBlendedWeight;
+    bool myMetricAllChroms;
     bool myFitModel;
     bool myFast;
     bool myKeepPrevDbsnp;
@@ -133,6 +140,13 @@ private:
     std::map<std::string, uint16_t> myRg2Id;
     typedef std::pair<std::map<std::string, uint16_t>::iterator, bool> RgInsertReturn;
     std::vector<std::string> myId2Rg;
+
+    #ifdef __GXX_EXPERIMENTAL_CXX0X__
+    typedef std::unordered_set<std::string> BuildChrsSet;
+    #else
+    typedef std::set<std::string> BuildChrsSet;
+    #endif
+    BuildChrsSet myBuildChrs;
 
     // Squeeze
     Squeeze mySqueeze;

@@ -138,6 +138,51 @@ diff -I "Start: .*" -I "End: .*" results/testRecabDBSNPgz.sam.log expected/testR
 let "status |= $?"
 
 ###############
+# Test with DBSNP, but DBSNP does not have the chromosome in the input file, so no recalibration will be done
+../bin/bam recab --noph --in testFiles/testRecab.sam --out results/testRecabDBSNP2.sam --refFile testFiles/ref_partial.fa --dbsnp testFiles/dbsnp2.txt > results/testRecabDBSNP2.txt 2> results/testRecabDBSNP2.log
+let "status |= $?"
+diff results/testRecabDBSNP2.sam expected/testRecabDBSNP2.sam
+let "status |= $?"
+diff results/testRecabDBSNP2.txt expected/empty.txt
+let "status |= $?"
+diff results/testRecabDBSNP2.log expected/testRecabDBSNP2.log
+let "status |= $?"
+diff results/testRecabDBSNP2.sam.qemp expected/empty.txt
+let "status |= $?"
+diff -I "Start: .*" -I "End: .*" results/testRecabDBSNP2.sam.log expected/testRecabDBSNP2.sam.log
+let "status |= $?"
+
+###############
+# Test with DBSNP, but DBSNP file has no valid entries, so no recalibration will be done
+../bin/bam recab --noph --in testFiles/testRecab.sam --out results/testRecabDBSNP2chr1.sam --refFile testFilesLibBam/chr1_partial.fa --dbsnp testFiles/dbsnp2.txt > results/testRecabDBSNP2chr1.txt 2> results/testRecabDBSNP2chr1.log
+let "status |= $?"
+diff results/testRecabDBSNP2chr1.sam expected/testRecabDBSNP2.sam
+let "status |= $?"
+diff results/testRecabDBSNP2chr1.txt expected/empty.txt
+let "status |= $?"
+diff results/testRecabDBSNP2chr1.log expected/testRecabDBSNP2chr1.log
+let "status |= $?"
+diff results/testRecabDBSNP2chr1.sam.qemp expected/empty.txt
+let "status |= $?"
+diff -I "Start: .*" -I "End: .*" results/testRecabDBSNP2chr1.sam.log expected/testRecabDBSNP2chr1.sam.log
+let "status |= $?"
+
+###############
+# Test with DBSNP, but DBSNP does not have the chromosome in the input file, but --metric-all-chroms is specified.
+../bin/bam recab --noph --in testFiles/testRecab.sam --out results/testRecabDBSNP2all.sam --refFile testFilesLibBam/chr1_partial.fa --dbsnp testFiles/dbsnp2.txt --metric-all-chroms > results/testRecabDBSNP2all.txt 2> results/testRecabDBSNP2all.log
+let "status |= $?"
+diff results/testRecabDBSNP2all.sam expected/testRecab.sam
+let "status |= $?"
+diff results/testRecabDBSNP2all.txt expected/empty.txt
+let "status |= $?"
+diff results/testRecabDBSNP2all.log expected/testRecabDBSNP2all.log
+let "status |= $?"
+diff <(sort results/testRecabDBSNP2all.sam.qemp) <(sort expected/testRecab.sam.qemp)
+let "status |= $?"
+diff -I "Start: .*" -I "End: .*" results/testRecabDBSNP2all.sam.log expected/testRecabDBSNP2all.sam.log
+let "status |= $?"
+
+###############
 # Test with DBSNP, keeping even if previous is dbsnp
 ../bin/bam recab --noph --in testFiles/testRecab.sam --out results/testRecabDBSNPkeepPrev.sam --refFile testFilesLibBam/chr1_partial.fa --dbsnp testFiles/dbsnp1.txt --keepPrevDbsnp > results/testRecabDBSNPkeepPrev.txt 2> results/testRecabDBSNPkeepPrev.log
 let "status |= $?"

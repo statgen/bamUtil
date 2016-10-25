@@ -1,4 +1,4 @@
-Usage: ./bam dedup --in <InputBamFile> --out <OutputBamFile> [--minQual <minPhred>] [--log <logFile>] [--oneChrom] [--rmDups] [--force] [--excludeFlags <flag>] [--verbose] [--noeof] [--params] [--recab] --refFile <ReferenceFile> [--dbsnp <dbsnpFile>] [--minBaseQual <minBaseQual>] [--maxBaseQual <maxBaseQual>] [--blended <weight>] [--fitModel] [--fast] [--keepPrevDbsnp] [--keepPrevNonAdjacent] [--useLogReg] [--qualField <tag>] [--storeQualTag <tag>] [--buildExcludeFlags <flag>] [--applyExcludeFlags <flag>] [--binQualS <minQualBin2>,<minQualBin3><...>] [--binQualF <filename>] [--binMid|binHigh]
+Usage: ./bam dedup --in <InputBamFile> --out <OutputBamFile> [--minQual <minPhred>] [--log <logFile>] [--oneChrom] [--rmDups] [--force] [--excludeFlags <flag>] [--verbose] [--noeof] [--params] [--recab] --refFile <ReferenceFile> [--dbsnp <dbsnpFile>] [--metric-all-chroms] [--minBaseQual <minBaseQual>] [--maxBaseQual <maxBaseQual>] [--blended <weight>] [--fitModel] [--fast] [--keepPrevDbsnp] [--keepPrevNonAdjacent] [--useLogReg] [--qualField <tag>] [--storeQualTag <tag>] [--buildExcludeFlags <flag>] [--applyExcludeFlags <flag>] [--binQualS <minQualBin2>,<minQualBin3><...>] [--binQualF <filename>] [--binMid|binHigh]
 
 Required parameters :
 	--in <infile>   : Input BAM file name (must be sorted)
@@ -22,6 +22,10 @@ Recab Specific Required Parameters
 	--refFile <reference file>    : reference file name
 Recab Specific Optional Parameters : 
 	--dbsnp <known variance file> : dbsnp file of positions
+	                                If a dbsnp file is specified, only the chromosomes in the dbsnp
+	                                file are used for building the recalibration table.
+	--metric-all-chroms           : build recalibration table using all chromosomes
+	                                This option is the default unless a --dbsnp file is specified.
 	--minBaseQual <minBaseQual>   : minimum base quality of bases to recalibrate (default: 5)
 	--maxBaseQual <maxBaseQual>   : maximum recalibrated base quality (default: 50)
 	                                qualities over this value will be set to this value.
@@ -71,9 +75,10 @@ Input Parameters
                              PhoneHome : --noPhoneHome [ON],
                                          --phoneHomeThinning [50]
              Required Recab Parameters : --refFile []
-             Optional Recab Parameters : --dbsnp [], --minBaseQual [5],
-                                         --maxBaseQual [50], --blended,
-                                         --fitModel, --fast, --keepPrevDbsnp,
+             Optional Recab Parameters : --dbsnp [], --metric-all-chroms,
+                                         --minBaseQual [5], --maxBaseQual [50],
+                                         --blended, --fitModel, --fast,
+                                         --keepPrevDbsnp,
                                          --keepPrevNonAdjacent, --useLogReg,
                                          --qualField [], --storeQualTag [],
                                          --buildExcludeFlags [0x0F04],
