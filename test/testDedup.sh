@@ -185,7 +185,28 @@ let "status |= $?"
 sort results/testDedupRecabBin.sam.qemp | diff - expected/testDedupRecab.sam.qemp
 let "status |= $?"
 
+# Dedup file with pairs where one read is mapped and one is unmapped
+../bin/bam dedup --recab --in testFiles/testDedupMapUnmap.sam --out results/testDedupRecabMapUnmap.sam --refFile testFiles/ref_partial.fa --noph 2> results/testDedupRecabMapUnmap.txt
+let "status |= $?"
+diff results/testDedupRecabMapUnmap.txt expected/testDedupRecabMapUnmap.txt
+let "status |= $?"
+diff results/testDedupRecabMapUnmap.sam expected/testDedupRecabMapUnmap.sam
+let "status |= $?"
+diff results/testDedupRecabMapUnmap.sam.log expected/testDedupRecabMapUnmap.sam.log
+let "status |= $?"
+sort results/testDedupRecabMapUnmap.sam.qemp | diff - expected/testDedupRecab.sam.qemp
+let "status |= $?"
 
+../bin/bam dedup_lowmem --recab --in testFiles/testDedupMapUnmap.sam --out results/testDedupLowMemRecabMapUnmap.sam --refFile testFiles/ref_partial.fa --noph 2> results/testDedupLowMemRecabMapUnmap.txt
+let "status |= $?"
+diff results/testDedupLowMemRecabMapUnmap.txt expected/testDedupRecabMapUnmap.txt
+let "status |= $?"
+diff results/testDedupLowMemRecabMapUnmap.sam expected/testDedupRecabMapUnmap.sam
+let "status |= $?"
+diff results/testDedupLowMemRecabMapUnmap.sam.log expected/testDedupLowMemRecabMapUnmap.sam.log
+let "status |= $?"
+sort results/testDedupLowMemRecabMapUnmap.sam.qemp | diff - expected/testDedupRecab.sam.qemp
+let "status |= $?"
 
 if [ $status != 0 ]
 then

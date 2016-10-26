@@ -59,7 +59,6 @@ Dedup::~Dedup()
         mySamPool.releaseRecord(iter->second.recordPtr);
     }
     myMateMap.clear();
-    mySecondarySupplementaryMap.clear();
 }
 
 void Dedup::printDedupDescription(std::ostream& os)
@@ -260,6 +259,8 @@ int Dedup::execute(int argc, char** argv)
         if(!samIn.ReadRecord(header, *recordPtr))
         {
             returnStatus = samIn.GetStatus();
+            // Didn't use the record, so release it.
+            mySamPool.releaseRecord(recordPtr);            
             continue;
         }
         recordCount = samIn.GetCurrentRecordCount();
@@ -367,130 +368,15 @@ int Dedup::execute(int argc, char** argv)
 
     ////////////////////////////////////////////////////////////
     // Second Pass through the file
-
-    // get ready to write the output file by making a second pass
-    // through the input file
-    samIn.OpenForRead(inFile.c_str());
-    samIn.ReadHeader(header);
-
-    SamFile samOut;
-    samOut.OpenForWrite(outFile.c_str());
-    samOut.WriteHeader(header);
-
-    // If we are recalibrating, output the model information.
     if(myDoRecab)
     {
-        myRecab.modelFitPrediction(outFile);
+        markDuplicateLoop(verboseFlag, removeFlag, inFile, outFile, &myRecab);
     }
-
-    // an iterator to run through the duplicate indices
-    int currentDupIndex = 0;
-    bool moreDups = !myDupList.empty();
-
-    // let the user know what we're doing
-    Logger::gLogger->writeLog("\nWriting %s", outFile.c_str());
-
-    // count the duplicate records as a check
-    uint32_t singleDuplicates(0), pairedDuplicates(0),
-        secondaryDuplicates(0), supplementaryDuplicates(0);
-
-    // start reading records and writing them out
-    SamRecord record;
-    while(samIn.ReadRecord(header, record))
+    else
     {
-        uint32_t currentIndex = samIn.GetCurrentRecordCount();
-
-        bool foundDup = moreDups &&
-            (currentIndex == myDupList[currentDupIndex]);
-
-        // modify the duplicate flag and write out the record,
-        // if it's appropriate
-        int flag = record.getFlag();
-
-        if (foundDup)
-        {   
-            currentDupIndex++;
-            // increment duplicate counters to verify we found them all
-            if ( ( ( flag & 0x0001 ) == 0 ) || ( flag & 0x0008 ) )
-            { // unpaired or mate unmapped
-                singleDuplicates++;
-            }
-            else
-            {
-                pairedDuplicates++;
-            }
-
-            // Update NonPrimaryMap to indicate this readname is a duplicate
-            // (if the readname is in the map)
-            // Need to do it here in case the non-primary read comes after the primary one
-            // so the read name was not in the map when the primary read was encountered
-            // on the first pass through the file.
-            markDuplicateInNonPrimaryMaps(&record);
-        }
-        else if(SamFlag::isSecondary(flag) || 
-           (flag & SamFlag::SUPPLEMENTARY_ALIGNMENT))
-        {
-            // Check the supplemenatry map to see if this read is a duplicate.
-            foundDup = mySecondarySupplementaryMap[record.getReadName()];
-            if(foundDup)
-            {
-                if(flag & SamFlag::SUPPLEMENTARY_ALIGNMENT)
-                {
-                    ++supplementaryDuplicates;
-                }
-                else
-                {
-                    ++secondaryDuplicates;
-                }
-            }
-        }
-
-        if(foundDup)
-        {
-            // this record is a duplicate, so mark it.
-            record.setFlag( flag | 0x400 );
-
-            // recalibrate if necessary.
-            if(myDoRecab)
-            {
-                myRecab.processReadApplyTable(record);
-            }
-            
-            // write the record if we are not removing duplicates
-            if (!removeFlag ) samOut.WriteRecord(header, record);
-        }
-        else
-        {
-            if(myForceFlag)
-            { 
-                // this is not a duplicate we've identified but we want to
-                // remove any duplicate marking
-                record.setFlag( flag & 0xfffffbff ); // unmark duplicate
-            }
-            // Not a duplicate, so recalibrate if necessary.
-            if(myDoRecab)
-            {
-                myRecab.processReadApplyTable(record);
-            }
-            samOut.WriteRecord(header, record);
-        }
-	
-        // Let the user know we're still here
-        if (verboseFlag && (currentIndex % 100000 == 0)) {
-            Logger::gLogger->writeLog("recordCount=%u", currentIndex);
-        }
+        markDuplicateLoop(verboseFlag, removeFlag, inFile, outFile, NULL);
     }
 
-    // We're done.  Close the files and print triumphant messages.
-    samIn.Close();
-    samOut.Close();
-
-    Logger::gLogger->writeLog("Successfully %s %u unpaired, %u paired duplicate reads, %u secondary reads, and %u supplementary reads", 
-                              removeFlag ? "removed" : "marked" ,
-                              singleDuplicates,
-                              pairedDuplicates/2,
-                              secondaryDuplicates,
-                              supplementaryDuplicates);
     Logger::gLogger->writeLog("\nDedup complete!");
     return 0;
 }
@@ -1021,31 +907,4 @@ void Dedup::handleDuplicate(uint32_t index, SamRecord* recordPtr)
 
     // Release the record.
     mySamPool.releaseRecord(recordPtr);
-}
-
-
-void Dedup::markDuplicateInNonPrimaryMaps(SamRecord* recordPtr)
-{
-    // Check the NonPrimary Maps.
-    if(recordPtr == NULL)
-    {
-        return;
-    }
-    int flag = recordPtr->getFlag();
-
-    // check the maps if the read is:
-    //     * single end
-    //     * the mate is unmapped (treated as single end)
-    //  or * first fragment (only want to check for 1 of the 2 mates)
-    if(!SamFlag::isPaired(flag) || !SamFlag::isMateMapped(flag) ||
-       SamFlag::isFirstFragment(flag))
-    {
-        NonPrimaryMap::iterator iter;
-        iter = mySecondarySupplementaryMap.find(recordPtr->getReadName());
-        if(iter != mySecondarySupplementaryMap.end())
-        {
-            // Found in the non primary map, so set it to be a dupilcate.
-            iter->second = true;
-        }
-    }
 }

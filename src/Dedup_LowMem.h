@@ -19,13 +19,11 @@
 #define __DE_DUP_LM_H
 
 #include "BamExecutable.h"
-#include <vector>
-#include <set>
 #include <map>
 #ifdef __GXX_EXPERIMENTAL_CXX0X__
 #include <unordered_map>
 #endif
-#include "SamRecordPool.h"
+#include "DedupBase.h"
 #include "Recab.h"
 #include "SamFlag.h"
 
@@ -34,7 +32,7 @@
   / This class will remove or mark duplicate reads from a BAM file.
   /
   /---------------------------------------------------------------*/
-class Dedup_LowMem : public BamExecutable
+class Dedup_LowMem : public DedupBase
 {
 public:
     static void printDedup_LowMemDescription(std::ostream& os);
@@ -44,16 +42,13 @@ public:
     virtual const char* getProgramName() {return("bam:dedup_LowMem");}
 
     Dedup_LowMem():
-        mySecondarySupplementaryMap(),
+        DedupBase(),
         myRecab(),
         myDoRecab(false),
         myOneChrom(false),
         myAllReadNames(false),
-        myMarkNonPrimary(false),
-        mySamPool(),
         lastCoordinate(-1), lastReference(-1), numLibraries(0), 
         myNumMissingMate(0),
-        myForceFlag(false),
         myMinQual(15),
         myClipOffset(1000)
     {}
@@ -214,37 +209,18 @@ private:
     typedef std::pair<PairedMap::iterator,bool> PairedMapInsertReturn;
     PairedMap myPairedMap;
 
-    // Stores the record counts of duplicates reads
-    typedef std::vector< uint32_t > Int32Vector;
-    typedef std::vector< uint32_t >::iterator Int32VectorIterator;
-    Int32Vector myDupList;
-
-    // Secondary and Supplementary Read Map
-    // True means it should be marked duplicate, 
-    // false means it should not be marked duplicate.
-    typedef std::pair<std::string,bool> NonPrimaryPair;
-    #ifdef __GXX_EXPERIMENTAL_CXX0X__
-    typedef std::unordered_map<std::string,bool> NonPrimaryMap;
-    #else
-    typedef std::multimap<std::string,bool> NonPrimaryMap;
-    #endif
-    NonPrimaryMap mySecondarySupplementaryMap;
-
     // Recalibrator logic.
     Recab myRecab;
     bool myDoRecab;
     bool myOneChrom;
+
+    // Mark supplementary/secondary reads
     bool myAllReadNames;
-    bool myMarkNonPrimary;
-    
-    // Pool of sam records.
-    SamRecordPool mySamPool;
     
     int lastCoordinate;
     int lastReference;
     uint32_t numLibraries;
     int myNumMissingMate;
-    bool myForceFlag;
     int myMinQual;
     uint32_t myClipOffset;
 

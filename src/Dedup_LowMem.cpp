@@ -42,7 +42,6 @@ Dedup_LowMem::~Dedup_LowMem()
 
     // Free any entries in the mate map.
     myMateMap.clear();
-    mySecondarySupplementaryMap.clear();
 }
 
 void Dedup_LowMem::printDedup_LowMemDescription(std::ostream& os)
@@ -77,7 +76,7 @@ void Dedup_LowMem::printUsage(std::ostream& os)
     os << "\t--excludeFlags <flag>    : exclude reads with any of these flags set when determining or marking duplicates" << std::endl;
     os << "\t                           by default (0xB04): exclude unmapped, secondary reads, QC failures, and supplementary reads" << std::endl;
     os << "\t--allReadNames  : Store all readNames for supplemental/secondary matching" << std::endl;
-    os << "\t                  This could use more memory, but should be faster than looking up readName for every read in teh non-primary map" << std::endl;
+    os << "\t                  This could use more memory, but should be faster than looking up readName for every read in the non-primary map" << std::endl;
     os << "\t--verbose       : Turn on verbose mode" << std::endl;
     os << "\t--noeof         : Do not expect an EOF block on a bam file." << std::endl;
     os << "\t--params        : Print the parameter settings" << std::endl;
@@ -259,6 +258,8 @@ int Dedup_LowMem::execute(int argc, char** argv)
         if(!samIn.ReadRecord(header, *recordPtr))
         {
             returnStatus = samIn.GetStatus();
+            // Didn't use the record, so release it.
+            mySamPool.releaseRecord(recordPtr);
             continue;
         }
         recordCount = samIn.GetCurrentRecordCount();
@@ -368,133 +369,15 @@ int Dedup_LowMem::execute(int argc, char** argv)
 
     ////////////////////////////////////////////////////////////
     // Second Pass through the file
-
-    // get ready to write the output file by making a second pass
-    // through the input file
-    samIn.OpenForRead(inFile.c_str());
-    samIn.ReadHeader(header);
-
-    SamFile samOut;
-    samOut.OpenForWrite(outFile.c_str());
-    samOut.WriteHeader(header);
-
-    // If we are recalibrating, output the model information.
     if(myDoRecab)
     {
-        myRecab.modelFitPrediction(outFile);
+        markDuplicateLoop(verboseFlag, removeFlag, inFile, outFile, &myRecab);
     }
-
-    // an iterator to run through the duplicate indices
-    int currentDupIndex = 0;
-    bool moreDups = !myDupList.empty();
-
-    // let the user know what we're doing
-    Logger::gLogger->writeLog("\nWriting %s", outFile.c_str());
-
-    // count the duplicate records as a check
-    uint32_t singleDuplicates(0), pairedDuplicates(0),
-        secondaryDuplicates(0), supplementaryDuplicates(0);
-
-    // start reading records and writing them out
-    SamRecord record;
-    while(samIn.ReadRecord(header, record))
+    else
     {
-        uint32_t currentIndex = samIn.GetCurrentRecordCount();
-
-        bool foundDup = moreDups &&
-            (currentIndex == myDupList[currentDupIndex]);
-
-        // modify the duplicate flag and write out the record,
-        // if it's appropriate
-        int flag = record.getFlag();
-
-        if (foundDup)
-        {   
-            currentDupIndex++;
-            // increment duplicate counters to verify we found them all
-            if ( ( ( flag & 0x0001 ) == 0 ) || ( flag & 0x0008 ) )
-            { // unpaired or mate unmapped
-                singleDuplicates++;
-            }
-            else
-            {
-                pairedDuplicates++;
-            }
-
-            // Update NonPrimaryMap to indicate this readname is a duplicate
-            // (if the readname is in the map)
-            // Need to do it here in case the non-primary read comes after the primary one
-            // so the read name was not in the map when the primary read was encountered
-            // on the first pass through the file.
-            if(myMarkNonPrimary)
-            {
-                markDuplicateInNonPrimaryMaps(record.getReadName());
-            }
-        }
-        else if(myMarkNonPrimary && (SamFlag::isSecondary(flag) || 
-                                     (flag & SamFlag::SUPPLEMENTARY_ALIGNMENT)))
-        {
-            // Check the supplemenatry map to see if this read is a duplicate.
-            foundDup = mySecondarySupplementaryMap[record.getReadName()];
-            if(foundDup)
-            {
-                if(flag & SamFlag::SUPPLEMENTARY_ALIGNMENT)
-                {
-                    ++supplementaryDuplicates;
-                }
-                else
-                {
-                    ++secondaryDuplicates;
-                }
-            }
-        }
-
-        if(foundDup)
-        {
-            // this record is a duplicate, so mark it.
-            record.setFlag( flag | 0x400 );
-
-            // recalibrate if necessary.
-            if(myDoRecab)
-            {
-                myRecab.processReadApplyTable(record);
-            }
-
-            // write the record if we are not removing duplicates
-            if (!removeFlag ) samOut.WriteRecord(header, record);
-        }
-        else
-        {
-            if(myForceFlag)
-            { 
-                // this is not a duplicate we've identified but we want to
-                // remove any duplicate marking
-                record.setFlag( flag & 0xfffffbff ); // unmark duplicate
-            }
-            // Not a duplicate, so recalibrate if necessary.
-            if(myDoRecab)
-            {
-                myRecab.processReadApplyTable(record);
-            }
-            samOut.WriteRecord(header, record);
-        }
-	
-        // Let the user know we're still here
-        if (verboseFlag && (currentIndex % 100000 == 0)) {
-            Logger::gLogger->writeLog("recordCount=%u", currentIndex);
-        }
+        markDuplicateLoop(verboseFlag, removeFlag, inFile, outFile, NULL);
     }
 
-    // We're done.  Close the files and print triumphant messages.
-    samIn.Close();
-    samOut.Close();
-
-    Logger::gLogger->writeLog("Successfully %s %u unpaired, %u paired duplicate reads, %u secondary reads, and %u supplementary reads", 
-                              removeFlag ? "removed" : "marked" ,
-                              singleDuplicates,
-                              pairedDuplicates/2,
-                              secondaryDuplicates,
-                              supplementaryDuplicates);
     Logger::gLogger->writeLog("\nDedup_LowMem complete!");
     return 0;
 }
@@ -970,7 +853,7 @@ void Dedup_LowMem::handleMissingMate(int32_t refID, int32_t mateRefID)
     }
     else if(firstSameChrom)
     {
-        std::cerr << "ERROR: Records with missing mate can't be checked for "
+        std::cerr << "WARNING: Records with missing mate can't be checked for "
                   << "duplicates.\n";
         firstSameChrom = false;
     }

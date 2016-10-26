@@ -9,14 +9,10 @@ Reading ReferenceID 3
 
 Reading ReferenceID 4
 
-WARNING: INVALID_GENOME_INDEX (chrom:pos 5:62) and record skipped... Reference in BAM is different from the ref used here!
-WARNING: INVALID_GENOME_INDEX (chrom:pos 5:65) and record skipped... Reference in BAM is different from the ref used here!
 Reading ReferenceID 5
 
 WARNING: INVALID_GENOME_INDEX (chrom:pos 5:64) and record skipped... Reference in BAM is different from the ref used here!
 WARNING: INVALID_GENOME_INDEX (chrom:pos 5:62) and record skipped... Reference in BAM is different from the ref used here!
-WARNING: INVALID_GENOME_INDEX (chrom:pos 4:162) and record skipped... Reference in BAM is different from the ref used here!
-WARNING: INVALID_GENOME_INDEX (chrom:pos 6:64) and record skipped... Reference in BAM is different from the ref used here!
 Reading ReferenceID 23
 
 WARNING: INVALID_GENOME_INDEX (chrom:pos 4:162) and record skipped... Reference in BAM is different from the ref used here!
@@ -30,32 +26,33 @@ SUMMARY STATISTICS OF THE READS
 Total number of reads: 37
 Total number of paired-end reads: 37
 Total number of properly paired reads: 16
-Total number of unmapped reads: 0
+Total number of unmapped reads: 4
 Total number of reverse strand mapped reads: 18
 Total number of QC-failed reads: 0
-Total number of secondary reads: 2
-Total number of supplementary reads: 1
+Total number of secondary reads: 0
+Total number of supplementary reads: 0
 Size of singleKeyMap (must be zero): 0
 Size of pairedKeyMap (must be zero): 0
-Total number of missing mates: 4
-Total number of reads excluded from duplicate checking: 3
+Total number of missing mates: 1
+Total number of reads excluded from duplicate checking: 4
 --------------------------------------------------------------------------
-Sorting the indices of 10 duplicated records
-# mapped Reads observed: 37
-# unmapped Reads observed: 0
-# Secondary Reads observed: 2
-# Supplementary Reads observed: 1
-# Duplicate Reads observed: 10
+Sorting the indices of 12 duplicated records
+# mapped Reads observed: 33
+# unmapped Reads observed: 4
+# Secondary Reads observed: 0
+# Supplementary Reads observed: 0
+# Duplicate Reads observed: 12
 # QC Failure Reads observed: 0
-# Mapping Quality 0 Reads skipped: 21
+# Mapping Quality 0 Reads skipped: 11
 # Mapping Quality 255 Reads skipped: 0
-Total # Reads skipped for building recab table: 33
-Total # Reads used for building recab table: 4
-# Bases observed: 23 - #match: 10; #mismatch: 13
+Total # Reads skipped for building recab table: 35
+Total # Reads used for building recab table: 2
+# Bases observed: 12 - #match: 5; #mismatch: 7
 # Bases Skipped for DBSNP: 0, for BaseQual < 5: 0, ref 'N': 0
-Writing recalibration table results/testDedup2ForceRecabD.sam.qemp
+Writing recalibration table results/testDedupRecabMapUnmap.sam.qemp
 
-Writing results/testDedup2ForceRecabD.sam
-Successfully marked 0 unpaired, 0 mate unmapped, 5 paired duplicate reads, 0 secondary reads, and 0 supplementary reads
+Writing results/testDedupRecabMapUnmap.sam
+WARNING: Unmapped mate not found next to the mapped mate for readname 6. Additional warnings for this are suppressed.
+Successfully marked 0 unpaired, 4 mate unmapped, 4 paired duplicate reads, 0 secondary reads, and 0 supplementary reads
 
 Dedup complete!

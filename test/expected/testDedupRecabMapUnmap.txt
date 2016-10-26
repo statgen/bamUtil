@@ -1,0 +1,2 @@
+WARNING: Records with missing mate can't be checked for duplicates.
+WARNING: Unmapped mate not found next to the mapped mate for readname 6. Additional warnings for this are suppressed.
