@@ -1,0 +1,38 @@
+Reading ReferenceID 0
+
+Open reference
+Done! Sequence length 11520
+--------------------------------------------------------------------------
+SUMMARY STATISTICS OF THE READS
+Total number of reads: 201
+Total number of paired-end reads: 101
+Total number of properly paired reads: 101
+Total number of unmapped reads: 0
+Total number of reverse strand mapped reads: 101
+Total number of QC-failed reads: 0
+Total number of secondary reads: 0
+Total number of supplementary reads: 0
+Size of singleKeyMap (must be zero): 0
+Size of pairedKeyMap (must be zero): 0
+Total number of missing mates: 101
+Total number of reads excluded from duplicate checking: 0
+--------------------------------------------------------------------------
+Sorting the indices of 98 duplicated records
+# mapped Reads observed: 5
+# unmapped Reads observed: 0
+# Secondary Reads observed: 0
+# Supplementary Reads observed: 0
+# Duplicate Reads observed: 0
+# QC Failure Reads observed: 0
+# Mapping Quality 0 Reads skipped: 0
+# Mapping Quality 255 Reads skipped: 0
+Total # Reads skipped for building recab table: 0
+Total # Reads used for building recab table: 5
+# Bases observed: 11 - #match: 7; #mismatch: 4
+# Bases Skipped for DBSNP: 14, for BaseQual < 5: 0, ref 'N': 0
+Writing recalibration table results/testDedupLowMemRecabDBSNP.sam.qemp
+
+Writing results/testDedupLowMemRecabDBSNP.sam
+Successfully marked 98 unpaired, 0 mate unmapped, 0 paired duplicate reads, 0 secondary reads, and 0 supplementary reads
+
+Dedup_LowMem complete!

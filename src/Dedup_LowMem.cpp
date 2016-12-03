@@ -227,6 +227,7 @@ int Dedup_LowMem::execute(int argc, char** argv)
 
     SamFileHeader header;
     samIn.ReadHeader(header);
+    myRecab.setBuildLoopSamHeader(header);
 
     buildReadGroupLibraryMap(header);
 
@@ -533,6 +534,7 @@ void Dedup_LowMem::checkDups(SamRecord& record, uint32_t recordCount)
             // New entry, so build the recalibration table now.
             if(myDoRecab)
             {
+                // Only build the table for a new key.
                 myRecab.processReadBuildTable(record);
             }
         }

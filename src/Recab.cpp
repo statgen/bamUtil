@@ -52,7 +52,8 @@ Recab::Recab()
       myIntBuildExcludeFlags(0),
       myIntApplyExcludeFlags(0),
       myReferenceGenome(NULL),
-      myBuildChrs()
+      myBuildLoopSamHeader(NULL),
+      myBuildChrIDs()
 {
     myMappedCount = 0;
     myUnMappedCount = 0;
@@ -269,6 +270,7 @@ int Recab::execute(int argc, char *argv[])
     SamRecord samRecord;
     SamFileHeader samHeader;
     samIn.ReadHeader(samHeader);
+    setBuildLoopSamHeader(samHeader);
 
     srand (time(NULL));
 
@@ -419,10 +421,8 @@ bool Recab::processReadBuildTable(SamRecord& samRecord)
         return(false);
     }
 
-    chromosomeName = samRecord.getReferenceName();
-
     // Check if the chromosome should be used to process the table.
-    if(!myMetricAllChroms && (myBuildChrs.find(chromosomeName) == myBuildChrs.end()))
+    if(!myMetricAllChroms && (myBuildLoopSamHeader != NULL) && !myBuildChrIDs[samRecord.getReferenceID()])
     {
         // Dbsnp file was specified, but this chromosome was not in the dbdsnp file.
         ++myNumBuildSkipped;
@@ -444,6 +444,7 @@ bool Recab::processReadBuildTable(SamRecord& samRecord)
         return(false);
     }
     
+    chromosomeName = samRecord.getReferenceName();
     readGroup = samRecord.getString("RG").c_str();
 
     // Look for the read group in the map.
@@ -945,10 +946,24 @@ bool Recab::loadDbsnp()
         exit(1);
     }
 
+    // The SAM header is needed for determing the chromosomes ids to use for building
+    // the recalibration table.
+    if(myBuildLoopSamHeader == NULL)
+    {
+        std::cerr << "ERROR: Recab SamHeader not set, so cannot determine chromosome IDs for dbsnp file.\n";
+        std::cerr << "       All chromosomes will be used for building the recalibration table\n"; 
+    }
+    else
+    {
+        // Size the vector of chromosome (reference) ids to the number of reference names.
+        myBuildChrIDs.resize((myBuildLoopSamHeader->getReferenceInfo()).getNumEntries(), false);
+    }
+
     // anonymously (RAM resident only) create:
     myDbSNP.create(myReferenceGenome->getNumberBases());
     
     // now load it into RAM
+    int chrID;
     std::string chromosomeName;
     std::string prevChr = "";
     std::string position;
@@ -1015,9 +1030,19 @@ bool Recab::loadDbsnp()
         }
 
         myDbSNP.set(genomeIndex, true);
-        if(chromosomeName != prevChr)
+
+        // Track the chromosomes in the dbsnp file.
+        if(myBuildLoopSamHeader != NULL)
         {
-            myBuildChrs.insert(chromosomeName);
+            if(chromosomeName != prevChr)
+            {
+                // lookup in header for chrID.
+                chrID = myBuildLoopSamHeader->getReferenceID(chromosomeName.c_str());
+                if(chrID != SamReferenceInfo::NO_REF_ID)
+                {
+                    myBuildChrIDs[chrID] = true;
+                }
+            }
             prevChr = chromosomeName;
         }
     }

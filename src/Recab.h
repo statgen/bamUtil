@@ -66,6 +66,11 @@ public:
 
     void addRecabSpecificParameters(LongParamContainer& params);
     int processRecabParam();
+    // The specified samHeader must remain valid during the build loop (for the processParams call).
+    void setBuildLoopSamHeader(SamFileHeader& samHeader)
+    {
+        myBuildLoopSamHeader = &samHeader;
+    }
 
 private:
     static const int DEFAULT_MIN_BASE_QUAL = 5;
@@ -146,7 +151,12 @@ private:
     #else
     typedef std::set<std::string> BuildChrsSet;
     #endif
-    BuildChrsSet myBuildChrs;
+
+    // Sam header is neaded for mapping dbsnp chr names to sam/bam chr ids.
+    SamFileHeader* myBuildLoopSamHeader;
+    // Chrs to build are marked true, others are marked false.  
+    // Indexed by the chr/ref ID in the sam/bam header.
+    std::vector<bool> myBuildChrIDs;
 
     // Squeeze
     Squeeze mySqueeze;

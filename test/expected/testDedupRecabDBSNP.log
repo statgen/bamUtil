@@ -1,0 +1,3 @@
+Load dbSNP file 'testFiles/dbsnp1.txt'; loadDbsnp: ignored 1 SNP positions due to invalid format of line.
+DONE!
+WARNING: Records with missing mate can't be checked for duplicates.

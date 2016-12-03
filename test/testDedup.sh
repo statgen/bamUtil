@@ -208,6 +208,40 @@ let "status |= $?"
 sort results/testDedupLowMemRecabMapUnmap.sam.qemp | diff - expected/testDedupRecab.sam.qemp
 let "status |= $?"
 
+
+###############
+# Test with recab & DBSNP
+../bin/bam dedup --recab --noph --in testFiles/testRecab.sam --out results/testDedupRecabDBSNP.sam --refFile testFilesLibBam/chr1_partial.fa --dbsnp testFiles/dbsnp1.txt > results/testDedupRecabDBSNP.txt 2> results/testDedupRecabDBSNP.log
+let "status |= $?"
+diff results/testDedupRecabDBSNP.sam expected/testDedupRecabDBSNP.sam
+let "status |= $?"
+diff results/testDedupRecabDBSNP.txt expected/empty.txt
+let "status |= $?"
+diff results/testDedupRecabDBSNP.log expected/testDedupRecabDBSNP.log
+let "status |= $?"
+diff <(sort results/testDedupRecabDBSNP.sam.qemp) <(sort expected/testDedupRecabDBSNP.sam.qemp)
+let "status |= $?"
+diff -I "Start: .*" -I "End: .*" results/testDedupRecabDBSNP.sam.log expected/testDedupRecabDBSNP.sam.log
+let "status |= $?"
+
+
+
+###############
+# Test low memory with recab & DBSNP
+../bin/bam dedup_lowmem --recab --noph --in testFiles/testRecab.sam --out results/testDedupLowMemRecabDBSNP.sam --refFile testFilesLibBam/chr1_partial.fa --dbsnp testFiles/dbsnp1.txt > results/testDedupLowMemRecabDBSNP.txt 2> results/testDedupLowMemRecabDBSNP.log
+let "status |= $?"
+diff results/testDedupLowMemRecabDBSNP.sam expected/testDedupLowMemRecabDBSNP.sam
+let "status |= $?"
+diff results/testDedupLowMemRecabDBSNP.txt expected/empty.txt
+let "status |= $?"
+diff results/testDedupLowMemRecabDBSNP.log expected/testDedupRecabDBSNP.log
+let "status |= $?"
+diff <(sort results/testDedupLowMemRecabDBSNP.sam.qemp) <(sort expected/testDedupLowMemRecabDBSNP.sam.qemp)
+let "status |= $?"
+diff -I "Start: .*" -I "End: .*" results/testDedupLowMemRecabDBSNP.sam.log expected/testDedupLowMemRecabDBSNP.sam.log
+let "status |= $?"
+
+
 if [ $status != 0 ]
 then
   echo failed testDedup.sh

@@ -228,6 +228,7 @@ int Dedup::execute(int argc, char** argv)
 
     SamFileHeader header;
     samIn.ReadHeader(header);
+    myRecab.setBuildLoopSamHeader(header);
 
     buildReadGroupLibraryMap(header);
 
