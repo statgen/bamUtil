@@ -24,6 +24,7 @@
 
 Squeeze::Squeeze()
     : myBinMid(false),
+      myBinCustom(false),
       myBinHigh(false),
       myBinQualS(""),
       myBinQualF("")
@@ -52,7 +53,7 @@ void Squeeze::printDescription(std::ostream& os)
 
 void Squeeze::printBinningUsageLine(std::ostream& os)
 {
-    os << "[--binQualS <minQualBin2>,<minQualBin3><...>] [--binQualF <filename>] [--binMid|binHigh]";
+    os << "[--binQualS <minQualBin2>,<minQualBin3><...>] [--binQualF <filename>] [--binMid|binHigh|binCustom]";
 }
 
 
@@ -65,6 +66,7 @@ void Squeeze::printBinningUsage(std::ostream& os)
     os << "\t  By default, the bin value is the low end of the range." << std::endl;
     os << "\t\t--binQualS   : Bin the Qualities as specified (phred): minQualOfBin2, minQualofBin3..." << std::endl;
     os << "\t\t--binQualF   : Bin the Qualities based on the specified file" << std::endl;
+    os << "\t\t--binCustom  : Use the custom point of the quality bin (followed by colon) for the quality value of the bin." << std::endl;    
     os << "\t\t--binMid     : Use the mid point of the quality bin range for the quality value of the bin." << std::endl;
     os << "\t\t--binHigh    : Use the high end of the quality bin range for the quality value of the bin." << std::endl;
 }
@@ -112,6 +114,7 @@ int Squeeze::execute(int argc, char ** argv)
     String sReadName = "";
     IFILE readNameFile = NULL;
     myBinMid = false;
+    myBinCustom = false;
     myBinHigh = false;
     String rmTags = "";
 
@@ -372,6 +375,7 @@ void Squeeze::addBinningParameters(LongParamContainer& params)
     params.addString("binQualS", &myBinQualS);
     params.addString("binQualF", &myBinQualF);
     params.addBool("binMid", &myBinMid);
+    params.addBool("binCustom", &myBinCustom);    
     params.addBool("binHigh", &myBinHigh);
 }
 
@@ -403,32 +407,95 @@ int Squeeze::processBinningParam()
         }
     }
 
+    /*
+    if ( !myBinQualMap.IsEmpty() ) {
+      if ( !myBinQualS.IsEmpty() ) {
+        std::cerr << "ERROR: --binQualS or --binQualF cannot be used with --binQualMap\n";
+        return(-1);	
+      }
+
+      // Read the quality bins from the file.
+      IFILE qualMapFile = ifopen(myBinQualMap, "r");
+      if(qualMapFile == NULL) {
+	std::cerr << "ERROR: failed to open the quality map file (" 
+		  << qualMapFile << ")." << std::endl;
+	return(-1);
+      }
+
+      StringArray buf, tok;
+      buf.Read(qualMapFile);
+
+      for(int i=0; i < buf.Length(); ++i) {
+	tok.ReplaceTokens(buf[i], " \t");
+	if ( tok.Length() != 2 ) {
+	  std::cerr << "ERROR: the quality map file (" << qualMapFile <<") is expected to have 2 tokens in each line, but observed " << tok.Length() << " in line " << i+1 << std::endl;
+	  return (-1);
+	}
+	if ( tok[0].AsInteger() != i ) {
+	  std::cerr << "ERROR: the quality map file is expected to have " << i <<" at line " << i+1 << ", but observed " << tok[0] << std::endl; 
+	  return (-1);	  
+	}
+	int oldQ = tok[0].AsInteger();
+	int newQ = tok[1].AsInteger();
+	if ( ( newQ <= 0 ) || ( newQ > 60 ) ) {
+	  std::cerr << "New quality in map file should be between 1 and 60, but observed " << newQ << std::endl;
+	  return (-1);
+	}
+        myQualBinMap[i+QUAL_CONVERT] = newQ+QUAL_CONVERT;
+      }
+    }
+    else */
     if(!myBinQualS.IsEmpty())
     {
         // Determine the bins.
         StringArray bins;
         bins.ReplaceColumns(myBinQualS, ',');
-        int binStart = 0;
+	int binStart = 0;
         int nextBinStart = 0;
-
-        // Fill the bins, by reading the starting bin positions.
-        // The previous bin ends just before the next one starts.
-        for(int i = 0; i < bins.Length(); i++)
-        {
-            // The previous bin ends just before this one starts.
-            if(!bins[i].AsInteger(nextBinStart))
-            {
-                // bad format, could not turn quality value to integer.
-                std::cerr << "Quality Bin Range not an integer: " << bins[i] << std::endl;
-                return(-1);
-            }
-            // Setup this bin.
-            binPhredQuals(binStart, nextBinStart - 1);
-            // Set the start for the next bin.
-            binStart = nextBinStart;
-        }
-        // Call for the last bin from the last specified start to the MAX_PHRED_QUAL.
-        binPhredQuals(nextBinStart, MAX_PHRED_QUAL);
+	
+	if ( myBinCustom ) {
+	  for(int i=0; i < bins.Length(); ++i) {
+	    StringArray tok;
+	    tok.ReplaceColumns(bins[i], ':');
+	    if ( tok.Length() != 2 ) {
+	      std::cerr << "with --binCustom, it should have a form of [MINQUAL]:[NEWQUAL] for each comma-separated bin" << std::endl;
+	      return(-1);
+	    }
+	    int minQual;
+	    int newQual;
+	    if ( ( !tok[0].AsInteger(minQual) ) || ( minQual < 0 ) || ( minQual > 60 ) ) { 	      
+	      std::cerr << "with --binCustom, it should have a form of [MINQUAL]:[NEWQUAL] for each comma-separated bin" << std::endl;
+	      return(-1);	      
+	    }
+	    if ( ( !tok[1].AsInteger(newQual) ) || ( newQual < 0 ) || ( newQual > 60 ) ) { 
+	      std::cerr << "with --binCustom, it should have a form of [MINQUAL]:[NEWQUAL] for each comma-separated bin" << std::endl;
+	      return(-1);	      	      
+	    }
+	    for(int j=minQual; j < MAX_PHRED_QUAL; ++j) {
+	      myQualBinMap[j+QUAL_CONVERT] = newQual+QUAL_CONVERT;
+	    }
+	  }
+	}
+	else {
+	  // Fill the bins, by reading the starting bin positions.
+	  // The previous bin ends just before the next one starts.
+	  for(int i = 0; i < bins.Length(); i++)
+	    {
+	      // The previous bin ends just before this one starts.
+	      if(!bins[i].AsInteger(nextBinStart))
+		{
+		  // bad format, could not turn quality value to integer.
+		  std::cerr << "Quality Bin Range not an integer: " << bins[i] << std::endl;
+		  return(-1);
+		}
+	      // Setup this bin.
+	      binPhredQuals(binStart, nextBinStart - 1);
+	      // Set the start for the next bin.
+	      binStart = nextBinStart;
+	    }
+	  // Call for the last bin from the last specified start to the MAX_PHRED_QUAL.
+	  binPhredQuals(nextBinStart, MAX_PHRED_QUAL);
+	}
     }
     return(0);
 }
@@ -436,7 +503,7 @@ int Squeeze::processBinningParam()
 
 int Squeeze::getQualCharFromQemp(uint8_t qemp)
 {
-    if(!myBinQualS.IsEmpty())
+    if (!myBinQualS.IsEmpty())
     {
         return(myQualBinMap[qemp + QUAL_CONVERT]);
     }
@@ -476,7 +543,7 @@ void Squeeze::binPhredQuals(int binStartPhred, int binEndPhred)
 void Squeeze::bin(SamRecord& samRecord)
 {
     static String qual = "";
-    if(!myBinQualS.IsEmpty())
+    if (!myBinQualS.IsEmpty())
     {
         qual = samRecord.getQuality();
         

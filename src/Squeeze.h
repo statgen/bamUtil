@@ -55,6 +55,7 @@ private:
     static const int MAX_PHRED_QUAL = 93;
     static const int QUAL_CONVERT = 33;
     bool myBinMid;
+    bool myBinCustom;
     bool myBinHigh;
     String myBinQualS;
     String myBinQualF;
