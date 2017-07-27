@@ -48,9 +48,9 @@ void Stats::printUsage(std::ostream& os)
     os << "\t\t--basic         : Turn on basic statistic generation" << std::endl;
     os << "\t\t--qual          : Generate a count for each quality (displayed as non-phred quality)" << std::endl;
     os << "\t\t--phred         : Generate a count for each quality (displayed as phred quality)" << std::endl;
-    os << "\t\t--pBaseQC       : Write per base statistics as Percentages to the specified file." << std::endl;
+    os << "\t\t--pBaseQC       : Write per base statistics as Percentages to the specified file. (use - for stdout)" << std::endl;
     os << "\t\t                  pBaseQC & cBaseQC cannot both be specified." << std::endl;
-    os << "\t\t--cBaseQC       : Write per base statistics as Counts to the specified file." << std::endl;
+    os << "\t\t--cBaseQC       : Write per base statistics as Counts to the specified file. (use - for stdout)" << std::endl;
     os << "\t\t                  pBaseQC & cBaseQC cannot both be specified." << std::endl;
     os << "\tOptional Parameters:" << std::endl;
     os << "\t\t--maxNumReads   : Maximum number of reads to process" << std::endl;
