@@ -64,11 +64,11 @@ protected:
 
 private:
     typedef std::pair<uint64_t, SamRecord*> MATE_MAP_PAIR;
-    #ifdef __GXX_EXPERIMENTAL_CXX0X__
-    typedef std::multimap<uint64_t, SamRecord*> MATE_MAP;
-    #else
+#ifdef __GXX_EXPERIMENTAL_CXX0X__
     typedef std::unordered_multimap<uint64_t, SamRecord*> MATE_MAP; 
-    #endif
+#else
+    typedef std::multimap<uint64_t, SamRecord*> MATE_MAP;
+#endif
 
     MATE_MAP myMateBuffer;
     bool myMateCoord;
