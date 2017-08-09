@@ -18,11 +18,7 @@
 #ifndef __MATE_MAP_BY_COORD_H__
 #define __MATE_MAP_BY_COORD_H__
 
-#ifdef __GXX_EXPERIMENTAL_CXX0X__
-#include <unordered_map>
-#else
 #include <map>
-#endif
 
 #include "SamFile.h"
 
@@ -64,11 +60,10 @@ protected:
 
 private:
     typedef std::pair<uint64_t, SamRecord*> MATE_MAP_PAIR;
-#ifdef __GXX_EXPERIMENTAL_CXX0X__
-    typedef std::unordered_multimap<uint64_t, SamRecord*> MATE_MAP; 
-#else
+
+    // Have to use multimap instead of unordered_multimap, since
+    // the first() and popFirst() methods expect it to be ordered
     typedef std::multimap<uint64_t, SamRecord*> MATE_MAP;
-#endif
 
     MATE_MAP myMateBuffer;
     bool myMateCoord;
