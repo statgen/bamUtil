@@ -69,7 +69,7 @@ let "status |= $?"
 diff results/testClipOverlapCoordPool0Clip.log expected/testClipOverlapCoordPool0Clip.log
 let "status |= $?"
 
-# Test clipping files sorted by read name.
+# Test clipping files sorted by read name with stats.
 ../bin/bam clipOverlap --stats --readName --in testFiles/testClipOverlapReadName.sam --out results/testClipOverlapReadNameStats.sam --storeOrig XC --noph 2> results/testClipOverlapReadNameStats.log
 let "status |= $?"
 diff results/testClipOverlapReadNameStats.sam expected/testClipOverlapReadName.sam
@@ -259,6 +259,28 @@ diff results/testClipOverlapCoordStats1Ex0.sam expected/testClipOverlapCoord1Ex0
 let "status |= $?"
 diff results/testClipOverlapCoordStats1Ex0.log expected/testClipOverlapCoordStatsEx0.log
 let "status |= $?"
+
+# Test clipping files sorted by read name, not alphanumeric sorted, fails.
+../bin/bam clipOverlap --readName --in testFiles/testClipOverlapReadNameNoAlphaSort.sam --out results/testClipOverlapReadNameNoAlphaSortFail.sam --storeOrig XC --noph 2> results/testClipOverlapReadNameNoAlphaSortFail.log
+if [ $? -eq 0 ]
+then
+    echo "clipOverlap passed when expected to fail."
+    status=1;
+fi
+let "status |= $?"
+diff results/testClipOverlapReadNameNoAlphaSortFail.sam expected/testClipOverlapReadNameNoAlphaSortFail.sam
+let "status |= $?"
+diff results/testClipOverlapReadNameNoAlphaSortFail.log expected/testClipOverlapReadNameNoAlphaSortFail.log
+let "status |= $?"
+
+# Test clipping files sorted by read name, not alphanumeric sorted, no validate rn sort.
+../bin/bam clipOverlap --readName --in testFiles/testClipOverlapReadNameNoAlphaSort.sam --noRNValidate --out results/testClipOverlapReadNameNoAlphaSortNoValidate.sam --storeOrig XC --noph 2> results/testClipOverlapReadNameNoAlphaSortNoValidate.log
+let "status |= $?"
+diff results/testClipOverlapReadNameNoAlphaSortNoValidate.sam expected/testClipOverlapReadNameNoAlphaSortNoValidate.sam
+let "status |= $?"
+diff results/testClipOverlapReadNameNoAlphaSortNoValidate.log expected/testClipOverlapReadName.log
+let "status |= $?"
+
 
 if [ $status != 0 ]
 then

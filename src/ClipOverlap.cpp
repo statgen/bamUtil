@@ -58,13 +58,14 @@ void ClipOverlap::printDescription(std::ostream& os)
 void ClipOverlap::printUsage(std::ostream& os)
 {
     BamExecutable::printUsage(os);
-    os << "\t./bam clipOverlap --in <inputFile> --out <outputFile> [--storeOrig <tag>] [--readName] [--stats] [--overlapsOnly] [--excludeFlags <flag>] [--poolSize <numRecords allowed to allocate>] [--poolSkipOverlap] [--noeof] [--params]" << std::endl;
+    os << "\t./bam clipOverlap --in <inputFile> --out <outputFile> [--storeOrig <tag>] [--readName] [--noRNValidate] [--stats] [--overlapsOnly] [--excludeFlags <flag>] [--poolSize <numRecords allowed to allocate>] [--poolSkipOverlap] [--noeof] [--params]" << std::endl;
     os << "\tRequired Parameters:" << std::endl;
     os << "\t\t--in           : the SAM/BAM file to clip overlaping read pairs for" << std::endl;
     os << "\t\t--out          : the SAM/BAM file to be written" << std::endl;
     os << "\tOptional Parameters:" << std::endl;
     os << "\t\t--storeOrig    : Store the original cigar in the specified tag." << std::endl;
     os << "\t\t--readName     : Original file is sorted by Read Name instead of coordinate." << std::endl;
+    os << "\t\t--noRNValidate   : Turn off alpha-numeric read name sorting validation." << std::endl;
     os << "\t\t--stats        : Print some statistics on the overlaps." << std::endl;
     os << "\t\t--overlapsOnly : Only output overlapping read pairs" << std::endl;
     os << "\t\t--excludeFlags : Skip records with any of the specified flags set, default 0xF0C" << std::endl;
@@ -88,6 +89,7 @@ int ClipOverlap::execute(int argc, char **argv)
     String outFile = "";
     String storeOrig = "";
     bool readName = false;
+    bool noRNValidate = false;
     bool stats = false;
     int poolSize = DEFAULT_POOL_SIZE;
     bool unmapped = false;
@@ -104,6 +106,7 @@ int ClipOverlap::execute(int argc, char **argv)
         LONG_PARAMETER_GROUP("Optional Parameters")
         LONG_STRINGPARAMETER("storeOrig", &storeOrig)
         LONG_PARAMETER("readName", &readName)
+        LONG_PARAMETER ("noRNValidate", &noRNValidate)
         LONG_PARAMETER ("stats", &stats)
         LONG_PARAMETER ("overlapsOnly", &myOverlapsOnly)
         LONG_STRINGPARAMETER ("excludeFlags", &excludeFlags)
@@ -208,7 +211,10 @@ int ClipOverlap::execute(int argc, char **argv)
 
         if(readName)
         {
-            samIn.setSortedValidation(SamFile::QUERY_NAME);
+            if(!noRNValidate)
+            {
+                samIn.setSortedValidation(SamFile::QUERY_NAME);
+            }
             runStatus = handleSortedByReadName(samIn, samOutPtr);
         }
         else
