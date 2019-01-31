@@ -26,6 +26,7 @@
 #include "SamFlag.h"
 #include "SamHelper.h"
 #include "OverlapClipLowerBaseQual.h"
+#include "OverlapSplitClip.h"
 
 ClipOverlap::ClipOverlap()
     : BamExecutable(),
@@ -91,6 +92,7 @@ int ClipOverlap::execute(int argc, char **argv)
     bool readName = false;
     bool noRNValidate = false;
     bool stats = false;
+    bool splitClip = false;
     int poolSize = DEFAULT_POOL_SIZE;
     bool unmapped = false;
     bool noeof = false;
@@ -109,6 +111,7 @@ int ClipOverlap::execute(int argc, char **argv)
         LONG_PARAMETER ("noRNValidate", &noRNValidate)
         LONG_PARAMETER ("stats", &stats)
         LONG_PARAMETER ("overlapsOnly", &myOverlapsOnly)
+        LONG_PARAMETER ("splitClip", &splitClip)
         LONG_STRINGPARAMETER ("excludeFlags", &excludeFlags)
         LONG_PARAMETER("unmapped", &unmapped)
         LONG_PARAMETER("noeof", &noeof)
@@ -166,7 +169,14 @@ int ClipOverlap::execute(int argc, char **argv)
         return(-1);
     }
 
-    myOverlapHandler = new OverlapClipLowerBaseQual();
+    if(splitClip)
+    {
+        myOverlapHandler = new OverlapSplitClip();
+    }
+    else
+    {
+        myOverlapHandler = new OverlapClipLowerBaseQual();
+    }
     if(myOverlapHandler == NULL)
     {
         printUsage(std::cerr);
