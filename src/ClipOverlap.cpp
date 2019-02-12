@@ -59,7 +59,7 @@ void ClipOverlap::printDescription(std::ostream& os)
 void ClipOverlap::printUsage(std::ostream& os)
 {
     BamExecutable::printUsage(os);
-    os << "\t./bam clipOverlap --in <inputFile> --out <outputFile> [--storeOrig <tag>] [--readName] [--noRNValidate] [--stats] [--overlapsOnly] [--excludeFlags <flag>] [--poolSize <numRecords allowed to allocate>] [--poolSkipOverlap] [--noeof] [--params]" << std::endl;
+    os << "\t./bam clipOverlap --in <inputFile> --out <outputFile> [--storeOrig <tag>] [--readName] [--noRNValidate] [--stats] [--overlapsOnly] [--splitClip] [--excludeFlags <flag>] [--poolSize <numRecords allowed to allocate>] [--poolSkipOverlap] [--noeof] [--params]" << std::endl;
     os << "\tRequired Parameters:" << std::endl;
     os << "\t\t--in           : the SAM/BAM file to clip overlaping read pairs for" << std::endl;
     os << "\t\t--out          : the SAM/BAM file to be written" << std::endl;
@@ -69,6 +69,8 @@ void ClipOverlap::printUsage(std::ostream& os)
     os << "\t\t--noRNValidate   : Turn off alpha-numeric read name sorting validation." << std::endl;
     os << "\t\t--stats        : Print some statistics on the overlaps." << std::endl;
     os << "\t\t--overlapsOnly : Only output overlapping read pairs" << std::endl;
+    os << "\t\t--splitClip    : Keep half the overlap from each read rather than just keeping 1 read" << std::endl;
+
     os << "\t\t--excludeFlags : Skip records with any of the specified flags set, default 0xF0C" << std::endl;
     os << "\t\t--unmapped     : Mark records that would be completely clipped as unmapped" << std::endl;
     os << "\t\t--noeof        : Do not expect an EOF block on a bam file." << std::endl;
