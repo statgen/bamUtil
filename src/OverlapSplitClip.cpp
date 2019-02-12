@@ -59,7 +59,10 @@ void OverlapSplitClip::handleOverlapPair(SamRecord& firstRecord,
     assert(SamFlag::isReverse(secondFlag));
     
     // For now 2nd read must end last.
-    assert(secondEnd>= overlapEnd);
+    if(secondEnd < overlapEnd)
+    {
+        overlapEnd = secondEnd;
+    }
 
     // Calculate the overlap length
     // (example: positions 3, 4, 5, 6, 7.  So 7-3+1=5 positions.)
