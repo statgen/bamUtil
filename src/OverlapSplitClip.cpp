@@ -47,22 +47,18 @@ void OverlapSplitClip:: printStats()
 void OverlapSplitClip::handleOverlapPair(SamRecord& firstRecord,
                                          SamRecord& secondRecord)
 {
-    // Clip from 2nd record start to 1st record end
     int32_t overlapStart = secondRecord.get0BasedPosition();
     int32_t overlapEnd = firstRecord.get0BasedAlignmentEnd();
     int32_t secondEnd = secondRecord.get0BasedAlignmentEnd();
-    uint16_t firstFlag = firstRecord.getFlag();
-    uint16_t secondFlag = secondRecord.getFlag();
 
-    // For now, just assert that first is forward & 2nd is reverse
-    assert(!SamFlag::isReverse(firstFlag));
-    assert(SamFlag::isReverse(secondFlag));
-    
-    // For now 2nd read must end last.
+    // If 1st read ends after the 2nd read, set the overlap end to be the
+    // end of the 2nd read.  The 1st read will be clipped beyond the 
     if(secondEnd < overlapEnd)
     {
         overlapEnd = secondEnd;
     }
+
+    // Don't check forward/reverse, just clip based on the overlap.
 
     // Calculate the overlap length
     // (example: positions 3, 4, 5, 6, 7.  So 7-3+1=5 positions.)
@@ -151,6 +147,15 @@ void OverlapSplitClip::handleOverlapPair(SamRecord& firstRecord,
         firstRecord.set0BasedMatePosition(newSecondStartPos);
         secondRecord.setCigar(newSecondCigar);
     }
+}
+
+
+void OverlapSplitClip::handleNoOverlapWrongOrientation(SamRecord& record,
+                                                       bool updateStats,
+                                                       bool mateUnmapped)
+{
+    // Don't do anything, keep both reads
+    return;
 }
 
 

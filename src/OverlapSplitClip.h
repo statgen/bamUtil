@@ -33,6 +33,13 @@ public:
     virtual void handleOverlapPair(SamRecord& firstRecord,
                                    SamRecord& secondRecord);
 
+    /// Handle the case where the pair does not overlap, but the
+    /// reverse strand is completely prior to the forward strand.
+    /// For this implementation, don't do anything, keep both reads.
+    virtual void handleNoOverlapWrongOrientation(SamRecord& record,
+                                                 bool updateStats = true,
+                                                 bool mateUnmapped = true);
+
     /// Handle the case where the mate was not found (maybe due to
     /// hitting a buffer limit).  Just clip this record at the overlap point
     /// or clip the entire read if it is the reverse strand and the mate is not.
