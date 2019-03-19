@@ -74,7 +74,7 @@ void OverlapSplitClip::handleOverlapPair(SamRecord& firstRecord,
     int32_t halfOverlap = overlapLen/2;
     // If the overlap is odd, clips will be different by 1.
     int32_t remainingOverlap = overlapLen - halfOverlap;
-    
+
     static CigarRoller newFirstCigar; // holds updated cigar.
     static CigarRoller newSecondCigar; // holds updated cigar.
 
@@ -109,43 +109,57 @@ void OverlapSplitClip::handleOverlapPair(SamRecord& firstRecord,
     if(!myStoreOrigCigar.IsEmpty())
     {
         // Write original cigar.
-        firstRecord.addTag(myStoreOrigCigar, 'Z', 
-                           firstRecord.getCigar());
+        if(firstClipPos != CigarHelper::NO_CLIP)
+	{
+	    firstRecord.addTag(myStoreOrigCigar, 'Z', 
+			       firstRecord.getCigar());
+	}
         // Write original cigar.
-        secondRecord.addTag(myStoreOrigCigar, 'Z', 
-                            secondRecord.getCigar());
+	if(secondClipPos != CigarHelper::NO_CLIP)
+	{
+	    secondRecord.addTag(myStoreOrigCigar, 'Z', 
+				secondRecord.getCigar());
+	}
     }
 
-    // Check if the entire first record will be clipped and should
-    // instead be marked as unmapped.
-    if(myUnmap && (firstClipPos == 0))
+    // Update the first record if it was clipped
+    if(firstClipPos != CigarHelper::NO_CLIP)
     {
-        // Completely clipped, mark as unmapped
-        SamFilter::filterRead(firstRecord);
-        // Update the mate to indicate this record is unmapped
-        markMateUnmapped(secondRecord);
-    }
-    else
-    {
-        // Write new Cigar
-        firstRecord.setCigar(newFirstCigar);
+        // Check if the entire first record will be clipped and should
+        // instead be marked as unmapped.
+        if(myUnmap && (firstClipPos == 0))
+        {
+            // Completely clipped, mark as unmapped
+            SamFilter::filterRead(firstRecord);
+            // Update the mate to indicate this record is unmapped
+            markMateUnmapped(secondRecord);
+        }
+        else
+        {
+            // Write new Cigar
+            firstRecord.setCigar(newFirstCigar);
+        }
     }
 
-    // Check if the entire second record will be clipped and should
-    // instead be marked as unmapped.
-    if(myUnmap && (secondClipPos >= (secondRecord.getReadLength()-1)))
+    // Update the second record if it was clipped
+    if(secondClipPos != CigarHelper::NO_CLIP)
     {
-        // Completely clipped, mark as unmapped
-        SamFilter::filterRead(secondRecord);
-        // Update the mate to indicate this record is unmapped
-        markMateUnmapped(firstRecord);
-    }
-    else
-    {
-        // Update 2nd record's starting position
-        secondRecord.set0BasedPosition(newSecondStartPos);
-        firstRecord.set0BasedMatePosition(newSecondStartPos);
-        secondRecord.setCigar(newSecondCigar);
+        // Check if the entire second record will be clipped and should
+        // instead be marked as unmapped.
+        if(myUnmap && (secondClipPos >= (secondRecord.getReadLength()-1)))
+        {
+            // Completely clipped, mark as unmapped
+            SamFilter::filterRead(secondRecord);
+            // Update the mate to indicate this record is unmapped
+            markMateUnmapped(firstRecord);
+        }
+        else
+        {
+            // Update 2nd record's starting position
+            secondRecord.set0BasedPosition(newSecondStartPos);
+            firstRecord.set0BasedMatePosition(newSecondStartPos);
+            secondRecord.setCigar(newSecondCigar);
+        }
     }
 }
 
