@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2010-2016  Regents of the University of Michigan
+ *  Copyright (C) 2010-2016, 2019  Regents of the University of Michigan
  *
  *   This program is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -155,6 +155,17 @@ int Dedup::execute(int argc, char** argv)
         printUsage(std::cerr);
         inputParameters.Status();
         std::cerr << "Specify an input file" << std::endl;
+        return EXIT_FAILURE;
+    }
+    // inFile is not empty, so there is at least one character.  Check if
+    // it is specifing stdin since that is not supported for Dedup.
+    if(inFile[0] == '-')
+    {
+        // ERROR: stdin specified, but since Dedup requires 2 passes through
+        // the input file, stdin is not supported.
+        printUsage(std::cerr);
+        inputParameters.Status();
+        std::cerr << "ERROR: stdin ('" << inFile << "') is not a supported input file because Dedup requires two passes through the input file." << std::endl;
         return EXIT_FAILURE;
     }
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #####
-# The qemp files must be softed prior to diffing because the code that generates
+# The qemp files must be sorted prior to diffing because the code that generates
 # them loops through either a map or an unordered map.  The order of the
 # unordered map is undefined and varies by implementation of it.
 
@@ -21,6 +21,23 @@ diff <(sort results/testRecab.sam.qemp) <(sort expected/testRecab.sam.qemp)
 let "status |= $?"
 diff -I "Start: .*" -I "End: .*" results/testRecab.sam.log expected/testRecab.sam.log
 let "status |= $?"
+
+# try reading from stdin (should fail)
+cat testFiles/testRecab.sam | ../bin/bam recab --in - --out results/testRecabStdin.sam --refFile testFilesLibBam/chr1_partial.fa --fitModel --noph > results/testRecabStdin.txt 2> results/testRecabStdin.log
+if [ $? -eq 0 ]
+then
+    echo "Recab passed when expected to fail."
+    let "status = 1"
+fi
+diff results/testRecabStdin.txt expected/empty.txt
+let "status |= $?"
+diff results/testRecabStdin.log expected/testRecabStdin.log
+let "status |= $?"
+if [[ -e results/testRecabStdin.sam || -e results/testRecab.Stdin.sam.log ]]
+then
+    let "status = 2"
+fi
+
 
 ../bin/bam recab --noph --fast --in testFiles/testRecab.sam --out results/testRecabFast.sam --refFile testFilesLibBam/chr1_partial.fa --fitModel > results/testRecabFast.txt 2> results/testRecabFast.log
 let "status |= $?"

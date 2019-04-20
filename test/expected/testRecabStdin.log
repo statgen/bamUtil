@@ -1,0 +1,75 @@
+Usage: ./bam recab (options) --in <InputBamFile> --out <OutputFile> [--log <logFile>] [--verbose] [--noeof] [--params] --refFile <ReferenceFile> [--dbsnp <dbsnpFile>] [--minBaseQual <minBaseQual>] [--maxBaseQual <maxBaseQual>] [--blended <weight>] [--fitModel] [--fast] [--keepPrevDbsnp] [--keepPrevNonAdjacent] [--useLogReg] [--qualField <tag>] [--storeQualTag <tag>] [--buildExcludeFlags <flag>] [--applyExcludeFlags <flag>] [--binQualS <minQualBin2>,<minQualBin3><...>] [--binQualF <filename>] [--binMid|binHigh|binCustom]
+
+Required General Parameters :
+	--in <infile>   : input BAM file name
+	--out <outfile> : output recalibration file name
+Optional General Parameters : 
+	--log <logfile> : log and summary statistics (default: [outfile].log)
+	--verbose       : Turn on verbose mode
+	--noeof         : do not expect an EOF block on a bam file.
+	--params        : print the parameter settings
+
+Recab Specific Required Parameters
+	--refFile <reference file>    : reference file name
+Recab Specific Optional Parameters : 
+	--dbsnp <known variance file> : dbsnp file of positions
+	--minBaseQual <minBaseQual>   : minimum base quality of bases to recalibrate (default: 5)
+	--maxBaseQual <maxBaseQual>   : maximum recalibrated base quality (default: 50)
+	                                qualities over this value will be set to this value.
+	                                This setting is applied after binning (if applicable).
+	--blended <weight>            : blended model weight
+	--fitModel                    : check if the logistic regression model fits the data
+	                                overriden by fast, but automatically applied by useLogReg
+	--fast                        : use a compact representation that only allows:
+	                                   * at most 256 Read Groups
+	                                   * maximum quality 63
+	                                   * at most 127 cycles
+	                                overrides fitModel, but is overridden by useLogReg
+	                                uses up to about 2.25G more memory than running without --fast.
+	--keepPrevDbsnp               : do not exclude entries where the previous base is in dbsnp when
+	                                building the recalibration table
+	                                By default they are excluded from the table.
+	--keepPrevNonAdjacent         : do not exclude entries where the previous base is not adjacent
+	                                (not a Cigar M/X/=) when building the recalibration table
+	                                By default they are excluded from the table (except the first cycle).
+	--useLogReg                   : use logistic regression calculated quality for the new quality
+	                                automatically applies fitModel and overrides fast.
+	--qualField <quality tag>     : tag to get the starting base quality
+	                                (default is to get it from the Quality field)
+	--storeQualTag <quality tag>  : tag to store the previous quality into
+	--buildExcludeFlags <flag>    : exclude reads with any of these flags set when building the
+	                                recalibration table.  Default is 0xF04
+	--applyExcludeFlags <flag>    : do not apply the recalibration table to any reads with any of these flags set
+	Quality Binning Parameters (optional):
+	  Bin qualities by phred score, into the ranges specified by binQualS or binQualF (both cannot be used)
+	  Ranges are specified by comma separated minimum phred score for the bin, example: 1,17,20,30,40,50,70
+	  The first bin always starts at 0, so does not need to be specified.
+	  By default, the bin value is the low end of the range.
+		--binQualS   : Bin the Qualities as specified (phred): minQualOfBin2, minQualofBin3...
+		--binQualF   : Bin the Qualities based on the specified file
+		--binCustom  : Use the custom point of the quality bin (followed by colon) for the quality value of the bin.
+		--binMid     : Use the mid point of the quality bin range for the quality value of the bin.
+		--binHigh    : Use the high end of the quality bin range for the quality value of the bin.
+
+
+
+Input Parameters
+           Required Generic Parameters : --in [-],
+                                         --out [results/testRecabStdin.sam]
+           Optional Generic Parameters : --log [], --verbose, --noeof,
+                                         --params
+                             PhoneHome : --noPhoneHome [ON],
+                                         --phoneHomeThinning [50]
+             Required Recab Parameters : --refFile [testFilesLibBam/chr1_partial.fa]
+             Optional Recab Parameters : --dbsnp [], --minBaseQual [5],
+                                         --maxBaseQual [50], --blended,
+                                         --fitModel [ON], --fast,
+                                         --keepPrevDbsnp,
+                                         --keepPrevNonAdjacent, --useLogReg,
+                                         --qualField [], --storeQualTag [],
+                                         --buildExcludeFlags [0x0F04],
+                                         --applyExcludeFlags [0x0000]
+   Optional Quality Binning Parameters : --binQualS [], --binQualF [],
+                                         --binMid, --binCustom, --binHigh
+
+ERROR: stdin ('-') is not a supported input file because Recab requires two passes through the input file.

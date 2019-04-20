@@ -10,6 +10,20 @@ let "status |= $?"
 diff results/testDedup.sam.log expected/testDedup.sam.log
 let "status |= $?"
 
+# try reading from stdin (should fail)
+cat testFiles/testDedup.sam | ../bin/bam dedup --in - --out results/testDedupStdin.sam --noph 2> results/testDedupStdin.txt
+if [ $? -eq 0 ]
+then
+    echo "Dedup passed when expected to fail."
+    let "status = 1"
+fi
+diff results/testDedupStdin.txt expected/testDedupStdin.txt
+let "status |= $?"
+if [[ -e results/testDedupStdin.sam || -e results/testDedupStdin.sam.log ]]
+then
+    let "status = 2"
+fi
+
 ../bin/bam dedup --in testFiles/testDedup.sam --out results/testDedupIncSec.sam --excludeFlags 0xA04 --noph 2> results/testDedupIncSec.txt
 if [ $? -eq 0 ]
 then

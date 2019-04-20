@@ -1,6 +1,6 @@
 /*
- *  Copyright (C) 2010-2015  Christian Fuchsberger,
- *                           Regents of the University of Michigan
+ *  Copyright (C) 2010-2015, 2019  Christian Fuchsberger,
+ *                                 Regents of the University of Michigan
  *
  *   This program is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -209,6 +209,19 @@ int Recab::execute(int argc, char *argv[])
         std::cerr << "Missing required --in parameter" << std::endl;
         return EXIT_FAILURE;
     }
+
+    // inFile is not empty, so there is at least one character.  Check if
+    // it is specifing stdin since that is not supported for Recab.
+    if(inFile[0] == '-')
+    {
+        // ERROR: stdin specified, but since Recab requires 2 passes through
+        // the input file, stdin is not supported.
+        printUsage(std::cerr);
+        inputParameters.Status();
+        std::cerr << "ERROR: stdin ('" << inFile << "') is not a supported input file because Recab requires two passes through the input file." << std::endl;
+        return EXIT_FAILURE;
+    }
+
 
     if(outFile.IsEmpty())
     {
