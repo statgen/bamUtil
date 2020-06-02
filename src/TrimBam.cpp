@@ -111,7 +111,7 @@ int TrimBam::execute(int argc, char ** argv)
   int c = 0;
   int n_option_index = 0;
   // Process any additional parameters
-  while ( ( c = getopt_long(argc, argv,
+  while ( ( c = getopt_long(argc-3, &(argv[3]),
                             "L:R:icn", getopt_long_options, &n_option_index) )
           != -1 )
   {
