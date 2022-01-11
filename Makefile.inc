@@ -29,6 +29,6 @@ $(INCLUDE_MAKE):
 cloneLib:
 	@if test -d $(LIB_PATH_BAM_UTIL); \
 	then echo $(LIB_PATH_BAM_UTIL) already exists; \
-	else git clone git://github.com/statgen/libStatGen.git $(LIB_PATH_BAM_UTIL); fi
+	else git clone https://github.com/statgen/libStatGen.git $(LIB_PATH_BAM_UTIL); fi
 	@echo Call make to compile libStatGen and this tool.
 
